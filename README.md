@@ -34,3 +34,4 @@ ves-market-watch/
 
 - Gate 0 (requisitos): ver `.ai-dlc/gates/gate-0-requirements.md`
 - Gate 1 (diseño): ver `.ai-dlc/gates/gate-1-design.md`
+- Inventario de cambios por ejecución: ver `CHANGELOG.md`

@@ -59,3 +59,5 @@ Usuario directo: motor de indicadores.
 ## Dependencias y riesgos
 - Depende de: RabbitMQ, TimescaleDB.
 - Riesgos: fragilidad del scraping; disponibilidad del sitio BCV (ver ADR-0006).
+- ADRs derivados: ADR-0006 (scraping + TLS), ADR-0007 (máquina de estados valid/suspect/stale),
+  ADR-0008 (publicación solo-en-cambio + heartbeat), ADR-0009 (modelo bitemporal).
