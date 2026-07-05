@@ -1,24 +1,31 @@
-# PRD — Ingesta Tasa Oficial BCV (VES/USD)
+# PRD — Ingesta Tasas Oficiales BCV (multi-moneda)
 
 - **Fase AI-DLC:** 01-requirements
-- **Estado:** review
+- **Estado:** accepted — implementado en `apps/ingestor-bcv` (2026-07-05)
 
 ## Problema y contexto
-La referencia oficial de cambio la publica el Banco Central de Venezuela en su sitio web.
-Se necesita mantenerla sincronizada (2 consultas/hora) para calcular la brecha frente al
-mercado P2P.
+La referencia oficial de cambio la publica el Banco Central de Venezuela en su sitio web,
+en la sección «tipo de cambio de referencia» (USD, EUR, CNY, TRY, RUB — el conjunto puede
+variar). Se necesita mantenerla sincronizada (2 consultas/hora) para calcular la brecha
+frente al mercado P2P; la tasa VES/USD es la crítica para la brecha, el resto se ingesta
+con el mismo pipeline.
 
 ## Objetivos / No-objetivos
-- Objetivos: obtener valor USD (y fecha-valor) del sitio del BCV, validar, publicar evento
-  `official.rate.updated` solo cuando cambie, persistir histórico completo.
-- No-objetivos: otras monedas del BCV en fase inicial (EUR, CNY…) — extensible después.
+- Objetivos: obtener el valor de **todas las monedas publicadas** por el BCV (y la
+  fecha-valor común), validar cada una, publicar evento `official.rate.updated` por moneda
+  solo cuando cambie, persistir histórico completo. Descubrimiento dinámico: si el BCV
+  agrega una moneda, se ingesta sin cambios de código.
+- No-objetivos: histórico retroactivo previo al despliegue; fuentes alternativas o
+  espejos no oficiales de la tasa.
 
 ## Usuarios y escenarios
 Usuario directo: motor de indicadores.
 
 ### Escenarios positivos
-1. Cada 30 min el ingestor consulta el sitio del BCV, extrae la tasa USD y su fecha-valor.
-2. Si el valor difiere del último persistido, publica `official.rate.updated`.
+1. Cada 30 min el ingestor consulta el sitio del BCV y extrae todas las tasas publicadas
+   y su fecha-valor.
+2. Por cada moneda cuyo valor o fecha-valor difiera del último persistido, publica
+   `official.rate.updated`.
 3. Si no difiere, registra heartbeat sin publicar evento.
 
 ### Escenarios negativos / abuso (requerido por Gate 0)
@@ -37,10 +44,12 @@ Usuario directo: motor de indicadores.
 
 ## Requisitos funcionales
 - RF-1: Consulta programada 2×/hora con horario configurable.
-- RF-2: Extracción robusta (selector + fallback regex) del valor USD y fecha-valor.
-- RF-3: Validación de rango y formato antes de publicar.
-- RF-4: Evento `official.rate.updated` solo en cambio de valor o fecha-valor.
-- RF-5: Persistencia histórica completa (tasa, fecha-valor, timestamp de captura, fuente).
+- RF-2: Extracción robusta (selector + fallback regex) de todas las monedas publicadas
+  y la fecha-valor, con descubrimiento dinámico de monedas nuevas.
+- RF-3: Validación de rango y formato por moneda antes de publicar.
+- RF-4: Evento `official.rate.updated` por moneda, solo en cambio de valor o fecha-valor.
+- RF-5: Persistencia histórica completa (moneda, tasa, fecha-valor, timestamp de captura,
+  fuente, estado).
 
 ## Requisitos de seguridad (mapeados a OWASP ASVS)
 | Req | ASVS | Nivel | OWASP Top 10 |

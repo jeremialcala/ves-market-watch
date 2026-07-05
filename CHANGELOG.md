@@ -17,6 +17,41 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **`ingestor-bcv` — primera implementación ejecutable del proyecto** (PRD ingesta BCV):
+  paquete Python 3.12 (`apps/ingestor-bcv/`) con arquitectura hexagonal:
+  - Dominio: `TasaOficial` con estados `valid|suspect|stale` y validación de
+    plausibilidad (|Δ| ≤ 20 % configurable, valor positivo, fecha-valor no retrocede).
+  - Caso de uso `SincronizarTasasOficiales`: fetch → validar → persistir siempre →
+    publicar `official.rate.updated` solo en cambio de valor o fecha-valor (RF-1..RF-5).
+  - Adaptador BCV: cliente httpx con TLS anclado a bundle de CA versionado
+    (`certs/bcv-ca-bundle.pem`, cadena Sectigo verificada — ADR-0006, nunca
+    `verify=False`) y parser con selectores CSS + fallback regex.
+  - Adaptador RabbitMQ (aio-pika): exchange topic `market.events`, publisher confirms,
+    mensajes persistentes, sobre estándar con `event_id`/`schema_version` (ADR-0004).
+  - Adaptador TimescaleDB (asyncpg) con queries parametrizadas y migración
+    `db/migrations/001_official_rates.sql` (hypertable `official_rates` +
+    `official_rate_source_health`).
+  - Circuito de fallos: 3 fallos consecutivos de la fuente → alerta + marca `stale`.
+  - Scheduler 2×/hora con jitter; CLI `python -m ingestor_bcv [--once] [--dry-run]`.
+  - 28 tests (unit + contract) contra fixture de HTML real del BCV; verificación
+    end-to-end en dry-run contra el sitio vivo (5 monedas publicadas).
+- Bundle de CA del BCV capturado y verificado (`openssl verify: OK`) con procedimiento
+  de regeneración documentado en `apps/ingestor-bcv/certs/README.md`.
+- Fixture de página real de bcv.org.ve (capturada 2026-07-05, fecha-valor 2026-07-06)
+  en `apps/ingestor-bcv/tests/fixtures/`.
+
+### Changed
+
+- **Alcance del PRD de ingesta BCV ampliado a multi-moneda**: se ingestan todas las
+  monedas de la sección «tipo de cambio de referencia» (hoy USD, EUR, CNY, TRY, RUB)
+  con descubrimiento dinámico de monedas nuevas; antes el objetivo era solo VES/USD.
+  PRD `docs/01-requirements/ingesta-bcv.md` actualizado a estado `accepted — implementado`.
+- README y `docs/design.md` de `apps/ingestor-bcv` reescritos con la arquitectura
+  implementada, instrucciones de ejecución y los TODO de fase 03 resueltos
+  (bundle TLS y fixtures de HTML).
+
 ## [0.1.0] - 2026-07-05
 
 Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0

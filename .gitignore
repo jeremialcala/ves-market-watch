@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Herramientas
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Entorno local (secretos van por variables de entorno, nunca al repo)
+.env
