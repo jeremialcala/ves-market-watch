@@ -19,6 +19,13 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Bundle de contexto en Open Knowledge Format (OKF v0.1)** en `knowledge/` (ADR-0010):
+  conceptos tipados con frontmatter YAML para servicios, eventos AMQP, tablas y métricas,
+  con estado de implementación y grafo de links a PRDs/ADRs/migraciones; `index.md` de
+  navegación y `log.md` de historia del contexto. Punto de entrada para agentes y humanos
+  al retomar el proyecto.
+- ADR-0010 (proposed): adopción de OKF para mantener el contexto del proyecto.
+
 - **`ingestor-bcv` — primera implementación ejecutable del proyecto** (PRD ingesta BCV):
   paquete Python 3.12 (`apps/ingestor-bcv/`) con arquitectura hexagonal:
   - Dominio: `TasaOficial` con estados `valid|suspect|stale` y validación de
@@ -41,6 +48,21 @@ Convención de mantenimiento (inventario por ejecución):
   de regeneración documentado en `apps/ingestor-bcv/certs/README.md`.
 - Fixture de página real de bcv.org.ve (capturada 2026-07-05, fecha-valor 2026-07-06)
   en `apps/ingestor-bcv/tests/fixtures/`.
+- **Tests de integración y e2e contra infraestructura real** (`ingestor-bcv`):
+  - `docker-compose.yml` en la raíz del repo con RabbitMQ 4 (management) y
+    TimescaleDB pg16, healthchecks y migraciones montadas en el init de la DB.
+  - `tests/integration/`: repositorio contra TimescaleDB real (round-trip con
+    fidelidad de tipos, `suspect` no contamina la referencia, contador de fallos,
+    `stale_since` idempotente, ON CONFLICT), publisher contra RabbitMQ real
+    (consumo del mensaje íntegro, confirms, reconexión perezosa) y anclaje TLS
+    del cliente contra servidor HTTPS local con CA efímera (trustme): CA no
+    anclada rechazada / CA anclada permite fetch+parseo completo.
+  - `tests/e2e/`: ciclo completo sitio-mock → caso de uso → RabbitMQ → TimescaleDB
+    con cola consumidora (publica 5 monedas, heartbeat sin duplicar eventos,
+    tasa disparada queda `suspect` sin publicarse).
+  - Fixtures con probe + skip elegante: sin infraestructura levantada la suite
+    unit/contract sigue en verde y los tests de infra se saltan con instrucciones.
+    Markers `integration`/`e2e` registrados en pyproject; nueva dev-dep `trustme`.
 
 ### Changed
 

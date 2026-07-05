@@ -11,6 +11,7 @@ ves-market-watch/
 ├── .ai-dlc/                  # Metodología: gates y plantillas
 │   ├── gates/                # Checklists de Gate 0..5
 │   └── templates/            # prd, adr, threat-model
+├── knowledge/                # Contexto del proyecto en Open Knowledge Format (ADR-0010)
 ├── docs/
 │   ├── 00-project/           # Charter, glosario, clasificación de datos, ADRs
 │   ├── 01-requirements/      # PRDs por funcionalidad (Gate 0)
@@ -35,3 +36,5 @@ ves-market-watch/
 - Gate 0 (requisitos): ver `.ai-dlc/gates/gate-0-requirements.md`
 - Gate 1 (diseño): ver `.ai-dlc/gates/gate-1-design.md`
 - Inventario de cambios por ejecución: ver `CHANGELOG.md`
+- Contexto curado para agentes y humanos: ver `knowledge/index.md` (OKF v0.1 — punto de
+  entrada recomendado para retomar el proyecto)

@@ -1,0 +1,36 @@
+# Infraestructura compartida de desarrollo/test (ADR-0002, ADR-0004).
+# Efímera a propósito: sin volúmenes persistentes, credenciales por defecto
+# SOLO para localhost. Producción se define en fase 05-deployment.
+#
+#   docker compose up -d --wait
+#   docker compose down
+
+name: ves-market-watch
+
+services:
+  rabbitmq:
+    image: rabbitmq:4-management
+    ports:
+      - "5672:5672"
+      - "15672:15672" # UI de gestión: http://localhost:15672 (guest/guest)
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ves_market
+    ports:
+      - "5432:5432"
+    volumes:
+      # La DB de desarrollo nace con el esquema del ingestor aplicado.
+      - ./apps/ingestor-bcv/db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ves_market"]
+      interval: 5s
+      timeout: 5s
+      retries: 12

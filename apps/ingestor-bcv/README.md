@@ -33,11 +33,17 @@ Los secretos llegan por entorno desde el secret store del despliegue (A02).
 ## Tests
 
 ```sh
+# Unit + contract: sin red ni infraestructura.
+python -m pytest -m "not integration and not e2e"
+
+# Suite completa (integration + e2e contra RabbitMQ/TimescaleDB reales):
+docker compose up -d --wait   # desde la raíz del repo
 python -m pytest
 ```
 
-Unit + contract corren sin red ni infraestructura, contra el fixture
-`tests/fixtures/bcv_home.html` (página real capturada el 2026-07-05).
+Unit + contract usan el fixture `tests/fixtures/bcv_home.html` (página real
+capturada el 2026-07-05). Integration/e2e hacen skip con instrucciones si la
+infraestructura no está levantada. Detalle en `tests/README.md`.
 
 ## Requisitos y diseño
 - PRD: `../../docs/01-requirements/ingesta-bcv.md`

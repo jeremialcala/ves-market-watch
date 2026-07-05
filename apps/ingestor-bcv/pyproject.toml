@@ -14,6 +14,7 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
+    "trustme>=1.1",
 ]
 
 [project.scripts]
@@ -30,3 +31,7 @@ where = ["src"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = [
+    "integration: adaptadores contra infraestructura real o red local (docker compose up -d --wait)",
+    "e2e: ciclo completo contra RabbitMQ y TimescaleDB reales (docker compose up -d --wait)",
+]

@@ -41,7 +41,10 @@ No existe ruta de código que desactive la verificación.
 - ✔ Bundle de certificados del BCV capturado, verificado y versionado.
 - ✔ Fixture de HTML real del sitio para tests de parser
   (`tests/fixtures/bcv_home.html`, capturado 2026-07-05).
+- ✔ Tests de integración y e2e contra RabbitMQ/TimescaleDB reales
+  (`docker-compose.yml` en la raíz del repo; skip elegante sin infra —
+  ver `tests/README.md`). Incluye verificación TLS de extremo a extremo del
+  anclaje del cliente con CA efímera (trustme).
 
 ## Pendiente
-- Tests de integración contra RabbitMQ/TimescaleDB reales (docker compose, fase 05).
 - Job de re-validación HITL para tasas `suspect`.
