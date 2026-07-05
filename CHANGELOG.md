@@ -50,7 +50,9 @@ Convención de mantenimiento (inventario por ejecución):
   en `apps/ingestor-bcv/tests/fixtures/`.
 - **Tests de integración y e2e contra infraestructura real** (`ingestor-bcv`):
   - `docker-compose.yml` en la raíz del repo con RabbitMQ 4 (management) y
-    TimescaleDB pg16, healthchecks y migraciones montadas en el init de la DB.
+    TimescaleDB pg16 (publicada en el puerto 5433: el 5432 suele estar ocupado por
+    un PostgreSQL local/WSL), healthchecks y la migración del ingestor montada en
+    el init de la DB sin aplastar el init propio de la imagen.
   - `tests/integration/`: repositorio contra TimescaleDB real (round-trip con
     fidelidad de tipos, `suspect` no contamina la referencia, contador de fallos,
     `stale_since` idempotente, ON CONFLICT), publisher contra RabbitMQ real

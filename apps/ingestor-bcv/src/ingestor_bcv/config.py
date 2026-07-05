@@ -38,9 +38,10 @@ class Settings:
             fetch_interval_seconds=int(env.get("FETCH_INTERVAL_SECONDS", "1800")),
             max_delta_pct=Decimal(env.get("MAX_DELTA_PCT", "20")),
             umbral_fallos=int(env.get("FAILURE_THRESHOLD", "3")),
-            amqp_url=env.get("AMQP_URL", "amqp://guest:guest@localhost/"),
+            amqp_url=env.get("AMQP_URL", "amqp://guest:guest@127.0.0.1/"),
             amqp_exchange=env.get("AMQP_EXCHANGE", "market.events"),
+            # Defaults alineados con el docker-compose.yml de la raíz (dev).
             database_url=env.get(
-                "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/ves_market"
+                "DATABASE_URL", "postgresql://postgres:postgres@127.0.0.1:5433/ves_market"
             ),
         )

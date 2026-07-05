@@ -25,10 +25,14 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ves_market
     ports:
-      - "5432:5432"
+      # 5433 en el host: el 5432 suele estar ocupado por un PostgreSQL local/WSL.
+      - "5433:5432"
     volumes:
       # La DB de desarrollo nace con el esquema del ingestor aplicado.
-      - ./apps/ingestor-bcv/db/migrations:/docker-entrypoint-initdb.d:ro
+      # Archivo individual (no el directorio): montar el directorio completo
+      # aplastaría el init propio de la imagen (000_install_timescaledb.sh),
+      # que instala la extensión en template1.
+      - ./apps/ingestor-bcv/db/migrations/001_official_rates.sql:/docker-entrypoint-initdb.d/900_official_rates.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d ves_market"]
       interval: 5s

@@ -28,7 +28,12 @@ python -m pytest -m e2e
 Si la infraestructura no está levantada, los tests `integration`/`e2e` hacen **skip**
 con instrucciones (nunca fallan por infra ausente); los TLS locales corren siempre.
 
-Configuración: `TEST_DATABASE_URL` (default `postgresql://postgres:postgres@localhost:5432/ves_market_test`)
-y `TEST_AMQP_URL` (default `amqp://guest:guest@localhost:5672/`). La DB `ves_market_test`
+Configuración: `TEST_DATABASE_URL` (default `postgresql://postgres:postgres@127.0.0.1:5433/ves_market_test`)
+y `TEST_AMQP_URL` (default `amqp://guest:guest@127.0.0.1:5672/`). La DB `ves_market_test`
 se crea sola y se le aplica la migración real `db/migrations/001_official_rates.sql`;
 las tablas se truncan entre tests.
+
+Notas de entorno (Windows): TimescaleDB se publica en el **5433** porque el 5432
+suele estar ocupado por un PostgreSQL local o de WSL, y los defaults usan
+`127.0.0.1` explícito porque `localhost` puede resolver a `::1` y caer en el
+relay de WSL en lugar del contenedor.

@@ -19,8 +19,11 @@ import pytest
 FIXTURES = Path(__file__).parent / "fixtures"
 MIGRACION = Path(__file__).parents[1] / "db" / "migrations" / "001_official_rates.sql"
 
-DSN_TEST_POR_DEFECTO = "postgresql://postgres:postgres@localhost:5432/ves_market_test"
-AMQP_TEST_POR_DEFECTO = "amqp://guest:guest@localhost:5672/"
+# 127.0.0.1 explícito: en Windows `localhost` puede resolver a ::1 y caer en
+# otro servicio (p. ej. wslrelay hacia un PostgreSQL de WSL). Puerto 5433 según
+# el docker-compose.yml de la raíz.
+DSN_TEST_POR_DEFECTO = "postgresql://postgres:postgres@127.0.0.1:5433/ves_market_test"
+AMQP_TEST_POR_DEFECTO = "amqp://guest:guest@127.0.0.1:5672/"
 
 _SUGERENCIA = "levantar la infraestructura con: docker compose up -d --wait (raíz del repo)"
 
@@ -34,6 +37,14 @@ def bcv_html() -> str:
 def _con_base_de_datos(dsn: str, nombre: str) -> str:
     partes = urlsplit(dsn)
     return urlunsplit(partes._replace(path=f"/{nombre}"))
+
+
+def _tiene_comando_sql(sentencia: str) -> bool:
+    """True si el fragmento contiene algo más que comentarios `--` y espacios."""
+    return any(
+        linea.strip() and not linea.strip().startswith("--")
+        for linea in sentencia.splitlines()
+    )
 
 
 @pytest.fixture(scope="session")
@@ -62,10 +73,24 @@ def timescale_listo() -> str:
 
         conexion = await asyncpg.connect(dsn, timeout=3)
         try:
-            # Sentencia por sentencia y fuera de transacción: CREATE EXTENSION y
-            # create_hypertable no toleran el batch implícito del protocolo simple.
+            # La extensión debe venir heredada de template1 (la instala el init de
+            # la imagen timescaledb): ejecutar CREATE EXTENSION timescaledb vía
+            # asyncpg rompe el protocolo (el loader reinicia el backend).
+            extension = await conexion.fetchval(
+                "SELECT 1 FROM pg_extension WHERE extname = 'timescaledb'"
+            )
+            if not extension:
+                raise RuntimeError(
+                    "la base de test no tiene la extensión timescaledb; "
+                    "recrear la infraestructura: docker compose down && docker compose up -d --wait"
+                )
+            # Resto de la migración sentencia por sentencia (create_hypertable no
+            # tolera el batch implícito del protocolo simple). El split ingenuo
+            # por ';' puede producir fragmentos solo-comentarios (hay ';' dentro
+            # de comentarios): ejecutarlos dispara un bug de asyncpg con
+            # EmptyQueryResponse, así que solo van los que tienen comando real.
             for sentencia in MIGRACION.read_text(encoding="utf-8").split(";"):
-                if sentencia.strip():
+                if _tiene_comando_sql(sentencia) and "CREATE EXTENSION" not in sentencia.upper():
                     await conexion.execute(sentencia)
         finally:
             await conexion.close()
