@@ -16,6 +16,7 @@ from ingestor_bcv.adapters.amqp.publisher import ROUTING_KEY, AmqpEventPublisher
 from ingestor_bcv.adapters.bcv.client import FuenteBcv
 from ingestor_bcv.adapters.memory import LoggingAlertNotifier
 from ingestor_bcv.adapters.timescale.repository import TimescaleRateRepository
+from ingestor_bcv.application.revalidate_rates import RevalidarTasasSospechosas
 from ingestor_bcv.application.sync_rates import SincronizarTasasOficiales
 from ingestor_bcv.domain.models import EstadoTasa
 
@@ -126,7 +127,33 @@ async def test_ciclo_completo_contra_infraestructura_real(
         )
         assert fila["status"] == EstadoTasa.SUSPECT.value
         assert fila["rate"] == Decimal("900.00")
-        ultima = await TimescaleRateRepository(pool).ultima_tasa_valida("USD")
-        assert ultima.valor == Decimal("667.05")
+        repo = TimescaleRateRepository(pool)
+        assert (await repo.ultima_tasa_valida("USD")).valor == Decimal("667.05")
+
+        # 4ª fase — HITL: el operador aprueba la sospecha; se publica el evento
+        # y la tasa aprobada pasa a ser la referencia (ADR-0007).
+        revalidar = RevalidarTasasSospechosas(publisher, repo)
+        aprobada = await revalidar.aprobar("USD", "e2e", "devaluación real confirmada")
+        assert aprobada.valor == Decimal("900.00")
+
+        eventos = await _consumir_todos(cola)
+        assert len(eventos) == 1
+        assert eventos[0]["payload"]["currency"] == "USD"
+        assert Decimal(eventos[0]["payload"]["rate"]) == Decimal("900.00")
+        assert eventos[0]["payload"]["status"] == "valid"
+        assert (await repo.ultima_tasa_valida("USD")).valor == Decimal("900.00")
+        auditoria = await pool.fetchrow(
+            "SELECT resolved_by, resolution_note FROM official_rates "
+            "WHERE currency = 'USD' AND status = 'valid' "
+            "ORDER BY captured_at DESC LIMIT 1"
+        )
+        assert auditoria["resolved_by"] == "e2e"
+
+        # 5ª — el sitio sigue en 900: heartbeat contra la nueva referencia, sin evento.
+        resumen = await caso.ejecutar()
+        assert "USD" in resumen.heartbeats
+        assert resumen.publicadas == []
+        assert resumen.sospechosas == []
+        assert await _consumir_todos(cola) == []
     finally:
         await publisher.close()

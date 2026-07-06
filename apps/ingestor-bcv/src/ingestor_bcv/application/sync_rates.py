@@ -11,6 +11,7 @@ al alcanzar el umbral (default 3) se alerta y se marca la fuente como `stale`.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import timedelta
 from decimal import Decimal
 
 from ingestor_bcv.application.ports import (
@@ -28,6 +29,7 @@ class ResumenSincronizacion:
     publicadas: list[str] = field(default_factory=list)
     heartbeats: list[str] = field(default_factory=list)
     sospechosas: list[str] = field(default_factory=list)
+    expiradas: list[str] = field(default_factory=list)  # sospechas vencidas por TTL
     error: str | None = None
     fallos_consecutivos: int = 0
 
@@ -41,6 +43,7 @@ class SincronizarTasasOficiales:
         notifier: AlertNotifier,
         max_delta_pct: Decimal = Decimal("20"),
         umbral_fallos: int = 3,
+        ttl_sospechosas: timedelta = timedelta(hours=24),
     ) -> None:
         self._source = source
         self._publisher = publisher
@@ -48,6 +51,7 @@ class SincronizarTasasOficiales:
         self._notifier = notifier
         self._max_delta_pct = max_delta_pct
         self._umbral_fallos = umbral_fallos
+        self._ttl_sospechosas = ttl_sospechosas
 
     async def ejecutar(self) -> ResumenSincronizacion:
         resumen = ResumenSincronizacion()
@@ -67,6 +71,19 @@ class SincronizarTasasOficiales:
             return resumen
 
         await self._repository.registrar_exito()
+
+        # Salida por timeout de la máquina de estados (ADR-0007): sospechas sin
+        # revisión humana dentro del TTL expiran a rejected. Si el valor sigue
+        # vigente en el sitio, esta misma corrida genera una sospecha fresca.
+        expiradas = await self._repository.expirar_sospechosas_antes_de(
+            captura.capturada_en - self._ttl_sospechosas
+        )
+        for tasa in expiradas:
+            resumen.expiradas.append(tasa.moneda)
+            await self._notifier.alertar(
+                f"Sospecha {tasa.moneda} capturada {tasa.capturada_en.isoformat()} "
+                f"expirada por timeout (> {self._ttl_sospechosas}) sin revisión humana"
+            )
 
         for moneda in sorted(captura.tasas):
             valor = captura.tasas[moneda]

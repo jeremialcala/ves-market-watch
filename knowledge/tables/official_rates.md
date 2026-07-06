@@ -20,14 +20,18 @@ publique o no evento — ver [official.rate.updated](../events/official-rate-upd
 | `currency` | text | Código ISO 4217 (USD, EUR, CNY, TRY, RUB…) |
 | `rate` | numeric(20,8) | Valor VES por unidad; CHECK > 0 |
 | `value_date` | date | Fecha-valor declarada por el BCV (dimensión de validez) |
-| `status` | text | `valid` (publicada si cambió) / `suspect` (retenida, HITL) / `stale` (marca administrativa) |
+| `status` | text | `valid` (publicada si cambió) / `suspect` (retenida, HITL) / `stale` (marca administrativa) / `rejected` (descartada: rechazo humano, timeout o reemplazo — ADR-0007) |
 | `source` | text | `BCV` por defecto |
+| `resolved_at` | timestamptz | Cuándo se resolvió la sospecha (migración 002) |
+| `resolved_by` | text | Quién decidió: usuario del CLI o `system:timeout` |
+| `resolution_note` | text | Justificación auditable de la decisión |
 
 PK `(captured_at, currency)`; índice `(currency, captured_at DESC)`.
 
 ## Reglas
 - **Append-only**: correcciones = fila nueva; vigente por `value_date` = mayor
   `captured_at` con `status='valid'` (ADR-0009).
-- Escribe: [ingestor-bcv](../services/ingestor-bcv.md) (INSERT/SELECT).
+- Escribe: [ingestor-bcv](../services/ingestor-bcv.md) (INSERT/SELECT; UPDATE solo
+  para la resolución HITL de sospechas — única excepción al append-only, auditada).
   Leerá: indicator-engine y api-gateway (solo lectura).
 - Retención ≥ 12 meses (clasificación: dato público).

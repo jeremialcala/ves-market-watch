@@ -65,6 +65,23 @@ Convención de mantenimiento (inventario por ejecución):
   - Fixtures con probe + skip elegante: sin infraestructura levantada la suite
     unit/contract sigue en verde y los tests de infra se saltan con instrucciones.
     Markers `integration`/`e2e` registrados en pyproject; nueva dev-dep `trustme`.
+- **Job de re-validación HITL para tasas `suspect`** (`ingestor-bcv`, ADR-0007):
+  - Caso de uso `RevalidarTasasSospechosas` y CLI de operador
+    `python -m ingestor_bcv revalidar listar|aprobar|rechazar` con nota obligatoria
+    y usuario auditables. Aprobar promueve la sospecha más reciente a `valid`, la
+    publica como `official.rate.updated` y la convierte en la nueva referencia
+    (con guardia si existe una captura válida posterior); rechazar descarta todas
+    las pendientes de la moneda.
+  - Nuevo estado terminal `rejected` (la «descartada» del ADR) y expiración por
+    timeout: sospechas sin revisión humana en `SUSPECT_TTL_HOURS` (default 24)
+    expiran a `rejected` con actor `system:timeout` en cada ciclo de sincronización.
+  - Migración `002_suspect_resolution.sql`: CHECK de `status` extendido y columnas
+    de auditoría `resolved_at`/`resolved_by`/`resolution_note` (montada también en
+    el init del compose).
+  - +11 tests (unit de revalidación y TTL, integración de resolución con auditoría,
+    e2e ampliado a 5 fases con aprobación real vía RabbitMQ): suite en 53.
+  - Verificación manual del CLI contra infraestructura real: sospecha sembrada,
+    `listar` → `aprobar` → evento consumido de la cola y auditoría en DB.
 
 ### Changed
 
@@ -75,6 +92,12 @@ Convención de mantenimiento (inventario por ejecución):
 - README y `docs/design.md` de `apps/ingestor-bcv` reescritos con la arquitectura
   implementada, instrucciones de ejecución y los TODO de fase 03 resueltos
   (bundle TLS y fixtures de HTML).
+- ADR-0007 (máquina de estados valid/suspect/stale) pasa de `proposed` a
+  **`accepted`**: se materializa «descartada» como estado `rejected` y se resuelve
+  el TODO del mecanismo de aprobación (CLI de operador; endpoint admin autenticado
+  llegará con el api-gateway).
+- `knowledge/`: `services/ingestor-bcv.md`, `tables/official_rates.md` y `log.md`
+  sincronizados con la implementación HITL (pendientes del servicio: ninguno).
 
 ## [0.1.0] - 2026-07-05
 

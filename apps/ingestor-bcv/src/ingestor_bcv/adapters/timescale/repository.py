@@ -1,11 +1,14 @@
 """Repositorio en PostgreSQL + TimescaleDB (ADR-0002).
 
-Esquema en `db/migrations/001_official_rates.sql`. Todas las consultas son
-parametrizadas (A05/T9). El rol de base de datos del servicio solo necesita
-INSERT/SELECT sobre `official_rates` y UPSERT sobre `official_rate_source_health`.
+Esquema en `db/migrations/`. Todas las consultas son parametrizadas (A05/T9).
+El rol de base de datos del servicio solo necesita INSERT/SELECT/UPDATE sobre
+`official_rates` (UPDATE únicamente para la resolución HITL de ADR-0007) y
+UPSERT sobre `official_rate_source_health`.
 """
 
 from __future__ import annotations
+
+from datetime import datetime
 
 import asyncpg
 
@@ -40,14 +43,7 @@ class TimescaleRateRepository:
         )
         if fila is None:
             return None
-        return TasaOficial(
-            moneda=fila["currency"],
-            valor=fila["rate"],
-            fecha_valor=fila["value_date"],
-            capturada_en=fila["captured_at"],
-            estado=EstadoTasa(fila["status"]),
-            fuente=fila["source"],
-        )
+        return self._a_tasa(fila)
 
     async def guardar(self, tasa: TasaOficial) -> None:
         await self._pool.execute(
@@ -62,6 +58,59 @@ class TimescaleRateRepository:
             tasa.fecha_valor,
             tasa.estado.value,
             tasa.fuente,
+        )
+
+    async def sospechosas_pendientes(self, moneda: str | None = None) -> list[TasaOficial]:
+        filas = await self._pool.fetch(
+            """
+            SELECT currency, rate, value_date, captured_at, status, source
+            FROM official_rates
+            WHERE status = 'suspect' AND ($1::text IS NULL OR currency = $1)
+            ORDER BY currency, captured_at
+            """,
+            moneda,
+        )
+        return [self._a_tasa(fila) for fila in filas]
+
+    async def resolver_sospechosa(
+        self, tasa: TasaOficial, nuevo_estado: EstadoTasa, usuario: str, nota: str
+    ) -> None:
+        await self._pool.execute(
+            """
+            UPDATE official_rates
+            SET status = $1, resolved_at = now(), resolved_by = $2, resolution_note = $3
+            WHERE captured_at = $4 AND currency = $5 AND status = 'suspect'
+            """,
+            nuevo_estado.value,
+            usuario,
+            nota,
+            tasa.capturada_en,
+            tasa.moneda,
+        )
+
+    async def expirar_sospechosas_antes_de(self, limite: datetime) -> list[TasaOficial]:
+        filas = await self._pool.fetch(
+            """
+            UPDATE official_rates
+            SET status = 'rejected', resolved_at = now(),
+                resolved_by = 'system:timeout',
+                resolution_note = 'expirada sin revisión humana'
+            WHERE status = 'suspect' AND captured_at < $1
+            RETURNING currency, rate, value_date, captured_at, status, source
+            """,
+            limite,
+        )
+        return [self._a_tasa(fila) for fila in filas]
+
+    @staticmethod
+    def _a_tasa(fila: asyncpg.Record) -> TasaOficial:
+        return TasaOficial(
+            moneda=fila["currency"],
+            valor=fila["rate"],
+            fecha_valor=fila["value_date"],
+            capturada_en=fila["captured_at"],
+            estado=EstadoTasa(fila["status"]),
+            fuente=fila["source"],
         )
 
     async def registrar_exito(self) -> None:

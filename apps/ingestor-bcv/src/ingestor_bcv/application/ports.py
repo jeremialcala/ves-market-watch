@@ -11,7 +11,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Protocol
 
-from ingestor_bcv.domain.models import TasaOficial
+from ingestor_bcv.domain.models import EstadoTasa, TasaOficial
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,6 +42,20 @@ class RateRepository(Protocol):
 
     async def guardar(self, tasa: TasaOficial) -> None:
         """Persiste toda captura — válida, sospechosa o stale (RF-5, auditoría V16)."""
+        ...
+
+    async def sospechosas_pendientes(self, moneda: str | None = None) -> list[TasaOficial]:
+        """Sospechas sin resolver, de una moneda o de todas, en orden de captura."""
+        ...
+
+    async def resolver_sospechosa(
+        self, tasa: TasaOficial, nuevo_estado: "EstadoTasa", usuario: str, nota: str
+    ) -> None:
+        """Transición suspect→valid|rejected con auditoría quién/cuándo/por qué (ADR-0007)."""
+        ...
+
+    async def expirar_sospechosas_antes_de(self, limite: datetime) -> list[TasaOficial]:
+        """Sospechas capturadas antes de `limite` → rejected por timeout; devuelve las expiradas."""
         ...
 
     async def registrar_exito(self) -> None: ...

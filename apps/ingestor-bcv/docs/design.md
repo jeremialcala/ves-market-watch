@@ -31,6 +31,20 @@ La brecha P2P solo consume USD; el resto queda disponible para indicadores futur
 - Fallo total de fetch/parseo → contador persistente (`official_rate_source_health`);
   al llegar a `FAILURE_THRESHOLD` (3): alerta + `stale_since`. Un éxito lo reinicia.
 
+## Re-validación HITL (ADR-0007)
+- Una `suspect` solo sale de ese estado por decisión humana o timeout — nunca
+  auto-promoción. Caso de uso `RevalidarTasasSospechosas`
+  (`application/revalidate_rates.py`) + CLI de operador:
+  `python -m ingestor_bcv revalidar listar|aprobar|rechazar` (nota obligatoria,
+  usuario auditable).
+- Aprobar: la sospecha más reciente de la moneda → `valid` + publicación al bus
+  (nueva referencia); las más viejas → `rejected` (reemplazadas). Guardia: si hay
+  una captura válida posterior a la sospecha, la aprobación se rechaza.
+- Timeout: en cada ciclo exitoso de sincronización, sospechas más viejas que
+  `SUSPECT_TTL_HOURS` (24) expiran a `rejected` con actor `system:timeout`.
+- Auditoría en `official_rates` (migración 002): `resolved_at`, `resolved_by`,
+  `resolution_note`; estado terminal `rejected`.
+
 ## TLS (ADR-0006)
 El sitio del BCV envía una cadena TLS incorrecta; el bundle versionado ancla la
 cadena real (Sectigo DV R36 + Root R46), verificada con `openssl verify` al
@@ -45,6 +59,8 @@ No existe ruta de código que desactive la verificación.
   (`docker-compose.yml` en la raíz del repo; skip elegante sin infra —
   ver `tests/README.md`). Incluye verificación TLS de extremo a extremo del
   anclaje del cliente con CA efímera (trustme).
+- ✔ Job de re-validación HITL para tasas `suspect` (ADR-0007 accepted).
 
 ## Pendiente
-- Job de re-validación HITL para tasas `suspect`.
+- Nada en este servicio; lo siguiente vive en los PRDs de los demás servicios
+  (el primer consumidor natural de `official.rate.updated` es el indicator-engine).

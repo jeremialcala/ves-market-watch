@@ -9,11 +9,16 @@ from enum import StrEnum
 
 
 class EstadoTasa(StrEnum):
-    """Máquina de estados del PRD: valid | suspect | stale."""
+    """Máquina de estados de ADR-0007: valid | suspect | stale | rejected.
+
+    `rejected` (la «descartada» del ADR) es terminal: una suspect resuelta por
+    rechazo humano, timeout o reemplazo por una aprobación más reciente.
+    """
 
     VALID = "valid"
     SUSPECT = "suspect"
     STALE = "stale"
+    REJECTED = "rejected"
 
 
 @dataclass(frozen=True, slots=True)

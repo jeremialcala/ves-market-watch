@@ -12,6 +12,20 @@ todas las monedas de la sección «tipo de cambio de referencia» de bcv.org.ve
 - Publica `official.rate.updated` por moneda solo cuando el valor o la fecha-valor cambian.
 - Persiste el histórico completo de capturas en TimescaleDB (RF-5, auditoría).
 - 3 fallos consecutivos de la fuente → alerta + marca `stale` en la salud de la fuente.
+- Re-validación HITL (ADR-0007): una `suspect` solo se aprueba o rechaza por decisión
+  humana auditada; sin revisión dentro de `SUSPECT_TTL_HOURS` (24) expira a `rejected`.
+
+## Re-validación de sospechas (operador)
+
+```sh
+python -m ingestor_bcv revalidar listar                # pendientes con Δ % vs referencia
+python -m ingestor_bcv revalidar aprobar USD --nota "devaluación confirmada en fuentes"
+python -m ingestor_bcv revalidar rechazar USD --nota "anuncio manipulado"
+```
+
+Aprobar promueve la sospecha más reciente a `valid` y la publica al bus (pasa a ser
+la referencia); rechazar descarta todas las pendientes de la moneda. Ambas exigen
+`--nota` y registran quién decidió (`--usuario`, default el usuario del sistema).
 
 ## Ejecutar
 
@@ -27,7 +41,7 @@ python -m ingestor_bcv
 
 Configuración por entorno: `BCV_URL`, `BCV_CA_BUNDLE` (ruta o `system`),
 `FETCH_INTERVAL_SECONDS` (1800), `MAX_DELTA_PCT` (20), `FAILURE_THRESHOLD` (3),
-`AMQP_URL`, `AMQP_EXCHANGE` (`market.events`), `DATABASE_URL`.
+`SUSPECT_TTL_HOURS` (24), `AMQP_URL`, `AMQP_EXCHANGE` (`market.events`), `DATABASE_URL`.
 Los secretos llegan por entorno desde el secret store del despliegue (A02).
 
 ## Tests

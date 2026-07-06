@@ -97,6 +97,62 @@ async def test_contador_de_fallos_incrementa_y_exito_lo_reinicia(repositorio, po
     assert await repositorio.registrar_fallo("timeout") == 1
 
 
+async def test_resolucion_de_sospecha_con_auditoria(repositorio, pool):
+    await repositorio.guardar(_tasa("667.05"))
+    sospecha = _tasa(
+        "900.00", capturada_en=AHORA + timedelta(minutes=30), estado=EstadoTasa.SUSPECT
+    )
+    await repositorio.guardar(sospecha)
+
+    pendientes = await repositorio.sospechosas_pendientes("USD")
+    assert [t.valor for t in pendientes] == [Decimal("900.00")]
+
+    await repositorio.resolver_sospechosa(
+        sospecha, EstadoTasa.VALID, "jeremi", "devaluación confirmada"
+    )
+
+    assert await repositorio.sospechosas_pendientes("USD") == []
+    fila = await pool.fetchrow(
+        "SELECT status, resolved_at, resolved_by, resolution_note FROM official_rates "
+        "WHERE currency = 'USD' AND captured_at = $1",
+        sospecha.capturada_en,
+    )
+    assert fila["status"] == "valid"
+    assert fila["resolved_at"] is not None
+    assert fila["resolved_by"] == "jeremi"
+    assert fila["resolution_note"] == "devaluación confirmada"
+    # Y ahora es la referencia vigente.
+    assert (await repositorio.ultima_tasa_valida("USD")).valor == Decimal("900.00")
+
+
+async def test_sospechosas_pendientes_sin_filtro_cubre_todas_las_monedas(repositorio):
+    await repositorio.guardar(_tasa("900.00", moneda="USD", estado=EstadoTasa.SUSPECT))
+    await repositorio.guardar(_tasa("999.00", moneda="EUR", estado=EstadoTasa.SUSPECT))
+
+    todas = await repositorio.sospechosas_pendientes()
+
+    assert [t.moneda for t in todas] == ["EUR", "USD"]  # orden por moneda
+
+
+async def test_expiracion_por_timeout_solo_afecta_las_vencidas(repositorio, pool):
+    vieja = _tasa("900.00", capturada_en=AHORA - timedelta(hours=30), estado=EstadoTasa.SUSPECT)
+    fresca = _tasa("910.00", capturada_en=AHORA, estado=EstadoTasa.SUSPECT)
+    await repositorio.guardar(vieja)
+    await repositorio.guardar(fresca)
+
+    expiradas = await repositorio.expirar_sospechosas_antes_de(AHORA - timedelta(hours=24))
+
+    assert [t.capturada_en for t in expiradas] == [vieja.capturada_en]
+    assert [t.estado for t in expiradas] == [EstadoTasa.REJECTED]
+    fila = await pool.fetchrow(
+        "SELECT status, resolved_by FROM official_rates WHERE captured_at = $1",
+        vieja.capturada_en,
+    )
+    assert fila["status"] == "rejected"
+    assert fila["resolved_by"] == "system:timeout"
+    assert len(await repositorio.sospechosas_pendientes("USD")) == 1  # la fresca sigue
+
+
 async def test_marcar_stale_conserva_el_primer_timestamp(repositorio, pool):
     await repositorio.registrar_fallo("caída")
     await repositorio.marcar_stale()

@@ -8,6 +8,7 @@ vive en el proceso.
 from __future__ import annotations
 
 import logging
+from dataclasses import replace
 from datetime import UTC, datetime
 
 from ingestor_bcv.adapters.amqp.publisher import construir_evento
@@ -22,6 +23,8 @@ class InMemoryRateRepository:
         self.fallos_consecutivos = 0
         self.ultimo_error: str | None = None
         self.stale_since: datetime | None = None
+        # Auditoría de resoluciones HITL: (moneda, capturada_en, estado, usuario, nota)
+        self.resoluciones: list[tuple[str, datetime, EstadoTasa, str, str]] = []
 
     async def ultima_tasa_valida(self, moneda: str) -> TasaOficial | None:
         for tasa in reversed(self.capturas):
@@ -31,6 +34,40 @@ class InMemoryRateRepository:
 
     async def guardar(self, tasa: TasaOficial) -> None:
         self.capturas.append(tasa)
+
+    async def sospechosas_pendientes(self, moneda: str | None = None) -> list[TasaOficial]:
+        return [
+            tasa
+            for tasa in self.capturas
+            if tasa.estado is EstadoTasa.SUSPECT and (moneda is None or tasa.moneda == moneda)
+        ]
+
+    async def resolver_sospechosa(
+        self, tasa: TasaOficial, nuevo_estado: EstadoTasa, usuario: str, nota: str
+    ) -> None:
+        for i, captura in enumerate(self.capturas):
+            if (
+                captura.moneda == tasa.moneda
+                and captura.capturada_en == tasa.capturada_en
+                and captura.estado is EstadoTasa.SUSPECT
+            ):
+                self.capturas[i] = replace(captura, estado=nuevo_estado)
+                self.resoluciones.append(
+                    (tasa.moneda, tasa.capturada_en, nuevo_estado, usuario, nota)
+                )
+                return
+
+    async def expirar_sospechosas_antes_de(self, limite: datetime) -> list[TasaOficial]:
+        vencidas = [
+            tasa
+            for tasa in self.capturas
+            if tasa.estado is EstadoTasa.SUSPECT and tasa.capturada_en < limite
+        ]
+        for tasa in vencidas:
+            await self.resolver_sospechosa(
+                tasa, EstadoTasa.REJECTED, "system:timeout", "expirada sin revisión humana"
+            )
+        return [replace(tasa, estado=EstadoTasa.REJECTED) for tasa in vencidas]
 
     async def registrar_exito(self) -> None:
         self.fallos_consecutivos = 0

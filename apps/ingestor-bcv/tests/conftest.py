@@ -17,7 +17,7 @@ from urllib.parse import urlsplit, urlunsplit
 import pytest
 
 FIXTURES = Path(__file__).parent / "fixtures"
-MIGRACION = Path(__file__).parents[1] / "db" / "migrations" / "001_official_rates.sql"
+MIGRACIONES = Path(__file__).parents[1] / "db" / "migrations"
 
 # 127.0.0.1 explícito: en Windows `localhost` puede resolver a ::1 y caer en
 # otro servicio (p. ej. wslrelay hacia un PostgreSQL de WSL). Puerto 5433 según
@@ -84,14 +84,19 @@ def timescale_listo() -> str:
                     "la base de test no tiene la extensión timescaledb; "
                     "recrear la infraestructura: docker compose down && docker compose up -d --wait"
                 )
-            # Resto de la migración sentencia por sentencia (create_hypertable no
-            # tolera el batch implícito del protocolo simple). El split ingenuo
-            # por ';' puede producir fragmentos solo-comentarios (hay ';' dentro
-            # de comentarios): ejecutarlos dispara un bug de asyncpg con
-            # EmptyQueryResponse, así que solo van los que tienen comando real.
-            for sentencia in MIGRACION.read_text(encoding="utf-8").split(";"):
-                if _tiene_comando_sql(sentencia) and "CREATE EXTENSION" not in sentencia.upper():
-                    await conexion.execute(sentencia)
+            # Resto de las migraciones, en orden, sentencia por sentencia
+            # (create_hypertable no tolera el batch implícito del protocolo
+            # simple). El split ingenuo por ';' puede producir fragmentos
+            # solo-comentarios (hay ';' dentro de comentarios): ejecutarlos
+            # dispara un bug de asyncpg con EmptyQueryResponse, así que solo
+            # van los que tienen comando real.
+            for migracion in sorted(MIGRACIONES.glob("*.sql")):
+                for sentencia in migracion.read_text(encoding="utf-8").split(";"):
+                    if (
+                        _tiene_comando_sql(sentencia)
+                        and "CREATE EXTENSION" not in sentencia.upper()
+                    ):
+                        await conexion.execute(sentencia)
         finally:
             await conexion.close()
 
