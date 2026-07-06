@@ -7,6 +7,15 @@ timestamp: 2026-07-05T00:00:00Z
 
 # Log
 
+## 2026-07-05 — indicator-engine fase 1: primer consumidor del bus
+- Motor implementado como consumidor de `official.rate.updated`: validación contra
+  schema compartido, DLQ, idempotencia por `event_id`, hypertable `indicators`
+  (calc_version) y emisión de `indicators.updated` con `triggered_by`.
+- Contratos formales en `schemas/` (official-rate.v1, indicators.v1) verificados por
+  contract tests en ambos lados; sobre estándar unificado a `occurred_at`.
+- Flujo ingestor→bus→engine verificado en vivo (5 monedas del sitio real del BCV).
+- PRD motor-indicadores accepted (fase 1); pendiente fase 2: P2P y señales.
+
 ## 2026-07-05 — Re-validación HITL de tasas suspect (ADR-0007 accepted)
 - Job HITL implementado en `ingestor-bcv`: CLI `revalidar listar|aprobar|rechazar`,
   estado terminal `rejected`, expiración por TTL (24 h, `system:timeout`) y auditoría

@@ -82,6 +82,29 @@ Convención de mantenimiento (inventario por ejecución):
     e2e ampliado a 5 fases con aprobación real vía RabbitMQ): suite en 53.
   - Verificación manual del CLI contra infraestructura real: sospecha sembrada,
     `listar` → `aprobar` → evento consumido de la cola y auditoría en DB.
+- **`indicator-engine` fase 1 — primer consumidor de `official.rate.updated`**
+  (PRD motor-indicadores, RF-1/RF-2/RF-3/RF-5 parciales):
+  - Paquete Python hexagonal (`apps/indicator-engine/`): consumidor AMQP con cola
+    durable propia, validación de todo evento contra schema (A05/A08), DLQ
+    `market.events.dlq` vía dead-letter-exchange (ADR-0004) e idempotencia por
+    `event_id` (tabla `processed_events`, escenario negativo 2).
+  - Indicadores fase 1 por moneda: `official_rate` y variación abs/% vs. último
+    conocido; fórmula de la brecha BCV↔P2P en el dominio (pura, testeada), lista
+    para activarse con la referencia P2P de fase 2.
+  - Bandera `official_stale` computada (captura > 6 h, ADR-0007) y `triggered_by`
+    con el event_id origen en cada `indicators.updated` (trazabilidad V16).
+  - Hypertable `indicators` (formato largo con `calc_version`, reproducibilidad
+    RF-3) en migración propia, montada también en el init del compose.
+  - CLI `python -m indicator_engine [--drain]`; 26 tests (unit, contract,
+    integración con topología AMQP aislada por test, e2e con dos eventos y
+    validación del emitido contra su schema).
+  - Verificación manual del flujo real entre servicios: `ingestor_bcv --once`
+    (sitio BCV vivo) → 5 eventos → engine `--drain` → 5 filas en `indicators` y
+    5 `indicators.updated` consumidos de una cola espía.
+- **Contratos formales de eventos en `schemas/`** (raíz del repo, como los nombraba
+  `api-contracts.md`): `official-rate.v1.json` e `indicators.v1.json` (JSON Schema
+  2020-12). Verificados en ambos lados: el ingestor-bcv valida lo que produce
+  (nuevo contract test) y el engine valida lo que consume y lo que emite.
 
 ### Changed
 
@@ -98,6 +121,13 @@ Convención de mantenimiento (inventario por ejecución):
   llegará con el api-gateway).
 - `knowledge/`: `services/ingestor-bcv.md`, `tables/official_rates.md` y `log.md`
   sincronizados con la implementación HITL (pendientes del servicio: ninguno).
+- PRD motor-indicadores pasa a `accepted — fase 1 implementada`; sobre estándar de
+  eventos unificado en `api-contracts.md` a `occurred_at` (el doc decía `produced_at`,
+  el código ya probado publica `occurred_at`).
+- `knowledge/` sincronizado con el motor: `services/indicator-engine.md`
+  (implementado-parcial), `events/indicators-updated.md` y
+  `events/official-rate-updated.md` (consumidor real), nueva `tables/indicators.md`,
+  índices y `log.md`.
 
 ## [0.1.0] - 2026-07-05
 

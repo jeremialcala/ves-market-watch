@@ -1,7 +1,10 @@
 # PRD — Motor de Indicadores
 
 - **Fase AI-DLC:** 01-requirements
-- **Estado:** review
+- **Estado:** accepted — fase 1 implementada en `apps/indicator-engine` (2026-07-05):
+  consumo de `official.rate.updated` con validación de schema, DLQ, idempotencia y
+  `indicators.updated`. Pendiente fase 2: `p2p.snapshot` y señales (requiere
+  ingestor-binance).
 
 ## Problema y contexto
 Consolidar los eventos de las fuentes (P2P y BCV) y producir indicadores financieros de

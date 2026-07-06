@@ -9,8 +9,10 @@ timestamp: 2026-07-05T00:00:00Z
 
 # official.rate.updated
 
-Productor: [ingestor-bcv](../services/ingestor-bcv.md) · Consumidor previsto:
-[indicator-engine](../services/indicator-engine.md).
+Productor: [ingestor-bcv](../services/ingestor-bcv.md) · Consumidor:
+[indicator-engine](../services/indicator-engine.md) (implementado — valida contra
+`schemas/official-rate.v1.json`, el mismo archivo que verifica el contract test
+del productor).
 
 Semántica **solo-en-cambio** (ADR-0008): la ausencia de eventos no significa fuente caída
 — eso lo dice [official_rate_source_health](../tables/official_rate_source_health.md).

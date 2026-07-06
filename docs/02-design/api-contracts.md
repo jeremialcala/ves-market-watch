@@ -48,5 +48,7 @@ token expirado con código 4401.
 | `indicators.updated` | indicator-engine | api-gateway | `schemas/indicators.v1.json` |
 | `signals.emitted` | indicator-engine | api-gateway | `schemas/signal.v1.json` |
 
-Todos los eventos llevan sobre: `{event_id, schema_version, produced_at, producer}` para
-idempotencia y trazabilidad. Eventos inválidos → DLQ `market.events.dlq`.
+Todos los eventos llevan sobre: `{event_id, event_type, schema_version, occurred_at,
+producer}` para idempotencia y trazabilidad (implementado así en ingestor-bcv e
+indicator-engine; los schemas viven en `schemas/` en la raíz del repo). Eventos
+inválidos → DLQ `market.events.dlq`.

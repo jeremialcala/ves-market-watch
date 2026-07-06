@@ -34,6 +34,7 @@ services:
       # que instala la extensión en template1.
       - ./apps/ingestor-bcv/db/migrations/001_official_rates.sql:/docker-entrypoint-initdb.d/900_official_rates.sql:ro
       - ./apps/ingestor-bcv/db/migrations/002_suspect_resolution.sql:/docker-entrypoint-initdb.d/901_suspect_resolution.sql:ro
+      - ./apps/indicator-engine/db/migrations/001_indicators.sql:/docker-entrypoint-initdb.d/902_indicators.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d ves_market"]
       interval: 5s

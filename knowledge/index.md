@@ -16,8 +16,11 @@ la fuente de verdad (los documentos AI-DLC y el código).
 ## Estado del proyecto (resumen vivo)
 
 - Fase AI-DLC: Gate 0 y Gate 1 documentados (aprobación humana pendiente).
-- **Implementado:** [ingestor-bcv](services/ingestor-bcv.md) — multi-moneda, en dry-run
-  verificado contra el sitio vivo. El resto de servicios está diseñado, sin código.
+- **Implementado:** [ingestor-bcv](services/ingestor-bcv.md) — multi-moneda, HITL,
+  verificado contra el sitio vivo — e [indicator-engine](services/indicator-engine.md)
+  fase 1 — consume `official.rate.updated` y emite `indicators.updated` (flujo
+  ingestor→bus→engine verificado en vivo). Contratos formales en `../schemas/`.
+- Diseñados, sin código: ingestor-binance y api-gateway.
 - Historia de cambios: [log.md](log.md) y `../CHANGELOG.md`.
 
 ## Mapa del bundle

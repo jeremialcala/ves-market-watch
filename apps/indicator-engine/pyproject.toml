@@ -1,25 +1,22 @@
 [project]
-name = "ingestor-bcv"
+name = "indicator-engine"
 version = "0.1.0"
-description = "Ingesta de las tasas oficiales de cambio publicadas por el BCV (multi-moneda)"
+description = "Motor reactivo de indicadores: consume eventos de mercado y produce indicadores y señales"
 requires-python = ">=3.12"
 dependencies = [
-    "httpx>=0.27",
-    "beautifulsoup4>=4.12",
     "aio-pika>=9.4",
     "asyncpg>=0.29",
+    "jsonschema>=4.21",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
-    "trustme>=1.1",
-    "jsonschema>=4.21",
 ]
 
 [project.scripts]
-ingestor-bcv = "ingestor_bcv.__main__:main"
+indicator-engine = "indicator_engine.__main__:main"
 
 [build-system]
 requires = ["setuptools>=68"]
@@ -33,6 +30,6 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["src"]
 markers = [
-    "integration: adaptadores contra infraestructura real o red local (docker compose up -d --wait)",
-    "e2e: ciclo completo contra RabbitMQ y TimescaleDB reales (docker compose up -d --wait)",
+    "integration: adaptadores contra infraestructura real (docker compose up -d --wait)",
+    "e2e: flujo completo contra RabbitMQ y TimescaleDB reales (docker compose up -d --wait)",
 ]
