@@ -7,6 +7,14 @@ timestamp: 2026-07-05T00:00:00Z
 
 # Log
 
+## 2026-07-06 — ADR-0011 implementado: merchant_ref en producción
+- `Pseudonimizador` en el dominio del ingestor-binance: HMAC-SHA256 sobre `userNo`
+  (nunca el alias), 32 hex; en el evento (contrato v1.1 aditivo, `merchant_ref`
+  requerido) y en el crudo persistido. `MERCHANT_HMAC_KEY` obligatoria (fail fast).
+- Verificado en vivo: dos corridas con la misma clave → 88/96 anunciantes
+  correlacionados entre snapshots; cero alias/ID crudos en disco. Suite en 48 tests.
+- El motor de ingesta de Binance queda completo; sin pendientes en el servicio.
+
 ## 2026-07-06 — Identidad de anunciantes P2P: pseudonimización HMAC (ADR-0011)
 - Decisión humana que cierra el TODO de data-classification: conservar historia de
   anunciantes como `merchant_ref` (HMAC-SHA256, clave dedicada `MERCHANT_HMAC_KEY`,

@@ -23,6 +23,7 @@ from ingestor_binance.adapters.memory import (
 )
 from ingestor_binance.application.capture_snapshot import CapturarSnapshot
 from ingestor_binance.config import Settings
+from ingestor_binance.domain.normalizacion import Pseudonimizador
 from ingestor_binance.scheduler import ejecutar_ciclo, run_forever
 
 logger = logging.getLogger("ingestor_binance")
@@ -66,6 +67,7 @@ async def run(settings: Settings, once: bool, dry_run: bool) -> None:
         repository=repository,
         notifier=notifier,
         breaker=breaker,
+        pseudonimizador=Pseudonimizador(settings.merchant_hmac_key),
         outlier_mad_k=settings.outlier_mad_k,
     )
 

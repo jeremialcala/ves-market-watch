@@ -23,6 +23,7 @@ from ingestor_binance.adapters.memory import LoggingAlertNotifier
 from ingestor_binance.adapters.timescale.repository import TimescaleSnapshotRepository
 from ingestor_binance.application.capture_snapshot import CapturarSnapshot
 from ingestor_binance.domain.models import Lado
+from ingestor_binance.domain.normalizacion import Pseudonimizador
 
 from conftest import SCHEMA_FUENTE, cargar_fixture  # type: ignore[import-not-found]
 
@@ -68,6 +69,7 @@ async def test_flujo_completo_p2p(servidor_http, amqp_listo, pool):
         repository=TimescaleSnapshotRepository(pool),
         notifier=LoggingAlertNotifier(),
         breaker=CircuitBreaker(),
+        pseudonimizador=Pseudonimizador("clave-e2e-suficientemente-larga"),
     )
 
     try:
@@ -102,12 +104,19 @@ async def test_flujo_completo_p2p(servidor_http, amqp_listo, pool):
             ("BUY", 20, False),
             ("SELL", 20, False),
         ]
-        # Minimización de datos: el alias del anunciante jamás toca el disco.
+        # Minimización + pseudonimización (ADR-0011): el alias jamás toca el
+        # disco; la identidad sobrevive solo como merchant_ref de 32 hex.
         crudo = json.loads(
             await pool.fetchval("SELECT raw FROM p2p_snapshots_raw WHERE side = 'BUY'")
         )
         assert all("nickName" not in item["advertiser"] for item in crudo)
         assert all("userType" in item["advertiser"] for item in crudo)
+        assert all(
+            len(item["advertiser"]["merchant_ref"]) == 32
+            and int(item["advertiser"]["merchant_ref"], 16) >= 0
+            for item in crudo
+        )
+        assert all(len(a["merchant_ref"]) == 32 for a in por_lado["BUY"]["ads"])
     finally:
         await publisher.close()
         await canal.exchange_delete(nombre_exchange)

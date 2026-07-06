@@ -15,13 +15,19 @@ endpoint público de búsqueda de anuncios y publicación de `p2p.snapshot` al b
   es del indicator-engine).
 - Defensas de red: TLS verificado estricto, timeout y tope de bytes por respuesta.
 - Persiste el snapshot crudo en `p2p_snapshots_raw` (retención 90 días, RF-5) y publica
-  `p2p.snapshot` (contrato `../../schemas/p2p-snapshot.v1.json`) con publisher confirms.
+  `p2p.snapshot` (contrato `../../schemas/p2p-snapshot.v1.json`, v1.1) con publisher confirms.
+- Identidad de anunciantes solo como pseudónimo `merchant_ref` (HMAC-SHA256, ADR-0011):
+  el alias e ID crudos jamás tocan disco ni bus; requiere `MERCHANT_HMAC_KEY`.
 - Páginas incompletas tras reintentos → snapshot marcado `partial=true`.
 
 ## Ejecutar
 
 ```sh
 pip install -e .[dev]
+
+# La clave del pseudónimo merchant_ref es obligatoria (ADR-0011).
+# En producción viene del secret store; para desarrollo:
+export MERCHANT_HMAC_KEY=$(openssl rand -hex 32)
 
 # Sin infraestructura (consulta real a Binance, eventos por log):
 python -m ingestor_binance --once --dry-run
@@ -30,7 +36,9 @@ python -m ingestor_binance --once --dry-run
 python -m ingestor_binance
 ```
 
-Configuración por entorno: `BINANCE_P2P_URL`, `ASSET` (USDT), `FIAT` (VES),
+Configuración por entorno: `MERCHANT_HMAC_KEY` (requerida, Restringido — sin
+rotación programada: rotarla rompe la correlación histórica), `BINANCE_P2P_URL`,
+`ASSET` (USDT), `FIAT` (VES),
 `FETCH_INTERVAL_SECONDS` (60), `TOP_K` (100), `ROWS_PER_PAGE` (20), `MAX_RETRIES` (3),
 `REQUEST_BUDGET_PER_MIN` (20), `BREAKER_THRESHOLD` (5), `BREAKER_COOLDOWN_SECONDS` (300),
 `MAX_RESPONSE_BYTES` (2 MiB), `OUTLIER_MAD_K` (3.5), `AMQP_URL`, `AMQP_EXCHANGE`,

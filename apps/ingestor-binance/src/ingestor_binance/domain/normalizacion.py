@@ -1,14 +1,18 @@
-"""Normalización de anuncios crudos y etiquetado de outliers — funciones puras.
+"""Normalización de anuncios crudos, pseudonimización y outliers — funciones puras.
 
 Seguridad (PRD):
 - Los textos de la fuente (métodos de pago/bancos) son datos NO confiables:
   se sanitizan antes de persistir o reemitir (A05, escenario negativo 6).
 - Los precios absurdos se etiquetan como outliers por MAD (escenario 2);
   nunca se filtran aquí — esa decisión es del indicator-engine.
+- La identidad del anunciante solo existe como pseudónimo HMAC (ADR-0011):
+  el alias y el identificador crudo jamás tocan disco ni el bus.
 """
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import unicodedata
 from dataclasses import replace
 from decimal import Decimal, InvalidOperation
@@ -39,6 +43,35 @@ _UMBRAL_RELATIVO_SIN_MAD = Decimal("0.05")
 _DESVIACION_RELATIVA_MINIMA = Decimal("0.02")
 
 
+class Pseudonimizador:
+    """Pseudónimo no reversible del anunciante (ADR-0011):
+
+        merchant_ref = HMAC-SHA256(clave_dedicada, id_estable) → 128 bits en hex.
+
+    La clave es dedicada (Restringido, secret store, sin rotación programada:
+    rotarla rompe la correlación histórica a propósito). Re-identificación solo
+    hacia adelante — no existe tabla inversa.
+    """
+
+    _LONGITUD_MINIMA_CLAVE = 16
+
+    def __init__(self, clave: str | bytes) -> None:
+        if isinstance(clave, str):
+            clave = clave.encode("utf-8")
+        if len(clave) < self._LONGITUD_MINIMA_CLAVE:
+            raise ValueError(
+                "MERCHANT_HMAC_KEY demasiado corta: mínimo "
+                f"{self._LONGITUD_MINIMA_CLAVE} bytes (ADR-0011); generar con "
+                "`openssl rand -hex 32`"
+            )
+        self._clave = clave
+
+    def referencia(self, identificador: str) -> str:
+        """32 hex (128 bits) deterministas para un identificador estable."""
+        digesto = hmac.new(self._clave, identificador.encode("utf-8"), hashlib.sha256)
+        return digesto.hexdigest()[:32]
+
+
 def sanitizar_texto(texto: object, max_len: int = LONGITUD_MAX_TEXTO) -> str:
     """Texto plano seguro: sin caracteres de control/formato, longitud acotada."""
     if not isinstance(texto, str):
@@ -49,11 +82,13 @@ def sanitizar_texto(texto: object, max_len: int = LONGITUD_MAX_TEXTO) -> str:
     return limpio[:max_len]
 
 
-def normalizar_anuncio(crudo: dict) -> Anuncio:
+def normalizar_anuncio(crudo: dict, pseudonimizador: Pseudonimizador) -> Anuncio:
     """Convierte un item `{adv, advertiser}` de la fuente al modelo de dominio.
 
     Los campos numéricos vienen como string decimal (confirmado en el spike);
     un valor no numérico lanza y el llamador descarta el snapshot (A10).
+    La identidad del anunciante entra solo como `merchant_ref` (ADR-0011),
+    calculado sobre el identificador estable `userNo` — nunca sobre el alias.
     """
     adv = crudo["adv"]
     advertiser = crudo["advertiser"]
@@ -70,6 +105,7 @@ def normalizar_anuncio(crudo: dict) -> Anuncio:
         limite_max=_a_decimal(adv["maxSingleTransAmount"]),
         metodos_pago=metodos,
         es_merchant=advertiser.get("userType") == "merchant",
+        merchant_ref=_merchant_ref(advertiser, pseudonimizador),
     )
 
 
@@ -108,21 +144,32 @@ def etiquetar_outliers(
     )
 
 
-def minimizar_crudo(items: list[dict]) -> list[dict]:
+def minimizar_crudo(items: list[dict], pseudonimizador: Pseudonimizador) -> list[dict]:
     """Versión persistible del crudo: `adv` completo (datos públicos del anuncio)
-    y del `advertiser` solo las métricas públicas — el alias y los identificadores
-    pseudónimos se redactan antes de tocar disco (minimización de datos)."""
+    y del `advertiser` solo las métricas públicas más el pseudónimo `merchant_ref`
+    (ADR-0011) — el alias y los identificadores crudos se redactan antes de
+    tocar disco (minimización de datos)."""
     return [
         {
             "adv": item.get("adv", {}),
             "advertiser": {
-                campo: valor
-                for campo, valor in item.get("advertiser", {}).items()
-                if campo in _CAMPOS_ADVERTISER_PERSISTIBLES
+                **{
+                    campo: valor
+                    for campo, valor in item.get("advertiser", {}).items()
+                    if campo in _CAMPOS_ADVERTISER_PERSISTIBLES
+                },
+                "merchant_ref": _merchant_ref(item.get("advertiser", {}), pseudonimizador),
             },
         }
         for item in items
     ]
+
+
+def _merchant_ref(advertiser: dict, pseudonimizador: Pseudonimizador) -> str | None:
+    identificador = advertiser.get("userNo")
+    if not identificador:
+        return None
+    return pseudonimizador.referencia(str(identificador))
 
 
 def _a_decimal(texto: str) -> Decimal:

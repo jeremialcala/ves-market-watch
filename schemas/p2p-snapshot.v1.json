@@ -1,8 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/jeremialcala/ves-market-watch/schemas/p2p-snapshot.v1.json",
-  "title": "p2p.snapshot v1",
-  "description": "Snapshot normalizado de anuncios P2P de Binance para un lado del mercado (perspectiva del taker). `event_id` es el snapshot_id de idempotencia del consumidor. Los outliers van etiquetados, no filtrados (el filtrado es del indicator-engine).",
+  "title": "p2p.snapshot v1.1",
+  "description": "Snapshot normalizado de anuncios P2P de Binance para un lado del mercado (perspectiva del taker). `event_id` es el snapshot_id de idempotencia del consumidor. Los outliers van etiquetados, no filtrados (el filtrado es del indicator-engine). v1.1 (aditivo, ADR-0011): cada anuncio incorpora `merchant_ref`, pseudónimo HMAC del anunciante.",
+  "$comment": "v1.1 es aditivo sobre v1: schema_version del sobre sigue en 1 (solo cambia con rupturas).",
   "type": "object",
   "required": ["event_id", "event_type", "schema_version", "occurred_at", "producer", "payload"],
   "additionalProperties": false,
@@ -44,6 +45,7 @@
               "max_limit",
               "trade_methods",
               "merchant",
+              "merchant_ref",
               "outlier"
             ],
             "additionalProperties": false,
@@ -62,6 +64,11 @@
                 "items": { "type": "string", "maxLength": 64 }
               },
               "merchant": { "type": "boolean" },
+              "merchant_ref": {
+                "type": ["string", "null"],
+                "pattern": "^[0-9a-f]{32}$",
+                "description": "Pseudónimo HMAC-SHA256 (128 bits hex) del identificador estable del anunciante (ADR-0011); null si la fuente no lo trajo. El alias/ID crudo nunca viaja."
+              },
               "outlier": { "type": "boolean" }
             }
           }

@@ -24,6 +24,7 @@ from ingestor_binance.application.ports import (
 )
 from ingestor_binance.domain.models import Lado, SnapshotP2P
 from ingestor_binance.domain.normalizacion import (
+    Pseudonimizador,
     etiquetar_outliers,
     minimizar_crudo,
     normalizar_anuncio,
@@ -49,6 +50,7 @@ class CapturarSnapshot:
         repository: SnapshotRepository,
         notifier: AlertNotifier,
         breaker: CircuitBreaker,
+        pseudonimizador: Pseudonimizador,
         outlier_mad_k: float = 3.5,
     ) -> None:
         self._source = source
@@ -56,6 +58,7 @@ class CapturarSnapshot:
         self._repository = repository
         self._notifier = notifier
         self._breaker = breaker
+        self._pseudonimizador = pseudonimizador
         self._outlier_mad_k = outlier_mad_k
 
     async def ejecutar(self, lado: Lado) -> ResumenCaptura:
@@ -88,7 +91,8 @@ class CapturarSnapshot:
 
         try:
             anuncios = tuple(
-                normalizar_anuncio(crudo) for crudo in captura.anuncios_crudos
+                normalizar_anuncio(crudo, self._pseudonimizador)
+                for crudo in captura.anuncios_crudos
             )
         except (ValueError, KeyError, TypeError) as exc:
             # Estructura válida pero contenido inutilizable: mismo tratamiento
@@ -110,9 +114,11 @@ class CapturarSnapshot:
             anuncios=anuncios,
         )
 
-        # El crudo se persiste minimizado: sin alias ni identificadores del
-        # anunciante (clasificación de datos — el reproceso no los necesita).
-        await self._repository.guardar_crudo(snapshot, minimizar_crudo(captura.anuncios_crudos))
+        # El crudo se persiste minimizado: sin alias ni identificadores crudos
+        # del anunciante — solo el pseudónimo merchant_ref (ADR-0011).
+        await self._repository.guardar_crudo(
+            snapshot, minimizar_crudo(captura.anuncios_crudos, self._pseudonimizador)
+        )
         await self._publisher.publish_p2p_snapshot(snapshot)
 
         resumen.publicado = True

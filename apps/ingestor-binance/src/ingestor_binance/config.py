@@ -30,6 +30,9 @@ class Settings:
     max_response_bytes: int
     outlier_mad_k: float
     schema_fuente: str
+    # Clave dedicada del pseudónimo merchant_ref (ADR-0011). Restringido, sin
+    # rotación programada: rotarla rompe la correlación histórica a propósito.
+    merchant_hmac_key: str
     amqp_url: str
     amqp_exchange: str
     database_url: str
@@ -37,6 +40,14 @@ class Settings:
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> "Settings":
         env = dict(os.environ if env is None else env)
+        merchant_hmac_key = env.get("MERCHANT_HMAC_KEY", "")
+        if not merchant_hmac_key:
+            # Fail fast (ADR-0011): sin la clave no hay merchant_ref, y un
+            # arranque silencioso degradaría el contrato v1.1 sin aviso.
+            raise ValueError(
+                "MERCHANT_HMAC_KEY no configurada: aprovisionarla desde el secret "
+                "store (ADR-0011). Para desarrollo: openssl rand -hex 32"
+            )
         return cls(
             binance_p2p_url=env.get(
                 "BINANCE_P2P_URL",
@@ -54,6 +65,7 @@ class Settings:
             max_response_bytes=int(env.get("MAX_RESPONSE_BYTES", str(2 * 1024 * 1024))),
             outlier_mad_k=float(env.get("OUTLIER_MAD_K", "3.5")),
             schema_fuente=env.get("SCHEMA_FUENTE", str(SCHEMA_FUENTE_POR_DEFECTO)),
+            merchant_hmac_key=merchant_hmac_key,
             amqp_url=env.get("AMQP_URL", "amqp://guest:guest@127.0.0.1/"),
             amqp_exchange=env.get("AMQP_EXCHANGE", "market.events"),
             # Defaults alineados con el docker-compose.yml de la raíz (dev).

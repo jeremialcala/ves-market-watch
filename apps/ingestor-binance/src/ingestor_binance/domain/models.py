@@ -30,6 +30,9 @@ class Anuncio:
     limite_max: Decimal  # en fiat, por transacción
     metodos_pago: tuple[str, ...]
     es_merchant: bool
+    # Pseudónimo HMAC del anunciante (ADR-0011); None si la fuente no trajo
+    # el identificador estable. El alias/ID crudo nunca llega hasta aquí.
+    merchant_ref: str | None = None
     outlier: bool = False
 
 

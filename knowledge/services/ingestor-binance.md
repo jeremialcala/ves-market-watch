@@ -27,6 +27,9 @@ perspectiva del taker), normaliza, **etiqueta** outliers y publica
   se publica corrupto (A10).
 - Sanitización de textos de la fuente (A05) y outliers por MAD (k=3.5) con fallback
   para MAD=0 y piso de desviación relativa del 2 % (calibrado con el fixture real).
+- Pseudonimización de anunciantes (ADR-0011): `merchant_ref = HMAC-SHA256(clave
+  dedicada, userNo)` en 32 hex, en el crudo y en el evento (contrato v1.1); alias e
+  ID crudos jamás tocan disco ni bus. `MERCHANT_HMAC_KEY` requerida (fail fast).
 - Defensas de red: TLS estricto, timeout, tope de bytes por streaming (zip-bomb).
 - Páginas incompletas → snapshot `partial=true`; CLI `python -m ingestor_binance
   [--once] [--dry-run]`. 40 tests (unit/contract/integration/e2e).
@@ -36,8 +39,7 @@ perspectiva del taker), normaliza, **etiqueta** outliers y publica
 - ADR-0005 (spike resuelto) · Contrato: `../../schemas/p2p-snapshot.v1.json` · Amenazas T2, T7.
 
 ## Pendiente
-- **ADR-0011**: `minimizar_crudo` pasa de descartar a pseudonimizar — añadir
-  `merchant_ref` (HMAC-SHA256 con `MERCHANT_HMAC_KEY` del secret store) al crudo y al
-  evento (contrato v1.1). El alias e ID crudos siguen sin persistir.
-- El consumo de `p2p.snapshot` (precio de referencia, brecha) es la fase 2 del
+- Nada en este servicio (ADR-0011 implementado 2026-07-06, correlación verificada en
+  vivo: 88/96 anunciantes correlacionados entre dos corridas). El consumo de
+  `p2p.snapshot` (precio de referencia, brecha) es la fase 2 del
   [indicator-engine](indicator-engine.md).

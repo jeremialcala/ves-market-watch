@@ -19,6 +19,22 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Implementación de ADR-0011 en `ingestor-binance`** — cierre del motor de ingesta P2P:
+  - `Pseudonimizador` en el dominio: `merchant_ref = HMAC-SHA256(MERCHANT_HMAC_KEY,
+    advertiser.userNo)` truncado a 128 bits (32 hex); nunca sobre el alias (rompería
+    la correlación). Sin identificador estable → `null`.
+  - `merchant_ref` viaja en cada anuncio de `p2p.snapshot` (contrato **v1.1 aditivo**:
+    campo requerido en `schemas/p2p-snapshot.v1.json`; el `schema_version` del sobre
+    sigue en 1) y se persiste en el crudo minimizado — el alias e ID crudos siguen
+    sin tocar disco ni bus.
+  - `MERCHANT_HMAC_KEY` requerida con fail fast al arrancar (dev: `openssl rand -hex 32`);
+    clave débil (< 16 bytes) rechazada al construir.
+  - +7 tests (determinismo del HMAC, correlación por anunciante, alias no altera el
+    pseudónimo, contrato v1.1 rechaza anuncios sin `merchant_ref`, e2e con refs en DB
+    y eventos): suite del servicio en 48.
+  - Verificación en vivo con dos corridas y la misma clave: 96 anunciantes únicos por
+    snapshot (100 anuncios — la dedup que motiva el ADR ya es visible) y 88
+    correlacionados entre corridas; cero alias en disco.
 - ADR-0011 (accepted): pseudonimización HMAC-SHA256 del identificador de anunciantes P2P
   (`merchant_ref`, clave dedicada `MERCHANT_HMAC_KEY` en secret store, sin rotación
   programada). Cierra el `<TODO>` de `data-classification.md`: historia analítica

@@ -15,14 +15,16 @@ Productor: [ingestor-binance](../services/ingestor-binance.md) · Consumidor pre
 Contrato: `schemas/p2p-snapshot.v1.json` (validado por contract test del productor).
 Payload: `{side (BUY/SELL, perspectiva del taker), asset, fiat, captured_at, partial,
 ads: [{adv_no, price, available_amount, min_limit, max_limit, trade_methods[],
-merchant, outlier}]}` + sobre estándar. Decimales como string exacto; textos
-sanitizados (A05); outliers **etiquetados, no filtrados** (el filtrado y el
+merchant, merchant_ref, outlier}]}` + sobre estándar. Decimales como string exacto;
+textos sanitizados (A05); outliers **etiquetados, no filtrados** (el filtrado y el
 `confidence` son del engine). `partial=true` si alguna página del top-K no llegó.
 
 El `event_id` del sobre es el snapshot_id de idempotencia para el consumidor.
 Mensajes persistentes, publisher confirms, exchange `market.events`.
 
-**Cambio decidido (ADR-0011, pendiente de implementar):** el objeto `merchant` incorpora
-`merchant_ref` (HMAC-SHA256 del identificador estable del anunciante, clave dedicada) —
-contrato v1 → v1.1, aditivo. El alias e ID crudos siguen sin viajar ni persistir.
-Habilita dedup de profundidad, concentración y recurrencia en la fase 2 del engine.
+**v1.1 (ADR-0011, implementado 2026-07-06):** cada anuncio lleva `merchant_ref`
+requerido — HMAC-SHA256 del identificador estable del anunciante (clave dedicada
+`MERCHANT_HMAC_KEY`), 32 hex, o `null` si la fuente no trajo el identificador.
+Cambio aditivo sobre v1 (el `schema_version` del sobre sigue en 1). El alias e ID
+crudos siguen sin viajar ni persistir. Habilita dedup de profundidad, concentración
+y recurrencia en la fase 2 del engine.

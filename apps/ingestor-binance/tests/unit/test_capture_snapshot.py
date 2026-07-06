@@ -15,8 +15,11 @@ from ingestor_binance.application.ports import (
     FuenteNoDisponible,
 )
 from ingestor_binance.domain.models import Lado
+from ingestor_binance.domain.normalizacion import Pseudonimizador
 
 from conftest import cargar_fixture  # type: ignore[import-not-found]
+
+PSEUDO = Pseudonimizador("clave-de-prueba-suficientemente-larga")
 
 
 class FuenteFake:
@@ -52,6 +55,7 @@ def _armar(umbral_breaker: int = 3):
     caso = CapturarSnapshot(
         fuente, publisher, repo, notifier,
         breaker=CircuitBreaker(umbral=umbral_breaker, cooldown_segundos=300),
+        pseudonimizador=PSEUDO,
     )
     return fuente, repo, publisher, notifier, caso
 
@@ -75,6 +79,24 @@ async def test_captura_exitosa_persiste_crudo_y_publica():
     assert len(crudo_persistido) == 20
     assert crudo_persistido[0]["adv"] == fuente.respuesta.anuncios_crudos[0]["adv"]
     assert all("nickName" not in item["advertiser"] for item in crudo_persistido)
+    # ADR-0011: pseudónimo presente en el crudo y en el evento.
+    assert all(item["advertiser"]["merchant_ref"] for item in crudo_persistido)
+    assert all(len(a["merchant_ref"]) == 32 for a in payload["ads"])
+
+
+async def test_mismo_anunciante_conserva_el_mismo_pseudonimo():
+    # La capacidad que motiva el ADR-0011: dedup/concentración por anunciante.
+    fuente, _, publisher, _, caso = _armar()
+    crudos = cargar_fixture("buy")["data"][:3]
+    crudos[0]["advertiser"]["userNo"] = "mismo-anunciante"
+    crudos[2]["advertiser"]["userNo"] = "mismo-anunciante"
+    fuente.respuesta = _captura(crudos=crudos)
+
+    await caso.ejecutar(Lado.BUY)
+
+    ads = publisher.eventos[0]["payload"]["ads"]
+    assert ads[0]["merchant_ref"] == ads[2]["merchant_ref"]
+    assert ads[0]["merchant_ref"] != ads[1]["merchant_ref"]
 
 
 async def test_outlier_sembrado_queda_etiquetado_en_el_evento():

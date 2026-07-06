@@ -42,6 +42,7 @@ def construir_evento_snapshot(snapshot: SnapshotP2P) -> dict:
                     "max_limit": str(anuncio.limite_max),
                     "trade_methods": list(anuncio.metodos_pago),
                     "merchant": anuncio.es_merchant,
+                    "merchant_ref": anuncio.merchant_ref,
                     "outlier": anuncio.outlier,
                 }
                 for anuncio in snapshot.anuncios

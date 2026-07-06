@@ -7,6 +7,12 @@
   fallback de desviación relativa cuando MAD=0 (mayoría de precios idénticos +
   uno manipulado) y piso del 2 % (mercados agrupados: el spike real mostró
   clusters de ±0.3 % donde el MAD puro marcaría anuncios legítimos).
+- **Pseudonimización (ADR-0011)**: `Pseudonimizador` — `merchant_ref =
+  HMAC-SHA256(MERCHANT_HMAC_KEY, advertiser.userNo)` truncado a 128 bits (32 hex),
+  nunca sobre el alias (cambia y rompería la correlación). Va en el evento
+  (contrato v1.1, aditivo) y en el crudo persistido; el alias/ID crudo no toca
+  disco ni bus. La clave es Restringida, sin rotación programada; sin ella el
+  servicio no arranca (fail fast).
 - **Aplicación** (`src/ingestor_binance/application/`): caso de uso
   `CapturarSnapshot.ejecutar(lado)` — breaker → fetch → normalizar → etiquetar →
   persistir crudo → publicar. Puertos: `P2PMarketSource` (la fuente es
