@@ -33,16 +33,19 @@ Ver `docs/architecture/c4-context.md` y `c4-container.md` (Mermaid, con trust bo
 Ver `docs/02-design/api-contracts.md` (REST + eventos WSS/AMQP).
 
 ## Persistencia (TimescaleDB — ADR-0002)
-| Tabla (hypertable) | Contenido | Retención |
-|---|---|---|
-| `official_rates` | Tasa BCV: valor, fecha-valor, captured_at, source | ≥ 12 meses |
-| `p2p_snapshots` | Snapshot crudo normalizado (JSONB) por lado | 90 días |
-| `p2p_top_of_book` | Mejor precio/volúmenes por snapshot | ≥ 12 meses |
-| `indicators` | Indicadores calculados con calc_version | ≥ 12 meses |
-| `signals` | Señales emitidas con evidencia | ≥ 12 meses |
-| `api_clients` | Consumidores OAuth2 (secret hasheado) | vigencia |
+| Tabla (hypertable) | Contenido | Retención | Estado |
+|---|---|---|---|
+| `official_rates` | Tasas BCV multi-moneda: valor, fecha-valor, captured_at, status (ADR-0007), auditoría HITL | ≥ 12 meses | ✔ implementada |
+| `official_rate_source_health` | Salud de la fuente BCV (fallos consecutivos, stale_since) | vigencia | ✔ implementada |
+| `p2p_snapshots_raw` | Snapshot crudo (JSONB, anunciante minimizado) por lado | 90 días (nativa) | ✔ implementada |
+| `indicators` | Indicadores calculados con calc_version (formato largo) | ≥ 12 meses | ✔ implementada |
+| `processed_events` | Idempotencia del consumidor del engine | vigencia | ✔ implementada |
+| `p2p_top_of_book` | Mejor precio/volúmenes por snapshot | ≥ 12 meses | planificada |
+| `signals` | Señales emitidas con evidencia | ≥ 12 meses | planificada |
+| `api_clients` | Consumidores OAuth2 (secret hasheado) | vigencia | planificada |
 
-Agregados continuos (continuous aggregates) para intradía 5 min / 1 h / 1 d.
+Migraciones por servicio en `apps/<servicio>/db/migrations/` (montadas en el init del
+`docker-compose.yml`). Agregados continuos 5 min / 1 h / 1 d para intradía: planificados.
 
 ## Patrones de seguridad seleccionados (por amenaza DREAD priorizada)
 | Amenaza | Patrón / Control | OWASP |

@@ -1,8 +1,8 @@
 # ADR-0009: Modelo bitemporal para la tasa oficial (value_date + captured_at)
 
-- **Estado:** proposed
+- **Estado:** accepted (implementado en `apps/ingestor-bcv`, 2026-07-05)
 - **Fecha:** 2026-07-05
-- **Decisores:** Jeremi Alcalá `<pendiente de aprobación>`
+- **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
 - **Controles OWASP afectados:** A08, A09
 
@@ -20,6 +20,9 @@ Persistir la tasa oficial de forma bitemporal y append-only en `official_rates`:
 - `captured_at` — timestamp de captura por el ingestor (dimensión de conocimiento).
 - Nunca UPDATE: correcciones o re-publicaciones del BCV insertan una fila nueva; la
   vigente para un `value_date` es la de mayor `captured_at` con estado `valid`.
+  Única excepción, auditada: la resolución HITL (ADR-0007) actualiza `status` y las
+  columnas de auditoría de una sospecha — valor y dimensiones temporales permanecen
+  inmutables.
 - La API sirve por `value_date` e incluye `captured_at` en metadatos; el motor de
   indicadores usa la tasa *conocida en el momento del cálculo* (as-of `captured_at`),
   garantizando que un indicador recalculado reproduce el valor original.

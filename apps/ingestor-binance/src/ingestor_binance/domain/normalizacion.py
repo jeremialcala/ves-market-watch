@@ -18,6 +18,16 @@ from ingestor_binance.domain.models import Anuncio
 
 LONGITUD_MAX_TEXTO = 64
 
+# Minimización (docs/00-project/data-classification.md): del anunciante solo se
+# persisten las métricas públicas que pueden alimentar indicadores. El alias
+# (nickName) y los identificadores pseudónimos (userNo, etc.) NO se persisten.
+_CAMPOS_ADVERTISER_PERSISTIBLES = (
+    "userType",
+    "monthOrderCount",
+    "monthFinishRate",
+    "positiveRate",
+)
+
 # Constante del z-score modificado (Iglewicz & Hoaglin).
 _FACTOR_MAD = Decimal("0.6745")
 # Fallback cuando MAD = 0 (p. ej. 19 anuncios idénticos + 1 manipulado — el
@@ -96,6 +106,23 @@ def etiquetar_outliers(
     return tuple(
         replace(a, outlier=True) if es_outlier(a.precio) else a for a in anuncios
     )
+
+
+def minimizar_crudo(items: list[dict]) -> list[dict]:
+    """Versión persistible del crudo: `adv` completo (datos públicos del anuncio)
+    y del `advertiser` solo las métricas públicas — el alias y los identificadores
+    pseudónimos se redactan antes de tocar disco (minimización de datos)."""
+    return [
+        {
+            "adv": item.get("adv", {}),
+            "advertiser": {
+                campo: valor
+                for campo, valor in item.get("advertiser", {}).items()
+                if campo in _CAMPOS_ADVERTISER_PERSISTIBLES
+            },
+        }
+        for item in items
+    ]
 
 
 def _a_decimal(texto: str) -> Decimal:

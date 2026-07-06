@@ -102,6 +102,12 @@ async def test_flujo_completo_p2p(servidor_http, amqp_listo, pool):
             ("BUY", 20, False),
             ("SELL", 20, False),
         ]
+        # Minimización de datos: el alias del anunciante jamás toca el disco.
+        crudo = json.loads(
+            await pool.fetchval("SELECT raw FROM p2p_snapshots_raw WHERE side = 'BUY'")
+        )
+        assert all("nickName" not in item["advertiser"] for item in crudo)
+        assert all("userType" in item["advertiser"] for item in crudo)
     finally:
         await publisher.close()
         await canal.exchange_delete(nombre_exchange)

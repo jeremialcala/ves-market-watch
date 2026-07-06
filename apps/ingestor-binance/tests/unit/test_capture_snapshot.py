@@ -69,8 +69,12 @@ async def test_captura_exitosa_persiste_crudo_y_publica():
     payload = publisher.eventos[0]["payload"]
     assert payload["side"] == "BUY"
     assert payload["ads"][0]["price"] == "745.000"
-    # El crudo persistido es EXACTAMENTE lo que llegó de la fuente (reproceso RF-5).
-    assert repo.snapshots[0][1] == fuente.respuesta.anuncios_crudos
+    # El crudo persistido conserva los anuncios completos para reproceso (RF-5)
+    # pero con el anunciante minimizado: sin alias (data-classification).
+    crudo_persistido = repo.snapshots[0][1]
+    assert len(crudo_persistido) == 20
+    assert crudo_persistido[0]["adv"] == fuente.respuesta.anuncios_crudos[0]["adv"]
+    assert all("nickName" not in item["advertiser"] for item in crudo_persistido)
 
 
 async def test_outlier_sembrado_queda_etiquetado_en_el_evento():

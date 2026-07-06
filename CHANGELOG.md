@@ -130,6 +130,16 @@ Convención de mantenimiento (inventario por ejecución):
   - Verificación en vivo: dry-run contra Binance real (100 anuncios/lado) y flujo
     productor→bus con cola espía (2 `p2p.snapshot` + crudos en DB).
 
+### Fixed
+
+- **Minimización de datos en el crudo P2P persistido** (coherencia con
+  `docs/00-project/data-classification.md`, que ordena no persistir alias de
+  anunciantes): nueva función pura `minimizar_crudo` — del `advertiser` solo se
+  conservan `userType` y métricas públicas; alias e identificadores pseudónimos
+  (`nickName`, `userNo`, etc.) se redactan antes de tocar disco. Verificado en
+  unit y e2e (el crudo en DB no contiene `nickName`). El `<TODO: confirmar>`
+  humano de la clasificación sigue abierto.
+
 ### Changed
 
 - **Alcance del PRD de ingesta BCV ampliado a multi-moneda**: se ingestan todas las
@@ -158,6 +168,20 @@ Convención de mantenimiento (inventario por ejecución):
 - `knowledge/` sincronizado con el ingestor P2P: `services/ingestor-binance.md` y
   `events/p2p-snapshot.md` (implementados), nueva `tables/p2p_snapshots_raw.md`,
   índices y `log.md`.
+- **Auditoría de coherencia docs↔implementación** (alcance completo):
+  - ADR-0008 (solo-en-cambio) y ADR-0009 (bitemporal) pasan a **`accepted`** — ya
+    estaban implementados por el ingestor-bcv; se anota cómo se materializa el
+    heartbeat (ADR-0008) y la excepción auditada del HITL al append-only (ADR-0009).
+  - Gate 1 actualizado: ADRs 0007–0009 accepted y pendientes de fase 03 resueltos
+    (spike P2P ✔, bundle TLS ✔, schemas 3/4 ✔); siguen abiertos secret store
+    (fase 05) y umbrales de señales (HITL).
+  - README raíz con estado real (3 servicios implementados y verificados en vivo),
+    árbol con `schemas/` y `docker-compose.yml`, y sección de desarrollo.
+  - `architecture.md`: tabla de persistencia con nombres reales y estado por tabla
+    (5 implementadas / 3 planificadas).
+  - Índices del `knowledge/` (servicios, eventos con sobre `occurred_at`, métricas)
+    sincronizados; README de tests de indicator-engine e ingestor-binance
+    actualizados a lo realmente construido.
 
 ## [0.1.0] - 2026-07-05
 

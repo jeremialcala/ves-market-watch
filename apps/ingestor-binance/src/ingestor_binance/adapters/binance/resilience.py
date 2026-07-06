@@ -1,4 +1,5 @@
 """Resiliencia del polling educado (ADR-0005): backoff, breaker y presupuesto.
+Compartido por el cliente y el caso de uso.
 
 Reloj y sleep inyectables — todo es determinista en tests. Nunca se rota IP
 ni se evade el rate limit: ante señales de bloqueo se retrocede (respeto ToS).

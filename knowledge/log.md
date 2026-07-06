@@ -7,6 +7,15 @@ timestamp: 2026-07-05T00:00:00Z
 
 # Log
 
+## 2026-07-06 — Auditoría de coherencia docs↔implementación
+- Minimización de datos aplicada al crudo P2P (`minimizar_crudo`): el alias e
+  identificadores del anunciante ya no tocan disco — cierra la brecha con
+  data-classification (el TODO de confirmación humana sigue abierto).
+- ADR-0008/0009 → accepted (implementados por ingestor-bcv, con notas de cómo);
+  Gate 1 y README raíz actualizados al estado real; índices del bundle
+  (servicios/eventos/métricas) sincronizados; tabla de persistencia de
+  architecture.md con estado por tabla.
+
 ## 2026-07-06 — ingestor-binance implementado (última fuente)
 - Spike del endpoint P2P resuelto (ADR-0005): HTTP 200 con la forma esperada,
   ~643 anuncios USDT/VES; fixtures reales versionados. `tradeType` = perspectiva

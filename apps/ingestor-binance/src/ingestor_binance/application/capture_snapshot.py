@@ -23,7 +23,11 @@ from ingestor_binance.application.ports import (
     SnapshotRepository,
 )
 from ingestor_binance.domain.models import Lado, SnapshotP2P
-from ingestor_binance.domain.normalizacion import etiquetar_outliers, normalizar_anuncio
+from ingestor_binance.domain.normalizacion import (
+    etiquetar_outliers,
+    minimizar_crudo,
+    normalizar_anuncio,
+)
 
 
 @dataclass(slots=True)
@@ -106,7 +110,9 @@ class CapturarSnapshot:
             anuncios=anuncios,
         )
 
-        await self._repository.guardar_crudo(snapshot, captura.anuncios_crudos)
+        # El crudo se persiste minimizado: sin alias ni identificadores del
+        # anunciante (clasificación de datos — el reproceso no los necesita).
+        await self._repository.guardar_crudo(snapshot, minimizar_crudo(captura.anuncios_crudos))
         await self._publisher.publish_p2p_snapshot(snapshot)
 
         resumen.publicado = True

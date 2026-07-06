@@ -4,7 +4,11 @@ from decimal import Decimal
 
 import pytest
 
-from ingestor_binance.domain.normalizacion import normalizar_anuncio, sanitizar_texto
+from ingestor_binance.domain.normalizacion import (
+    minimizar_crudo,
+    normalizar_anuncio,
+    sanitizar_texto,
+)
 
 from conftest import cargar_fixture  # type: ignore[import-not-found]
 
@@ -53,6 +57,21 @@ def test_sanitizar_remueve_caracteres_de_control_y_acota():
     assert len(sanitizar_texto("A" * 500)) == 64
     assert sanitizar_texto(None) == ""
     assert sanitizar_texto(12345) == ""
+
+
+def test_minimizar_crudo_redacta_alias_y_conserva_metricas_publicas():
+    # data-classification: alias/identificadores del anunciante NO se persisten.
+    items = cargar_fixture("buy")["data"]
+    assert any("nickName" in i["advertiser"] for i in items)  # el crudo real los trae
+
+    minimizado = minimizar_crudo(items)
+
+    assert len(minimizado) == len(items)
+    for original, limpio in zip(items, minimizado):
+        assert "nickName" not in limpio["advertiser"]
+        assert "userNo" not in limpio["advertiser"]
+        assert limpio["advertiser"].get("userType") == original["advertiser"]["userType"]
+        assert limpio["adv"] == original["adv"]  # el anuncio (público) va completo
 
 
 def test_metodos_de_pago_maliciosos_quedan_sanitizados():

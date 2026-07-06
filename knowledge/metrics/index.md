@@ -8,7 +8,9 @@ timestamp: 2026-07-05T00:00:00Z
 # Indicadores
 
 Definiciones completas: PRD `../../docs/01-requirements/motor-indicadores.md`.
-Todos diseñados, sin implementar (dependen del [indicator-engine](../services/indicator-engine.md)).
+Implementados en la fase 1 del [indicator-engine](../services/indicator-engine.md):
+`official_rate` y su variación abs/% por moneda. Los de la tabla dependen de datos
+P2P (fase 2 del engine; el productor `p2p.snapshot` ya existe).
 
 | Indicador | Concepto |
 |---|---|
