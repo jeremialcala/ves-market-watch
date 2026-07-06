@@ -15,11 +15,11 @@ timestamp: 2026-07-05T00:00:00Z
 | [official_rate_source_health](official_rate_source_health.md) | Tabla | Salud de la fuente BCV (fallos, stale) |
 | [indicators](indicators.md) | Hypertable | Indicadores calculados (formato largo, `calc_version`) |
 | processed_events (ver [indicators](indicators.md)) | Tabla | Idempotencia del consumidor del engine |
+| [p2p_snapshots_raw](p2p_snapshots_raw.md) | Hypertable | Crudo P2P completo (JSONB, retención 90 d) |
 
 ## Planificadas (diseño en `../../docs/02-design/architecture.md`)
 
-`p2p_snapshots` (crudo JSONB, retención 90 d), `p2p_top_of_book`, `signals`
-(con evidencia), `api_clients` (secrets hasheados).
+`p2p_top_of_book`, `signals` (con evidencia), `api_clients` (secrets hasheados).
 Agregados continuos 5 min / 1 h / 1 d para intradía.
 
 Roles PostgreSQL separados por servicio, mínimo privilegio (A01).

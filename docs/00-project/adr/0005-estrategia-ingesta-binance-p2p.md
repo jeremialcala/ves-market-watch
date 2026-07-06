@@ -18,7 +18,12 @@ backoff exponencial con jitter ante 429/5xx y circuit breaker que suspende ciclo
 señales de bloqueo. La fuente queda tras un puerto (`P2PMarketSource`) para poder sustituir
 el mecanismo (otro endpoint, proveedor de datos, scraping headless) sin tocar el dominio.
 
-`<TODO: confirmar disponibilidad y forma actual del endpoint en fase 03 (spike técnico)>`
+Spike técnico resuelto (2026-07-05): el endpoint respondió HTTP 200 con la forma
+esperada (`{code:"000000", success, data:[{adv:{advNo, price, surplusAmount,
+minSingleTransAmount, maxSingleTransAmount, tradeMethods[...]}, advertiser:{userType,…}}],
+total}`) para USDT/VES en ambos lados (~643 anuncios publicados). Respuestas reales
+versionadas como fixtures en `apps/ingestor-binance/tests/fixtures/`. Nota de semántica:
+el parámetro `tradeType` es la perspectiva del taker (BUY = anuncios de vendedores).
 
 ## Alternativas consideradas
 | Opción | Pros | Contras | Riesgo de seguridad |

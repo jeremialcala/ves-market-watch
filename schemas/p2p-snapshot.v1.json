@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jeremialcala/ves-market-watch/schemas/p2p-snapshot.v1.json",
+  "title": "p2p.snapshot v1",
+  "description": "Snapshot normalizado de anuncios P2P de Binance para un lado del mercado (perspectiva del taker). `event_id` es el snapshot_id de idempotencia del consumidor. Los outliers van etiquetados, no filtrados (el filtrado es del indicator-engine).",
+  "type": "object",
+  "required": ["event_id", "event_type", "schema_version", "occurred_at", "producer", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "event_type": { "const": "p2p.snapshot" },
+    "schema_version": { "const": 1 },
+    "occurred_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+    },
+    "producer": { "type": "string", "minLength": 1 },
+    "payload": {
+      "type": "object",
+      "required": ["side", "asset", "fiat", "captured_at", "partial", "ads"],
+      "additionalProperties": false,
+      "properties": {
+        "side": { "enum": ["BUY", "SELL"] },
+        "asset": { "type": "string", "pattern": "^[A-Z0-9]{2,10}$" },
+        "fiat": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "captured_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+        },
+        "partial": { "type": "boolean" },
+        "ads": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "adv_no",
+              "price",
+              "available_amount",
+              "min_limit",
+              "max_limit",
+              "trade_methods",
+              "merchant",
+              "outlier"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "adv_no": { "type": "string", "minLength": 1 },
+              "price": {
+                "type": "string",
+                "pattern": "^[0-9]+(\\.[0-9]+)?$",
+                "description": "VES por unidad de asset — decimal exacto como string"
+              },
+              "available_amount": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$" },
+              "min_limit": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$" },
+              "max_limit": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$" },
+              "trade_methods": {
+                "type": "array",
+                "items": { "type": "string", "maxLength": 64 }
+              },
+              "merchant": { "type": "boolean" },
+              "outlier": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -43,7 +43,7 @@ token expirado con código 4401.
 ## Eventos internos (AMQP `market.events`, topic exchange)
 | Routing key | Productor | Consumidor | Schema |
 |---|---|---|---|
-| `p2p.snapshot` | ingestor-binance | indicator-engine | `schemas/p2p-snapshot.v1.json` `<TODO: fase 03>` |
+| `p2p.snapshot` | ingestor-binance | indicator-engine | `schemas/p2p-snapshot.v1.json` |
 | `official.rate.updated` | ingestor-bcv | indicator-engine | `schemas/official-rate.v1.json` |
 | `indicators.updated` | indicator-engine | api-gateway | `schemas/indicators.v1.json` |
 | `signals.emitted` | indicator-engine | api-gateway | `schemas/signal.v1.json` |

@@ -7,6 +7,18 @@ timestamp: 2026-07-05T00:00:00Z
 
 # Log
 
+## 2026-07-06 — ingestor-binance implementado (última fuente)
+- Spike del endpoint P2P resuelto (ADR-0005): HTTP 200 con la forma esperada,
+  ~643 anuncios USDT/VES; fixtures reales versionados. `tradeType` = perspectiva
+  del taker.
+- Servicio completo: polling educado (presupuesto, backoff+jitter, breaker),
+  validación de schema de la fuente, sanitización, outliers MAD etiquetados
+  (con piso relativo 2 % calibrado con datos reales), crudo 90 d y `p2p.snapshot`
+  (contrato `schemas/p2p-snapshot.v1.json`). 40 tests; flujo productor→bus
+  verificado en vivo (100 anuncios/lado).
+- Con esto las 3 fuentes/servicios de datos están implementados; falta fase 2 del
+  engine (brecha) y el api-gateway.
+
 ## 2026-07-05 — indicator-engine fase 1: primer consumidor del bus
 - Motor implementado como consumidor de `official.rate.updated`: validación contra
   schema compartido, DLQ, idempotencia por `event_id`, hypertable `indicators`

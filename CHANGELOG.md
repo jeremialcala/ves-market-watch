@@ -105,6 +105,30 @@ Convención de mantenimiento (inventario por ejecución):
   `api-contracts.md`): `official-rate.v1.json` e `indicators.v1.json` (JSON Schema
   2020-12). Verificados en ambos lados: el ingestor-bcv valida lo que produce
   (nuevo contract test) y el engine valida lo que consume y lo que emite.
+- **`ingestor-binance` — última fuente de datos implementada** (PRD ingesta
+  Binance P2P, ADR-0005):
+  - Spike técnico del endpoint resuelto con datos vivos: HTTP 200 con la forma
+    esperada (~643 anuncios USDT/VES); respuestas reales versionadas como fixtures
+    y semántica de `tradeType` documentada (perspectiva del taker).
+  - Polling educado: User-Agent identificable, presupuesto de requests/min
+    (ventana deslizante), backoff exponencial con jitter ante 429/5xx y circuit
+    breaker con cooldown/half-open que alerta solo al abrir — nunca rotación de IP.
+  - Validación de cada página contra el schema de la fuente
+    (`apps/ingestor-binance/schemas/binance-adv-search.response.json`): cambio de
+    esquema → descarte + alerta, jamás se publica un snapshot corrupto (A10).
+  - Normalización con sanitización de textos (A05) y outliers de precio
+    **etiquetados** por MAD (z-score modificado, k=3.5) con fallback para MAD=0 y
+    piso de desviación relativa del 2 % — calibrado contra el fixture real, donde
+    el MAD puro marcaba dispersión legítima de un mercado agrupado (±0.3 %).
+  - Defensas de red: TLS estricto, timeout y tope de bytes por streaming
+    (zip-bomb); páginas incompletas → snapshot `partial=true`.
+  - Contrato `schemas/p2p-snapshot.v1.json` + hypertable `p2p_snapshots_raw`
+    (JSONB crudo, retención nativa 90 días, RF-5) montada en el init del compose.
+  - CLI `python -m ingestor_binance [--once] [--dry-run]`; 40 tests con servidor
+    HTTP local (paginación, parcial, tope de bytes, schema roto) y e2e contra
+    RabbitMQ/TimescaleDB reales.
+  - Verificación en vivo: dry-run contra Binance real (100 anuncios/lado) y flujo
+    productor→bus con cola espía (2 `p2p.snapshot` + crudos en DB).
 
 ### Changed
 
@@ -127,6 +151,12 @@ Convención de mantenimiento (inventario por ejecución):
 - `knowledge/` sincronizado con el motor: `services/indicator-engine.md`
   (implementado-parcial), `events/indicators-updated.md` y
   `events/official-rate-updated.md` (consumidor real), nueva `tables/indicators.md`,
+  índices y `log.md`.
+- PRD ingesta Binance P2P pasa a `accepted — implementado` (RF-6 como logs
+  estructurados; export a sistema de métricas queda para fase 05); ADR-0005 con el
+  TODO del spike resuelto; `api-contracts.md` sin el TODO del schema p2p-snapshot.
+- `knowledge/` sincronizado con el ingestor P2P: `services/ingestor-binance.md` y
+  `events/p2p-snapshot.md` (implementados), nueva `tables/p2p_snapshots_raw.md`,
   índices y `log.md`.
 
 ## [0.1.0] - 2026-07-05

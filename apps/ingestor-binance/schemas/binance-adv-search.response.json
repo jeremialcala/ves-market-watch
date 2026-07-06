@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Respuesta de /bapi/c2c/v2/friendly/c2c/adv/search (schema de la fuente)",
+  "description": "Valida SOLO los campos que el ingestor consume (escenario negativo 1 del PRD: cambio de esquema → descartar + alertar). Tolerante a campos extra: Binance puede agregar sin rompernos. Forma confirmada con spike real el 2026-07-05.",
+  "type": "object",
+  "required": ["code", "success", "data"],
+  "properties": {
+    "code": { "const": "000000" },
+    "success": { "const": true },
+    "data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["adv", "advertiser"],
+        "properties": {
+          "adv": {
+            "type": "object",
+            "required": [
+              "advNo",
+              "price",
+              "surplusAmount",
+              "minSingleTransAmount",
+              "maxSingleTransAmount",
+              "tradeMethods"
+            ],
+            "properties": {
+              "advNo": { "type": "string", "minLength": 1 },
+              "price": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$" },
+              "surplusAmount": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$" },
+              "minSingleTransAmount": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$" },
+              "maxSingleTransAmount": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$" },
+              "tradeMethods": {
+                "type": "array",
+                "items": { "type": "object" }
+              }
+            }
+          },
+          "advertiser": {
+            "type": "object",
+            "required": ["userType"],
+            "properties": {
+              "userType": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
