@@ -19,6 +19,13 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- ADR-0011 (accepted): pseudonimización HMAC-SHA256 del identificador de anunciantes P2P
+  (`merchant_ref`, clave dedicada `MERCHANT_HMAC_KEY` en secret store, sin rotación
+  programada). Cierra el `<TODO>` de `data-classification.md`: historia analítica
+  (dedup de profundidad, concentración, recurrencia, forense) sin alias ni ID crudos en
+  disco. Implementación pendiente en `ingestor-binance` (contrato p2p-snapshot v1.1).
+  PRD de ingesta P2P y clasificación de datos actualizados.
+
 - **Bundle de contexto en Open Knowledge Format (OKF v0.1)** en `knowledge/` (ADR-0010):
   conceptos tipados con frontmatter YAML para servicios, eventos AMQP, tablas y métricas,
   con estado de implementación y grafo de links a PRDs/ADRs/migraciones; `index.md` de

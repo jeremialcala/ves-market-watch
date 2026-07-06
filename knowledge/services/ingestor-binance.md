@@ -36,5 +36,8 @@ perspectiva del taker), normaliza, **etiqueta** outliers y publica
 - ADR-0005 (spike resuelto) · Contrato: `../../schemas/p2p-snapshot.v1.json` · Amenazas T2, T7.
 
 ## Pendiente
-- Nada en este servicio; el consumo de `p2p.snapshot` (precio de referencia, brecha)
-  es la fase 2 del [indicator-engine](indicator-engine.md).
+- **ADR-0011**: `minimizar_crudo` pasa de descartar a pseudonimizar — añadir
+  `merchant_ref` (HMAC-SHA256 con `MERCHANT_HMAC_KEY` del secret store) al crudo y al
+  evento (contrato v1.1). El alias e ID crudos siguen sin persistir.
+- El consumo de `p2p.snapshot` (precio de referencia, brecha) es la fase 2 del
+  [indicator-engine](indicator-engine.md).

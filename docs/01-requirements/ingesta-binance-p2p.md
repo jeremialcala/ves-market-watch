@@ -59,6 +59,7 @@ Usuario directo: el motor de indicadores (consumidor interno de los eventos).
 | Eventos publicados con firma de esquema/versión para integridad | V13 | L2 | A08 |
 | Logging de seguridad: fallos de validación y anomalías de fuente | V16 | L1 | A09 |
 | Dependencias con lockfile y SCA en CI | — | L1 | A03 |
+| Identidad de anunciantes solo como pseudónimo HMAC (`merchant_ref`, ADR-0011); alias e ID crudos nunca persisten | V8 | L2 | A04 |
 
 ## Métricas de éxito
 - ≥ 99 % de ciclos completados en horario 06:00–22:00 VET.

@@ -7,6 +7,15 @@ timestamp: 2026-07-05T00:00:00Z
 
 # Log
 
+## 2026-07-06 — Identidad de anunciantes P2P: pseudonimización HMAC (ADR-0011)
+- Decisión humana que cierra el TODO de data-classification: conservar historia de
+  anunciantes como `merchant_ref` (HMAC-SHA256, clave dedicada `MERCHANT_HMAC_KEY`,
+  sin rotación programada); alias e ID crudos siguen sin persistir.
+- Habilita (fase 2 del engine): dedup de profundidad, concentración de mercado,
+  recurrencia de manipuladores (T2) y forense de señales (T10).
+- Implementación pendiente en `ingestor-binance` (`minimizar_crudo` + contrato
+  p2p-snapshot v1.1, aditivo); PRD y data-classification actualizados.
+
 ## 2026-07-06 — Auditoría de coherencia docs↔implementación
 - Minimización de datos aplicada al crudo P2P (`minimizar_crudo`): el alias e
   identificadores del anunciante ya no tocan disco — cierra la brecha con

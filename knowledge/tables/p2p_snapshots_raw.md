@@ -21,7 +21,7 @@ Hypertable particionada por `captured_at` con `add_retention_policy(90 días)`
 | `asset` / `fiat` | text | Par capturado (USDT / VES) |
 | `partial` | boolean | true si alguna página del top-K no llegó |
 | `ad_count` | integer | Anuncios capturados |
-| `raw` | jsonb | Items `{adv, advertiser}` con el anunciante **minimizado**: sin alias ni identificadores pseudónimos (data-classification), solo `userType` y métricas públicas |
+| `raw` | jsonb | Items `{adv, advertiser}` con el anunciante **minimizado**: sin alias ni identificadores crudos, solo `userType`, métricas públicas y — decidido en ADR-0011, pendiente de implementar — el pseudónimo `merchant_ref` (HMAC-SHA256, clave dedicada) |
 
 PK `(captured_at, side)`; reentrega/duplicado → `ON CONFLICT DO NOTHING`.
 

@@ -21,3 +21,8 @@ sanitizados (A05); outliers **etiquetados, no filtrados** (el filtrado y el
 
 El `event_id` del sobre es el snapshot_id de idempotencia para el consumidor.
 Mensajes persistentes, publisher confirms, exchange `market.events`.
+
+**Cambio decidido (ADR-0011, pendiente de implementar):** el objeto `merchant` incorpora
+`merchant_ref` (HMAC-SHA256 del identificador estable del anunciante, clave dedicada) —
+contrato v1 → v1.1, aditivo. El alias e ID crudos siguen sin viajar ni persistir.
+Habilita dedup de profundidad, concentración y recurrencia en la fase 2 del engine.
