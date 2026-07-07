@@ -7,6 +7,15 @@ timestamp: 2026-07-05T00:00:00Z
 
 # Log
 
+## 2026-07-07 — Verificación de pendientes de Gate 0 y Gate 1
+- Gate 0: retención de alias → resuelto (ADR-0011 implementado); quedan como
+  decisiones humanas los TODO del charter (apps consumidoras, marco legal).
+- Gate 1: ADRs 0001–0011 (0010 proposed pero implementada de facto — el bundle
+  OKF se mantiene desde 2026-07-05); contratos de eventos formales (3 de 4
+  schemas, p2p-snapshot v1.1); abiertos: signal.v1/umbrales (engine fase 2),
+  secret store (fase 05). Threat model T2/T10 citan ahora el ADR-0011.
+- Ambos gates listos para la firma humana («Aprobado por» sigue pendiente).
+
 ## 2026-07-06 — ADR-0011 implementado: merchant_ref en producción
 - `Pseudonimizador` en el dominio del ingestor-binance: HMAC-SHA256 sobre `userNo`
   (nunca el alias), 32 hex; en el evento (contrato v1.1 aditivo, `merchant_ref`

@@ -205,6 +205,21 @@ Convención de mantenimiento (inventario por ejecución):
   - Índices del `knowledge/` (servicios, eventos con sobre `occurred_at`, métricas)
     sincronizados; README de tests de indicator-engine e ingestor-binance
     actualizados a lo realmente construido.
+- **Verificación de pendientes de los gates abiertos** (Gate 0 y Gate 1):
+  - Gate 0: el pendiente de retención de alias de anunciantes queda marcado
+    **resuelto** (ADR-0011 implementado); permanecen como decisiones humanas la
+    identificación de apps consumidoras y la validación del marco legal (charter).
+  - Gate 1: fila de ADRs actualizada a 0001–0011 (0011 accepted e implementada;
+    0010 proposed pero implementada de facto); contratos de eventos reconocidos
+    como formales (JSON Schema + contract tests en ambos lados, p2p-snapshot v1.1);
+    siguen abiertos `signal.v1`/umbrales (engine fase 2) y secret store (fase 05).
+  - Threat model: T2 y T10 citan ahora el ADR-0011 (`merchant_ref` habilita
+    recurrencia de manipuladores y forense entre snapshots); trazabilidad de T2
+    refleja el etiquetado MAD ya verificado en ingestor-binance.
+  - `api-contracts.md`: la intro distingue eventos formales (schemas/) del
+    esqueleto REST/WSS (OpenAPI llegará con el api-gateway); tabla de eventos
+    anota p2p-snapshot v1.1 y `signal.v1` como pendiente.
+  - Ambos gates siguen a la espera de la firma humana (líneas «Aprobado por»).
 
 ## [0.1.0] - 2026-07-05
 

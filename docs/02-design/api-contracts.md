@@ -1,7 +1,9 @@
 # Contratos de API — VES Market Watch
 
-Esqueleto de contratos. La especificación formal OpenAPI 3.1 / AsyncAPI 2.6 se generará
-en fase 03 a partir de estas tablas.
+Los contratos de **eventos** ya son formales: JSON Schema 2020-12 en `schemas/` (raíz),
+verificados por contract tests en productor y consumidor. Las tablas REST/WSS de abajo
+siguen siendo esqueleto: la especificación OpenAPI 3.1 formal se generará con el
+api-gateway.
 
 ## Autenticación
 | Endpoint | Método | Request | Response | Auth |
@@ -43,10 +45,10 @@ token expirado con código 4401.
 ## Eventos internos (AMQP `market.events`, topic exchange)
 | Routing key | Productor | Consumidor | Schema |
 |---|---|---|---|
-| `p2p.snapshot` | ingestor-binance | indicator-engine | `schemas/p2p-snapshot.v1.json` |
+| `p2p.snapshot` | ingestor-binance | indicator-engine | `schemas/p2p-snapshot.v1.json` (v1.1: `merchant_ref`, ADR-0011) |
 | `official.rate.updated` | ingestor-bcv | indicator-engine | `schemas/official-rate.v1.json` |
 | `indicators.updated` | indicator-engine | api-gateway | `schemas/indicators.v1.json` |
-| `signals.emitted` | indicator-engine | api-gateway | `schemas/signal.v1.json` |
+| `signals.emitted` | indicator-engine | api-gateway | `schemas/signal.v1.json` (pendiente — engine fase 2) |
 
 Todos los eventos llevan sobre: `{event_id, event_type, schema_version, occurred_at,
 producer}` para idempotencia y trazabilidad (implementado así en ingestor-bcv e

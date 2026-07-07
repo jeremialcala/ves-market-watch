@@ -9,7 +9,7 @@ indicadores financieros expuestos vía API REST y WebSocket (WSS).
 ```
 ves-market-watch/
 ├── .ai-dlc/                  # Metodología: gates y plantillas
-│   ├── gates/                # Checklists de Gate 0..5
+│   ├── gates/                # Checklists de gates (0 y 1 creados; siguientes al cerrar cada fase)
 │   └── templates/            # prd, adr, threat-model
 ├── knowledge/                # Contexto del proyecto en Open Knowledge Format (ADR-0010)
 ├── schemas/                  # Contratos de eventos del bus (JSON Schema 2020-12)
