@@ -1,7 +1,7 @@
 # Historial de implementación — VES Market Watch
 
 * **Estado:** review
-* **Fecha:** 2026-07-11
+* **Fecha:** 2026-07-11 (regenerado tras el commit `31289f5`)
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
 * **Versión:** 0.2.0
@@ -34,14 +34,20 @@ gitGraph
     commit id: "3dfba24"
     commit id: "f980ff5"
     commit id: "ac47922"
+    commit id: "b14c8f7"
+    commit id: "92a9e3d"
+    commit id: "31289f5"
 ```
 
-*(Eje de trazabilidad, fase 03 — rama `develop`; `main` sigue en `bd9698b`, pendiente de merge.)*
+*(Eje de trazabilidad, fase 03 — rama `feat-ai-dlc` (pusheada a origin); `develop` quedó en `ac47922` y `main` en `bd9698b`, pendientes de merge.)*
 
 ### Bitácora de cambios (fiel al repo)
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `31289f5` | commit | — | Jeremi Alcala | 2026-07-11 | feat: Implement historical data ingestion service with adaptive parsing |
+| `92a9e3d` | commit | — | Jeremi Alcala | 2026-07-11 | feat: Add Dockerfiles for ingestor-binance, ingestor-bcv, and indicator-engine; create .dockerignore and analysis script |
+| `b14c8f7` | commit | — | Jeremi Alcala | 2026-07-11 | feat: Update documentation for version 0.2.0, closing Gates 0 and 1, and add implementation history |
 | `ac47922` | commit | — | Jeremi Alcala | 2026-07-11 | feat: Update API contracts and architecture to integrate Auth0 for authentication |
 | `f980ff5` | commit | — | Jeremi Alcala | 2026-07-07 | feat: Update Gate 0 and Gate 1 documentation with resolution of alias retention and ADR-0011 implementation details |
 | `3dfba24` | commit | — | Jeremi Alcala | 2026-07-06 | feat: Implement ADR-0011 for P2P advertiser pseudonymization |
@@ -63,4 +69,5 @@ gitGraph
 | Tag | Versión CHANGELOG | ADR / feature | Nota |
 |---|---|---|---|
 | v0.1.0 | 0.1.0 — línea base documental (Gates 0 y 1 en borrador) | ADR-0001…0006; 4 PRDs; threat model v1 | Commit inicial `b34c3af`, 2026-07-05. Sin código ejecutable |
-| `<TODO: taggear v0.2.0>` | 0.2.0 — Gates 0 y 1 cerrados (HITL 2026-07-11) | ADR-0007…0012; ingestor-bcv, indicator-engine fase 1 e ingestor-binance implementados; contrato p2p-snapshot v1.1 (ADR-0011); auth OIDC/Auth0 (ADR-0012) | Corte en `develop` (`ac47922`). Taggear sobre el merge a `main` para que el grafo lo recoja |
+| `<TODO: taggear v0.2.0>` | 0.2.0 — Gates 0 y 1 cerrados (HITL 2026-07-11) | ADR-0007…0012; ingestor-bcv, indicator-engine fase 1 e ingestor-binance implementados; contrato p2p-snapshot v1.1 (ADR-0011); auth OIDC/Auth0 (ADR-0012) | Corte documentado en `b14c8f7`. Taggear sobre el merge a `main` para que el grafo lo recoja |
+| — (en `[Unreleased]`) | próximo corte | **ADR-0013** + PRD ingesta histórica (approved, HITL 2026-07-11): `ingestor-historico` implementado (`31289f5`); Dockerfiles de los 3 servicios de datos (`92a9e3d`) | Rama `feat-ai-dlc`, pendiente de merge a `develop`/`main` |

@@ -20,7 +20,7 @@ Convención de mantenimiento (inventario por ejecución):
 ### Added
 
 - **`ingestor-historico` — quinto servicio: backfill de históricos de precio**
-  (PRD `ingesta-historica.md` en review, **ADR-0013 accepted**):
+  (PRD `ingesta-historica.md` **approved — HITL 2026-07-11**, **ADR-0013 accepted**):
   - Proceso **batch por demanda** (CLI `cargar`/`stats`), hexagonal, que carga los
     exports CSV del sistema previo (promedio ponderado del top-100 combinado con el
     detalle de 3 bancos principales, cada ~10 min) en la nueva hypertable

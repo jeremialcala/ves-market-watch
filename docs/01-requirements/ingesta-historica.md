@@ -1,11 +1,11 @@
 # PRD — Ingesta de Data Histórica de Precio (backfill USDT/VES)
 
-- **Estado:** review — implementado en `apps/ingestor-historico` (2026-07-11);
-  pendiente de aprobación HITL (Gate 0 incremental)
+- **Estado:** approved (HITL 2026-07-11, Gate 0 incremental) — implementado en
+  `apps/ingestor-historico` (2026-07-11)
 - **Fecha:** 2026-07-11
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 01-requirements
-- **Versión:** 0.1.0
+- **Versión:** 0.1.1
 
 ## Problema y contexto
 Antes de que existiera la plataforma, un sistema previo capturó cada ~10 minutos el

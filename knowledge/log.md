@@ -17,8 +17,9 @@ timestamp: 2026-07-05T00:00:00Z
 - Varianza histórica vía `stats`: precio base y por banco, log-retornos, por día de
   mercado (UTC−4). Verificado en vivo: 1.064 filas (2025-12-02→12-11), recarga
   0/1.064, varianza σ²≈65.3 (σ≈8.08) sobre media 417.03.
-- PRD `ingesta-historica.md` en `review` (pendiente HITL, Gate 0 incremental);
-  39 tests; migración montada en el compose.
+- PRD `ingesta-historica.md` **approved (HITL 2026-07-11)** — Gate 0 incremental
+  cerrado; 39 tests; migración montada en el compose. Carga oficial confirmada en la
+  DB de desarrollo: 1.064 filas, `repo-history.md` regenerado tras el commit `31289f5`.
 
 ## 2026-07-11 — Gates 0 y 1 cerrados (HITL) y corte de versión 0.2.0
 - Ambos gates firmados por Jeremi Alcalá; la aprobación del Gate 0 cubre la versión
