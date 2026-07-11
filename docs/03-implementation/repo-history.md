@@ -1,7 +1,7 @@
 # Historial de implementación — VES Market Watch
 
 * **Estado:** review
-* **Fecha:** 2026-07-11 (regenerado tras el commit `31289f5`)
+* **Fecha:** 2026-07-11 (regenerado tras el commit `2349425`, mapa multi-rama)
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
 * **Versión:** 0.2.0
@@ -11,17 +11,19 @@
 
 ## Historial del repositorio (documentación viva)
 
-Derivado de `git log` con `scripts/gitgraph_from_log.py` (skill ai-dlc). Regenerar tras cada
-merge o tag para mantener la traza sincronizada (docs-as-code: derivar, no duplicar) y volver
-a anteponer esta cabecera. Los tags SemVer enlazan con las versiones del `CHANGELOG.md`.
+Derivado de `git log` con `scripts/gitgraph_branches.py`
+(ramas vivas: `main`, `develop`, `feat-ai-dlc`). Regenerar tras cada commit,
+merge o tag relevante y volver a anteponer esta cabecera (docs-as-code: derivar,
+no duplicar). Los tags SemVer enlazan con las versiones del `CHANGELOG.md`.
 
-### Grafo de commits y merges
+### Grafo de commits y ramas
 
 ```mermaid
 gitGraph
     commit id: "b34c3af" tag: "v0.1.0"
     commit id: "6c42e58"
     commit id: "bd9698b"
+    branch develop
     commit id: "9ad366f"
     commit id: "5ad050e"
     commit id: "f8922b6"
@@ -34,17 +36,32 @@ gitGraph
     commit id: "3dfba24"
     commit id: "f980ff5"
     commit id: "ac47922"
+    branch feat-ai-dlc
     commit id: "b14c8f7"
     commit id: "92a9e3d"
     commit id: "31289f5"
+    commit id: "fefef5c"
+    commit id: "2349425"
 ```
 
-*(Eje de trazabilidad, fase 03 — rama `feat-ai-dlc` (pusheada a origin); `develop` quedó en `ac47922` y `main` en `bd9698b`, pendientes de merge.)*
+*(Eje de trazabilidad, fase 03 — estado actual: `develop` bifurca de `main` en `bd9698b`
+y `feat-ai-dlc` de `develop` en `ac47922`; sin merges todavía. Las tres ramas están
+pusheadas a origin.)*
+
+### Estado actual de las ramas
+
+| Rama | Punta | Fecha | Commits propios |
+|---|---|---|---|
+| `main` | `bd9698b` | 2026-07-05 | 3 |
+| `develop` | `ac47922` | 2026-07-11 | 12 |
+| `feat-ai-dlc` | `2349425` | 2026-07-11 | 5 |
 
 ### Bitácora de cambios (fiel al repo)
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `2349425` | commit | — | Jeremi Alcala | 2026-07-11 | feat: Update documentation for ingestor-historico service and changelog with approval status and versioning |
+| `fefef5c` | commit | — | Jeremi Alcala | 2026-07-11 | feat: Update project charter with additional scope, stakeholders, and success metrics |
 | `31289f5` | commit | — | Jeremi Alcala | 2026-07-11 | feat: Implement historical data ingestion service with adaptive parsing |
 | `92a9e3d` | commit | — | Jeremi Alcala | 2026-07-11 | feat: Add Dockerfiles for ingestor-binance, ingestor-bcv, and indicator-engine; create .dockerignore and analysis script |
 | `b14c8f7` | commit | — | Jeremi Alcala | 2026-07-11 | feat: Update documentation for version 0.2.0, closing Gates 0 and 1, and add implementation history |
@@ -70,4 +87,4 @@ gitGraph
 |---|---|---|---|
 | v0.1.0 | 0.1.0 — línea base documental (Gates 0 y 1 en borrador) | ADR-0001…0006; 4 PRDs; threat model v1 | Commit inicial `b34c3af`, 2026-07-05. Sin código ejecutable |
 | `<TODO: taggear v0.2.0>` | 0.2.0 — Gates 0 y 1 cerrados (HITL 2026-07-11) | ADR-0007…0012; ingestor-bcv, indicator-engine fase 1 e ingestor-binance implementados; contrato p2p-snapshot v1.1 (ADR-0011); auth OIDC/Auth0 (ADR-0012) | Corte documentado en `b14c8f7`. Taggear sobre el merge a `main` para que el grafo lo recoja |
-| — (en `[Unreleased]`) | próximo corte | **ADR-0013** + PRD ingesta histórica (approved, HITL 2026-07-11): `ingestor-historico` implementado (`31289f5`); Dockerfiles de los 3 servicios de datos (`92a9e3d`) | Rama `feat-ai-dlc`, pendiente de merge a `develop`/`main` |
+| — (en `[Unreleased]`) | próximo corte | **ADR-0013** + PRD ingesta histórica (approved, HITL 2026-07-11): `ingestor-historico` implementado (`31289f5`), aprobación y charter documentados (`fefef5c`, `2349425`); Dockerfiles de los 3 servicios de datos (`92a9e3d`) | Rama `feat-ai-dlc`, pendiente de merge a `develop`/`main` |

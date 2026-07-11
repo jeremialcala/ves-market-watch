@@ -45,6 +45,12 @@ Convención de mantenimiento (inventario por ejecución):
     (precio base: media 417.03, σ² 65.32, σ 8.08; por banco incluida).
 - Knowledge base sincronizado: `services/ingestor-historico.md`,
   `tables/historical_market_snapshots.md`, índices y `log.md`.
+- **`scripts/gitgraph_branches.py`** — generador multi-rama del historial vivo
+  (fase 03): mapea el estado actual de varias ramas (`main`, `develop`,
+  `feat-ai-dlc`) con sus forks reales, tabla de puntas por rama y bitácora en UTF-8,
+  complementando al generador de una sola rama del skill AI-DLC.
+  `docs/03-implementation/repo-history.md` regenerado con el mapa de ramas
+  (develop bifurca de main en `bd9698b`; feat-ai-dlc de develop en `ac47922`).
 
 ## [0.2.0] - 2026-07-11
 
