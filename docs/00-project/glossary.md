@@ -1,5 +1,11 @@
 # Glosario / Lenguaje Ubicuo (DDD)
 
+- **Estado:** approved (Gate 0, HITL 2026-07-11)
+- **Fecha:** 2026-07-11
+- **Decisores:** Jeremi Alcalá
+- **Fase AI-DLC:** 00-project
+- **Versión:** 0.2.0
+
 | Término | Definición | Contexto acotado (Bounded Context) |
 |---|---|---|
 | Tasa Oficial | Valor VES/USD publicado por el BCV; referencia legal de cambio | Ingesta Oficial |

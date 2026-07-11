@@ -1,7 +1,10 @@
 # PRD — Ingesta Tasas Oficiales BCV (multi-moneda)
 
+- **Estado:** approved (Gate 0, HITL 2026-07-11) — implementado en `apps/ingestor-bcv` (2026-07-05)
+- **Fecha:** 2026-07-11
+- **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 01-requirements
-- **Estado:** accepted — implementado en `apps/ingestor-bcv` (2026-07-05)
+- **Versión:** 0.2.0
 
 ## Problema y contexto
 La referencia oficial de cambio la publica el Banco Central de Venezuela en su sitio web,

@@ -1,9 +1,12 @@
 # PRD — Ingesta Binance P2P (VES/USDT)
 
+- **Estado:** approved (Gate 0, HITL 2026-07-11) — implementado en `apps/ingestor-binance`
+  (2026-07-06). RF-6 (métricas operativas) cubierto con logs estructurados por ciclo; su
+  export a un sistema de métricas queda para fase 05-deployment.
+- **Fecha:** 2026-07-11
+- **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 01-requirements
-- **Estado:** accepted — implementado en `apps/ingestor-binance` (2026-07-06).
-  RF-6 (métricas operativas) cubierto con logs estructurados por ciclo; su export
-  a un sistema de métricas queda para fase 05-deployment.
+- **Versión:** 0.2.0
 
 ## Problema y contexto
 Para medir el mercado paralelo se necesita capturar de forma continua los anuncios P2P

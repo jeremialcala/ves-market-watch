@@ -17,7 +17,21 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+Sin cambios aún.
+
+## [0.2.0] - 2026-07-11
+
+Cierre de los Gates 0 (requisitos) y 1 (diseño) con aprobación humana, más la fase 03
+adelantada: tres de los cuatro servicios implementados y verificados en vivo
+(`ingestor-bcv`, `indicator-engine` fase 1, `ingestor-binance`). Corte según la
+convención AI-DLC (Gate 1 → 0.2.0).
+
 ### Added
+
+- **Documentación viva de fase 03**: `docs/03-implementation/repo-history.md` con el
+  `gitGraph` y la bitácora derivados del historial real (`gitgraph_from_log.py`) y la
+  tabla de trazabilidad tag ↔ versión ↔ ADR. Pendiente: taggear `v0.2.0` sobre el merge
+  a `main`.
 
 - **Gates 0 (requisitos) y 1 (diseño) cerrados (HITL, 2026-07-11)** — aprobación humana
   registrada en `.ai-dlc/gates/`. La aprobación cubre la versión de requisitos actualizada
@@ -182,6 +196,12 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **Cabeceras de metadatos AI-DLC sincronizadas con el corte 0.2.0** en los artefactos
+  aprobados por los gates (charter, glosario, clasificación de datos, 4 PRDs,
+  architecture, threat-model, api-contracts, C4 context/container): Estado `approved`
+  con referencia al gate y fecha HITL, Decisores, Fase y Versión 0.2.0. El PRD
+  `api-streaming` pasa de `review` a `approved` (la aprobación del Gate 0 cubre la
+  versión actualizada por ADR-0012).
 - **Alcance del PRD de ingesta BCV ampliado a multi-moneda**: se ingestan todas las
   monedas de la sección «tipo de cambio de referencia» (hoy USD, EUR, CNY, TRY, RUB)
   con descubrimiento dinámico de monedas nuevas; antes el objetivo era solo VES/USD.
@@ -275,5 +295,6 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/jeremialcala/ves-market-watch/releases/tag/v0.1.0

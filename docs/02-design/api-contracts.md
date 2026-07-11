@@ -1,5 +1,12 @@
 # Contratos de API — VES Market Watch
 
+- **Estado:** approved (Gate 1, HITL 2026-07-11) — eventos formales; REST/WSS esqueleto
+  hasta el api-gateway
+- **Fecha:** 2026-07-11
+- **Decisores:** Jeremi Alcalá
+- **Fase AI-DLC:** 02-design
+- **Versión:** 0.2.0
+
 Los contratos de **eventos** ya son formales: JSON Schema 2020-12 en `schemas/` (raíz),
 verificados por contract tests en productor y consumidor. Las tablas REST/WSS de abajo
 siguen siendo esqueleto: la especificación OpenAPI 3.1 formal se generará con el

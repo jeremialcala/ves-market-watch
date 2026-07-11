@@ -1,5 +1,13 @@
 # C4 — Diagrama de Contexto
 
+- **Estado:** approved (Gate 1, HITL 2026-07-11)
+- **Fecha:** 2026-07-11
+- **Decisores:** Jeremi Alcalá
+- **Fase AI-DLC:** 02-design
+- **Versión:** 0.2.0
+
+*(Eje de estructura — ¿qué existe y quién lo usa?)*
+
 ```mermaid
 C4Context
   title Contexto del sistema — VES Market Watch

@@ -1,7 +1,11 @@
 # PRD — API REST y Streaming WSS
 
+- **Estado:** approved (Gate 0, HITL 2026-07-11; cubre la versión actualizada por
+  ADR-0012) — pendiente de implementación (`api-gateway`, fase 03)
+- **Fecha:** 2026-07-11
+- **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 01-requirements
-- **Estado:** review
+- **Versión:** 0.2.0
 
 ## Problema y contexto
 Las aplicaciones externas necesitan consumir tanto el histórico (REST) como los eventos e

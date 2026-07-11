@@ -7,6 +7,18 @@ timestamp: 2026-07-05T00:00:00Z
 
 # Log
 
+## 2026-07-11 — Gates 0 y 1 cerrados (HITL) y corte de versión 0.2.0
+- Ambos gates firmados por Jeremi Alcalá; la aprobación del Gate 0 cubre la versión
+  de requisitos actualizada por ADR-0012 (auth OIDC con Auth0, supersede ADR-0003).
+- CHANGELOG: `[Unreleased]` cortado a **0.2.0** (convención AI-DLC: Gate 1 → 0.2.0);
+  cabeceras de metadatos (Estado approved / Versión 0.2.0) sincronizadas en charter,
+  glosario, data-classification, 4 PRDs, architecture, threat-model, api-contracts y C4.
+- Nueva documentación viva de fase 03: `docs/03-implementation/repo-history.md`
+  (gitGraph + bitácora derivados del historial real + trazabilidad tag↔versión↔ADR).
+- Pendientes: taggear `v0.2.0` sobre el merge a `main`; residuales HITL del charter
+  (apps consumidoras, marco legal); `signal.v1`/umbrales (engine fase 2); secret store
+  (fase 05); api-gateway sin implementar (Resource Server, ADR-0012).
+
 ## 2026-07-07 — Verificación de pendientes de Gate 0 y Gate 1
 - Gate 0: retención de alias → resuelto (ADR-0011 implementado); quedan como
   decisiones humanas los TODO del charter (apps consumidoras, marco legal).

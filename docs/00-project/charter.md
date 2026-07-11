@@ -1,5 +1,13 @@
 # Project Charter — VES Market Watch
 
+- **Estado:** approved (Gate 0, HITL 2026-07-11) — residuales en seguimiento: ratificación
+  del marco legal y nombrar apps consumidoras concretas
+- **Fecha:** 2026-07-11
+- **Decisores:** Jeremi Alcalá
+- **Sponsor / Owner:** Jeremi Alcalá
+- **Fase AI-DLC:** 00-project
+- **Versión:** 0.2.0
+
 ## Visión
 Dar a personas y aplicaciones una visión consolidada, en tiempo casi real, de la brecha
 entre el tipo de cambio oficial VES/USD (BCV) y el mercado P2P VES/USDT (Binance), con

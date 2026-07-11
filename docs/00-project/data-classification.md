@@ -1,5 +1,11 @@
 # Clasificación de Datos
 
+- **Estado:** approved (Gate 0, HITL 2026-07-11)
+- **Fecha:** 2026-07-11
+- **Decisores:** Jeremi Alcalá
+- **Fase AI-DLC:** 00-project
+- **Versión:** 0.2.0
+
 Niveles: Público < Interno < Confidencial < Restringido.
 
 | Dato | Clasificación | Regulación | Cifrado en reposo | Cifrado en tránsito | Retención |

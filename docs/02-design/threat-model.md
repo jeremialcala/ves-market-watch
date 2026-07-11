@@ -1,7 +1,12 @@
 # Threat Model — VES Market Watch (sistema completo)
 
+- **Estado:** approved (Gate 1, HITL 2026-07-11)
+- **Fecha:** 2026-07-11
+- **Decisores:** Jeremi Alcalá
+- **Fase AI-DLC:** 02-design
+- **Versión:** 0.2.0
 - **Alcance:** sistema completo (4 servicios + RabbitMQ + TimescaleDB)
-- **Fecha / versión:** 2026-07-05 / v1
+- **Metodología:** STRIDE + DREAD
 - **Clasificación de datos:** ver `docs/00-project/data-classification.md`
 
 ## Diagrama de flujo de datos
