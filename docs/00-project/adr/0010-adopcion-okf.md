@@ -1,8 +1,8 @@
 # ADR-0010: Adopción del Open Knowledge Format (OKF) para el contexto del proyecto
 
-- **Estado:** proposed — implementada de facto (bundle en `knowledge/` mantenido desde 2026-07-05 bajo la regla de actualización); pendiente aprobación humana
+- **Estado:** accepted (2026-07-11) — implementada de facto desde 2026-07-05; aprobada en el cierre de Gate 1
 - **Fecha:** 2026-07-05
-- **Decisores:** Jeremi Alcalá `<pendiente de aprobación>`
+- **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** transversal (00-project)
 - **Controles OWASP afectados:** A09 (indirecto — trazabilidad del conocimiento)
 

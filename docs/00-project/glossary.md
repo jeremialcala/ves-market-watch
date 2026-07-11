@@ -18,6 +18,12 @@
 | Señal | Evento derivado de reglas sobre indicadores (p. ej. brecha supera umbral) que apoya decisiones de compra/venta | Indicadores |
 | Indicador | Métrica calculada y versionada a partir de snapshots y tasa oficial | Indicadores |
 | Evento de Mercado | Mensaje publicado en el bus cuando llega nueva información de una fuente | Plataforma (mensajería) |
-| Consumidor | Aplicación externa autenticada que consume la API REST o el WSS | Acceso (API/WSS) |
+| Consumidor / Usuario | Persona autenticada vía Auth0 (OIDC) que consume la API REST o el WSS a través de un front-end/SPA | Acceso (API/WSS) |
+| Auth0 (Proveedor de Identidad / OP) | OpenID Provider externo que gestiona login, MFA y emite tokens (ADR-0012) | Acceso (API/WSS) |
+| OIDC (OpenID Connect) | Capa de identidad sobre OAuth2; aquí flujo Authorization Code + PKCE | Acceso (API/WSS) |
+| Access Token | JWT (RS256) que autoriza el acceso a la API; el gateway lo valida por audiencia y firma | Acceso (API/WSS) |
+| ID Token | JWT de identidad emitido por Auth0 para el front-end; **no** se usa para autorizar en el gateway | Acceso (API/WSS) |
+| Resource Server | Rol del api-gateway: valida access tokens y sirve la data; no emite tokens | Acceso (API/WSS) |
+| Scope / Permiso | Autorización granular (`read:rates`, `stream:events`, …) asignada por RBAC de Auth0 | Acceso (API/WSS) |
 | Método de Pago | Banco o mecanismo aceptado en un anuncio (p. ej. Banesco, Pago Móvil) | Ingesta P2P |
 | Límites (Min/Max) | Monto mínimo y máximo por transacción aceptado en un anuncio | Ingesta P2P |

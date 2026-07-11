@@ -31,7 +31,8 @@ ves-market-watch/
 - Python 3.12+ (asyncio) para servicios.
 - RabbitMQ como bus de eventos entre ingesta e indicadores (ADR-0004).
 - PostgreSQL + TimescaleDB para series de tiempo (ADR-0002).
-- JWT / OAuth2 client credentials para consumidores de API/WSS (ADR-0003).
+- Autenticación OIDC con Auth0 (Authorization Code + PKCE); el api-gateway es Resource
+  Server y valida access tokens (ADR-0012, supersede ADR-0003).
 
 ## Desarrollo
 

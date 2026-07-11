@@ -47,4 +47,4 @@ capturada ──validación ok──> valid ──sin actualización > umbral (6
   Mecanismo de aprobación resuelto: CLI de operador
   (`python -m ingestor_bcv revalidar listar|aprobar|rechazar`, con nota y usuario
   auditables); un endpoint admin autenticado podrá sumarse cuando exista el api-gateway.
-- Impacto en threat model: cierra el residual de T1 documentado en ADR-0006; añade superficie admin que debe autenticarse (A01, ver ADR-0003).
+- Impacto en threat model: cierra el residual de T1 documentado en ADR-0006; añade superficie admin que debe autenticarse (A01, ver ADR-0012 — rol `operator` en Auth0).

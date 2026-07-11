@@ -4,7 +4,8 @@
 C4Container
   title Contenedores — VES Market Watch
 
-  Person(consumerDev, "Aplicación consumidora", "REST/WSS + JWT")
+  Person(consumerDev, "Usuario consumidor (SPA)", "REST/WSS + access token")
+  System_Ext(auth0, "Auth0", "OpenID Provider (OIDC): login y emisión de tokens")
   System_Ext(binance, "Binance P2P", "Anuncios USDT/VES")
   System_Ext(bcv, "Sitio web BCV", "Tasa oficial VES/USD")
 
@@ -12,9 +13,9 @@ C4Container
     Container(ingBin, "ingestor-binance", "Python asyncio", "Polling P2P, normaliza y publica p2p.snapshot")
     Container(ingBcv, "ingestor-bcv", "Python asyncio", "Scraping BCV 2x/h, valida y publica official.rate.updated")
     Container(engine, "indicator-engine", "Python asyncio", "Consume eventos, calcula indicadores y señales")
-    Container(gateway, "api-gateway", "Python (FastAPI)", "REST + WSS, OAuth2/JWT, rate limiting")
+    Container(gateway, "api-gateway", "Python (FastAPI)", "REST + WSS, Resource Server (valida access tokens Auth0), rate limiting")
     ContainerQueue(mq, "RabbitMQ", "AMQP topic exchange", "market.events + DLQ")
-    ContainerDb(db, "PostgreSQL + TimescaleDB", "Hypertables", "Tasas, snapshots, indicadores, señales, clientes")
+    ContainerDb(db, "PostgreSQL + TimescaleDB", "Hypertables", "Tasas, snapshots, indicadores, señales")
   }
 
   Rel(ingBin, binance, "GET/POST anuncios", "HTTPS, TLS verificado")
@@ -27,13 +28,17 @@ C4Container
   Rel(ingBin, db, "snapshots crudos", "SQL/TLS")
   Rel(ingBcv, db, "tasas oficiales", "SQL/TLS")
   Rel(engine, db, "indicadores y señales", "SQL/TLS")
-  Rel(gateway, db, "histórico y clientes", "SQL/TLS, solo lectura + api_clients")
-  Rel(consumerDev, gateway, "REST /api/v1 + WSS", "HTTPS/WSS + JWT")
+  Rel(gateway, db, "histórico", "SQL/TLS, solo lectura")
+  Rel(consumerDev, auth0, "login OIDC (Auth Code + PKCE)", "HTTPS")
+  Rel(gateway, auth0, "valida tokens (JWKS / discovery)", "HTTPS")
+  Rel(consumerDev, gateway, "REST /api/v1 + WSS", "HTTPS/WSS + access token")
 ```
 
 **Trust boundaries:**
 
-1. Internet ↔ api-gateway: única entrada externa; JWT + rate limiting + TLS.
+0. Usuario ↔ Auth0 ↔ api-gateway: identidad delegada a Auth0 (OIDC); el gateway solo acepta
+   access tokens válidos (firma JWKS, `iss`/`aud`). No emite tokens ni guarda credenciales.
+1. Internet ↔ api-gateway: única entrada de data; access token + rate limiting + TLS.
 2. Fuentes externas ↔ ingestores: datos no confiables; validación de esquema y rango.
 3. Servicios ↔ RabbitMQ: usuarios AMQP dedicados por servicio con permisos mínimos
    (los ingestores solo publican; el engine consume y publica; el gateway solo consume).

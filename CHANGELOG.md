@@ -19,6 +19,23 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Gates 0 (requisitos) y 1 (diseño) cerrados (HITL, 2026-07-11)** — aprobación humana
+  registrada en `.ai-dlc/gates/`. La aprobación cubre la versión de requisitos actualizada
+  por ADR-0012; residuales no-bloqueantes en seguimiento (nombrar consumidores concretos,
+  ratificación del marco legal). **ADR-0010 (OKF) promovida de `proposed` a `accepted`.**
+
+- **ADR-0012 (accepted): autenticación OIDC con Auth0** (Authorization Code + PKCE) para
+  **usuarios humanos**; **supersede a ADR-0003**. El api-gateway pasa de Authorization Server
+  a **Resource Server**: valida access tokens de Auth0 (RS256 vía JWKS; `iss`/`aud`/`exp`) y
+  ya no emite tokens ni almacena credenciales.
+  - Se retiran del gateway la tabla `api_clients`, los secrets de cliente (argon2id) y las
+    claves de firma JWT: identidad y credenciales viven ahora en Auth0.
+  - Nuevas amenazas T11 (ID token / audiencia ajena usada como bearer) y T12 (robo de token
+    en el navegador vía XSS del SPA).
+  - Diseño actualizado en cascada: PRD `api-streaming`, `api-contracts.md`, `threat-model.md`,
+    `architecture.md`, C4 context/container, `data-classification.md` (PII de usuarios en
+    Auth0), `glossary.md`, `charter.md`, plan de pruebas y knowledge base. Sin código aún.
+
 - **Implementación de ADR-0011 en `ingestor-binance`** — cierre del motor de ingesta P2P:
   - `Pseudonimizador` en el dominio: `merchant_ref = HMAC-SHA256(MERCHANT_HMAC_KEY,
     advertiser.userNo)` truncado a 128 bits (32 hex); nunca sobre el alias (rompería

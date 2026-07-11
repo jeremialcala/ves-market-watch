@@ -19,14 +19,17 @@ indicadores financieros que apoyen la administración eficiente del presupuesto 
   - Ejecución de operaciones de compra/venta (no es un bot de trading).
   - Custodia de fondos, wallets o integración transaccional con Binance.
   - Asesoría financiera; los indicadores son informativos.
-  - UI de usuario final (los consumidores son aplicaciones vía API/WSS).
+  - Construir un IdP/login propio: la autenticación de usuarios se delega a Auth0 (OIDC,
+    ADR-0012); el login usa la Universal Login hospedada de Auth0.
+  - Front-end/SPA consumidor: es un proyecto aparte; este alcance cubre la API/WSS
+    (Resource Server) que dicho front-end consume.
   - Otras criptomonedas o pares distintos de VES/USDT y VES/USD en la fase inicial.
 
 ## Stakeholders
 | Rol | Nombre | Responsabilidad |
 |---|---|---|
 | Product Owner / Dev | Jeremi Alcalá | Visión, decisiones de diseño, aprobación de gates |
-| Aplicaciones consumidoras | `<TODO: identificar>` | Consumo de API/WSS |
+| Usuarios consumidores | `<TODO: identificar>` | Consumo de API/WSS; se autentican vía Auth0 (OIDC) |
 
 ## Restricciones y supuestos
 - Binance no ofrece API pública oficial documentada para P2P; se usa el endpoint público

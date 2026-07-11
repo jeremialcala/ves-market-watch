@@ -5,14 +5,24 @@ verificados por contract tests en productor y consumidor. Las tablas REST/WSS de
 siguen siendo esqueleto: la especificación OpenAPI 3.1 formal se generará con el
 api-gateway.
 
-## Autenticación
-| Endpoint | Método | Request | Response | Auth |
-|---|---|---|---|---|
-| `/auth/token` | POST | `grant_type=client_credentials`, `client_id`, `client_secret` | `{access_token, token_type, expires_in}` JWT RS256, exp ≤ 15 min | Basic (client) |
+## Autenticación (OIDC con Auth0 — ADR-0012)
+El gateway **no emite tokens**: es Resource Server. El login y la emisión ocurren en Auth0
+(OIDC Authorization Code + PKCE); el front-end/SPA obtiene el access token y lo presenta al
+gateway. Endpoints relevantes (en el tenant de Auth0, no en el gateway):
 
-Scopes: `read:rates`, `read:indicators`, `read:signals`, `read:depth`, `stream:events`.
+| Endpoint (Auth0) | Uso |
+|---|---|
+| `https://<tenant>/.well-known/openid-configuration` | Discovery OIDC (metadatos, `jwks_uri`) |
+| `https://<tenant>/authorize` | Inicio del flujo Auth Code + PKCE (login del usuario) |
+| `https://<tenant>/oauth/token` | Canje del `code` por access token + ID token |
+| `https://<tenant>/.well-known/jwks.json` | Claves públicas (RS256) para validar la firma |
 
-## REST — `/api/v1` (Bearer JWT)
+El gateway valida cada **access token** (no el ID token): firma RS256 vía JWKS, y `iss`
+(=tenant), `aud` (=API `https://api.vesmarketwatch/`), `exp`/`nbf`. Autorización por el claim
+`permissions`/`scope`. Scopes/permisos: `read:rates`, `read:indicators`, `read:signals`,
+`read:depth`, `stream:events`.
+
+## REST — `/api/v1` (Bearer access token de Auth0)
 | Endpoint | Método | Parámetros | Respuesta (resumen) | Scope |
 |---|---|---|---|---|
 | `/rates/official/current` | GET | — | `{rate, value_date, captured_at, stale}` | read:rates |
@@ -28,8 +38,11 @@ Reglas transversales: paginación obligatoria en históricos; validación estric
 fechas/intervalos; errores RFC 7807 sin detalles internos; rate limit por token
 (headers `X-RateLimit-*`).
 
-## WSS — `/ws/v1?token=<JWT>`
-Mensaje de suscripción: `{"action":"subscribe","topics":["indicators","signals"]}`
+## WSS — `/ws/v1?token=<access_token>`
+El token es el access token de Auth0 (el navegador no puede fijar cabecera `Authorization`
+en el handshake WebSocket). Se valida al conectar y en cada reconexión; la URL con el token
+se redacta en logs. Mensaje de suscripción:
+`{"action":"subscribe","topics":["indicators","signals"]}`
 Tópicos permitidos (whitelist): `rates.official`, `p2p.snapshot`, `indicators`, `signals`.
 
 | Evento (server→client) | Payload (resumen) | Disparador |

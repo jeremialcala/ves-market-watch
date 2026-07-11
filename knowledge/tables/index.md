@@ -19,7 +19,8 @@ timestamp: 2026-07-05T00:00:00Z
 
 ## Planificadas (diseño en `../../docs/02-design/architecture.md`)
 
-`p2p_top_of_book`, `signals` (con evidencia), `api_clients` (secrets hasheados).
+`p2p_top_of_book`, `signals` (con evidencia).
 Agregados continuos 5 min / 1 h / 1 d para intradía.
+(La tabla `api_clients` se retiró: identidad y credenciales viven en Auth0 — ADR-0012.)
 
 Roles PostgreSQL separados por servicio, mínimo privilegio (A01).
