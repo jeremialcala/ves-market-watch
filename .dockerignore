@@ -1,0 +1,11 @@
+# El contexto de build es la raíz del repo: excluir todo lo que no debe
+# entrar en una imagen. El .env NUNCA se copia (secretos van por entorno).
+.env
+.git
+logs/
+docs/
+knowledge/
+**/__pycache__
+**/*.egg-info
+**/.pytest_cache
+**/tests/
