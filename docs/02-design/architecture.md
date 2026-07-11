@@ -48,6 +48,7 @@ Ver `docs/02-design/api-contracts.md` (REST + eventos WSS/AMQP).
 | `p2p_snapshots_raw` | Snapshot crudo (JSONB, anunciante minimizado) por lado | 90 días (nativa) | ✔ implementada |
 | `indicators` | Indicadores calculados con calc_version (formato largo) | ≥ 12 meses | ✔ implementada |
 | `processed_events` | Idempotencia del consumidor del engine | vigencia | ✔ implementada |
+| `historical_market_snapshots` | Históricos de precio desde exports externos (detalle por banco en JSONB, ADR-0013) | permanente | ✔ implementada |
 | `p2p_top_of_book` | Mejor precio/volúmenes por snapshot | ≥ 12 meses | planificada |
 | `signals` | Señales emitidas con evidencia | ≥ 12 meses | planificada |
 

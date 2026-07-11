@@ -1,0 +1,32 @@
+[project]
+name = "ingestor-historico"
+version = "0.1.0"
+description = "Carga batch de históricos de precio USDT/VES desde exports CSV y cálculo de varianza histórica"
+requires-python = ">=3.12"
+dependencies = [
+    "asyncpg>=0.29",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[project.scripts]
+ingestor-historico = "ingestor_historico.__main__:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["src", "tests"]
+markers = [
+    "integration: adaptadores contra infraestructura real (docker compose up -d --wait)",
+]

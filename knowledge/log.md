@@ -7,6 +7,19 @@ timestamp: 2026-07-05T00:00:00Z
 
 # Log
 
+## 2026-07-11 — ingestor-historico: backfill de históricos de precio (ADR-0013)
+- Quinto servicio, batch por demanda (CLI `cargar`/`stats`), sin bus: carga exports
+  CSV del sistema previo (top-100 combinado con 3 bancos principales) en la nueva
+  hypertable `historical_market_snapshots`, idempotente por `(captured_at, source_id)`.
+- Parseo adaptativo (heurística de columnas, bancos dinámicos, anotaciones de
+  liquidez, fechas EN/ISO, fallback ObjectId); archivo ajeno → rechazo completo,
+  fila corrupta → descarte contado.
+- Varianza histórica vía `stats`: precio base y por banco, log-retornos, por día de
+  mercado (UTC−4). Verificado en vivo: 1.064 filas (2025-12-02→12-11), recarga
+  0/1.064, varianza σ²≈65.3 (σ≈8.08) sobre media 417.03.
+- PRD `ingesta-historica.md` en `review` (pendiente HITL, Gate 0 incremental);
+  39 tests; migración montada en el compose.
+
 ## 2026-07-11 — Gates 0 y 1 cerrados (HITL) y corte de versión 0.2.0
 - Ambos gates firmados por Jeremi Alcalá; la aprobación del Gate 0 cubre la versión
   de requisitos actualizada por ADR-0012 (auth OIDC con Auth0, supersede ADR-0003).

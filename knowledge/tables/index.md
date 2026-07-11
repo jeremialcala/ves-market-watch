@@ -16,6 +16,7 @@ timestamp: 2026-07-05T00:00:00Z
 | [indicators](indicators.md) | Hypertable | Indicadores calculados (formato largo, `calc_version`) |
 | processed_events (ver [indicators](indicators.md)) | Tabla | Idempotencia del consumidor del engine |
 | [p2p_snapshots_raw](p2p_snapshots_raw.md) | Hypertable | Crudo P2P completo (JSONB, retención 90 d) |
+| [historical_market_snapshots](historical_market_snapshots.md) | Hypertable | Históricos de precio desde exports externos (detalle por banco en JSONB, sin retención) |
 
 ## Planificadas (diseño en `../../docs/02-design/architecture.md`)
 

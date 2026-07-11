@@ -17,7 +17,34 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
-Sin cambios aún.
+### Added
+
+- **`ingestor-historico` — quinto servicio: backfill de históricos de precio**
+  (PRD `ingesta-historica.md` en review, **ADR-0013 accepted**):
+  - Proceso **batch por demanda** (CLI `cargar`/`stats`), hexagonal, que carga los
+    exports CSV del sistema previo (promedio ponderado del top-100 combinado con el
+    detalle de 3 bancos principales, cada ~10 min) en la nueva hypertable
+    `historical_market_snapshots`. **Sin publicación al bus** (ADR-0013): inyectar
+    pasado en `market.events` dispararía el pipeline reactivo como si fuera presente.
+  - Parseo **adaptativo** (RF-2): detección de columnas por heurística (nombres +
+    fila de muestra), mapas por banco `{:Banco valor (anotación)}` con bancos
+    dinámicos, números con separador de miles, fechas inglesas o ISO y fallback de
+    fecha desde el ObjectId; columnas no reconocidas se preservan crudas (JSONB).
+    Archivo sin columna de precio → rechazo completo con mensaje accionable; fila
+    corrupta → descarte contado por motivo, sin abortar.
+  - Idempotencia por PK `(captured_at, source_id)` + `ON CONFLICT DO NOTHING`
+    (histórico inmutable); sin columna ID, hash determinista del contenido.
+    Anotaciones de la fuente preservadas por banco (`low_liquidity`, `available`).
+  - **Varianza histórica** (RF-4): media, varianza muestral, desviación, min/max y
+    log-retornos del precio base y por banco; filtro por rango, agrupación por día
+    de mercado (zona configurable, default UTC−4) y salida JSON.
+  - Migración `001_historical_snapshots.sql` montada en el compose; 39 tests
+    (unit + integración contra TimescaleDB real).
+  - Verificación en vivo con el export real (1.064 filas, 2025-12-02 → 2025-12-11):
+    carga completa sin descartes, recarga idempotente (0/1.064) y varianza calculada
+    (precio base: media 417.03, σ² 65.32, σ 8.08; por banco incluida).
+- Knowledge base sincronizado: `services/ingestor-historico.md`,
+  `tables/historical_market_snapshots.md`, índices y `log.md`.
 
 ## [0.2.0] - 2026-07-11
 
