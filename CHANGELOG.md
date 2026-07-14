@@ -19,6 +19,17 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Tenant Auth0 de desarrollo aprovisionado** (`dev-higerotech.us.auth0.com`, 2026-07-14) —
+  primer paso de la fase 03 del api-gateway (ADR-0012): API `VES Market Watch API`
+  (audience `https://api.vesmarketwatch/`, RS256, access token 900 s, sin offline access)
+  con los 5 permisos del contrato; RBAC activado (`enforce_policies` +
+  `token_dialect: access_token_authz`); roles `viewer` y `operator` con los 5 permisos
+  (el diferenciador de `operator` será el permiso admin HITL cuando exista, ADR-0007);
+  attack protection habilitada (brute-force 10 intentos + notificación, breached-password
+  con bloqueo y aviso inmediato, suspicious-IP throttling). Valores de config del gateway
+  documentados en `apps/api-gateway/docs/design.md`; quedan como TODO la spec
+  OpenAPI/AsyncAPI y la app SPA del tenant (junto con el front-end).
+
 - **Evidencia diagramática de los tres ejes completada (auditoría de coherencia AI-DLC,
   2026-07-14)** — los gates 0 y 1 tenían la sustancia en tablas (STRIDE, DREAD, ASVS) pero
   solo 3 diagramas Mermaid en todo el repo; se generaron los 9 faltantes, inline en su doc:

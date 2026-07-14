@@ -18,9 +18,12 @@ timestamp: 2026-07-05T00:00:00Z
 - Fixes de forma: cabeceras de metadatos en los 4 design docs de apps y plan de pruebas;
   `ingesta-historica.md` 0.1.1→0.2.0. Los gates conservan su firma; la evidencia nueva
   queda anotada como adenda en cada gate.
-- Pendiente de aprovisionamiento en paralelo: tenant Auth0 `dev-higerotech.us.auth0.com`
-  (API audience + RBAC + roles viewer/operator + attack protection) — ver design del
-  api-gateway al completarse.
+- Tenant Auth0 `dev-higerotech.us.auth0.com` aprovisionado el mismo día: API audience
+  `https://api.vesmarketwatch/` (RS256, 900 s, RBAC con permisos en el token), roles
+  viewer/operator con los 5 permisos, attack protection (bfp 10 intentos, bpd con
+  block+aviso, sit). Detalle y config del gateway en `apps/api-gateway/docs/design.md`.
+  Gotcha del CLI: `auth0 api patch` bloquea leyendo stdin en entornos no-TTY (cerrar
+  stdin con `$null |`) y PS 5.1 exige escapar `\"` en el JSON de `--data`.
 
 ## 2026-07-11 — ingestor-historico: backfill de históricos de precio (ADR-0013)
 - Quinto servicio, batch por demanda (CLI `cargar`/`stats`), sin bus: carga exports

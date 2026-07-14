@@ -25,7 +25,31 @@ Rol: **Resource Server** (OIDC/OAuth2). La identidad y la emisión de tokens viv
   expirar token; el token de `?token=` no se registra en logs.
 - Logging de seguridad: authN fallida, rate limits (sin PII innecesaria; solo `sub` para auditoría).
 
+## Tenant Auth0 (aprovisionado 2026-07-14)
+
+Tenant de desarrollo: `dev-higerotech.us.auth0.com` (config pública por diseño, ADR-0012 —
+no hay secretos de firma del lado del gateway).
+
+| Recurso | Valor |
+|---|---|
+| API (Resource Server) | `VES Market Watch API` — id `6a56683fbcee12f7916916ae` |
+| Audience | `https://api.vesmarketwatch/` |
+| Firma / vigencia | RS256; access token 900 s (también `token_lifetime_for_web`); sin offline access |
+| RBAC | `enforce_policies: true`, `token_dialect: access_token_authz` (permisos viajan en el claim `permissions`) |
+| Permisos | `read:rates`, `read:indicators`, `read:signals`, `read:depth`, `stream:events` |
+| Rol `viewer` (`rol_04JPNH53SrEU3ybX`) | Los 5 permisos (todo el catálogo actual es de solo lectura/streaming) |
+| Rol `operator` (`rol_WqmKgWUWzfl8ICD9`) | Los mismos 5; se diferenciará con el permiso admin de re-validación HITL (ADR-0007) cuando exista |
+| Attack protection | Brute-force: block+user_notification, 10 intentos · Breached-password: block+admin_notification (inmediata) · Suspicious-IP throttling: block+admin_notification |
+
+Config del gateway (variables de entorno, todas públicas):
+
+```env
+AUTH0_DOMAIN=dev-higerotech.us.auth0.com
+AUTH0_ISSUER=https://dev-higerotech.us.auth0.com/
+AUTH0_AUDIENCE=https://api.vesmarketwatch/
+JWKS_URI=https://dev-higerotech.us.auth0.com/.well-known/jwks.json
+```
+
 ## Pendiente (fase 03)
-- `<TODO: aprovisionar tenant Auth0: API/audience, permisos, roles (viewer/operator), attack protection>`
-- `<TODO: parámetros de config del gateway (AUTH0_DOMAIN, AUTH0_ISSUER, AUTH0_AUDIENCE, JWKS_URI)>`
 - `<TODO: especificación OpenAPI 3.1 y AsyncAPI generadas desde api-contracts.md>`
+- `<TODO: app SPA (cliente público, Auth Code + PKCE) en el tenant — se crea junto con el front-end; MFA del tenant se decide cuando haya usuarios reales>`
