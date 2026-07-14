@@ -1,5 +1,11 @@
 # Diseño — indicator-engine
 
+- **Estado:** approved (fase 1 implementada, 2026-07-05; fase 2 — P2P y señales — pendiente)
+- **Fecha:** 2026-07-14
+- **Decisores:** Jeremi Alcalá
+- **Fase AI-DLC:** 02-design
+- **Versión:** 0.2.0
+
 ## Capas (hexagonal)
 - **Dominio** (`src/indicator_engine/domain/`): `Indicador` (nombre, moneda, valor,
   as_of, calc_version) y cálculos puros en `calculos.py`: `calcular_variacion` (activo)

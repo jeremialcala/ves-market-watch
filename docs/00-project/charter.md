@@ -1,11 +1,21 @@
 # Project Charter — VES Market Watch
 
+- **Estado:** approved (Gate 0, HITL 2026-07-11) — residuales en seguimiento: ratificación
+  del marco legal y nombrar apps consumidoras concretas
+- **Fecha:** 2026-07-11
+- **Decisores:** Jeremi Alcalá
+- **Sponsor / Owner:** Jeremi Alcalá
+- **Fase AI-DLC:** 00-project
+- **Versión:** 0.2.0
+
 ## Visión
+
 Dar a personas y aplicaciones una visión consolidada, en tiempo casi real, de la brecha
 entre el tipo de cambio oficial VES/USD (BCV) y el mercado P2P VES/USDT (Binance), con
 indicadores financieros que apoyen la administración eficiente del presupuesto mensual.
 
 ## Alcance
+
 - Incluye:
   - Ingesta continua de publicaciones P2P de Binance (VES/USDT): precios, cantidades,
     límites, bancos y métodos de pago.
@@ -25,13 +35,49 @@ indicadores financieros que apoyen la administración eficiente del presupuesto 
     (Resource Server) que dicho front-end consume.
   - Otras criptomonedas o pares distintos de VES/USDT y VES/USD en la fase inicial.
 
+```mermaid
+mindmap
+  root((VES Market Watch))
+    Incluye
+      Ingesta P2P Binance
+      Tasa oficial BCV
+      Motor de indicadores
+        Brecha oficial vs P2P
+        Spreads y volumenes
+        Senales de oportunidad
+      API REST y WSS
+      Historico en series de tiempo
+    No incluye
+      Trading o custodia
+      Asesoria financiera
+      IdP o login propio
+        Delegado a Auth0
+      Front-end SPA
+    Actores
+      Usuario autenticado
+      Operador HITL
+      Fuentes externas
+        Binance P2P
+        Sitio BCV
+        Auth0
+    Riesgos
+      Cambio del endpoint P2P
+      Cambio del HTML BCV
+      Datos manipulados
+      Marco legal cambiario
+```
+
+*Eje trazabilidad — fase 00 / Gate 0: mapa de alcance y actores del charter (lenguaje ubicuo en `glossary.md`).*
+
 ## Stakeholders
+
 | Rol | Nombre | Responsabilidad |
-|---|---|---|
+| --- | --- | --- |
 | Product Owner / Dev | Jeremi Alcalá | Visión, decisiones de diseño, aprobación de gates |
 | Usuarios consumidores | `<TODO: identificar>` | Consumo de API/WSS; se autentican vía Auth0 (OIDC) |
 
 ## Restricciones y supuestos
+
 - Binance no ofrece API pública oficial documentada para P2P; se usa el endpoint público
   de consulta del portal P2P con límites de tasa conservadores (ver ADR-0005).
 - El BCV publica la tasa en su sitio web; el formato HTML puede cambiar sin aviso y el
@@ -41,6 +87,7 @@ indicadores financieros que apoyen la administración eficiente del presupuesto 
 - Zona horaria de referencia: America/Caracas (VET, UTC-4).
 
 ## Métricas de éxito del proyecto
+
 - Latencia snapshot P2P → indicador publicado ≤ 30 s (p95).
 - Tasa oficial BCV sincronizada con desfase ≤ 30 min de su publicación.
 - Disponibilidad de la API/WSS ≥ 99 % mensual.
@@ -48,8 +95,9 @@ indicadores financieros que apoyen la administración eficiente del presupuesto 
 - Cero baneos permanentes de IP por parte de Binance (respeto de rate limits).
 
 ## Riesgos de alto nivel
+
 | Riesgo | Impacto | Mitigación |
-|---|---|---|
+| --- | --- | --- |
 | Binance cambia/bloquea el endpoint P2P | Pérdida de la fuente principal | Backoff adaptativo, monitoreo de esquema, abstracción de la fuente (puerto/adaptador) |
 | Cambio de estructura del sitio BCV | Pérdida de tasa oficial | Parser tolerante, validación de rangos, alerta al fallar N consultas |
 | Datos anómalos (ads manipulados) contaminan indicadores | Señales erróneas | Filtros de outliers, mediana/VWAP sobre top-N, escenarios de abuso en PRD |

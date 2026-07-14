@@ -12,3 +12,6 @@ htmlcov/
 
 # Entorno local (secretos van por variables de entorno, nunca al repo)
 .env
+
+# Logs de servicios locales (scripts/dev-run-services.ps1)
+logs/

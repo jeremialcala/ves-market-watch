@@ -19,6 +19,77 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Evidencia diagramática de los tres ejes completada (auditoría de coherencia AI-DLC,
+  2026-07-14)** — los gates 0 y 1 tenían la sustancia en tablas (STRIDE, DREAD, ASVS) pero
+  solo 3 diagramas Mermaid en todo el repo; se generaron los 9 faltantes, inline en su doc:
+  - Gate 0: `mindmap` de alcance (charter), `journey` del consumo autenticado
+    (PRD api-streaming), `requirementDiagram` RF↔ASVS↔tests con RF-4 visiblemente sin
+    verificar — fase 2 pendiente (PRD motor-indicadores).
+  - Gate 1: DFD propio con trust boundaries y `quadrantChart` DREAD T1–T12 derivado de la
+    tabla (threat-model); `sequenceDiagram` del flujo crítico con bifurcación HITL,
+    `stateDiagram-v2` de `TasaOficial` (ADR-0007), `erDiagram` del dominio y `classDiagram`
+    hexagonal del engine con nombres reales del código (architecture.md).
+
+- **`ingestor-historico` — quinto servicio: backfill de históricos de precio**
+  (PRD `ingesta-historica.md` **approved — HITL 2026-07-11**, **ADR-0013 accepted**):
+  - Proceso **batch por demanda** (CLI `cargar`/`stats`), hexagonal, que carga los
+    exports CSV del sistema previo (promedio ponderado del top-100 combinado con el
+    detalle de 3 bancos principales, cada ~10 min) en la nueva hypertable
+    `historical_market_snapshots`. **Sin publicación al bus** (ADR-0013): inyectar
+    pasado en `market.events` dispararía el pipeline reactivo como si fuera presente.
+  - Parseo **adaptativo** (RF-2): detección de columnas por heurística (nombres +
+    fila de muestra), mapas por banco `{:Banco valor (anotación)}` con bancos
+    dinámicos, números con separador de miles, fechas inglesas o ISO y fallback de
+    fecha desde el ObjectId; columnas no reconocidas se preservan crudas (JSONB).
+    Archivo sin columna de precio → rechazo completo con mensaje accionable; fila
+    corrupta → descarte contado por motivo, sin abortar.
+  - Idempotencia por PK `(captured_at, source_id)` + `ON CONFLICT DO NOTHING`
+    (histórico inmutable); sin columna ID, hash determinista del contenido.
+    Anotaciones de la fuente preservadas por banco (`low_liquidity`, `available`).
+  - **Varianza histórica** (RF-4): media, varianza muestral, desviación, min/max y
+    log-retornos del precio base y por banco; filtro por rango, agrupación por día
+    de mercado (zona configurable, default UTC−4) y salida JSON.
+  - Migración `001_historical_snapshots.sql` montada en el compose; 39 tests
+    (unit + integración contra TimescaleDB real).
+  - Verificación en vivo con el export real (1.064 filas, 2025-12-02 → 2025-12-11):
+    carga completa sin descartes, recarga idempotente (0/1.064) y varianza calculada
+    (precio base: media 417.03, σ² 65.32, σ 8.08; por banco incluida).
+- Knowledge base sincronizado: `services/ingestor-historico.md`,
+  `tables/historical_market_snapshots.md`, índices y `log.md`.
+- **`scripts/gitgraph_branches.py`** — generador multi-rama del historial vivo
+  (fase 03): mapea el estado actual de varias ramas (`main`, `develop`,
+  `feat-ai-dlc`) con sus forks reales, tabla de puntas por rama y bitácora en UTF-8,
+  complementando al generador de una sola rama del skill AI-DLC.
+  `docs/03-implementation/repo-history.md` regenerado con el mapa de ramas
+  (develop bifurca de main en `bd9698b`; feat-ai-dlc de develop en `ac47922`).
+
+### Changed
+
+- `architecture.md`: el «Flujo de datos» en ASCII se reemplazó por el `sequenceDiagram`
+  del flujo crítico (eje comportamiento, renderizable); el DFD con trust boundaries vive
+  ahora en `threat-model.md` (antes solo remitía al C4 Container).
+
+### Fixed
+
+- Cabecera de metadatos agregada a los 4 `apps/*/docs/design.md` (faltaba por completo)
+  y al plan de pruebas (campos Decisores/Versión); `ingesta-historica.md` corrige
+  `Versión: 0.1.1` → `0.2.0` (era anterior al corte pese a aprobarse con él, contra la
+  regla de sincronía versión↔changelog de la metodología).
+
+## [0.2.0] - 2026-07-11
+
+Cierre de los Gates 0 (requisitos) y 1 (diseño) con aprobación humana, más la fase 03
+adelantada: tres de los cuatro servicios implementados y verificados en vivo
+(`ingestor-bcv`, `indicator-engine` fase 1, `ingestor-binance`). Corte según la
+convención AI-DLC (Gate 1 → 0.2.0).
+
+### Added
+
+- **Documentación viva de fase 03**: `docs/03-implementation/repo-history.md` con el
+  `gitGraph` y la bitácora derivados del historial real (`gitgraph_from_log.py`) y la
+  tabla de trazabilidad tag ↔ versión ↔ ADR. Pendiente: taggear `v0.2.0` sobre el merge
+  a `main`.
+
 - **Gates 0 (requisitos) y 1 (diseño) cerrados (HITL, 2026-07-11)** — aprobación humana
   registrada en `.ai-dlc/gates/`. La aprobación cubre la versión de requisitos actualizada
   por ADR-0012; residuales no-bloqueantes en seguimiento (nombrar consumidores concretos,
@@ -182,6 +253,12 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **Cabeceras de metadatos AI-DLC sincronizadas con el corte 0.2.0** en los artefactos
+  aprobados por los gates (charter, glosario, clasificación de datos, 4 PRDs,
+  architecture, threat-model, api-contracts, C4 context/container): Estado `approved`
+  con referencia al gate y fecha HITL, Decisores, Fase y Versión 0.2.0. El PRD
+  `api-streaming` pasa de `review` a `approved` (la aprobación del Gate 0 cubre la
+  versión actualizada por ADR-0012).
 - **Alcance del PRD de ingesta BCV ampliado a multi-moneda**: se ingestan todas las
   monedas de la sección «tipo de cambio de referencia» (hoy USD, EUR, CNY, TRY, RUB)
   con descubrimiento dinámico de monedas nuevas; antes el objetivo era solo VES/USD.
@@ -275,5 +352,6 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/jeremialcala/ves-market-watch/releases/tag/v0.1.0

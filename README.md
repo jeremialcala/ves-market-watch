@@ -23,6 +23,7 @@ ves-market-watch/
     ├── ingestor-binance/     # ✔ Ingesta P2P Binance (USDT/VES) → p2p.snapshot
     ├── ingestor-bcv/         # ✔ Ingesta tasas oficiales BCV (multi-moneda, HITL)
     ├── indicator-engine/     # ✔ fase 1: consume official.rate.updated → indicators.updated
+    ├── ingestor-historico/   # ✔ backfill batch de históricos de precio + varianza (sin bus)
     └── api-gateway/          # (diseñado) API REST + WSS para consumidores
 ```
 
@@ -49,7 +50,8 @@ compose no está levantado.
 
 - **Implementado y verificado en vivo**: los 3 servicios de datos — `ingestor-bcv`
   (multi-moneda, re-validación HITL), `ingestor-binance` (polling P2P educado) e
-  `indicator-engine` fase 1 (flujo `official.rate.updated` → `indicators.updated`).
+  `indicator-engine` fase 1 (flujo `official.rate.updated` → `indicators.updated`) —
+  más `ingestor-historico` (backfill batch de exports históricos + varianza, ADR-0013).
   Pendiente: fase 2 del engine (brecha BCV↔P2P desde `p2p.snapshot`) y el `api-gateway`.
 - Gate 0 (requisitos): ver `.ai-dlc/gates/gate-0-requirements.md`
 - Gate 1 (diseño): ver `.ai-dlc/gates/gate-1-design.md`

@@ -1,9 +1,13 @@
-# Infraestructura compartida de desarrollo/test (ADR-0002, ADR-0004).
+# Infraestructura compartida de desarrollo/test (ADR-0002, ADR-0004) más los
+# servicios de la plataforma para captura continua local.
 # Efímera a propósito: sin volúmenes persistentes, credenciales por defecto
 # SOLO para localhost. Producción se define en fase 05-deployment.
 #
-#   docker compose up -d --wait
+#   docker compose up -d --wait --build
 #   docker compose down
+#
+# Requiere .env en la raíz con MERCHANT_HMAC_KEY (ADR-0011); el .dockerignore
+# garantiza que el .env nunca entra en las imágenes.
 
 name: ves-market-watch
 
@@ -36,8 +40,62 @@ services:
       - ./apps/ingestor-bcv/db/migrations/002_suspect_resolution.sql:/docker-entrypoint-initdb.d/901_suspect_resolution.sql:ro
       - ./apps/indicator-engine/db/migrations/001_indicators.sql:/docker-entrypoint-initdb.d/902_indicators.sql:ro
       - ./apps/ingestor-binance/db/migrations/001_p2p_snapshots.sql:/docker-entrypoint-initdb.d/903_p2p_snapshots.sql:ro
+      - ./apps/ingestor-historico/db/migrations/001_historical_snapshots.sql:/docker-entrypoint-initdb.d/904_historical_snapshots.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d ves_market"]
       interval: 5s
       timeout: 5s
       retries: 12
+
+  ingestor-binance:
+    build:
+      context: .
+      dockerfile: apps/ingestor-binance/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@timescaledb:5432/ves_market
+      AMQP_URL: amqp://guest:guest@rabbitmq/
+      MERCHANT_HMAC_KEY: ${MERCHANT_HMAC_KEY:?definir MERCHANT_HMAC_KEY en .env (ADR-0011)}
+      # Captura del top-200 por lado, un ciclo por minuto. El presupuesto de
+      # requests (RF-1) cubre los 20 requests/ciclo con holgura.
+      TOP_K: "200"
+      FETCH_INTERVAL_SECONDS: "60"
+      REQUEST_BUDGET_PER_MIN: "40"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ingestor-bcv:
+    build:
+      context: .
+      dockerfile: apps/ingestor-bcv/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@timescaledb:5432/ves_market
+      AMQP_URL: amqp://guest:guest@rabbitmq/
+      FETCH_INTERVAL_SECONDS: "1800"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  indicator-engine:
+    build:
+      context: .
+      dockerfile: apps/indicator-engine/Dockerfile
+    # Recálculo por lotes cada 5 minutos: --drain procesa lo encolado y
+    # termina; el bucle lo relanza. Para volver al modo reactivo continuo,
+    # eliminar `command` (el CMD de la imagen es el daemon consumidor).
+    command: ["sh", "-c", "while true; do python -m indicator_engine --drain; sleep 300; done"]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@timescaledb:5432/ves_market
+      AMQP_URL: amqp://guest:guest@rabbitmq/
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    restart: unless-stopped

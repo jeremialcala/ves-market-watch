@@ -7,6 +7,47 @@ timestamp: 2026-07-05T00:00:00Z
 
 # Log
 
+## 2026-07-14 — Auditoría de coherencia AI-DLC: evidencia diagramática de los tres ejes
+- Hallazgo: los gates 0/1 se cerraron con la sustancia en tablas (STRIDE/DREAD/ASVS) pero
+  solo 3 diagramas Mermaid en el repo (C4 Context/Container + gitGraph) — faltaba el eje
+  comportamiento y casi todo trazabilidad según el catálogo de la metodología.
+- Se generaron los 9 faltantes inline: mindmap (charter), journey (api-streaming),
+  requirementDiagram (motor-indicadores; RF-4 sin `verifies` a propósito — fase 2),
+  DFD + quadrant DREAD (threat-model), sequence + state TasaOficial + ER dominio +
+  classDiagram hexagonal (architecture). El ASCII art de architecture se retiró.
+- Fixes de forma: cabeceras de metadatos en los 4 design docs de apps y plan de pruebas;
+  `ingesta-historica.md` 0.1.1→0.2.0. Los gates conservan su firma; la evidencia nueva
+  queda anotada como adenda en cada gate.
+- Pendiente de aprovisionamiento en paralelo: tenant Auth0 `dev-higerotech.us.auth0.com`
+  (API audience + RBAC + roles viewer/operator + attack protection) — ver design del
+  api-gateway al completarse.
+
+## 2026-07-11 — ingestor-historico: backfill de históricos de precio (ADR-0013)
+- Quinto servicio, batch por demanda (CLI `cargar`/`stats`), sin bus: carga exports
+  CSV del sistema previo (top-100 combinado con 3 bancos principales) en la nueva
+  hypertable `historical_market_snapshots`, idempotente por `(captured_at, source_id)`.
+- Parseo adaptativo (heurística de columnas, bancos dinámicos, anotaciones de
+  liquidez, fechas EN/ISO, fallback ObjectId); archivo ajeno → rechazo completo,
+  fila corrupta → descarte contado.
+- Varianza histórica vía `stats`: precio base y por banco, log-retornos, por día de
+  mercado (UTC−4). Verificado en vivo: 1.064 filas (2025-12-02→12-11), recarga
+  0/1.064, varianza σ²≈65.3 (σ≈8.08) sobre media 417.03.
+- PRD `ingesta-historica.md` **approved (HITL 2026-07-11)** — Gate 0 incremental
+  cerrado; 39 tests; migración montada en el compose. Carga oficial confirmada en la
+  DB de desarrollo: 1.064 filas, `repo-history.md` regenerado tras el commit `31289f5`.
+
+## 2026-07-11 — Gates 0 y 1 cerrados (HITL) y corte de versión 0.2.0
+- Ambos gates firmados por Jeremi Alcalá; la aprobación del Gate 0 cubre la versión
+  de requisitos actualizada por ADR-0012 (auth OIDC con Auth0, supersede ADR-0003).
+- CHANGELOG: `[Unreleased]` cortado a **0.2.0** (convención AI-DLC: Gate 1 → 0.2.0);
+  cabeceras de metadatos (Estado approved / Versión 0.2.0) sincronizadas en charter,
+  glosario, data-classification, 4 PRDs, architecture, threat-model, api-contracts y C4.
+- Nueva documentación viva de fase 03: `docs/03-implementation/repo-history.md`
+  (gitGraph + bitácora derivados del historial real + trazabilidad tag↔versión↔ADR).
+- Pendientes: taggear `v0.2.0` sobre el merge a `main`; residuales HITL del charter
+  (apps consumidoras, marco legal); `signal.v1`/umbrales (engine fase 2); secret store
+  (fase 05); api-gateway sin implementar (Resource Server, ADR-0012).
+
 ## 2026-07-07 — Verificación de pendientes de Gate 0 y Gate 1
 - Gate 0: retención de alias → resuelto (ADR-0011 implementado); quedan como
   decisiones humanas los TODO del charter (apps consumidoras, marco legal).

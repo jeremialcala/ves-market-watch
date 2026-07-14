@@ -1,5 +1,11 @@
 # Diseño — ingestor-binance
 
+- **Estado:** approved (implementado y verificado en vivo, 2026-07-06; ADR-0011 incluida)
+- **Fecha:** 2026-07-14
+- **Decisores:** Jeremi Alcalá
+- **Fase AI-DLC:** 02-design
+- **Versión:** 0.2.0
+
 ## Capas (hexagonal)
 - **Dominio** (`src/ingestor_binance/domain/`): `Lado` (perspectiva del taker),
   `Anuncio`, `SnapshotP2P`; `normalizacion.py` con sanitización de textos (A05)

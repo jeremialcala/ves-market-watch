@@ -1,5 +1,13 @@
 # C4 — Diagrama de Contenedores
 
+- **Estado:** approved (Gate 1, HITL 2026-07-11)
+- **Fecha:** 2026-07-11
+- **Decisores:** Jeremi Alcalá
+- **Fase AI-DLC:** 02-design
+- **Versión:** 0.2.0
+
+*(Eje de estructura — contenedores y trust boundaries del threat model)*
+
 ```mermaid
 C4Container
   title Contenedores — VES Market Watch
