@@ -34,6 +34,9 @@ gitGraph
     commit id: "2b58b0b"
     commit id: "8501a04"
     commit id: "da3719a" type: HIGHLIGHT
+    commit id: "b251d46"
+    commit id: "cee9891"
+    commit id: "83cffde" type: HIGHLIGHT
     %% rama feat-ai-dlc: sin commits propios o fork fuera del mapa
 ```
 
@@ -42,16 +45,17 @@ gitGraph
 | Rama | Punta | Fecha | Commits propios |
 |---|---|---|---|
 | `main` | `bd9698b` | 2026-07-05 | 3 |
-| `develop` | `da3719a` | 2026-07-14 | 20 |
-| `feat-ai-dlc` | `8501a04` | 2026-07-14 | 0 |
+| `develop` | `83cffde` | 2026-07-14 | 23 |
+| `feat-ai-dlc` | `cee9891` | 2026-07-14 | 0 |
 
 ### Bitácora de cambios (fiel al repo)
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `83cffde` | merge | — | Jeremi Alcala | 2026-07-14 | Merge feat-ai-dlc into develop: Auth0 dev tenant provisioned (api-gateway phase 03 start) |
+| `cee9891` | commit | — | Jeremi Alcala | 2026-07-14 | docs: Record provisioned Auth0 dev tenant in api-gateway design (ADR-0012) |
+| `b251d46` | commit | — | Jeremi Alcala | 2026-07-14 | docs: Regenerate repo-history after merging feat-ai-dlc into develop |
 | `da3719a` | merge | — | Jeremi Alcala | 2026-07-14 | Merge feat-ai-dlc into develop: ingestor-historico (ADR-0013), multi-branch gitGraph, three-axis diagram evidence |
-| `023b71b` | merge | — | Jeremi Alcala | 2026-07-14 | On feat-ai-dlc: user local: ignore config.json |
-| `6ee3cdb` | commit | — | Jeremi Alcala | 2026-07-14 | index on feat-ai-dlc: 8501a04 docs: Complete three-axis Mermaid evidence for Gates 0/1 (AI-DLC coherence audit) |
 | `8501a04` | commit | — | Jeremi Alcala | 2026-07-14 | docs: Complete three-axis Mermaid evidence for Gates 0/1 (AI-DLC coherence audit) |
 | `2b58b0b` | commit | — | Jeremi Alcala | 2026-07-11 | feat: Add multi-branch gitGraph generator and update repo history documentation |
 | `2349425` | commit | — | Jeremi Alcala | 2026-07-11 | feat: Update documentation for ingestor-historico service and changelog with approval status and versioning |
