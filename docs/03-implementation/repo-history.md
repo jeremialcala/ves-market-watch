@@ -1,7 +1,7 @@
 ## Historial del repositorio (documentación viva)
 
 Derivado de `git log` con `scripts/gitgraph_branches.py`
-(ramas vivas: `main`, `develop`, `feat-ai-dlc`). Regenerar tras cada commit,
+(ramas vivas: `main`, `develop`). Regenerar tras cada commit,
 merge o tag relevante. Los tags SemVer enlazan con las versiones del `CHANGELOG.md`.
 
 > Nota: historia entrelazada u octopus — el gitGraph es aproximado; la bitácora es la fuente de verdad.
@@ -37,7 +37,7 @@ gitGraph
     commit id: "b251d46"
     commit id: "cee9891"
     commit id: "83cffde" type: HIGHLIGHT
-    %% rama feat-ai-dlc: sin commits propios o fork fuera del mapa
+    commit id: "8658d68"
 ```
 
 ### Estado actual de las ramas
@@ -45,13 +45,13 @@ gitGraph
 | Rama | Punta | Fecha | Commits propios |
 |---|---|---|---|
 | `main` | `bd9698b` | 2026-07-05 | 3 |
-| `develop` | `83cffde` | 2026-07-14 | 23 |
-| `feat-ai-dlc` | `cee9891` | 2026-07-14 | 0 |
+| `develop` | `8658d68` | 2026-07-14 | 24 |
 
 ### Bitácora de cambios (fiel al repo)
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `8658d68` | commit | — | Jeremi Alcala | 2026-07-14 | docs: Regenerate repo-history after Auth0 tenant merge |
 | `83cffde` | merge | — | Jeremi Alcala | 2026-07-14 | Merge feat-ai-dlc into develop: Auth0 dev tenant provisioned (api-gateway phase 03 start) |
 | `cee9891` | commit | — | Jeremi Alcala | 2026-07-14 | docs: Record provisioned Auth0 dev tenant in api-gateway design (ADR-0012) |
 | `b251d46` | commit | — | Jeremi Alcala | 2026-07-14 | docs: Regenerate repo-history after merging feat-ai-dlc into develop |

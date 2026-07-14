@@ -7,6 +7,13 @@ timestamp: 2026-07-05T00:00:00Z
 
 # Log
 
+## 2026-07-14 — Rama feat-ai-dlc cerrada
+- Cerrada tras nivelar develop (0 commits exclusivos): borrada local y en origin.
+  Todo su contenido — ingestor-historico (ADR-0013), evidencia diagramática de los
+  tres ejes, tenant Auth0 — vive en develop (`8658d68` y posteriores).
+- Ramas vivas: `main` (pendiente merge + tag v0.2.0) y `develop` (integración).
+  `repo-history.md` regenerado con el mapa main+develop.
+
 ## 2026-07-14 — Auditoría de coherencia AI-DLC: evidencia diagramática de los tres ejes
 - Hallazgo: los gates 0/1 se cerraron con la sustancia en tablas (STRIDE/DREAD/ASVS) pero
   solo 3 diagramas Mermaid en el repo (C4 Context/Container + gitGraph) — faltaba el eje
