@@ -3,7 +3,9 @@
 - **Fase AI-DLC:** 04-testing
 - **Estado:** draft — para revisión y aprobación (Gate 2)
 - **Alcance:** plataforma completa (4 servicios + RabbitMQ + TimescaleDB + contratos del bus y de API)
-- **Fecha / versión:** 2026-07-07 / v0.1
+- **Fecha:** 2026-07-07
+- **Decisores:** Jeremi Alcalá
+- **Versión:** 0.2.0
 - **Fuentes de verdad:** PRDs en `docs/01-requirements/`, diseño en `docs/02-design/`
   (incl. `threat-model.md` columna «Verificación fase 04-testing»), contratos en `schemas/`
   y `docs/02-design/api-contracts.md`, ADRs en `docs/00-project/adr/`.

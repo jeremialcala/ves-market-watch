@@ -10,8 +10,29 @@
 - **Clasificación de datos:** ver `docs/00-project/data-classification.md`
 
 ## Diagrama de flujo de datos
-Ver `docs/architecture/c4-container.md` — trust boundaries marcados:
-Internet↔gateway, fuentes externas↔ingestores, servicios↔broker, servicios↔DB.
+
+```mermaid
+flowchart LR
+    BCV([Sitio BCV]):::ext -->|HTML de tasas / HTTPS TLS anclado| IBCV
+    BIN([Binance P2P]):::ext -->|JSON de anuncios / HTTPS| IBIN
+    USR([Usuario via SPA]):::ext -->|login OIDC PKCE| AUTH0([Auth0 OP]):::ext
+    subgraph TBP [Trust boundary: plataforma VMW]
+      IBCV[ingestor-bcv] -->|official.rate.updated| BUS[[RabbitMQ market.events]]
+      IBIN[ingestor-binance] -->|p2p.snapshot con merchant_ref| BUS
+      BUS -->|eventos validados por schema| ENG[indicator-engine]
+      ENG -->|indicators.updated y signals.emitted| BUS
+      BUS -->|push interno| GW[api-gateway]
+      IBCV -->|tasas y auditoria HITL| DB[(TimescaleDB)]
+      IBIN -->|crudo minimizado 90 d| DB
+      ENG -->|indicadores calc_version| DB
+      GW -->|solo lectura| DB
+    end
+    USR -->|REST y WSS con access token| GW
+    GW -->|valida RS256 via JWKS| AUTH0
+    classDef ext fill:#999999,color:#ffffff
+```
+
+*Eje comportamiento — fase 02 / Gate 1: DFD con trust boundaries que alimenta el STRIDE de abajo. Los actores grises son externos (no confiables o fuera de nuestro control). Estructura complementaria en `docs/architecture/c4-container.md`.*
 
 ## Análisis STRIDE
 | Componente | Spoofing | Tampering | Repudiation | Info Disclosure | DoS | Elevation |
@@ -41,6 +62,31 @@ Escala 1–3 por factor (Damage, Reproducibility, Exploitability, Affected users
 | T10 | Señales sin trazabilidad (repudio/no reproducibles) | 2 | 3 | 2 | 2 | 2 | 11 | Evidencia de inputs + `calc_version` + logging estructurado — A09; forense de anunciantes entre snapshots vía `merchant_ref` — ADR-0011 |
 | T11 | ID token o token de otra audiencia/tenant usado como bearer (confused deputy) | 2 | 2 | 2 | 2 | 2 | 10 | Validación estricta de `aud` (=API), `iss` (=tenant) y firma JWKS; solo se acepta el access token — ADR-0012, A01/A07 |
 | T12 | Robo de token en el navegador (XSS) del front-end/SPA | 3 | 1 | 2 | 2 | 2 | 10 | Token en memoria (no localStorage), access token de vida corta, refresh con rotación; el SPA está fuera de este repo — ADR-0012, A03/A07 |
+
+```mermaid
+quadrantChart
+    title Amenazas DREAD T1-T12 por probabilidad e impacto
+    x-axis Baja probabilidad --> Alta probabilidad
+    y-axis Bajo impacto --> Alto impacto
+    quadrant-1 Atender ya
+    quadrant-2 Monitorear
+    quadrant-3 Aceptar
+    quadrant-4 Planear
+    T2 P2P manipulado: [0.93, 0.93]
+    T7 Baneo de Binance: [0.88, 0.90]
+    T4 DoS API y WSS: [0.90, 0.80]
+    T9 SQLi en historico: [0.78, 0.88]
+    T1 Tasa falsa BCV: [0.65, 0.95]
+    T5 Eventos invalidos: [0.68, 0.90]
+    T6 Fuga de secretos: [0.55, 0.93]
+    T8 Supply chain: [0.53, 0.87]
+    T12 Robo token XSS: [0.56, 0.80]
+    T3 Ataques al login: [0.78, 0.65]
+    T10 Senal sin traza: [0.75, 0.60]
+    T11 Confused deputy: [0.66, 0.63]
+```
+
+*Eje trazabilidad — fase 02 / Gate 1: probabilidad ≈ (R+E+D)/9, impacto ≈ (D+A)/6 de la tabla DREAD, con separación mínima para legibilidad. La tabla es la fuente de verdad; el cuadrante es la vista de priorización.*
 
 ## Controles y trazabilidad
 | Amenaza | Control | Verificación (fase 04-testing) |

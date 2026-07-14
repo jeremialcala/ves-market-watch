@@ -5,7 +5,7 @@
 - **Fecha:** 2026-07-11
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 01-requirements
-- **Versión:** 0.1.1
+- **Versión:** 0.2.0
 
 ## Problema y contexto
 Antes de que existiera la plataforma, un sistema previo capturó cada ~10 minutos el

@@ -31,6 +31,28 @@ front-end/SPA (cliente público). Autorización por roles/permisos de Auth0 (`vi
    eventos push en tiempo real.
 3. Usuario consulta histórico con paginación y agregación por intervalo.
 
+```mermaid
+journey
+    title Consumo autenticado de indicadores (OIDC + REST + WSS)
+    section Login via Auth0
+      Abre el SPA y pulsa entrar: 4: Usuario
+      Universal Login con MFA: 3: Usuario
+      SPA obtiene access token: 5: SPA
+    section Consulta REST
+      GET indicators/current con Bearer: 5: SPA
+      Gateway valida token via JWKS: 4: Gateway
+      Recibe indicadores con frescura: 5: Usuario
+    section Tiempo real WSS
+      Abre WSS con el access token: 4: SPA
+      Se suscribe a indicators y signals: 4: SPA
+      Recibe push en menos de 1 s: 5: Usuario
+    section Expiracion del token
+      Token expira a los 15 min: 3: Sistema
+      Reconecta con token renovado: 4: SPA
+```
+
+*Eje trazabilidad — fase 01 / Gate 0: journey del escenario positivo; sus desvíos son los escenarios de abuso de la sección siguiente.*
+
 ### Escenarios negativos / abuso (requerido por Gate 0)
 1. **Token expirado/alterado**: firma inválida contra el JWKS de Auth0 → 401; sin
    información de diagnóstico interna en la respuesta (A07).

@@ -35,6 +35,40 @@ indicadores financieros que apoyen la administración eficiente del presupuesto 
     (Resource Server) que dicho front-end consume.
   - Otras criptomonedas o pares distintos de VES/USDT y VES/USD en la fase inicial.
 
+```mermaid
+mindmap
+  root((VES Market Watch))
+    Incluye
+      Ingesta P2P Binance
+      Tasa oficial BCV
+      Motor de indicadores
+        Brecha oficial vs P2P
+        Spreads y volumenes
+        Senales de oportunidad
+      API REST y WSS
+      Historico en series de tiempo
+    No incluye
+      Trading o custodia
+      Asesoria financiera
+      IdP o login propio
+        Delegado a Auth0
+      Front-end SPA
+    Actores
+      Usuario autenticado
+      Operador HITL
+      Fuentes externas
+        Binance P2P
+        Sitio BCV
+        Auth0
+    Riesgos
+      Cambio del endpoint P2P
+      Cambio del HTML BCV
+      Datos manipulados
+      Marco legal cambiario
+```
+
+*Eje trazabilidad — fase 00 / Gate 0: mapa de alcance y actores del charter (lenguaje ubicuo en `glossary.md`).*
+
 ## Stakeholders
 
 | Rol | Nombre | Responsabilidad |

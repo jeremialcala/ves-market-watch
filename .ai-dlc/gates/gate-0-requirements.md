@@ -15,5 +15,10 @@ Aprobación humana requerida antes de pasar a diseño detallado/implementación.
 **Veredicto:** requisitos completos; los pendientes son no-bloqueantes. **Aprobado (HITL).**
 **Aprobado por:** Jeremi Alcalá · **Fecha:** 2026-07-11
 
+> Adenda 2026-07-14 (post-aprobación, sin cambio de veredicto): evidencia diagramática del
+> gate completada — mindmap de alcance (charter), journey (api-streaming), requirementDiagram
+> RF↔ASVS (motor-indicadores), DFD y quadrant DREAD (threat-model). La aprobación original se
+> dio sobre la misma sustancia en tablas.
+
 > Nota: la aprobación cubre la versión de requisitos actualizada por ADR-0012 (consumidores
 > = usuarios humanos vía Auth0; nuevos escenarios de abuso en `api-streaming.md`).

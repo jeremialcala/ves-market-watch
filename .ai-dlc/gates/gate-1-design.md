@@ -13,3 +13,8 @@
 **Veredicto:** diseño completo a nivel Gate 1; los `<TODO>` listados son
 entradas de la fase 03, no huecos de diseño. **Aprobado (HITL).**
 **Aprobado por:** Jeremi Alcalá · **Fecha:** 2026-07-11
+
+> Adenda 2026-07-14 (post-aprobación, sin cambio de veredicto): evidencia diagramática del
+> gate completada — sequenceDiagram del flujo crítico, stateDiagram-v2 de TasaOficial
+> (ADR-0007), erDiagram del dominio y classDiagram hexagonal en `architecture.md`; DFD con
+> trust boundaries y quadrantChart DREAD en `threat-model.md`.

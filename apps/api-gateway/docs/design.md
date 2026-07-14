@@ -1,5 +1,11 @@
 # Diseño — api-gateway
 
+- **Estado:** review — diseño según Gate 1 (ADR-0012); pendiente de implementación (fase 03)
+- **Fecha:** 2026-07-14
+- **Decisores:** Jeremi Alcalá
+- **Fase AI-DLC:** 02-design
+- **Versión:** 0.2.0
+
 Rol: **Resource Server** (OIDC/OAuth2). La identidad y la emisión de tokens viven en Auth0
 (ADR-0012); el gateway solo **valida** access tokens y autoriza por scopes/permisos.
 

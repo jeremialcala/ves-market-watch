@@ -59,6 +59,67 @@ forma reactiva: cada nuevo dato recalcula y publica los indicadores afectados.
 - RF-4: Motor de reglas de señales configurable sin redeploy (config versionada).
 - RF-5: Publicar `indicators.updated` / `signals.emitted` al bus para el api-gateway.
 
+```mermaid
+requirementDiagram
+    requirement RF1 {
+      id: "RF-1"
+      text: "Suscripcion reactiva a market.events"
+      risk: medium
+      verifymethod: test
+    }
+    requirement RF2 {
+      id: "RF-2"
+      text: "Recalcular solo indicadores afectados"
+      risk: low
+      verifymethod: test
+    }
+    requirement RF3 {
+      id: "RF-3"
+      text: "Persistir series con calc_version"
+      risk: medium
+      verifymethod: test
+    }
+    requirement RF4 {
+      id: "RF-4"
+      text: "Motor de reglas de senales configurable"
+      risk: high
+      verifymethod: test
+    }
+    requirement RF5 {
+      id: "RF-5"
+      text: "Publicar indicators.updated y signals.emitted"
+      risk: medium
+      verifymethod: test
+    }
+    requirement SEC1 {
+      id: "ASVS-V5.1"
+      text: "Validacion de esquema de eventos consumidos"
+      risk: high
+      verifymethod: test
+    }
+    element Engine {
+      type: "servicio indicator-engine"
+    }
+    element SuiteFase1 {
+      type: "prueba"
+    }
+    element ReglasYaml {
+      type: "config versionada"
+    }
+    Engine - satisfies -> RF1
+    Engine - satisfies -> RF2
+    Engine - satisfies -> RF3
+    Engine - satisfies -> RF5
+    Engine - satisfies -> SEC1
+    ReglasYaml - satisfies -> RF4
+    SuiteFase1 - verifies -> RF1
+    SuiteFase1 - verifies -> RF3
+    SuiteFase1 - verifies -> RF5
+    SuiteFase1 - verifies -> SEC1
+```
+
+*Eje trazabilidad — fase 01 / Gate 0: RF-1/2/3/5 y la validación de esquema (ASVS V5.1) satisfechos por la fase 1 implementada y verificados por su suite; RF-4 (señales, `ReglasYaml`) queda sin arista `verifies` a propósito — es la fase 2 pendiente y sus umbrales requieren calibración HITL.*
+
 ## Requisitos de seguridad (mapeados a OWASP ASVS)
 | Req | ASVS | Nivel | OWASP Top 10 |
 |---|---|---|---|

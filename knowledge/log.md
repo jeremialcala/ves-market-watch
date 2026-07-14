@@ -7,6 +7,21 @@ timestamp: 2026-07-05T00:00:00Z
 
 # Log
 
+## 2026-07-14 — Auditoría de coherencia AI-DLC: evidencia diagramática de los tres ejes
+- Hallazgo: los gates 0/1 se cerraron con la sustancia en tablas (STRIDE/DREAD/ASVS) pero
+  solo 3 diagramas Mermaid en el repo (C4 Context/Container + gitGraph) — faltaba el eje
+  comportamiento y casi todo trazabilidad según el catálogo de la metodología.
+- Se generaron los 9 faltantes inline: mindmap (charter), journey (api-streaming),
+  requirementDiagram (motor-indicadores; RF-4 sin `verifies` a propósito — fase 2),
+  DFD + quadrant DREAD (threat-model), sequence + state TasaOficial + ER dominio +
+  classDiagram hexagonal (architecture). El ASCII art de architecture se retiró.
+- Fixes de forma: cabeceras de metadatos en los 4 design docs de apps y plan de pruebas;
+  `ingesta-historica.md` 0.1.1→0.2.0. Los gates conservan su firma; la evidencia nueva
+  queda anotada como adenda en cada gate.
+- Pendiente de aprovisionamiento en paralelo: tenant Auth0 `dev-higerotech.us.auth0.com`
+  (API audience + RBAC + roles viewer/operator + attack protection) — ver design del
+  api-gateway al completarse.
+
 ## 2026-07-11 — ingestor-historico: backfill de históricos de precio (ADR-0013)
 - Quinto servicio, batch por demanda (CLI `cargar`/`stats`), sin bus: carga exports
   CSV del sistema previo (top-100 combinado con 3 bancos principales) en la nueva

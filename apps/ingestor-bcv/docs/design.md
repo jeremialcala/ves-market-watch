@@ -1,5 +1,11 @@
 # Diseño — ingestor-bcv
 
+- **Estado:** approved (implementado y verificado en vivo, 2026-07-05)
+- **Fecha:** 2026-07-14
+- **Decisores:** Jeremi Alcalá
+- **Fase AI-DLC:** 02-design
+- **Versión:** 0.2.0
+
 ## Capas (hexagonal)
 - **Dominio** (`src/ingestor_bcv/domain/`): `TasaOficial` (moneda ISO 4217, valor,
   fecha-valor, estado: valid|suspect|stale) y `validar_plausibilidad()`.

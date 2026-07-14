@@ -19,6 +19,17 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Evidencia diagramática de los tres ejes completada (auditoría de coherencia AI-DLC,
+  2026-07-14)** — los gates 0 y 1 tenían la sustancia en tablas (STRIDE, DREAD, ASVS) pero
+  solo 3 diagramas Mermaid en todo el repo; se generaron los 9 faltantes, inline en su doc:
+  - Gate 0: `mindmap` de alcance (charter), `journey` del consumo autenticado
+    (PRD api-streaming), `requirementDiagram` RF↔ASVS↔tests con RF-4 visiblemente sin
+    verificar — fase 2 pendiente (PRD motor-indicadores).
+  - Gate 1: DFD propio con trust boundaries y `quadrantChart` DREAD T1–T12 derivado de la
+    tabla (threat-model); `sequenceDiagram` del flujo crítico con bifurcación HITL,
+    `stateDiagram-v2` de `TasaOficial` (ADR-0007), `erDiagram` del dominio y `classDiagram`
+    hexagonal del engine con nombres reales del código (architecture.md).
+
 - **`ingestor-historico` — quinto servicio: backfill de históricos de precio**
   (PRD `ingesta-historica.md` **approved — HITL 2026-07-11**, **ADR-0013 accepted**):
   - Proceso **batch por demanda** (CLI `cargar`/`stats`), hexagonal, que carga los
@@ -51,6 +62,19 @@ Convención de mantenimiento (inventario por ejecución):
   complementando al generador de una sola rama del skill AI-DLC.
   `docs/03-implementation/repo-history.md` regenerado con el mapa de ramas
   (develop bifurca de main en `bd9698b`; feat-ai-dlc de develop en `ac47922`).
+
+### Changed
+
+- `architecture.md`: el «Flujo de datos» en ASCII se reemplazó por el `sequenceDiagram`
+  del flujo crítico (eje comportamiento, renderizable); el DFD con trust boundaries vive
+  ahora en `threat-model.md` (antes solo remitía al C4 Container).
+
+### Fixed
+
+- Cabecera de metadatos agregada a los 4 `apps/*/docs/design.md` (faltaba por completo)
+  y al plan de pruebas (campos Decisores/Versión); `ingesta-historica.md` corrige
+  `Versión: 0.1.1` → `0.2.0` (era anterior al corte pese a aprobarse con él, contra la
+  regla de sincronía versión↔changelog de la metodología).
 
 ## [0.2.0] - 2026-07-11
 
