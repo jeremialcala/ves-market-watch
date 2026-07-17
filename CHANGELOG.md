@@ -19,6 +19,19 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Spec OpenAPI 3.1 del api-gateway** (`apps/api-gateway/docs/openapi.yaml`, 2026-07-17) —
+  segundo paso de la fase 03 del api-gateway: contrato REST formal generado desde la sección
+  REST de `docs/02-design/api-contracts.md` y ADR-0012. Cubre los 8 endpoints `/api/v1`
+  (tasa oficial current/history, P2P current, indicadores current/history, profundidad,
+  señales, health), con esquema de seguridad OAuth2 `authorizationCode` apuntando al tenant
+  Auth0 y los 5 scopes/permisos por operación (`/health` público). Refleja las convenciones
+  del repo: decimales como string (nunca float), paginación obligatoria en históricos con
+  rango máx. 90 días (422), errores RFC 7807 (`application/problem+json`) y cabeceras
+  `X-RateLimit-*`. Validada con `openapi-spec-validator` (VALID OpenAPI 3.1). Marcados como
+  preliminares los campos que dependen de la fase 2 del engine (brecha/spreads/volúmenes
+  `null`, vocabulario de `type`/`direction` de señales pendiente de `signal.v1`). Queda como
+  TODO la spec AsyncAPI del canal WSS `/ws/v1` y la app SPA del tenant.
+
 - **Tenant Auth0 de desarrollo aprovisionado** (`dev-higerotech.us.auth0.com`, 2026-07-14) —
   primer paso de la fase 03 del api-gateway (ADR-0012): API `VES Market Watch API`
   (audience `https://api.vesmarketwatch/`, RS256, access token 900 s, sin offline access)

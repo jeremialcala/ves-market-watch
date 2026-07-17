@@ -1,0 +1,742 @@
+openapi: 3.1.0
+
+# ---------------------------------------------------------------------------
+# Estado:      review — fase 03 (implementación api-gateway)
+# Fecha:       2026-07-17
+# Decisores:   Jeremi Alcalá
+# Fase AI-DLC: 03-implementation
+# Versión:     0.2.0
+#
+# Generado desde docs/02-design/api-contracts.md (sección REST) y ADR-0012.
+# Cubre SOLO la superficie REST /api/v1. El canal WSS /ws/v1 se especifica
+# aparte en AsyncAPI (TODO fase 03, junto con signal.v1 del engine fase 2).
+# ---------------------------------------------------------------------------
+
+info:
+  title: VES Market Watch API
+  version: 0.2.0
+  description: |
+    API de solo lectura sobre datos públicos del mercado cambiario venezolano:
+    tasa oficial BCV, referencia P2P de Binance, indicadores derivados y señales.
+
+    **Rol del gateway:** Resource Server OIDC/OAuth2 (ADR-0012). No emite tokens:
+    el login y la emisión ocurren en Auth0 (Authorization Code + PKCE). El gateway
+    valida cada access token (firma RS256 vía JWKS, `iss`, `aud`, `exp`/`nbf`) y
+    autoriza por el claim `permissions` (Auth0 RBAC, `token_dialect:
+    access_token_authz`). El ID token se rechaza (T11).
+
+    **Convenciones transversales:**
+    - Todos los valores monetarios/decimales viajan como **string** con precisión
+      exacta — nunca float (evita pérdida de precisión en VES).
+    - Los históricos son paginados de forma **obligatoria**; rango máximo por
+      request de 90 días (violarlo → 422).
+    - Errores en formato **RFC 7807** (`application/problem+json`) sin detalles
+      internos.
+    - Rate limit por token/IP; cada respuesta lleva cabeceras `X-RateLimit-*`.
+  contact:
+    name: Jeremi Alcalá
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.vesmarketwatch/api/v1
+    description: Producción (placeholder — audience del token = https://api.vesmarketwatch/)
+  - url: http://localhost:8000/api/v1
+    description: Desarrollo local (docker compose)
+
+tags:
+  - name: rates
+    description: Tasa oficial BCV y referencia P2P.
+  - name: indicators
+    description: Indicadores derivados (brecha, spreads, volúmenes).
+  - name: market
+    description: Profundidad del mercado P2P.
+  - name: signals
+    description: Señales financieras con evidencia trazable.
+  - name: system
+    description: Salud del servicio (público).
+
+security:
+  - auth0: []
+
+paths:
+  /rates/official/current:
+    get:
+      tags: [rates]
+      summary: Tasa oficial vigente
+      description: Última tasa oficial BCV en estado `valid` (ADR-0007).
+      operationId: getOfficialRateCurrent
+      security:
+        - auth0: [read:rates]
+      responses:
+        '200':
+          description: Tasa oficial vigente.
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/XRateLimitLimit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/XRateLimitRemaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/XRateLimitReset' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OfficialRateCurrent' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /rates/official/history:
+    get:
+      tags: [rates]
+      summary: Histórico de tasa oficial
+      description: Serie diaria de la tasa oficial por `value_date`, paginada.
+      operationId: getOfficialRateHistory
+      security:
+        - auth0: [read:rates]
+      parameters:
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Página de tasas oficiales históricas.
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/XRateLimitLimit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/XRateLimitRemaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/XRateLimitReset' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OfficialRateHistoryPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/UnprocessableRange' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /rates/p2p/current:
+    get:
+      tags: [rates]
+      summary: Referencia P2P vigente
+      description: Precio de referencia P2P (Binance) para un lado del mercado.
+      operationId: getP2PCurrent
+      security:
+        - auth0: [read:rates]
+      parameters:
+        - $ref: '#/components/parameters/Side'
+      responses:
+        '200':
+          description: Referencia P2P vigente para el lado solicitado.
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/XRateLimitLimit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/XRateLimitRemaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/XRateLimitReset' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/P2PQuote' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /indicators/current:
+    get:
+      tags: [indicators]
+      summary: Indicadores vigentes
+      description: |
+        Últimos indicadores derivados. La brecha, los spreads y los volúmenes
+        dependen de la fase 2 del indicator-engine (P2P); mientras no esté
+        implementada pueden venir `null`.
+      operationId: getIndicatorsCurrent
+      security:
+        - auth0: [read:indicators]
+      parameters:
+        - $ref: '#/components/parameters/Currency'
+      responses:
+        '200':
+          description: Indicadores vigentes.
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/XRateLimitLimit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/XRateLimitRemaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/XRateLimitReset' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Indicators' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /indicators/history:
+    get:
+      tags: [indicators]
+      summary: Histórico de indicadores
+      description: |
+        Serie agregada de indicadores en formato largo (una fila por
+        indicador/moneda/instante), paginada. Rango máximo de 90 días por request.
+      operationId: getIndicatorsHistory
+      security:
+        - auth0: [read:indicators]
+      parameters:
+        - $ref: '#/components/parameters/FromDateTime'
+        - $ref: '#/components/parameters/ToDateTime'
+        - $ref: '#/components/parameters/Interval'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Página de indicadores históricos.
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/XRateLimitLimit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/XRateLimitRemaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/XRateLimitReset' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IndicatorHistoryPage' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/UnprocessableRange' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /market/depth:
+    get:
+      tags: [market]
+      summary: Profundidad del mercado P2P
+      description: Niveles de profundidad (bandas de precio y volumen acumulado) para un lado.
+      operationId: getMarketDepth
+      security:
+        - auth0: [read:depth]
+      parameters:
+        - $ref: '#/components/parameters/Side'
+      responses:
+        '200':
+          description: Profundidad del mercado para el lado solicitado.
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/XRateLimitLimit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/XRateLimitRemaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/XRateLimitReset' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MarketDepth' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /signals:
+    get:
+      tags: [signals]
+      summary: Señales emitidas
+      description: |
+        Señales financieras con evidencia trazable (`inputs`, `rule`,
+        `calc_version`), paginadas. El vocabulario de `type`/`direction` lo fija
+        el contrato `signal.v1` (indicator-engine fase 2, pendiente); hasta
+        entonces se documentan como string abierto.
+      operationId: getSignals
+      security:
+        - auth0: [read:signals]
+      parameters:
+        - $ref: '#/components/parameters/FromDateTime'
+        - $ref: '#/components/parameters/ToDateTime'
+        - $ref: '#/components/parameters/SignalType'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Página de señales.
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/XRateLimitLimit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/XRateLimitRemaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/XRateLimitReset' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SignalPage' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/UnprocessableRange' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /health:
+    get:
+      tags: [system]
+      summary: Salud del servicio
+      description: Estado por componente, sin detalles internos. Endpoint público (sin token).
+      operationId: getHealth
+      security: []
+      responses:
+        '200':
+          description: El servicio está operativo (posiblemente degradado).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+        '503':
+          description: El servicio no está operativo.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+
+components:
+
+  securitySchemes:
+    auth0:
+      type: oauth2
+      description: |
+        Access token de Auth0 (RS256), presentado como `Authorization: Bearer <token>`.
+        Emitido por el tenant `dev-higerotech.us.auth0.com` con audience
+        `https://api.vesmarketwatch/`. El gateway solo valida; no participa en el flujo
+        de autorización. La app cliente usa Authorization Code + PKCE.
+      flows:
+        authorizationCode:
+          authorizationUrl: https://dev-higerotech.us.auth0.com/authorize
+          tokenUrl: https://dev-higerotech.us.auth0.com/oauth/token
+          refreshUrl: https://dev-higerotech.us.auth0.com/oauth/token
+          scopes:
+            read:rates: Leer tasa oficial y referencia P2P.
+            read:indicators: Leer indicadores derivados.
+            read:signals: Leer señales.
+            read:depth: Leer profundidad del mercado.
+            stream:events: Suscribirse al canal WSS de streaming.
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: Número de página (base 1).
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: page_size
+      in: query
+      description: Tamaño de página.
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 500
+        default: 100
+    FromDate:
+      name: from
+      in: query
+      description: Inicio del rango (fecha, inclusive).
+      required: true
+      schema:
+        type: string
+        format: date
+      example: '2026-04-18'
+    ToDate:
+      name: to
+      in: query
+      description: Fin del rango (fecha, inclusive). Rango máximo de 90 días.
+      required: true
+      schema:
+        type: string
+        format: date
+      example: '2026-07-17'
+    FromDateTime:
+      name: from
+      in: query
+      description: Inicio del rango (RFC 3339, inclusive).
+      required: true
+      schema:
+        type: string
+        format: date-time
+      example: '2026-07-10T00:00:00Z'
+    ToDateTime:
+      name: to
+      in: query
+      description: Fin del rango (RFC 3339, inclusive). Rango máximo de 90 días.
+      required: true
+      schema:
+        type: string
+        format: date-time
+      example: '2026-07-17T00:00:00Z'
+    Side:
+      name: side
+      in: query
+      description: Lado del mercado.
+      required: true
+      schema:
+        type: string
+        enum: [buy, sell]
+    Interval:
+      name: interval
+      in: query
+      description: Granularidad de agregación.
+      required: false
+      schema:
+        type: string
+        enum: [5m, 1h, 1d]
+        default: 1h
+    Currency:
+      name: currency
+      in: query
+      description: Código ISO 4217 de la moneda base (frente a VES).
+      required: false
+      schema:
+        type: string
+        pattern: '^[A-Z]{3}$'
+        default: USD
+    SignalType:
+      name: type
+      in: query
+      description: |
+        Filtro por tipo de señal. Vocabulario abierto hasta `signal.v1`
+        (indicator-engine fase 2).
+      required: false
+      schema:
+        type: string
+
+  headers:
+    XRateLimitLimit:
+      description: Cuota de peticiones en la ventana actual.
+      schema: { type: integer }
+    XRateLimitRemaining:
+      description: Peticiones restantes en la ventana actual.
+      schema: { type: integer }
+    XRateLimitReset:
+      description: Epoch (segundos UTC) en que se reinicia la ventana.
+      schema: { type: integer }
+
+  responses:
+    BadRequest:
+      description: Parámetros inválidos.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: 'https://api.vesmarketwatch/errors/invalid-parameter'
+            title: Parámetro inválido
+            status: 400
+            detail: "El parámetro 'side' debe ser 'buy' o 'sell'."
+    Unauthorized:
+      description: Falta el token, está expirado o su firma/claims no validan.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: 'https://api.vesmarketwatch/errors/unauthorized'
+            title: No autenticado
+            status: 401
+            detail: Access token ausente o inválido.
+    Forbidden:
+      description: El token es válido pero carece del permiso requerido.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: 'https://api.vesmarketwatch/errors/forbidden'
+            title: Permiso insuficiente
+            status: 403
+            detail: "Se requiere el permiso 'read:signals'."
+    UnprocessableRange:
+      description: Rango de fechas inválido o mayor a 90 días.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: 'https://api.vesmarketwatch/errors/range-too-large'
+            title: Rango no procesable
+            status: 422
+            detail: El rango solicitado excede el máximo de 90 días.
+    TooManyRequests:
+      description: Se superó el límite de peticiones.
+      headers:
+        Retry-After:
+          description: Segundos hasta poder reintentar.
+          schema: { type: integer }
+        X-RateLimit-Limit: { $ref: '#/components/headers/XRateLimitLimit' }
+        X-RateLimit-Remaining: { $ref: '#/components/headers/XRateLimitRemaining' }
+        X-RateLimit-Reset: { $ref: '#/components/headers/XRateLimitReset' }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: 'https://api.vesmarketwatch/errors/rate-limited'
+            title: Demasiadas peticiones
+            status: 429
+            detail: Límite de peticiones superado; reintente más tarde.
+
+  schemas:
+
+    Decimal:
+      type: string
+      pattern: '^[0-9]+(\.[0-9]+)?$'
+      description: Decimal exacto no negativo, como string (nunca float).
+      example: '417.03'
+
+    SignedDecimal:
+      type: string
+      pattern: '^-?[0-9]+(\.[0-9]+)?$'
+      description: Decimal exacto como string; puede ser negativo (p. ej. variaciones).
+      example: '-2.15'
+
+    Currency:
+      type: string
+      pattern: '^[A-Z]{3}$'
+      description: Código ISO 4217.
+      example: USD
+
+    Problem:
+      type: object
+      description: Error en formato RFC 7807, sin detalles internos.
+      properties:
+        type:
+          type: string
+          format: uri
+          description: URI que identifica el tipo de error.
+        title:
+          type: string
+          description: Resumen legible del tipo de error.
+        status:
+          type: integer
+          description: Código HTTP.
+        detail:
+          type: string
+          description: Explicación específica de esta ocurrencia (sin datos internos).
+        instance:
+          type: string
+          format: uri
+          description: URI de la ocurrencia (opcional).
+      required: [title, status]
+
+    PageMeta:
+      type: object
+      description: Metadatos de paginación (base 1).
+      properties:
+        page: { type: integer, minimum: 1 }
+        page_size: { type: integer, minimum: 1 }
+        total_items: { type: integer, minimum: 0 }
+        has_more: { type: boolean }
+      required: [page, page_size, has_more]
+
+    OfficialRateCurrent:
+      type: object
+      additionalProperties: false
+      properties:
+        currency: { $ref: '#/components/schemas/Currency' }
+        rate:
+          allOf: [{ $ref: '#/components/schemas/Decimal' }]
+          description: VES por unidad de la moneda.
+        value_date:
+          type: string
+          format: date
+          description: Fecha de vigencia de la tasa (BCV).
+        captured_at:
+          type: string
+          format: date-time
+          description: Instante de captura desde el BCV.
+        stale:
+          type: boolean
+          description: True si la tasa vigente supera el umbral de frescura.
+      required: [currency, rate, value_date, captured_at, stale]
+
+    OfficialRateHistoryItem:
+      type: object
+      additionalProperties: false
+      properties:
+        currency: { $ref: '#/components/schemas/Currency' }
+        rate: { $ref: '#/components/schemas/Decimal' }
+        value_date: { type: string, format: date }
+        captured_at: { type: string, format: date-time }
+      required: [currency, rate, value_date, captured_at]
+
+    OfficialRateHistoryPage:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/OfficialRateHistoryItem' }
+        pagination: { $ref: '#/components/schemas/PageMeta' }
+      required: [data, pagination]
+
+    P2PQuote:
+      type: object
+      additionalProperties: false
+      description: Precio de referencia P2P para un lado del mercado.
+      properties:
+        side:
+          type: string
+          enum: [buy, sell]
+        best_price: { $ref: '#/components/schemas/Decimal' }
+        median: { $ref: '#/components/schemas/Decimal' }
+        vwap:
+          allOf: [{ $ref: '#/components/schemas/Decimal' }]
+          description: Precio promedio ponderado por volumen.
+        volume:
+          allOf: [{ $ref: '#/components/schemas/Decimal' }]
+          description: Volumen agregado considerado en el cálculo.
+        as_of:
+          type: string
+          format: date-time
+        confidence:
+          type: string
+          description: |
+            Confianza del snapshot (p. ej. `high`, `normal`, `low`). El
+            vocabulario lo define el indicator-engine; nunca se sirven señales
+            desde datos `low` confidence.
+          example: high
+      required: [side, best_price, median, vwap, volume, as_of, confidence]
+
+    Indicators:
+      type: object
+      additionalProperties: false
+      description: |
+        Vista de indicadores vigentes. Los campos de brecha, spreads y volúmenes
+        pueden ser `null` mientras la fase 2 del indicator-engine (P2P) no esté
+        implementada.
+      properties:
+        currency: { $ref: '#/components/schemas/Currency' }
+        as_of:
+          type: string
+          format: date-time
+        calc_version:
+          type: integer
+          minimum: 1
+          description: Versión de la fórmula (reproducibilidad, RF-3).
+        official_stale:
+          type: boolean
+        gap_abs:
+          oneOf:
+            - { $ref: '#/components/schemas/SignedDecimal' }
+            - { type: 'null' }
+          description: Brecha absoluta (P2P − oficial), en VES.
+        gap_pct:
+          oneOf:
+            - { $ref: '#/components/schemas/SignedDecimal' }
+            - { type: 'null' }
+          description: Brecha porcentual.
+        spread_buy:
+          oneOf:
+            - { $ref: '#/components/schemas/SignedDecimal' }
+            - { type: 'null' }
+        spread_sell:
+          oneOf:
+            - { $ref: '#/components/schemas/SignedDecimal' }
+            - { type: 'null' }
+        volumes:
+          oneOf:
+            - type: object
+              additionalProperties: false
+              properties:
+                buy: { $ref: '#/components/schemas/Decimal' }
+                sell: { $ref: '#/components/schemas/Decimal' }
+            - { type: 'null' }
+      required: [currency, as_of, calc_version, official_stale]
+
+    IndicatorHistoryItem:
+      type: object
+      additionalProperties: false
+      description: Fila en formato largo de la hypertable `indicators`.
+      properties:
+        as_of:
+          type: string
+          format: date-time
+        indicator:
+          type: string
+          description: Nombre canónico (p. ej. `official_rate`, `official_rate_change_pct`).
+        currency: { $ref: '#/components/schemas/Currency' }
+        value: { $ref: '#/components/schemas/SignedDecimal' }
+        calc_version:
+          type: integer
+          minimum: 1
+      required: [as_of, indicator, currency, value, calc_version]
+
+    IndicatorHistoryPage:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/IndicatorHistoryItem' }
+        pagination: { $ref: '#/components/schemas/PageMeta' }
+        interval:
+          type: string
+          enum: [5m, 1h, 1d]
+      required: [data, pagination, interval]
+
+    DepthLevel:
+      type: object
+      additionalProperties: false
+      properties:
+        price_band:
+          allOf: [{ $ref: '#/components/schemas/Decimal' }]
+          description: Límite (o centro) de la banda de precio.
+        cum_volume:
+          allOf: [{ $ref: '#/components/schemas/Decimal' }]
+          description: Volumen acumulado hasta esta banda.
+      required: [price_band, cum_volume]
+
+    MarketDepth:
+      type: object
+      additionalProperties: false
+      properties:
+        side:
+          type: string
+          enum: [buy, sell]
+        as_of:
+          type: string
+          format: date-time
+        levels:
+          type: array
+          items: { $ref: '#/components/schemas/DepthLevel' }
+      required: [side, as_of, levels]
+
+    Signal:
+      type: object
+      additionalProperties: false
+      description: |
+        Señal financiera con evidencia trazable (T10). Forma preliminar hasta
+        que `signal.v1` (indicator-engine fase 2) fije el contrato definitivo.
+      properties:
+        type:
+          type: string
+          description: Tipo de señal (vocabulario pendiente de `signal.v1`).
+        direction:
+          type: string
+          description: Dirección/sentido de la señal.
+        emitted_at:
+          type: string
+          format: date-time
+        calc_version:
+          type: integer
+          minimum: 1
+        evidence:
+          type: object
+          description: Insumos y regla que produjeron la señal (auditable/reproducible).
+          properties:
+            inputs:
+              type: object
+              additionalProperties: true
+              description: Valores de entrada usados por la regla.
+            rule:
+              type: string
+              description: Identificador o expresión de la regla evaluada.
+          required: [inputs, rule]
+      required: [type, direction, emitted_at, calc_version, evidence]
+
+    SignalPage:
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Signal' }
+        pagination: { $ref: '#/components/schemas/PageMeta' }
+      required: [data, pagination]
+
+    Health:
+      type: object
+      additionalProperties: false
+      description: Estado agregado y por componente, sin detalles internos.
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, down]
+        components:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [ok, degraded, down]
+          description: Estado por componente (p. ej. `database`, `broker`, `auth`).
+      required: [status]

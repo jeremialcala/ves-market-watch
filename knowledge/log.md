@@ -7,6 +7,16 @@ timestamp: 2026-07-05T00:00:00Z
 
 # Log
 
+## 2026-07-17 — api-gateway: spec OpenAPI 3.1 (fase 03)
+- Contrato REST formal en `apps/api-gateway/docs/openapi.yaml`, generado desde la
+  sección REST de `docs/02-design/api-contracts.md` y ADR-0012. 8 endpoints `/api/v1`,
+  seguridad OAuth2 `authorizationCode` contra el tenant Auth0 con los 5 scopes, decimales
+  como string, paginación obligatoria (rango máx. 90 d → 422), errores RFC 7807 y
+  cabeceras `X-RateLimit-*`. Validado con `openapi-spec-validator`.
+- Campos dependientes de la fase 2 del engine marcados preliminares (brecha/spreads/volúmenes
+  `null`; vocabulario de señales pendiente de `signal.v1`). Siguen abiertos: AsyncAPI del
+  WSS `/ws/v1` y la app SPA del tenant.
+
 ## 2026-07-14 — Rama feat-ai-dlc cerrada
 - Cerrada tras nivelar develop (0 commits exclusivos): borrada local y en origin.
   Todo su contenido — ingestor-historico (ADR-0013), evidencia diagramática de los

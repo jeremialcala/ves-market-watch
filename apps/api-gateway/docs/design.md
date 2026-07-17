@@ -50,6 +50,11 @@ AUTH0_AUDIENCE=https://api.vesmarketwatch/
 JWKS_URI=https://dev-higerotech.us.auth0.com/.well-known/jwks.json
 ```
 
+## Contratos
+- **REST:** `docs/openapi.yaml` (OpenAPI 3.1, generada desde `api-contracts.md` — 2026-07-17,
+  validada con `openapi-spec-validator`). 8 endpoints `/api/v1`, seguridad OAuth2 con los 5
+  scopes de Auth0.
+
 ## Pendiente (fase 03)
-- `<TODO: especificación OpenAPI 3.1 y AsyncAPI generadas desde api-contracts.md>`
+- `<TODO: especificación AsyncAPI del canal WSS /ws/v1 (bloqueada en parte por signal.v1 del engine fase 2)>`
 - `<TODO: app SPA (cliente público, Auth Code + PKCE) en el tenant — se crea junto con el front-end; MFA del tenant se decide cuando haya usuarios reales>`

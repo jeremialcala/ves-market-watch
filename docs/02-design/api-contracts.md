@@ -8,9 +8,10 @@
 - **Versión:** 0.2.0
 
 Los contratos de **eventos** ya son formales: JSON Schema 2020-12 en `schemas/` (raíz),
-verificados por contract tests en productor y consumidor. Las tablas REST/WSS de abajo
-siguen siendo esqueleto: la especificación OpenAPI 3.1 formal se generará con el
-api-gateway.
+verificados por contract tests en productor y consumidor. La superficie **REST** ya tiene
+spec formal OpenAPI 3.1 en `apps/api-gateway/docs/openapi.yaml` (2026-07-17); las tablas de
+abajo son su resumen legible. El canal **WSS** sigue como esqueleto hasta la spec AsyncAPI
+(fase 03, en parte bloqueada por `signal.v1` del engine fase 2).
 
 ## Autenticación (OIDC con Auth0 — ADR-0012)
 El gateway **no emite tokens**: es Resource Server. El login y la emisión ocurren en Auth0
