@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jeremialcala/ves-market-watch/schemas/signal.v1.json",
+  "title": "signals.emitted v1",
+  "description": "Señal financiera disparada por una regla del indicator-engine sobre la microestructura P2P, con evidencia trazable y reproducible (amenaza T10, ASVS V16). El vocabulario de `type` es abierto por convención: el catálogo canónico vive en knowledge/metrics/microestructura-p2p.md (mismo criterio que los nombres de indicadores). Nunca se emiten señales desde datos low_confidence ni duplicadas (idempotencia por event_id).",
+  "$comment": "Contrato definido en la fase de señales; la emisión depende del motor de reglas (RF-4), aún no implementado. Cuando exista un productor, sus contract tests validarán la forma emitida contra este schema.",
+  "type": "object",
+  "required": ["event_id", "event_type", "schema_version", "occurred_at", "producer", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "event_type": { "const": "signals.emitted" },
+    "schema_version": { "const": 1 },
+    "occurred_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}",
+      "description": "Instante de emisión de la señal (sobre estándar)."
+    },
+    "producer": { "type": "string", "minLength": 1 },
+    "payload": {
+      "type": "object",
+      "required": ["type", "direction", "currency", "as_of", "calc_version", "triggered_by", "evidence"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Tipo de señal. Vocabulario abierto por convención; catálogo canónico en knowledge/metrics/microestructura-p2p.md (p. ej. arranque_alcista, techo_inminente, correccion_inminente)."
+        },
+        "direction": {
+          "enum": ["alcista", "bajista", "neutral"],
+          "description": "Sesgo del movimiento anticipado. `neutral` para señales de continuación/absorción sin dirección nueva."
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "Fiat del par sobre el que se evalúa la señal (ISO 4217; VES en el par USDT/VES)."
+        },
+        "as_of": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}",
+          "description": "Instante del dato de mercado que disparó la regla (no la hora de emisión)."
+        },
+        "calc_version": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Versión de la fórmula/cálculo de los indicadores de evidencia (RF-3, reproducibilidad)."
+        },
+        "triggered_by": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "event_id del evento (p. ej. indicators.updated) cuyos indicadores satisficieron la regla (cadena de trazabilidad)."
+        },
+        "evidence": {
+          "type": "object",
+          "required": ["rule", "inputs"],
+          "additionalProperties": false,
+          "description": "Qué regla se disparó y con qué insumos: hace cada señal auditable y reproducible (T10, A09).",
+          "properties": {
+            "rule": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Identificador versionado de la regla evaluada (config versionada, RF-4; p. ej. \"techo_inminente@v1\")."
+            },
+            "inputs": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+              },
+              "description": "Mapa indicador → valor usado por la regla (decimal exacto como string; las variaciones pueden ser negativas). Nombres canónicos de knowledge/metrics/."
+            }
+          }
+        }
+      }
+    }
+  }
+}

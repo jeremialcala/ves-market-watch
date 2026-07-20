@@ -19,6 +19,18 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Contrato `signal.v1` del evento `signals.emitted`** (`schemas/signal.v1.json`,
+  2026-07-20) — cuarto y último schema de eventos, con el sobre estándar del repo y payload
+  `{type, direction, currency, as_of, calc_version, triggered_by, evidence: {rule, inputs}}`.
+  `type` es de vocabulario abierto por convención (catálogo canónico en
+  `knowledge/metrics/microestructura-p2p.md`), `direction` ∈ {alcista, bajista, neutral},
+  `evidence` fija regla versionada + mapa indicador→valor para trazabilidad/reproducibilidad
+  (T10, A09). Contract test de forma (9 casos: ejemplo canónico + variantes inválidas) en
+  `apps/indicator-engine/tests/contract/test_signal_event_schema.py`. **Solo el contrato:**
+  el evento aún **no se emite** — falta el motor de reglas (RF-4) y la calibración HITL de
+  umbrales. Desbloquea la spec AsyncAPI del canal WSS del gateway. Docs sincronizados
+  (`signals-emitted.md`, `events/index.md`, `api-contracts.md`, `gate-1`, OpenAPI del gateway).
+
 - **ADR-0014 — cálculo y publicación de la microestructura P2P** (2026-07-20, *accepted*):
   registra las decisiones de diseño de la fase 2 del engine que faltaban en el corpus de
   ADRs: reutilizar `indicators.updated` (sin evento nuevo), formato largo con el lado en el

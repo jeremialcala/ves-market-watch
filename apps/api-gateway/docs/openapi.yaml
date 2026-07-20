@@ -9,7 +9,8 @@ openapi: 3.1.0
 #
 # Generado desde docs/02-design/api-contracts.md (sección REST) y ADR-0012.
 # Cubre SOLO la superficie REST /api/v1. El canal WSS /ws/v1 se especifica
-# aparte en AsyncAPI (TODO fase 03, junto con signal.v1 del engine fase 2).
+# aparte en AsyncAPI (TODO fase 03). El contrato signal.v1 ya está definido; falta
+# el motor de reglas (RF-4) para que signals.emitted se emita de verdad.
 # ---------------------------------------------------------------------------
 
 info:
@@ -141,8 +142,8 @@ paths:
       summary: Indicadores vigentes
       description: |
         Últimos indicadores derivados. La brecha, los spreads y los volúmenes
-        dependen de la fase 2 del indicator-engine (P2P); mientras no esté
-        implementada pueden venir `null`.
+        provienen de la fase 2 del indicator-engine (P2P, ya implementada); vienen
+        `null` solo mientras no haya llegado un snapshot P2P reciente.
       operationId: getIndicatorsCurrent
       security:
         - auth0: [read:indicators]
@@ -225,9 +226,10 @@ paths:
       summary: Señales emitidas
       description: |
         Señales financieras con evidencia trazable (`inputs`, `rule`,
-        `calc_version`), paginadas. El vocabulario de `type`/`direction` lo fija
-        el contrato `signal.v1` (indicator-engine fase 2, pendiente); hasta
-        entonces se documentan como string abierto.
+        `calc_version`), paginadas. La forma la fija el contrato `signal.v1`
+        (definido 2026-07-20); `type` es string abierto por convención. La emisión
+        del evento sigue pendiente del motor de reglas (RF-4), así que este endpoint
+        aún no devuelve datos.
       operationId: getSignals
       security:
         - auth0: [read:signals]
@@ -380,8 +382,8 @@ components:
       name: type
       in: query
       description: |
-        Filtro por tipo de señal. Vocabulario abierto hasta `signal.v1`
-        (indicator-engine fase 2).
+        Filtro por tipo de señal. Vocabulario abierto por convención (definido en
+        `signal.v1`); catálogo en `knowledge/metrics/microestructura-p2p.md`.
       required: false
       schema:
         type: string
@@ -583,8 +585,8 @@ components:
       additionalProperties: false
       description: |
         Vista de indicadores vigentes. Los campos de brecha, spreads y volúmenes
-        pueden ser `null` mientras la fase 2 del indicator-engine (P2P) no esté
-        implementada.
+        (fase 2 P2P, ya implementada) vienen `null` solo mientras no haya un
+        snapshot P2P reciente que los alimente.
       properties:
         currency: { $ref: '#/components/schemas/Currency' }
         as_of:
@@ -686,15 +688,19 @@ components:
       type: object
       additionalProperties: false
       description: |
-        Señal financiera con evidencia trazable (T10). Forma preliminar hasta
-        que `signal.v1` (indicator-engine fase 2) fije el contrato definitivo.
+        Señal financiera con evidencia trazable (T10), alineada con el contrato de
+        evento `schemas/signal.v1.json`. La emisión del evento sigue pendiente del
+        motor de reglas (RF-4), así que este recurso aún no devuelve datos reales.
       properties:
         type:
           type: string
-          description: Tipo de señal (vocabulario pendiente de `signal.v1`).
+          description: |
+            Tipo de señal. Vocabulario abierto por convención (definido en `signal.v1`);
+            catálogo canónico en `knowledge/metrics/microestructura-p2p.md`.
         direction:
           type: string
-          description: Dirección/sentido de la señal.
+          enum: [alcista, bajista, neutral]
+          description: Sesgo del movimiento anticipado (`neutral` = continuación/absorción).
         emitted_at:
           type: string
           format: date-time

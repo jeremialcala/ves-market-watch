@@ -7,6 +7,18 @@ timestamp: 2026-07-05T00:00:00Z
 
 # Log
 
+## 2026-07-20 — Coherencia post-fase-2 + contrato `signal.v1`
+- Auditoría e2e de la doc contra el código tras la fase 2: corregida la deriva de tratar
+  «fase 2» como «P2P + señales» (el código las separó). Actualizados motor-indicadores,
+  knowledge del engine (fase 2 implementada, 49 tests), gate-0 (4→5 PRDs), gate-1,
+  api-contracts y architecture. Nuevo **ADR-0014** (microestructura P2P: reúso de
+  `indicators.updated`, ventanas sobre histórico, frescura entre lados, aplazamiento de
+  señales).
+- **`schemas/signal.v1.json`** definido (4.º schema de eventos): payload con `type` abierto,
+  `direction` enum, `evidence` {rule, inputs} para trazabilidad. Contract test de forma
+  (9 casos) en el engine. **Solo contrato**: la emisión depende del motor de reglas (RF-4),
+  aún pendiente. `signals.emitted` pasa de «diseñado» a «contrato definido; emisión pendiente».
+
 ## 2026-07-17 — api-gateway: spec OpenAPI 3.1 (fase 03)
 - Contrato REST formal en `apps/api-gateway/docs/openapi.yaml`, generado desde la
   sección REST de `docs/02-design/api-contracts.md` y ADR-0012. 8 endpoints `/api/v1`,
