@@ -41,7 +41,9 @@ def construir_evento_indicadores(
                 {
                     "indicator": indicador.nombre,
                     "currency": indicador.moneda,
-                    "value": str(indicador.valor),
+                    # format(..., "f"): siempre punto fijo — str(Decimal) puede dar
+                    # notación científica y el contrato exige ^-?[0-9]+(\.[0-9]+)?$.
+                    "value": format(indicador.valor, "f"),
                 }
                 for indicador in indicadores
             ],

@@ -22,10 +22,11 @@ import aio_pika
 from indicator_engine.application.contracts import EventoInvalido, ValidadorDeContratos
 from indicator_engine.application.ports import AlertNotifier
 from indicator_engine.application.process_official_rate import ProcesarTasaOficial
+from indicator_engine.application.process_p2p_snapshot import ProcesarSnapshotP2P
 
 logger = logging.getLogger("indicator_engine")
 
-ROUTING_KEYS = ("official.rate.updated",)  # p2p.snapshot se suma en fase 2
+ROUTING_KEYS = ("official.rate.updated", "p2p.snapshot")
 
 
 class ConsumidorMarketEvents:
@@ -40,9 +41,11 @@ class ConsumidorMarketEvents:
         dlx_name: str = "market.events.dlx",
         dlq_name: str = "market.events.dlq",
         prefetch: int = 10,
+        procesador_snapshot_p2p: ProcesarSnapshotP2P | None = None,
     ) -> None:
         self._amqp_url = amqp_url
         self._procesador = procesador_tasa_oficial
+        self._procesador_p2p = procesador_snapshot_p2p
         self._validador = validador
         self._notifier = notifier
         self._exchange_name = exchange_name
@@ -80,30 +83,38 @@ class ConsumidorMarketEvents:
     async def _manejar(self, mensaje: aio_pika.abc.AbstractIncomingMessage) -> None:
         try:
             evento = json.loads(mensaje.body)
-            tasa = self._validador.validar_tasa_oficial(evento)
+            tipo = evento.get("event_type") if isinstance(evento, dict) else None
+            if tipo == "official.rate.updated":
+                dto = self._validador.validar_tasa_oficial(evento)
+                procesador, etiqueta = self._procesador, f"{dto.moneda} {dto.valor}"
+            elif tipo == "p2p.snapshot" and self._procesador_p2p is not None:
+                dto = self._validador.validar_snapshot_p2p(evento)
+                procesador = self._procesador_p2p
+                etiqueta = f"{dto.side} {dto.asset}/{dto.fiat} ({len(dto.anuncios)} anuncios)"
+            else:
+                raise EventoInvalido(f"event_type no manejado: {tipo!r}")
         except (json.JSONDecodeError, EventoInvalido, KeyError, ValueError) as exc:
             await self._notifier.alertar(f"Evento inválido enviado a DLQ: {exc}")
             await mensaje.reject(requeue=False)
             return
 
         try:
-            resultado = await self._procesador.ejecutar(tasa)
+            resultado = await procesador.ejecutar(dto)
         except Exception as exc:
             await self._notifier.alertar(
-                f"Error procesando {tasa.event_id} ({tasa.moneda}); a DLQ: {exc}"
+                f"Error procesando {dto.event_id} ({etiqueta}); a DLQ: {exc}"
             )
             await mensaje.reject(requeue=False)
             return
 
         await mensaje.ack()
         if resultado.duplicado:
-            logger.info("evento %s duplicado — ignorado (idempotencia)", tasa.event_id)
+            logger.info("evento %s duplicado — ignorado (idempotencia)", dto.event_id)
         else:
             logger.info(
-                "procesado %s: %s %s → %d indicador(es)%s",
-                tasa.event_id,
-                tasa.moneda,
-                tasa.valor,
+                "procesado %s: %s → %d indicador(es)%s",
+                dto.event_id,
+                etiqueta,
                 len(resultado.indicadores),
                 " [official_stale]" if resultado.official_stale else "",
             )

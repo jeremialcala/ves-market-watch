@@ -28,6 +28,16 @@ class InMemoryIndicatorRepository:
                 return indicador
         return None
 
+    async def indicador_asof(
+        self, nombre: str, moneda: str, momento: datetime
+    ) -> Indicador | None:
+        candidatos = [
+            i
+            for i in self.indicadores
+            if i.nombre == nombre and i.moneda == moneda and i.as_of <= momento
+        ]
+        return max(candidatos, key=lambda i: i.as_of, default=None)
+
     async def guardar(self, indicadores: list[Indicador]) -> None:
         self.indicadores.extend(indicadores)
 

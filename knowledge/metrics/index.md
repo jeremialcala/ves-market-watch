@@ -8,17 +8,18 @@ timestamp: 2026-07-05T00:00:00Z
 # Indicadores
 
 Definiciones completas: PRD `../../docs/01-requirements/motor-indicadores.md`.
-Implementados en la fase 1 del [indicator-engine](../services/indicator-engine.md):
-`official_rate` y su variación abs/% por moneda. Los de la tabla dependen de datos
-P2P (fase 2 del engine; el productor `p2p.snapshot` ya existe).
+Implementados en el [indicator-engine](../services/indicator-engine.md) —
+fase 1: `official_rate` y su variación abs/% por moneda; fase 2 (2026-07-20):
+los P2P por snapshot y lado (`p2p_mediana`, `p2p_vwap`, `p2p_mejor_precio`,
+`p2p_liquidez`, `p2p_merchants_pct`, `p2p_outliers_pct`, `p2p_brecha_abs/pct`)
+más la microestructura entre lados.
 
 | Indicador | Concepto |
 |---|---|
-| Brecha cambiaria BCV↔P2P (abs y %) | [brecha-cambiaria](brecha-cambiaria.md) |
-| Precio de referencia P2P (mediana / VWAP top-N) | [precio-referencia-p2p](precio-referencia-p2p.md) |
-| Spread de compra / venta | distancia del mejor precio de cada lado al precio de referencia |
-| Volumen agregado por lado | suma de cantidades disponibles en un snapshot |
-| Profundidad de mercado | volumen acumulado por banda de precio (0,5 %) |
-| Variación intradía | Δ del precio de referencia vs. apertura del día (VET) |
-| Tendencia de liquidez | pendiente de volumen/profundidad en ventana móvil |
-| Señales de oportunidad | reglas configurables sobre los anteriores → [signals.emitted](../events/signals-emitted.md) |
+| Brecha cambiaria BCV↔P2P (abs y %) | [brecha-cambiaria](brecha-cambiaria.md) — implementada |
+| Precio de referencia P2P (mediana / VWAP top-N) | [precio-referencia-p2p](precio-referencia-p2p.md) — implementado |
+| Microestructura P2P (spread, ratio O/D, momentum bid, drenaje de oferta) | [microestructura-p2p](microestructura-p2p.md) — implementada, con umbrales de señal |
+| Volumen agregado por lado | `p2p_liquidez_{buy,sell}` — implementado |
+| Profundidad de mercado | volumen acumulado por banda de precio (0,5 %) — pendiente |
+| Variación intradía | Δ del precio de referencia vs. apertura del día (VET) — pendiente |
+| Señales de oportunidad | reglas configurables sobre los anteriores → [signals.emitted](../events/signals-emitted.md) — pendiente (umbrales iniciales en microestructura-p2p) |

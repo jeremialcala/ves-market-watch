@@ -19,6 +19,18 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **indicator-engine fase 2: indicadores P2P por ingesta** (2026-07-20) — el motor ahora
+  consume `p2p.snapshot` (binding nuevo en la cola durable, despacho por `event_type`) y
+  por cada snapshot publica: referencia del lado (`p2p_mediana`, `p2p_vwap`,
+  `p2p_mejor_precio`, `p2p_liquidez`, `p2p_merchants_pct`, `p2p_outliers_pct` con sufijo
+  `_buy`/`_sell`), brecha BCV↔P2P as-of (`p2p_brecha_abs/pct_{lado}`, ADR-0009) y la
+  microestructura de señal: `p2p_spread_pct`, `p2p_ratio_oferta_demanda` (lado opuesto
+  fresco ≤ 15 min), `p2p_momentum_bid_3h_pct` y `p2p_drenaje_oferta_6h_pct` (ventanas
+  móviles vía `indicador_asof`; omitidas ante huecos de captura). Confianza baja
+  (> 30 % outliers) suprime señales dejando rastro en `p2p_outliers_pct`. Umbrales de
+  señal derivados del backtest 11–20 jul en `knowledge/metrics/microestructura-p2p.md`
+  (nuevo). 27 tests nuevos (unit + contrato); suite completa 49 en verde.
+
 - **Spec OpenAPI 3.1 del api-gateway** (`apps/api-gateway/docs/openapi.yaml`, 2026-07-17) —
   segundo paso de la fase 03 del api-gateway: contrato REST formal generado desde la sección
   REST de `docs/02-design/api-contracts.md` y ADR-0012. Cubre los 8 endpoints `/api/v1`
@@ -89,11 +101,19 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **indicator-engine en modo reactivo continuo en el compose de dev** (2026-07-20) — se
+  elimina el bucle `--drain` cada 5 min: con fase 2 los indicadores se recalculan al
+  ritmo de la ingesta (2 snapshots/min + tasas BCV), que es el propósito del motor.
+
 - `architecture.md`: el «Flujo de datos» en ASCII se reemplazó por el `sequenceDiagram`
   del flujo crítico (eje comportamiento, renderizable); el DFD con trust boundaries vive
   ahora en `threat-model.md` (antes solo remitía al C4 Container).
 
 ### Fixed
+
+- **Publisher de `indicators.updated`: valores siempre en punto fijo** (2026-07-20) —
+  `str(Decimal)` puede emitir notación científica, que viola el patrón
+  `^-?[0-9]+(\.[0-9]+)?$` del contrato; ahora se serializa con `format(v, "f")`.
 
 - Cabecera de metadatos agregada a los 4 `apps/*/docs/design.md` (faltaba por completo)
   y al plan de pruebas (campos Decisores/Versión); `ingesta-historica.md` corrige

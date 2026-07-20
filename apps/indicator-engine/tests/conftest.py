@@ -50,6 +50,51 @@ def evento_tasa_oficial(
     }
 
 
+def anuncio_p2p(
+    price: str = "850.00",
+    available_amount: str = "100.00",
+    outlier: bool = False,
+    merchant: bool = False,
+) -> dict:
+    """Item de `payload.ads` válido según `schemas/p2p-snapshot.v1.json`."""
+    return {
+        "adv_no": "1234567890",
+        "price": price,
+        "available_amount": available_amount,
+        "min_limit": "1000.00",
+        "max_limit": "500000.00",
+        "trade_methods": ["Banco de Venezuela"],
+        "merchant": merchant,
+        "merchant_ref": "ab" * 16,
+        "outlier": outlier,
+    }
+
+
+def evento_snapshot_p2p(
+    side: str = "BUY",
+    ads: list[dict] | None = None,
+    captured_at: str | None = None,
+    event_id: str | None = None,
+    partial: bool = False,
+) -> dict:
+    """Evento `p2p.snapshot` válido (misma forma que produce el ingestor-binance)."""
+    return {
+        "event_id": event_id or str(uuid.uuid4()),
+        "event_type": "p2p.snapshot",
+        "schema_version": 1,
+        "occurred_at": datetime.now(UTC).isoformat(),
+        "producer": "ingestor-binance",
+        "payload": {
+            "side": side,
+            "asset": "USDT",
+            "fiat": "VES",
+            "captured_at": captured_at or datetime.now(UTC).isoformat(),
+            "partial": partial,
+            "ads": ads if ads is not None else [anuncio_p2p()],
+        },
+    }
+
+
 def _con_base_de_datos(dsn: str, nombre: str) -> str:
     partes = urlsplit(dsn)
     return urlunsplit(partes._replace(path=f"/{nombre}"))

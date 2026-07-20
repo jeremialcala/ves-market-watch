@@ -86,10 +86,9 @@ services:
     build:
       context: .
       dockerfile: apps/indicator-engine/Dockerfile
-    # Recálculo por lotes cada 5 minutos: --drain procesa lo encolado y
-    # termina; el bucle lo relanza. Para volver al modo reactivo continuo,
-    # eliminar `command` (el CMD de la imagen es el daemon consumidor).
-    command: ["sh", "-c", "while true; do python -m indicator_engine --drain; sleep 300; done"]
+    # Modo reactivo continuo (CMD de la imagen): desde fase 2 el motor recalcula
+    # indicadores ante cada p2p.snapshot (2/min) y cada tasa BCV — procesar por
+    # lotes retrasaría justo lo que el motor existe para producir.
     environment:
       DATABASE_URL: postgresql://postgres:postgres@timescaledb:5432/ves_market
       AMQP_URL: amqp://guest:guest@rabbitmq/

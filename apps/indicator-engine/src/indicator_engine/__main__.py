@@ -17,6 +17,7 @@ from indicator_engine.adapters.memory import LoggingAlertNotifier
 from indicator_engine.adapters.timescale.repository import TimescaleIndicatorRepository
 from indicator_engine.application.contracts import ValidadorDeContratos
 from indicator_engine.application.process_official_rate import ProcesarTasaOficial
+from indicator_engine.application.process_p2p_snapshot import ProcesarSnapshotP2P
 from indicator_engine.config import Settings
 
 logger = logging.getLogger("indicator_engine")
@@ -26,6 +27,12 @@ async def run(settings: Settings, drain: bool) -> None:
     repository = await TimescaleIndicatorRepository.connect(settings.database_url)
     publisher = AmqpEventPublisher(settings.amqp_url, settings.amqp_exchange)
     procesador = ProcesarTasaOficial(
+        publisher=publisher,
+        repository=repository,
+        calc_version=settings.calc_version,
+        umbral_stale=timedelta(hours=settings.stale_threshold_hours),
+    )
+    procesador_p2p = ProcesarSnapshotP2P(
         publisher=publisher,
         repository=repository,
         calc_version=settings.calc_version,
@@ -41,6 +48,7 @@ async def run(settings: Settings, drain: bool) -> None:
         dlx_name=settings.dlx_name,
         dlq_name=settings.dlq_name,
         prefetch=settings.prefetch,
+        procesador_snapshot_p2p=procesador_p2p,
     )
     try:
         if drain:

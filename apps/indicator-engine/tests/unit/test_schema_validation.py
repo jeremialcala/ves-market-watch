@@ -59,3 +59,40 @@ def test_moneda_fuera_de_iso4217_es_invalida(validador, crear_evento):
 
     with pytest.raises(EventoInvalido):
         validador.validar_tasa_oficial(evento)
+
+
+def test_snapshot_p2p_valido_produce_dto(validador):
+    from decimal import Decimal
+
+    from tests.conftest import anuncio_p2p, evento_snapshot_p2p
+
+    evento = evento_snapshot_p2p(
+        side="SELL",
+        ads=[anuncio_p2p(price="850.10", available_amount="25.5", merchant=True)],
+    )
+
+    snap = validador.validar_snapshot_p2p(evento)
+
+    assert snap.side == "SELL"
+    assert snap.fiat == "VES"
+    assert snap.anuncios[0].precio == Decimal("850.10")
+    assert snap.anuncios[0].cantidad_disponible == Decimal("25.5")
+    assert snap.anuncios[0].es_merchant
+
+
+def test_snapshot_p2p_con_side_invalido_va_a_dlq(validador):
+    from tests.conftest import evento_snapshot_p2p
+
+    evento = evento_snapshot_p2p(side="LONG")
+
+    with pytest.raises(EventoInvalido):
+        validador.validar_snapshot_p2p(evento)
+
+
+def test_snapshot_p2p_sin_anuncios_es_invalido(validador):
+    from tests.conftest import evento_snapshot_p2p
+
+    evento = evento_snapshot_p2p(ads=[])
+
+    with pytest.raises(EventoInvalido):
+        validador.validar_snapshot_p2p(evento)

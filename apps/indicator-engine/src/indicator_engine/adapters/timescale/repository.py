@@ -64,6 +64,31 @@ class TimescaleIndicatorRepository:
             calc_version=fila["calc_version"],
         )
 
+    async def indicador_asof(
+        self, nombre: str, moneda: str, momento
+    ) -> Indicador | None:
+        fila = await self._pool.fetchrow(
+            """
+            SELECT as_of, indicator, currency, value, calc_version
+            FROM indicators
+            WHERE indicator = $1 AND currency = $2 AND as_of <= $3
+            ORDER BY as_of DESC
+            LIMIT 1
+            """,
+            nombre,
+            moneda,
+            momento,
+        )
+        if fila is None:
+            return None
+        return Indicador(
+            nombre=fila["indicator"],
+            moneda=fila["currency"],
+            valor=fila["value"],
+            as_of=fila["as_of"],
+            calc_version=fila["calc_version"],
+        )
+
     async def guardar(self, indicadores: list[Indicador]) -> None:
         # ON CONFLICT DO NOTHING: la reentrega de un evento (at-least-once)
         # no duplica filas — la PK (as_of, indicator, currency) es determinista.

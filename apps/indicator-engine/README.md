@@ -2,17 +2,27 @@
 
 Motor reactivo de indicadores: consume eventos de mercado y produce indicadores y señales.
 
-**Fase 1 implementada** — primer consumidor de `official.rate.updated`. Lo P2P
-(brecha, spreads, volúmenes, profundidad) y las señales llegan con `ingestor-binance`.
+**Fases 1 y 2 implementadas** — consume `official.rate.updated` **y** `p2p.snapshot`;
+por cada ingesta recalcula y publica los indicadores afectados. Pendiente de fase 2:
+profundidad por bandas, variación intradía y el motor de reglas de señales (RF-4).
 
-## Qué hace (fase 1)
-- Consume `official.rate.updated` de `market.events` con cola durable propia
-  (`indicator-engine.market.events`), validación contra `schemas/official-rate.v1.json`
+## Qué hace
+- Consume `official.rate.updated` y `p2p.snapshot` de `market.events` con cola durable
+  propia (`indicator-engine.market.events`), validación contra `schemas/*.v1.json`
   y DLQ (`market.events.dlq`) para eventos inválidos o fallidos (ADR-0004, A05/A08).
 - Idempotencia por `event_id` (tabla `processed_events`): la reentrega no reprocesa.
-- Calcula por moneda: `official_rate`, `official_rate_change_abs/pct` (vs. último
-  conocido); la fórmula de la brecha BCV↔P2P ya vive en el dominio, lista para fase 2.
-- Marca `official_stale=true` si la captura supera `STALE_THRESHOLD_HOURS` (6, ADR-0007).
+- Por `official.rate.updated`: `official_rate`, `official_rate_change_abs/pct` por moneda.
+- Por `p2p.snapshot` (lado BUY o SELL): referencia del lado (`p2p_mediana`, `p2p_vwap`,
+  `p2p_mejor_precio`, `p2p_liquidez`, `p2p_merchants_pct`, `p2p_outliers_pct`, sufijo
+  `_buy`/`_sell`), brecha BCV↔P2P as-of (`p2p_brecha_abs/pct_{lado}`, ADR-0009) y
+  microestructura: `p2p_spread_pct` y `p2p_ratio_oferta_demanda` (con el último lado
+  opuesto ≤ 15 min) más ventanas móviles `p2p_momentum_bid_3h_pct` (SELL) y
+  `p2p_drenaje_oferta_6h_pct` (BUY). Umbrales de señal derivados del backtest en
+  `knowledge/metrics/microestructura-p2p.md`.
+- Con > 30 % de outliers en el snapshot la confianza es baja: se publican solo la
+  referencia y `p2p_outliers_pct` — las señales se suprimen, nunca en silencio.
+- Marca `official_stale=true` si la tasa oficial supera `STALE_THRESHOLD_HOURS` (6,
+  ADR-0007) al momento del cálculo.
 - Persiste en la hypertable `indicators` con `calc_version` (RF-3, reproducibilidad) y
   publica `indicators.updated` con `triggered_by` = evento origen (trazabilidad V16).
 
@@ -45,7 +55,8 @@ python -m pytest                                     # suite completa
 - Diseño: `docs/design.md` · Contratos: `../../schemas/`
 - Amenazas T2, T5, T10 en `../../docs/02-design/threat-model.md`
 
-## Pendiente (fase 2 — requiere ingestor-binance)
-- `p2p.snapshot`: filtrado de outliers, precio de referencia, brecha, spreads,
-  volúmenes, profundidad, coalescing ante backlog.
-- Motor de reglas de señales (`signals.emitted`, config YAML versionada, RF-4).
+## Pendiente
+- Profundidad por bandas de precio (0,5 %) y variación intradía vs. apertura VET.
+- Coalescing ante backlog de snapshots (hoy se procesan todos en orden).
+- Motor de reglas de señales (`signals.emitted`, config YAML versionada, RF-4) —
+  umbrales iniciales ya derivados en `knowledge/metrics/microestructura-p2p.md`.
