@@ -4,7 +4,7 @@ Aprobación humana requerida antes de pasar a diseño detallado/implementación.
 
 | Criterio | Estado | Evidencia |
 |---|---|---|
-| Requisitos funcionales documentados por funcionalidad | ✅ | 4 PRDs en `docs/01-requirements/` |
+| Requisitos funcionales documentados por funcionalidad | ✅ | 5 PRDs en `docs/01-requirements/` (incl. `ingesta-historica.md`, aprobado HITL 2026-07-11, ADR-0013) |
 | Requisitos de seguridad mapeados a OWASP ASVS + Top 10 | ✅ | Tabla ASVS en cada PRD |
 | Escenarios negativos / de abuso por funcionalidad | ✅ | Sección dedicada en cada PRD |
 | Threat assessment inicial | ✅ | Riesgos en charter + STRIDE en `docs/02-design/threat-model.md` |

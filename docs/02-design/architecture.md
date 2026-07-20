@@ -49,7 +49,7 @@ sequenceDiagram
     Note over GW,U: REST y WSS autenticados con access token de Auth0 (RS256 via JWKS, ADR-0012)
 ```
 
-*Eje comportamiento — fase 02 / Gate 1: flujo crítico tasa oficial → indicador → push, con la bifurcación HITL de ADR-0007. La ruta P2P (`p2p.snapshot` → engine fase 2) sigue el mismo patrón por el bus. El DFD con trust boundaries vive en `threat-model.md`.*
+*Eje comportamiento — fase 02 / Gate 1: flujo crítico tasa oficial → indicador → push, con la bifurcación HITL de ADR-0007. La ruta P2P (`p2p.snapshot` → engine, fase 2 ya implementada 2026-07-20) sigue el mismo patrón por el bus. El DFD con trust boundaries vive en `threat-model.md`.*
 
 ## Ciclo de vida de la entidad núcleo: TasaOficial (ADR-0007)
 

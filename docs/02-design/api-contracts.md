@@ -11,7 +11,8 @@ Los contratos de **eventos** ya son formales: JSON Schema 2020-12 en `schemas/` 
 verificados por contract tests en productor y consumidor. La superficie **REST** ya tiene
 spec formal OpenAPI 3.1 en `apps/api-gateway/docs/openapi.yaml` (2026-07-17); las tablas de
 abajo son su resumen legible. El canal **WSS** sigue como esqueleto hasta la spec AsyncAPI
-(fase 03, en parte bloqueada por `signal.v1` del engine fase 2).
+(fase 03, en parte bloqueada por `signal.v1`, aún sin definir — la fase 2 del engine se
+entregó sin el evento de señales; ver la fase de señales pendiente en `motor-indicadores.md`).
 
 ## Autenticación (OIDC con Auth0 — ADR-0012)
 El gateway **no emite tokens**: es Resource Server. El login y la emisión ocurren en Auth0
@@ -69,7 +70,7 @@ token expirado con código 4401.
 | `p2p.snapshot` | ingestor-binance | indicator-engine | `schemas/p2p-snapshot.v1.json` (v1.1: `merchant_ref`, ADR-0011) |
 | `official.rate.updated` | ingestor-bcv | indicator-engine | `schemas/official-rate.v1.json` |
 | `indicators.updated` | indicator-engine | api-gateway | `schemas/indicators.v1.json` |
-| `signals.emitted` | indicator-engine | api-gateway | `schemas/signal.v1.json` (pendiente — engine fase 2) |
+| `signals.emitted` | indicator-engine | api-gateway | `schemas/signal.v1.json` (pendiente — fase de señales, aún sin implementar) |
 
 Todos los eventos llevan sobre: `{event_id, event_type, schema_version, occurred_at,
 producer}` para idempotencia y trazabilidad (implementado así en ingestor-bcv e

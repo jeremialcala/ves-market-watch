@@ -19,6 +19,14 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **ADR-0014 — cálculo y publicación de la microestructura P2P** (2026-07-20, *accepted*):
+  registra las decisiones de diseño de la fase 2 del engine que faltaban en el corpus de
+  ADRs: reutilizar `indicators.updated` (sin evento nuevo), formato largo con el lado en el
+  nombre del indicador, ventanas móviles sobre el propio histórico vía repositorio (sin
+  estado en memoria; omitidas ante huecos de captura), cruce entre lados con frescura del
+  opuesto (≤ 15 min), supresión con rastro bajo `confianza_baja`, y el **aplazamiento
+  explícito** de `signals.emitted`/`signal.v1` a una fase de señales propia.
+
 - **indicator-engine fase 2: indicadores P2P por ingesta** (2026-07-20) — el motor ahora
   consume `p2p.snapshot` (binding nuevo en la cola durable, despacho por `event_type`) y
   por cada snapshot publica: referencia del lado (`p2p_mediana`, `p2p_vwap`,
@@ -104,6 +112,15 @@ Convención de mantenimiento (inventario por ejecución):
 - **indicator-engine en modo reactivo continuo en el compose de dev** (2026-07-20) — se
   elimina el bucle `--drain` cada 5 min: con fase 2 los indicadores se recalculan al
   ritmo de la ingesta (2 snapshots/min + tasas BCV), que es el propósito del motor.
+
+- **Barrido de coherencia documental e2e** (2026-07-20) — auditoría de docs de proyecto y
+  diseño contra el estado real del código tras la fase 2. Corregida la deriva raíz de tratar
+  «fase 2 del engine» como «P2P + señales»: el código las separó (P2P/microestructura
+  entregado, señales diferido). Actualizados `motor-indicadores.md` (cabecera y caption de
+  trazabilidad), `knowledge/services/indicator-engine.md` (fase 2 implementada, 49 tests,
+  pendiente = solo señales), `gate-0` (4 → 5 PRDs), `gate-1`, `api-contracts.md` y el caption
+  de `architecture.md`. Sin cambios: charter, glossary, data-classification, api-streaming,
+  `knowledge/events/signals-emitted.md` (sigue correcto: «diseñado, sin implementar»).
 
 - `architecture.md`: el «Flujo de datos» en ASCII se reemplazó por el `sequenceDiagram`
   del flujo crítico (eje comportamiento, renderizable); el DFD con trust boundaries vive

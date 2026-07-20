@@ -1,9 +1,10 @@
 # PRD — Motor de Indicadores
 
-- **Estado:** approved (Gate 0, HITL 2026-07-11) — fase 1 implementada en
-  `apps/indicator-engine` (2026-07-05): consumo de `official.rate.updated` con validación
-  de schema, DLQ, idempotencia y `indicators.updated`. Pendiente fase 2: `p2p.snapshot` y
-  señales (requiere ingestor-binance).
+- **Estado:** approved (Gate 0, HITL 2026-07-11) — fase 1 (tasas oficiales, 2026-07-05) y
+  fase 2 P2P/microestructura (2026-07-20) implementadas en `apps/indicator-engine`: consumo
+  de `official.rate.updated` y `p2p.snapshot` con validación de schema, DLQ, idempotencia y
+  publicación de `indicators.updated`. Pendiente: el motor de reglas de señales
+  (`signals.emitted` / `signal.v1` / RF-4) y la calibración HITL de sus umbrales.
 - **Fecha:** 2026-07-11
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 01-requirements
@@ -118,7 +119,7 @@ requirementDiagram
     SuiteFase1 - verifies -> SEC1
 ```
 
-*Eje trazabilidad — fase 01 / Gate 0: RF-1/2/3/5 y la validación de esquema (ASVS V5.1) satisfechos por la fase 1 implementada y verificados por su suite; RF-4 (señales, `ReglasYaml`) queda sin arista `verifies` a propósito — es la fase 2 pendiente y sus umbrales requieren calibración HITL.*
+*Eje trazabilidad — fase 01 / Gate 0: RF-1/2/3/5 y la validación de esquema (ASVS V5.1) satisfechos por la fase 1 implementada y verificados por su suite; RF-4 (señales, `ReglasYaml`) queda sin arista `verifies` a propósito — es la fase de señales, aún pendiente, y sus umbrales requieren calibración HITL. La fase 2 P2P/microestructura (2026-07-20) ya está implementada y verificada; su evidencia vive en el CHANGELOG y en `knowledge/metrics/microestructura-p2p.md`.*
 
 ## Requisitos de seguridad (mapeados a OWASP ASVS)
 | Req | ASVS | Nivel | OWASP Top 10 |
