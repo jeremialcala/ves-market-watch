@@ -7,6 +7,15 @@ timestamp: 2026-07-05T00:00:00Z
 
 # Log
 
+## 2026-07-22 — Motor de reglas de señales (RF-4) implementado
+- El indicator-engine ya **emite** `signals.emitted` (ADR-0015): ruleset versionado
+  (`config/senales.v1.yaml`), evaluación por nivel sobre la vista de indicadores vigentes,
+  dedup por cooldown (60 min/tipo) y evidencia (regla + insumos). Nueva hypertable `signals`
+  (migración 002). 77 tests; verificado e2e en vivo (snapshot → `correccion_inminente` al bus
+  y a la tabla). RF-4/RF-5 satisfechos; el api-gateway aún no consume el evento.
+- `signals.emitted` pasa de «contrato definido» a **«implementado»** en índices y knowledge;
+  tabla `signals` movida de planificada a implementada.
+
 ## 2026-07-20 — Coherencia post-fase-2 + contrato `signal.v1`
 - Auditoría e2e de la doc contra el código tras la fase 2: corregida la deriva de tratar
   «fase 2» como «P2P + señales» (el código las separó). Actualizados motor-indicadores,

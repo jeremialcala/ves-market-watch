@@ -19,6 +19,21 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Motor de reglas de señales (RF-4) — `signals.emitted` ya se emite** (indicator-engine,
+  2026-07-22, **ADR-0015**): ruleset versionado en repo (`config/senales.v1.yaml`, umbrales
+  del backtest aprobados HITL) que evalúa la microestructura vigente y emite `signals.emitted`
+  (`signal.v1`) con evidencia (regla + insumos). Decisiones: config YAML versionada no
+  editable en runtime (ASVS V14); evaluación por nivel + dedup por **cooldown** (60 min/tipo,
+  por `as_of`) en vez de edge-triggering; vista de indicadores vigentes = lote + histórico
+  fresco (≤ `SIGNALS_MAX_AGE_MIN`); nunca bajo `confianza_baja`. Tres tipos v1
+  (`arranque_alcista`, `techo_inminente`, `correccion_inminente`). Persistencia con evidencia
+  JSONB en la nueva hypertable `signals` (migración 002, montada en el compose). 77 tests
+  (unit de reglas, wiring, cooldown, confianza, contrato del productor, integración de
+  persistencia); **verificado e2e en vivo**: snapshot → `correccion_inminente` en el bus
+  RabbitMQ y en la tabla. Con esto **RF-4 y RF-5 quedan satisfechos y verificados**; el
+  api-gateway aún no consume el evento. Docs sincronizados (PRD, gates, architecture,
+  api-contracts, knowledge de servicio/evento/tabla, OpenAPI del gateway).
+
 - **Contrato `signal.v1` del evento `signals.emitted`** (`schemas/signal.v1.json`,
   2026-07-20) — cuarto y último schema de eventos, con el sobre estándar del repo y payload
   `{type, direction, currency, as_of, calc_version, triggered_by, evidence: {rule, inputs}}`.

@@ -1,10 +1,10 @@
 # PRD — Motor de Indicadores
 
-- **Estado:** approved (Gate 0, HITL 2026-07-11) — fase 1 (tasas oficiales, 2026-07-05) y
-  fase 2 P2P/microestructura (2026-07-20) implementadas en `apps/indicator-engine`: consumo
-  de `official.rate.updated` y `p2p.snapshot` con validación de schema, DLQ, idempotencia y
-  publicación de `indicators.updated`. Pendiente: el motor de reglas de señales
-  (`signals.emitted` / `signal.v1` / RF-4) y la calibración HITL de sus umbrales.
+- **Estado:** approved (Gate 0, HITL 2026-07-11) — implementado extremo a extremo en
+  `apps/indicator-engine`: fase 1 (tasas oficiales, 2026-07-05), fase 2 P2P/microestructura
+  (2026-07-20) y motor de reglas de señales (RF-4, 2026-07-22, ADR-0015) que emite
+  `signals.emitted` (`signal.v1`). Pendiente solo la recalibración HITL de umbrales (subir la
+  versión del ruleset) y mejoras menores (profundidad por bandas, variación intradía).
 - **Fecha:** 2026-07-11
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 01-requirements
@@ -107,6 +107,9 @@ requirementDiagram
     element ReglasYaml {
       type: "config versionada"
     }
+    element SuiteSenales {
+      type: "prueba"
+    }
     Engine - satisfies -> RF1
     Engine - satisfies -> RF2
     Engine - satisfies -> RF3
@@ -117,9 +120,11 @@ requirementDiagram
     SuiteFase1 - verifies -> RF3
     SuiteFase1 - verifies -> RF5
     SuiteFase1 - verifies -> SEC1
+    SuiteSenales - verifies -> RF4
+    SuiteSenales - verifies -> RF5
 ```
 
-*Eje trazabilidad — fase 01 / Gate 0: RF-1/2/3/5 y la validación de esquema (ASVS V5.1) satisfechos por la fase 1 implementada y verificados por su suite; RF-4 (señales, `ReglasYaml`) queda sin arista `verifies` a propósito — es la fase de señales, aún pendiente, y sus umbrales requieren calibración HITL. La fase 2 P2P/microestructura (2026-07-20) ya está implementada y verificada; su evidencia vive en el CHANGELOG y en `knowledge/metrics/microestructura-p2p.md`.*
+*Eje trazabilidad — fase 01 / Gate 0, actualizado a la implementación: RF-1/2/3/5 y la validación de esquema (ASVS V5.1) satisfechos y verificados por la suite. RF-4 (señales, `ReglasYaml`) quedó satisfecho por el motor de reglas versionado (RF-4/ADR-0015, 2026-07-22) y verificado por `SuiteSenales` (reglas, cooldown, contrato del productor, e2e en vivo). RF-5 se completa: el engine ya publica tanto `indicators.updated` como `signals.emitted`.*
 
 ## Requisitos de seguridad (mapeados a OWASP ASVS)
 | Req | ASVS | Nivel | OWASP Top 10 |

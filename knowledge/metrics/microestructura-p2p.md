@@ -43,4 +43,5 @@ Percentiles de referencia — spread p10/p50/p90: 0,55/0,86/2,13 % · ratio:
   techo (20-jul).
 
 Estos umbrales son el punto de partida empírico del motor de reglas de señales
-(config YAML versionada, RF-4) — se recalibran con más historia.
+(config YAML versionada, RF-4) — **ya implementado** en `config/senales.v1.yaml`
+(ADR-0015); se recalibran con más historia subiendo la versión del ruleset.

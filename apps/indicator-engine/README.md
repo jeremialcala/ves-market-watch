@@ -2,9 +2,10 @@
 
 Motor reactivo de indicadores: consume eventos de mercado y produce indicadores y señales.
 
-**Fases 1 y 2 implementadas** — consume `official.rate.updated` **y** `p2p.snapshot`;
-por cada ingesta recalcula y publica los indicadores afectados. Pendiente de fase 2:
-profundidad por bandas, variación intradía y el motor de reglas de señales (RF-4).
+**Implementado extremo a extremo** — consume `official.rate.updated` **y** `p2p.snapshot`;
+por cada ingesta recalcula y publica los indicadores afectados y, sobre la microestructura,
+evalúa el motor de reglas (RF-4) y emite `signals.emitted`. Pendiente menor: profundidad por
+bandas, variación intradía y la recalibración HITL de umbrales.
 
 ## Qué hace
 - Consume `official.rate.updated` y `p2p.snapshot` de `market.events` con cola durable
@@ -25,6 +26,9 @@ profundidad por bandas, variación intradía y el motor de reglas de señales (R
   ADR-0007) al momento del cálculo.
 - Persiste en la hypertable `indicators` con `calc_version` (RF-3, reproducibilidad) y
   publica `indicators.updated` con `triggered_by` = evento origen (trazabilidad V16).
+- **Señales (RF-4, ADR-0015):** evalúa el ruleset versionado (`config/senales.v1.yaml`)
+  sobre la microestructura vigente, deduplica por cooldown (60 min/tipo) y emite
+  `signals.emitted` (`signal.v1`) con evidencia (regla + insumos) a la hypertable `signals`.
 
 ## Ejecutar
 
@@ -40,7 +44,8 @@ python -m indicator_engine --drain
 
 Configuración por entorno: `AMQP_URL`, `AMQP_EXCHANGE` (`market.events`), `QUEUE_NAME`,
 `DLX_NAME`, `DLQ_NAME`, `PREFETCH` (10), `DATABASE_URL`, `CALC_VERSION` (1),
-`STALE_THRESHOLD_HOURS` (6), `SCHEMAS_DIR`. Secretos por entorno (A02).
+`STALE_THRESHOLD_HOURS` (6), `SCHEMAS_DIR`, `SIGNALS_RULESET_PATH`
+(`config/senales.v1.yaml`), `SIGNALS_MAX_AGE_MIN` (20). Secretos por entorno (A02).
 
 ## Tests
 
@@ -58,5 +63,4 @@ python -m pytest                                     # suite completa
 ## Pendiente
 - Profundidad por bandas de precio (0,5 %) y variación intradía vs. apertura VET.
 - Coalescing ante backlog de snapshots (hoy se procesan todos en orden).
-- Motor de reglas de señales (`signals.emitted`, config YAML versionada, RF-4) —
-  umbrales iniciales ya derivados en `knowledge/metrics/microestructura-p2p.md`.
+- Recalibración HITL de los umbrales del ruleset con más historia (subir su versión).

@@ -92,7 +92,7 @@ Ver `docs/02-design/api-contracts.md` (REST + eventos WSS/AMQP).
 | `processed_events` | Idempotencia del consumidor del engine | vigencia | ✔ implementada |
 | `historical_market_snapshots` | Históricos de precio desde exports externos (detalle por banco en JSONB, ADR-0013) | permanente | ✔ implementada |
 | `p2p_top_of_book` | Mejor precio/volúmenes por snapshot | ≥ 12 meses | planificada |
-| `signals` | Señales emitidas con evidencia | ≥ 12 meses | planificada |
+| `signals` | Señales emitidas con evidencia | ≥ 12 meses | implementada (RF-4, ADR-0015) |
 
 Migraciones por servicio en `apps/<servicio>/db/migrations/` (montadas en el init del
 `docker-compose.yml`). Agregados continuos 5 min / 1 h / 1 d para intradía: planificados.
@@ -141,7 +141,7 @@ erDiagram
     }
 ```
 
-*Eje estructura — fase 02 / Gate 1: entidades del dominio y sus relaciones. Mapeo físico en la tabla de hypertables de arriba (`TASA_OFICIAL`→`official_rates`, `SNAPSHOT_P2P`/`ANUNCIO`→`p2p_snapshots_raw` JSONB, `INDICADOR`→`indicators`, `SENAL`→`signals` planificada). `ANUNCIANTE` existe solo como pseudónimo `merchant_ref` (ADR-0011) — nunca alias ni ID crudos.*
+*Eje estructura — fase 02 / Gate 1: entidades del dominio y sus relaciones. Mapeo físico en la tabla de hypertables de arriba (`TASA_OFICIAL`→`official_rates`, `SNAPSHOT_P2P`/`ANUNCIO`→`p2p_snapshots_raw` JSONB, `INDICADOR`→`indicators`, `SENAL`→`signals`, implementada — RF-4/ADR-0015). `ANUNCIANTE` existe solo como pseudónimo `merchant_ref` (ADR-0011) — nunca alias ni ID crudos.*
 
 ## Dominio hexagonal (ejemplar: indicator-engine fase 1)
 

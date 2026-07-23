@@ -1,9 +1,9 @@
 # Diseño — indicator-engine
 
-- **Estado:** approved (fases 1 y 2-P2P implementadas; señales pendientes)
-- **Fecha:** 2026-07-20
+- **Estado:** approved (fases 1, 2-P2P y motor de reglas de señales RF-4 implementadas)
+- **Fecha:** 2026-07-22
 - **Decisores:** Jeremi Alcalá
-- **Fase AI-DLC:** 02-design
+- **Fase AI-DLC:** 03-implementation
 - **Versión:** 0.3.0
 
 ## Capas (hexagonal)
@@ -29,8 +29,15 @@
     histórico (momentum bid 3 h / drenaje oferta 6 h; hueco de captura > ventana + 1 h
     ⇒ no comparable, se omite). Con `confianza_baja` solo se publican referencia y
     `p2p_outliers_pct` — supresión de señales con rastro, nunca silenciosa.
-  - Puertos: `EventPublisher`, `IndicatorRepository` (con `indicador_asof` para las
-    ventanas móviles), `AlertNotifier`.
+  - `process_p2p_snapshot.py` (cont.) — tras publicar los indicadores, el **motor de
+    reglas** (RF-4, ADR-0015) evalúa el ruleset versionado sobre la vista de indicadores
+    vigentes (lote + histórico fresco ≤ `SIGNALS_MAX_AGE_MIN`), aplica dedup por cooldown
+    y emite/persiste `signals.emitted` con evidencia. Nunca bajo `confianza_baja`.
+  - `domain/reglas.py` — ruleset + evaluación pura (AND de condiciones; operadores
+    `gt/gte/lt/lte`); `cargar_ruleset` estricto (YAML inválido ⇒ el motor no arranca).
+  - Puertos: `EventPublisher` (`publish_indicators_updated`, `publish_signal_emitted`),
+    `IndicatorRepository` (`indicador_asof` para ventanas; `senal_reciente`/`guardar_senales`
+    para señales), `AlertNotifier`.
 - **Adaptadores** (`src/indicator_engine/adapters/`):
   - `amqp/consumer.py` — declara la topología (exchange `market.events`, cola durable
     propia con `x-dead-letter-exchange` → `market.events.dlx` → `market.events.dlq`),
@@ -39,11 +46,12 @@
     `run_forever()` es el daemon. Prefetch configurable (backpressure).
   - `amqp/publisher.py` — `indicators.updated` con confirms y sobre estándar; valores
     en punto fijo (`format(v, "f")`) para cumplir el patrón del contrato.
-  - `timescale/repository.py` — hypertable `indicators` (formato largo) +
-    `processed_events`; `ON CONFLICT DO NOTHING` hace la reentrega inocua;
-    `indicador_asof` resuelve ventanas móviles con un índice (indicator, currency,
-    as_of DESC) sin cargar series.
+  - `timescale/repository.py` — hypertables `indicators` (formato largo) y `signals`
+    (evidencia JSONB) + `processed_events`; `ON CONFLICT DO NOTHING` hace la reentrega
+    inocua; `indicador_asof` resuelve ventanas móviles con un índice (indicator, currency,
+    as_of DESC) sin cargar series; `senal_reciente` implementa el cooldown por `as_of`.
   - `memory.py` — adaptadores para unit tests.
+  - Config: `config/senales.v1.yaml` (ruleset RF-4, versionado en repo) cargado al arrancar.
 
 ## Propiedades clave
 - **Idempotencia** ✔ — dedup por `event_id` persistente (escenario negativo 2).
@@ -63,6 +71,5 @@
 - Profundidad por bandas de precio (0,5 %) y variación intradía vs. apertura VET.
 - Coalescing ante backlog de snapshots (hoy se procesan todos en orden; el volumen
   actual — 2 snapshots/min — no lo requiere).
-- Motor de reglas de señales (config YAML versionada) y `signals.emitted` (RF-4);
-  umbrales iniciales calibrados con el backtest 11–20 jul en
-  `knowledge/metrics/microestructura-p2p.md`; recalibración HITL con más historia.
+- Recalibración HITL de los umbrales del ruleset (`config/senales.v*.yaml`) con más
+  historia — subiendo la versión del ruleset, sin redeploy.

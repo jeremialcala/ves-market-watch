@@ -17,6 +17,6 @@ y consumidor. Eventos inválidos → DLQ `market.events.dlq`.
 | [official.rate.updated](official-rate-updated.md) | ingestor-bcv | indicator-engine | **Implementado** (ambos lados) |
 | [p2p.snapshot](p2p-snapshot.md) | ingestor-binance | indicator-engine | **Implementado** (productor; consumo = engine fase 2) |
 | [indicators.updated](indicators-updated.md) | indicator-engine | api-gateway | **Implementado** (productor; consumidor = api-gateway) |
-| [signals.emitted](signals-emitted.md) | indicator-engine | api-gateway | Contrato definido (`signal.v1`); emisión pendiente (motor de reglas RF-4) |
+| [signals.emitted](signals-emitted.md) | indicator-engine | api-gateway | **Implementado** (productor, RF-4/ADR-0015); consumidor = api-gateway (pendiente) |
 
 Contratos completos: `../../docs/02-design/api-contracts.md`.

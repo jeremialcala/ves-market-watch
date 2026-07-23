@@ -226,10 +226,10 @@ paths:
       summary: Señales emitidas
       description: |
         Señales financieras con evidencia trazable (`inputs`, `rule`,
-        `calc_version`), paginadas. La forma la fija el contrato `signal.v1`
-        (definido 2026-07-20); `type` es string abierto por convención. La emisión
-        del evento sigue pendiente del motor de reglas (RF-4), así que este endpoint
-        aún no devuelve datos.
+        `calc_version`), paginadas. La forma la fija el contrato `signal.v1`;
+        `type` es string abierto por convención. El evento ya se emite (motor de
+        reglas RF-4/ADR-0015); este endpoint devolverá datos cuando el api-gateway
+        lea la tabla `signals`.
       operationId: getSignals
       security:
         - auth0: [read:signals]
@@ -689,8 +689,9 @@ components:
       additionalProperties: false
       description: |
         Señal financiera con evidencia trazable (T10), alineada con el contrato de
-        evento `schemas/signal.v1.json`. La emisión del evento sigue pendiente del
-        motor de reglas (RF-4), así que este recurso aún no devuelve datos reales.
+        evento `schemas/signal.v1.json`. El evento ya se emite y persiste (motor de
+        reglas RF-4/ADR-0015); este recurso devolverá datos cuando el api-gateway lea
+        la tabla `signals`.
       properties:
         type:
           type: string
