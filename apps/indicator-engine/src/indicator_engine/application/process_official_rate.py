@@ -27,6 +27,7 @@ from indicator_engine.domain.models import (
     OFFICIAL_RATE_CHANGE_PCT,
     Indicador,
 )
+from indicator_engine.domain.reglas import Senal
 
 
 @dataclass(slots=True)
@@ -34,6 +35,7 @@ class ResultadoProcesamiento:
     duplicado: bool = False
     indicadores: list[Indicador] = field(default_factory=list)
     official_stale: bool = False
+    senales: list[Senal] = field(default_factory=list)
 
 
 class ProcesarTasaOficial:

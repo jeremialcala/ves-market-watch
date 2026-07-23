@@ -10,8 +10,19 @@ from indicator_engine.adapters.memory import (
 from indicator_engine.application.ports import SnapshotP2PRecibido
 from indicator_engine.application.process_p2p_snapshot import ProcesarSnapshotP2P
 from indicator_engine.domain.models import AnuncioP2P, Indicador
+from indicator_engine.domain.reglas import cargar_ruleset
 
 AHORA = datetime(2026, 7, 20, 16, 0, tzinfo=UTC)
+
+# Regla sintética para probar el WIRING de señales (dispara siempre en un BUY):
+# los umbrales reales del backtest se prueban en test_reglas.py.
+REGLA_MEDIANA = [
+    {
+        "type": "prueba_alcista",
+        "direction": "alcista",
+        "when": [{"indicator": "p2p_mediana_buy", "op": "gt", "value": "0"}],
+    }
+]
 
 
 def _anuncios(precios: list[str], cantidad: str = "100") -> tuple[AnuncioP2P, ...]:
@@ -48,6 +59,14 @@ def _armar():
     repo = InMemoryIndicatorRepository()
     publisher = CollectingEventPublisher()
     caso = ProcesarSnapshotP2P(publisher, repo, calc_version=1)
+    return repo, publisher, caso
+
+
+def _armar_con_ruleset(rules=REGLA_MEDIANA, cooldown=60):
+    repo = InMemoryIndicatorRepository()
+    publisher = CollectingEventPublisher()
+    ruleset = cargar_ruleset({"version": 1, "cooldown_min": cooldown, "rules": rules})
+    caso = ProcesarSnapshotP2P(publisher, repo, calc_version=1, ruleset=ruleset)
     return repo, publisher, caso
 
 
@@ -236,3 +255,89 @@ async def test_evento_duplicado_no_reprocesa():
     assert resultado.duplicado
     assert len(repo.indicadores) == n_indicadores
     assert len(publisher.eventos) == 1
+
+
+# --- señales (RF-4) -------------------------------------------------------
+
+async def test_senal_se_emite_persiste_y_publica():
+    repo, publisher, caso = _armar_con_ruleset()
+    repo.indicadores.append(_oficial())
+
+    resultado = await caso.ejecutar(_snapshot("BUY", ["858", "860", "862"]))
+
+    assert len(resultado.senales) == 1
+    senal = resultado.senales[0]
+    assert senal.tipo == "prueba_alcista"
+    assert senal.direccion == "alcista"
+    assert senal.regla == "prueba_alcista@v1"
+    assert senal.triggered_by == "11111111-1111-1111-1111-111111111111"
+    assert senal.inputs["p2p_mediana_buy"] == Decimal("860")
+    assert len(repo.senales) == 1  # persistida
+    assert len(publisher.senales) == 1  # publicada
+    payload = publisher.senales[0]["payload"]
+    assert payload["type"] == "prueba_alcista"
+    assert payload["evidence"]["inputs"]["p2p_mediana_buy"] == "860"
+
+
+async def test_cooldown_suprime_la_reemision_del_mismo_tipo():
+    repo, publisher, caso = _armar_con_ruleset(cooldown=60)
+    repo.indicadores.append(_oficial())
+    await caso.ejecutar(
+        _snapshot(
+            "BUY",
+            event_id="11111111-1111-1111-1111-111111111111",
+            capturado_en=AHORA - timedelta(minutes=30),
+        )
+    )
+
+    # segundo snapshot dentro de la ventana de cooldown → señal suprimida
+    resultado = await caso.ejecutar(
+        _snapshot("BUY", event_id="22222222-2222-2222-2222-222222222222", capturado_en=AHORA)
+    )
+
+    assert resultado.senales == []
+    assert len(publisher.senales) == 1  # solo la primera
+
+
+async def test_pasado_el_cooldown_se_reemite():
+    repo, publisher, caso = _armar_con_ruleset(cooldown=60)
+    repo.indicadores.append(_oficial())
+    await caso.ejecutar(
+        _snapshot(
+            "BUY",
+            event_id="11111111-1111-1111-1111-111111111111",
+            capturado_en=AHORA - timedelta(minutes=90),
+        )
+    )
+
+    resultado = await caso.ejecutar(
+        _snapshot("BUY", event_id="22222222-2222-2222-2222-222222222222", capturado_en=AHORA)
+    )
+
+    assert len(resultado.senales) == 1
+    assert len(publisher.senales) == 2
+
+
+async def test_confianza_baja_no_emite_senal():
+    repo, publisher, caso = _armar_con_ruleset()
+    repo.indicadores.append(_oficial())
+    limpios = _anuncios(["858", "860"])
+    marcados = tuple(
+        AnuncioP2P(Decimal("9999"), Decimal("100"), outlier=True, es_merchant=False)
+        for _ in range(2)
+    )
+
+    resultado = await caso.ejecutar(_snapshot("BUY", anuncios=limpios + marcados))
+
+    assert resultado.senales == []
+    assert publisher.senales == []
+
+
+async def test_sin_ruleset_no_emite_senales():
+    repo, publisher, caso = _armar()  # sin ruleset
+    repo.indicadores.append(_oficial())
+
+    resultado = await caso.ejecutar(_snapshot("BUY"))
+
+    assert resultado.senales == []
+    assert publisher.senales == []

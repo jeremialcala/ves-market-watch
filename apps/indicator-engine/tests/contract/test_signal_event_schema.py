@@ -8,12 +8,15 @@ variantes negativas— caen del lado esperado.
 
 import json
 import uuid
-from copy import deepcopy
 from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
 from jsonschema import Draft202012Validator
+
+from indicator_engine.adapters.amqp.publisher import construir_evento_senal
+from indicator_engine.domain.reglas import Senal
 
 SCHEMA = Path(__file__).parents[4] / "schemas" / "signal.v1.json"
 
@@ -104,3 +107,29 @@ def test_variantes_invalidas_son_rechazadas(mutacion):
     senal = _senal_valida()
     mutacion(senal)
     assert not _validador().is_valid(senal)
+
+
+def test_evento_construido_por_el_productor_cumple_el_schema():
+    """El productor real (construir_evento_senal) emite un evento válido: cierra
+    la brecha entre el contrato y el código que lo implementa."""
+    senal = Senal(
+        tipo="correccion_inminente",
+        direccion="bajista",
+        moneda="VES",
+        as_of=AS_OF,
+        calc_version=1,
+        triggered_by=str(uuid.uuid4()),
+        regla="correccion_inminente@v1",
+        inputs={
+            "p2p_ratio_oferta_demanda": Decimal("2.40"),
+            "p2p_momentum_bid_3h_pct": Decimal("-1.30"),
+        },
+    )
+
+    evento = construir_evento_senal(senal)
+
+    _validador().validate(evento)  # lanza si no cumple
+    assert evento["event_type"] == "signals.emitted"
+    assert evento["producer"] == "indicator-engine"
+    # decimales en punto fijo, nunca notación científica (patrón del contrato)
+    assert evento["payload"]["evidence"]["inputs"]["p2p_momentum_bid_3h_pct"] == "-1.30"

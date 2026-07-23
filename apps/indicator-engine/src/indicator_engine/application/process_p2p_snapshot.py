@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
+from decimal import Decimal
 
 from indicator_engine.application.ports import (
     EventPublisher,
@@ -56,6 +57,7 @@ from indicator_engine.domain.models import (
     Indicador,
     nombre_por_lado,
 )
+from indicator_engine.domain.reglas import Ruleset, Senal, evaluar_reglas
 
 logger = logging.getLogger("indicator_engine")
 
@@ -80,6 +82,12 @@ class ProcesarSnapshotP2P:
         # más cercano es más viejo que ventana + holgura, hubo un hueco de
         # captura y la variación no es comparable.
         holgura_ventana: timedelta = timedelta(hours=1),
+        # Motor de reglas de señales (RF-4). None → el motor no emite señales
+        # (p. ej. sin ruleset cargado); el resto del cálculo es idéntico.
+        ruleset: Ruleset | None = None,
+        # Antigüedad máxima de un indicador para contar como vigente al evaluar
+        # reglas: evita disparar señales con microestructura rancia.
+        max_age_indicadores: timedelta = timedelta(minutes=20),
     ) -> None:
         self._publisher = publisher
         self._repository = repository
@@ -89,6 +97,11 @@ class ProcesarSnapshotP2P:
         self._ventana_drenaje = ventana_drenaje
         self._tolerancia_opuesto = tolerancia_lado_opuesto
         self._holgura_ventana = holgura_ventana
+        self._ruleset = ruleset
+        self._max_age = max_age_indicadores
+        self._cooldown = (
+            timedelta(minutes=ruleset.cooldown_min) if ruleset else timedelta()
+        )
 
     async def ejecutar(self, snap: SnapshotP2PRecibido) -> ResultadoProcesamiento:
         if await self._repository.ya_procesado(snap.event_id):
@@ -130,8 +143,68 @@ class ProcesarSnapshotP2P:
             triggered_by=snap.event_id,
             as_of=snap.capturado_en,
         )
+
+        # Señales (RF-4): solo con ruleset y confianza suficiente — nunca desde
+        # datos low_confidence (el precio degradado ya se publicó marcado arriba).
+        senales: list[Senal] = []
+        if self._ruleset is not None and not referencia.confianza_baja:
+            senales = await self._evaluar_senales(snap, indicadores)
+
         await self._repository.marcar_procesado(snap.event_id, "p2p.snapshot")
-        return ResultadoProcesamiento(indicadores=indicadores, official_stale=official_stale)
+        return ResultadoProcesamiento(
+            indicadores=indicadores, official_stale=official_stale, senales=senales
+        )
+
+    async def _evaluar_senales(self, snap, indicadores) -> list[Senal]:
+        """Evalúa el ruleset contra los indicadores vigentes y emite las señales
+        que disparan, respetando el cooldown por tipo (dedup, RF-4/A08)."""
+        vista = await self._vista_vigente(snap, indicadores)
+        emitidas: list[Senal] = []
+        for disparo in evaluar_reglas(self._ruleset, vista):
+            desde = snap.capturado_en - self._cooldown
+            if await self._repository.senal_reciente(disparo.tipo, snap.fiat, desde):
+                logger.info(
+                    "señal %s (%s) suprimida por cooldown", disparo.tipo, snap.fiat
+                )
+                continue
+            emitidas.append(
+                Senal(
+                    tipo=disparo.tipo,
+                    direccion=disparo.direccion,
+                    moneda=snap.fiat,
+                    as_of=snap.capturado_en,
+                    calc_version=self._calc_version,
+                    triggered_by=snap.event_id,
+                    regla=disparo.regla,
+                    inputs=disparo.inputs,
+                )
+            )
+        if emitidas:
+            await self._repository.guardar_senales(emitidas)
+            for senal in emitidas:
+                await self._publisher.publish_signal_emitted(senal)
+                logger.info(
+                    "señal emitida: %s (%s) regla=%s", senal.tipo, senal.moneda, senal.regla
+                )
+        return emitidas
+
+    async def _vista_vigente(self, snap, indicadores) -> dict[str, Decimal]:
+        """Valores vigentes de los indicadores que referencia el ruleset: los del
+        lote actual (`as_of` = ahora) más los últimos conocidos aún frescos
+        (≤ `max_age`). Un indicador ausente o rancio no entra — su regla no dispara."""
+        referenciados = {
+            cond.indicador for regla in self._ruleset.reglas for cond in regla.condiciones
+        }
+        del_lote = {i.nombre: i.valor for i in indicadores}
+        vista: dict[str, Decimal] = {}
+        for nombre in referenciados:
+            if nombre in del_lote:
+                vista[nombre] = del_lote[nombre]
+                continue
+            ind = await self._repository.ultimo_indicador(nombre, snap.fiat)
+            if ind is not None and snap.capturado_en - ind.as_of <= self._max_age:
+                vista[nombre] = ind.valor
+        return vista
 
     async def _agregar_brecha(self, snap, mediana, indicadores) -> bool:
         """Brecha del lado vs la última tasa oficial conocida (as-of, ADR-0009).

@@ -11,8 +11,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 _RAIZ_REPO = Path(__file__).resolve().parents[4]
+_APP_DIR = Path(__file__).resolve().parents[2]
 
 SCHEMAS_POR_DEFECTO = _RAIZ_REPO / "schemas"
+RULESET_POR_DEFECTO = _APP_DIR / "config" / "senales.v1.yaml"
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,6 +31,10 @@ class Settings:
     # considera stale (ADR-0007: 6 h).
     stale_threshold_hours: int
     schemas_dir: str
+    # Ruleset de señales (RF-4); si el archivo no existe, el motor no emite señales.
+    signals_ruleset_path: str
+    # Antigüedad máxima (min) de un indicador para contar como vigente al evaluar reglas.
+    signals_max_age_min: int
 
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> "Settings":
@@ -47,4 +53,8 @@ class Settings:
             calc_version=int(env.get("CALC_VERSION", "1")),
             stale_threshold_hours=int(env.get("STALE_THRESHOLD_HOURS", "6")),
             schemas_dir=env.get("SCHEMAS_DIR", str(SCHEMAS_POR_DEFECTO)),
+            signals_ruleset_path=env.get(
+                "SIGNALS_RULESET_PATH", str(RULESET_POR_DEFECTO)
+            ),
+            signals_max_age_min=int(env.get("SIGNALS_MAX_AGE_MIN", "20")),
         )

@@ -8,6 +8,7 @@ from decimal import Decimal
 from typing import Protocol
 
 from indicator_engine.domain.models import AnuncioP2P, Indicador
+from indicator_engine.domain.reglas import Senal
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,6 +57,15 @@ class IndicatorRepository(Protocol):
         """Persiste el lote de indicadores; reintentos no duplican filas."""
         ...
 
+    async def senal_reciente(self, tipo: str, moneda: str, desde: datetime) -> bool:
+        """True si ya hay una señal de ese tipo/moneda con `as_of >= desde`
+        (dedup por cooldown, RF-4/A08)."""
+        ...
+
+    async def guardar_senales(self, senales: list[Senal]) -> None:
+        """Persiste las señales emitidas con su evidencia (RF-5, tabla `signals`)."""
+        ...
+
 
 class EventPublisher(Protocol):
     async def publish_indicators_updated(
@@ -66,6 +76,10 @@ class EventPublisher(Protocol):
         as_of: datetime,
     ) -> None:
         """Publica `indicators.updated` (ADR-0004); `triggered_by` = event_id origen."""
+        ...
+
+    async def publish_signal_emitted(self, senal: Senal) -> None:
+        """Publica `signals.emitted` (schemas/signal.v1.json)."""
         ...
 
 

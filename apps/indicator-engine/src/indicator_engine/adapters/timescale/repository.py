@@ -7,9 +7,13 @@ El rol del servicio solo necesita INSERT/SELECT sobre `indicators` y
 
 from __future__ import annotations
 
+import json
+from datetime import datetime
+
 import asyncpg
 
 from indicator_engine.domain.models import Indicador
+from indicator_engine.domain.reglas import Senal
 
 
 class TimescaleIndicatorRepository:
@@ -101,5 +105,51 @@ class TimescaleIndicatorRepository:
             [
                 (i.as_of, i.nombre, i.moneda, i.valor, i.calc_version)
                 for i in indicadores
+            ],
+        )
+
+    async def senal_reciente(self, tipo: str, moneda: str, desde: datetime) -> bool:
+        fila = await self._pool.fetchrow(
+            """
+            SELECT 1 FROM signals
+            WHERE type = $1 AND currency = $2 AND as_of >= $3
+            LIMIT 1
+            """,
+            tipo,
+            moneda,
+            desde,
+        )
+        return fila is not None
+
+    async def guardar_senales(self, senales: list[Senal]) -> None:
+        if not senales:
+            return
+        # emitted_at lo pone el DEFAULT now() de la tabla; ON CONFLICT DO NOTHING
+        # es defensa en profundidad (el dedup real es cooldown + idempotencia del
+        # snapshot). evidence = {rule, inputs} como JSONB.
+        await self._pool.executemany(
+            """
+            INSERT INTO signals
+                (as_of, type, direction, currency, rule, calc_version, triggered_by, evidence)
+            VALUES ($1, $2, $3, $4, $5, $6, $7::uuid, $8::jsonb)
+            ON CONFLICT DO NOTHING
+            """,
+            [
+                (
+                    s.as_of,
+                    s.tipo,
+                    s.direccion,
+                    s.moneda,
+                    s.regla,
+                    s.calc_version,
+                    s.triggered_by,
+                    json.dumps(
+                        {
+                            "rule": s.regla,
+                            "inputs": {k: format(v, "f") for k, v in s.inputs.items()},
+                        }
+                    ),
+                )
+                for s in senales
             ],
         )
