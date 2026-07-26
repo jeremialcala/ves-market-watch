@@ -1,10 +1,10 @@
 # Diseño del Sistema — VES Market Watch
 
 - **Estado:** approved (Gate 1, HITL 2026-07-11)
-- **Fecha:** 2026-07-11
+- **Fecha:** 2026-07-26
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
-- **Versión:** 0.3.0
+- **Versión:** 0.3.1
 
 ## Estilo arquitectónico
 Microservicios ligeros con **Clean Architecture** por servicio: dominio en el centro,
@@ -17,6 +17,7 @@ no conoce infraestructura. Comunicación entre servicios **event-driven** vía R
 |---|---|---|---|
 | Ingesta P2P | `ingestor-binance` | Capturar y normalizar anuncios P2P | Anuncio, SnapshotP2P, Lado |
 | Ingesta Oficial | `ingestor-bcv` | Capturar y validar tasa oficial | TasaOficial |
+| Ingesta Histórica | `ingestor-historico` | Cargar históricos externos por lote (batch, sin bus — ADR-0013) | SnapshotHistorico, DatoBanco, VarianzaHistorica |
 | Indicadores | `indicator-engine` | Calcular indicadores y señales | Indicador, Señal, PrecioReferencia, Profundidad |
 | Acceso | `api-gateway` | Validación de tokens (Resource Server), REST, WSS, rate limiting | Usuario, Suscripción |
 

@@ -1,4 +1,4 @@
--- 002 — Señales emitidas (PRD motor-indicadores RF-4/RF-5, ADR-0014).
+-- 002 — Señales emitidas (PRD motor-indicadores RF-4/RF-5, ADR-0015).
 -- Serie de tiempo de señales disparadas por el motor de reglas sobre la
 -- microestructura P2P, con evidencia (regla + insumos) para trazabilidad y
 -- reproducibilidad (amenaza T10, A09). Es la fuente del futuro GET /signals

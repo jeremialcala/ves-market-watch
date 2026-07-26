@@ -6,7 +6,7 @@ considerados vigentes y devuelve las señales candidatas. La frescura de esa vis
 el cooldown anti-duplicados y la persistencia/publicación son de la aplicación.
 
 Config: `config/senales.v1.yaml` (umbrales del backtest 11–20 jul, HITL 2026-07-22).
-Contrato del evento: `schemas/signal.v1.json`. Contexto: ADR-0014.
+Contrato del evento: `schemas/signal.v1.json`. Contexto: ADR-0015.
 """
 
 from __future__ import annotations

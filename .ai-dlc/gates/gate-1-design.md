@@ -3,12 +3,12 @@
 | Criterio | Estado | Evidencia |
 |---|---|---|
 | Arquitectura C4 (Context + Container) con trust boundaries | ✅ | `docs/architecture/c4-context.md`, `c4-container.md` |
-| Threat model STRIDE del sistema | ✅ | `docs/02-design/threat-model.md` (6 componentes) |
-| Amenazas priorizadas con DREAD y trazadas a controles | ✅ | T1–T12 → controles OWASP/ADR + verificación en fase 04 (T11/T12 por ADR-0012) |
-| ADRs de decisiones clave (una decisión = una ADR) | ✅ | ADR-0001…0012 en `docs/00-project/adr/` (0007–0009 y 0011 *accepted* e implementadas en fase 03; 0010 *accepted* (2026-07-11) — implementada de facto; **ADR-0012** *accepted* — auth OIDC con Auth0, supersede a ADR-0003; el api-gateway pasa a Resource Server, sin implementar aún) |
+| Threat model STRIDE del sistema | ✅ | `docs/02-design/threat-model.md` (8 componentes: 5 servicios + RabbitMQ + TimescaleDB + Auth0) |
+| Amenazas priorizadas con DREAD y trazadas a controles | ✅ | T1–T14 → controles OWASP/ADR + verificación en fase 04 (T11/T12 por ADR-0012; T13/T14 añadidas en adenda 2026-07-26 — DREAD pendiente de ratificación HITL) |
+| ADRs de decisiones clave (una decisión = una ADR) | ✅ | ADR-0001…0015 en `docs/00-project/adr/` (0007–0009 y 0011 *accepted* e implementadas en fase 03; 0010 *accepted* (2026-07-11) — implementada de facto; **ADR-0012** *accepted* — auth OIDC con Auth0, supersede a ADR-0003, gateway aún sin código; **ADR-0013** — ingesta batch de históricos, implementada; **ADR-0014** — microestructura P2P, implementada; **ADR-0015** — motor de reglas de señales, implementada y verificada e2e) |
 | Contratos de API (REST + eventos) | ✅ | Eventos: JSON Schema formal en `schemas/` (4 de 4, todos con productor y contract tests; `signal.v1` emitido por el motor de reglas RF-4/ADR-0015, 2026-07-22); REST: OpenAPI 3.1 en `apps/api-gateway/docs/openapi.yaml` (2026-07-17); WSS: esqueleto hasta AsyncAPI |
 | Patrones de seguridad por amenaza priorizada | ✅ | Tabla en `docs/02-design/architecture.md` |
-| Pendientes marcados para fase 03 | ⚠️ | Resueltos en fase 03: spike endpoint P2P ✔ (ADR-0005), bundle TLS BCV ✔ (ADR-0006), JSON Schemas de eventos ✔ (3 de 4 en `schemas/`; `p2p-snapshot` ya en v1.1 con `merchant_ref`, ADR-0011), identidad de anunciantes ✔ (ADR-0011 implementado 2026-07-06), **motor de reglas de señales + `signals.emitted`** ✔ (RF-4/ADR-0015, 2026-07-22). Sigue abierto: recalibración HITL de los umbrales del ruleset (subiendo su versión, sin redeploy); secret store concreto (fase 05) |
+| Pendientes marcados para fase 03 | ⚠️ | Resueltos en fase 03: spike endpoint P2P ✔ (ADR-0005), bundle TLS BCV ✔ (ADR-0006), JSON Schemas de eventos ✔ (4 de 4 en `schemas/`; `p2p-snapshot` en v1.1 con `merchant_ref`, ADR-0011), identidad de anunciantes ✔ (ADR-0011 implementado 2026-07-06), **motor de reglas de señales + `signals.emitted`** ✔ (RF-4/ADR-0015, 2026-07-22). Sigue abierto: recalibración HITL de los umbrales del ruleset (subiendo su versión, sin redeploy); secret store concreto (fase 05) |
 
 **Veredicto:** diseño completo a nivel Gate 1; los `<TODO>` listados son
 entradas de la fase 03, no huecos de diseño. **Aprobado (HITL).**

@@ -22,7 +22,7 @@ ves-market-watch/
 └── apps/
     ├── ingestor-binance/     # ✔ Ingesta P2P Binance (USDT/VES) → p2p.snapshot
     ├── ingestor-bcv/         # ✔ Ingesta tasas oficiales BCV (multi-moneda, HITL)
-    ├── indicator-engine/     # ✔ fase 1: consume official.rate.updated → indicators.updated
+    ├── indicator-engine/     # ✔ fases 1+2 y señales: consume official.rate.updated y p2p.snapshot → emite indicators.updated y signals.emitted
     ├── ingestor-historico/   # ✔ backfill batch de históricos de precio + varianza (sin bus)
     └── api-gateway/          # (diseñado) API REST + WSS para consumidores
 ```
@@ -42,17 +42,20 @@ docker compose up -d --wait        # RabbitMQ (5672/15672) + TimescaleDB (5433)
 cd apps/<servicio> && pip install -e .[dev] && python -m pytest
 ```
 
-Cada servicio tiene CLI propio (`python -m <servicio> --once [--dry-run]`); detalles
-en el README de cada app. Los tests de infraestructura hacen skip elegante si el
-compose no está levantado.
+Cada servicio tiene CLI propio: `python -m ingestor_bcv [--once] [--dry-run]` (más el
+subcomando de operador `revalidar`), `python -m ingestor_binance [--once] [--dry-run]`,
+`python -m indicator_engine [--drain]` y `python -m ingestor_historico cargar|stats`;
+detalles en el README de cada app. Los tests de infraestructura hacen skip elegante
+si el compose no está levantado.
 
 ## Estado
 
-- **Implementado y verificado en vivo**: los 3 servicios de datos — `ingestor-bcv`
-  (multi-moneda, re-validación HITL), `ingestor-binance` (polling P2P educado) e
-  `indicator-engine` fase 1 (flujo `official.rate.updated` → `indicators.updated`) —
-  más `ingestor-historico` (backfill batch de exports históricos + varianza, ADR-0013).
-  Pendiente: fase 2 del engine (brecha BCV↔P2P desde `p2p.snapshot`) y el `api-gateway`.
+- **Implementado y verificado en vivo**: 4 servicios — `ingestor-bcv` (multi-moneda,
+  re-validación HITL), `ingestor-binance` (polling P2P educado), `indicator-engine`
+  (fases 1+2 con microestructura P2P y motor de señales RF-4/ADR-0015: brecha BCV↔P2P
+  → `indicators.updated` y `signals.emitted`) e `ingestor-historico` (backfill batch
+  de exports históricos + varianza, ADR-0013).
+  Pendiente: el `api-gateway` (aún sin código; tenant Auth0 y contrato OpenAPI listos).
 - Gate 0 (requisitos): ver `.ai-dlc/gates/gate-0-requirements.md`
 - Gate 1 (diseño): ver `.ai-dlc/gates/gate-1-design.md`
 - Inventario de cambios por ejecución: ver `CHANGELOG.md`

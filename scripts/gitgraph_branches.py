@@ -14,8 +14,33 @@ Las ramas van de base a hoja (la primera se dibuja como lane principal). Histori
 entrelazadas u octopus se marcan como aproximadas; la bitácora es la fuente de verdad.
 """
 import argparse
+import datetime
 import subprocess
 import sys
+
+# Trazabilidad tag ↔ versión ↔ decisión (se emite como tabla en el doc generado).
+# Actualizar esta constante al cortar cada versión del CHANGELOG.
+TAG_NOTES = {
+    "v0.1.0": (
+        "ADR-0001…0006; 4 PRDs; threat model v1",
+        "Línea base documental (Gates 0 y 1 en borrador). Sin código ejecutable",
+    ),
+    "v0.2.0": (
+        "Gates 0 y 1 cerrados (HITL); ADR-0007…0012; ingestor-bcv, "
+        "indicator-engine fase 1, ingestor-binance",
+        "Tres servicios implementados y verificados en vivo",
+    ),
+    "v0.3.0": (
+        "ADR-0013…0015; ingestor-historico; engine fase 2 (microestructura P2P) "
+        "+ motor de señales RF-4/RF-5; OpenAPI del gateway",
+        "Cierre funcional del pipeline de datos; api-gateway aún sin código",
+    ),
+    "v0.3.1": (
+        "Barrido de coherencia documental post-0.3.0; threat model T13/T14; "
+        "trazabilidad tag↔ADR restaurada; design.md del ingestor-historico",
+        "Patch solo de docs, sin cambios funcionales",
+    ),
+}
 
 
 def git(repo, *args):
@@ -46,6 +71,25 @@ def bitacora(repo):
         tgs = ", ".join(tags_of(refs)) or "—"
         table.append(f"| `{h}` | {tipo} | {tgs} | {an} | {ad} | {subject.replace('|', '\\|')} |")
     return "\n".join(table)
+
+
+def tags_ordenados(repo):
+    out = git(repo, "for-each-ref", "refs/tags", "--sort=creatordate",
+              "--format=%(refname:short)%09%(creatordate:short)")
+    return [tuple((l.split("\t") + [""])[:2]) for l in out.splitlines() if l.strip()]
+
+
+def trazabilidad(repo):
+    rows = ["| Tag | Commit | Fecha | Versión CHANGELOG | ADR / feature | Nota |",
+            "|---|---|---|---|---|---|"]
+    for tag, _creada in tags_ordenados(repo):
+        commit = git(repo, "rev-parse", "--short", f"{tag}^{{commit}}").strip()
+        # Fecha del commit taggeado (el corte real), no la de creación del tag
+        # (los tags pueden crearse retroactivamente).
+        fecha = git(repo, "log", "-1", "--format=%ad", "--date=short", commit).strip()
+        adr, nota = TAG_NOTES.get(tag, ("—", "— (actualizar TAG_NOTES en el script)"))
+        rows.append(f"| {tag} | `{commit}` | {fecha} | {tag.lstrip('v')} | {adr} | {nota} |")
+    return "\n".join(rows)
 
 
 def build_multi(repo, branches):
@@ -137,7 +181,21 @@ def render(repo, branches):
     graph, estado, aprox = build_multi(repo, branches)
     note = ("\n> Nota: historia entrelazada u octopus — el gitGraph es aproximado; "
             "la bitácora es la fuente de verdad.\n") if aprox else ""
-    return f"""## Historial del repositorio (documentación viva)
+    tags = tags_ordenados(repo)
+    version = tags[-1][0].lstrip("v") if tags else "0.0.0"
+    hoy = datetime.date.today().isoformat()
+    return f"""# Historial de implementación — VES Market Watch
+
+* **Estado:** review (documentación viva — regenerada por script, no editar a mano)
+* **Fecha:** {hoy}
+* **Decisores:** Jeremi Alcalá
+* **Fase AI-DLC:** 03-implementation
+* **Versión:** {version}
+* **Gate:** 2
+* **Rama principal:** {branches[0]}
+* **Estrategia de branching:** GitFlow (main + develop + ramas feature)
+
+## Historial del repositorio (documentación viva)
 
 Derivado de `git log` con `scripts/gitgraph_branches.py`
 (ramas vivas: {', '.join(f'`{b}`' for b in branches)}). Regenerar tras cada commit,
@@ -152,6 +210,10 @@ merge o tag relevante. Los tags SemVer enlazan con las versiones del `CHANGELOG.
 ### Estado actual de las ramas
 
 {estado}
+
+### Trazabilidad tag ↔ versión ↔ decisión
+
+{trazabilidad(repo)}
 
 ### Bitácora de cambios (fiel al repo)
 

@@ -2,10 +2,10 @@
 
 - **Fase AI-DLC:** 04-testing
 - **Estado:** draft — para revisión y aprobación (Gate 2)
-- **Alcance:** plataforma completa (4 servicios + RabbitMQ + TimescaleDB + contratos del bus y de API)
-- **Fecha:** 2026-07-07
+- **Alcance:** plataforma completa (5 servicios + RabbitMQ + TimescaleDB + contratos del bus y de API)
+- **Fecha:** 2026-07-26
 - **Decisores:** Jeremi Alcalá
-- **Versión:** 0.2.0
+- **Versión:** 0.3.1
 - **Fuentes de verdad:** PRDs en `docs/01-requirements/`, diseño en `docs/02-design/`
   (incl. `threat-model.md` columna «Verificación fase 04-testing»), contratos en `schemas/`
   y `docs/02-design/api-contracts.md`, ADRs en `docs/00-project/adr/`.
@@ -14,13 +14,13 @@
 
 Verificar que la plataforma mide correctamente la brecha entre la tasa oficial **VES/USD (BCV)**
 y el mercado P2P **VES/USDT (Binance)**, que los contratos entre servicios se respetan, y que
-los controles de seguridad priorizados en el threat model (T1–T10) se comportan según diseño.
+los controles de seguridad priorizados en el threat model (T1–T12) se comportan según diseño.
 El plan sirve como criterio de cierre del **Gate 2** y como guía viva para completar lo pendiente
-(`api-gateway` y la **fase 2** del `indicator-engine`).
+(el `api-gateway`, único servicio aún sin código).
 
 ## 2. Estrategia de pruebas
 
-Se mantiene la **pirámide AI-DLC** ya adoptada por los tres servicios de datos, con cinco niveles.
+Se mantiene la **pirámide AI-DLC** ya adoptada por los cuatro servicios con código, con cinco niveles.
 Cada nivel tiene un marcador `pytest` y un requisito de infraestructura explícito para poder
 ejecutar la suite con o sin `docker compose`.
 
@@ -64,9 +64,10 @@ Estado observado en el repo (conteo de funciones `test_`):
 
 | Servicio | Estado código | Tests actuales | Huecos de prueba |
 |---|---|---|---|
-| `ingestor-bcv` | Implementado | **50** (unit, integration, contract, e2e) | Confirmar cobertura de ramas ≥ 80 %; añadir marcador `security` para escenarios T1 (HTML alterado + tasa fuera de rango) |
+| `ingestor-bcv` | Implementado | **54** (unit, integration, contract, e2e) | Confirmar cobertura de ramas ≥ 80 %; añadir marcador `security` para escenarios T1 (HTML alterado + tasa fuera de rango) |
 | `ingestor-binance` | Implementado | **48** (unit, integration, contract, e2e) | Igual que arriba; escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local |
-| `indicator-engine` | Fase 1 implementada | **26** (unit, integration, contract, e2e) | **Fase 2**: consumo de `p2p.snapshot`, precio de referencia, **brecha BCV↔P2P**, señales (`signals.emitted`) y schema `signal.v1` — sin código ni tests aún |
+| `indicator-engine` | Fases 1, 2 y señales implementadas (RF-4/RF-5, ADR-0015) | **77** (unit, contract, integration, e2e) | Confirmar cobertura de ramas ≥ 80 %; recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) |
+| `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) | **39** (unit + integración contra TimescaleDB real) | Confirmar cobertura de ramas ≥ 80 % |
 | `api-gateway` | Diseñado, sin código | **0** (solo `tests/README.md` con la pirámide esperada) | Suite completa por construir: unit/integration/contract/e2e/**security** |
 
 > El plan cubre tanto la **consolidación** de lo existente como la **especificación** de los casos
@@ -116,18 +117,28 @@ Notación: `[U]` unit · `[I]` integration · `[C]` contract · `[E]` e2e · `[S
 - `[C]` `indicators.updated` cumple `schemas/indicators.v1.json`.
 - `[I]` Consumidor AMQP real; `[E]` flujo `official.rate.updated` → `indicators.updated`.
 
-**Fase 2 (pendiente) — especificar junto con el código:**
-- `[U]` Precio de referencia P2P: **mediana y VWAP** del top-N filtrado por lado.
+**Fase 2 y señales (implementadas y verificadas e2e, 2026-07-22 — RF-4/RF-5, ADR-0015) —
+casos cubiertos por la suite actual (77 tests):**
+- `[U]` Precio de referencia P2P: **mediana y VWAP** del top-N filtrado por lado — cubierto
+  (`unit/test_referencia_p2p.py`).
 - `[U]` **Brecha BCV↔P2P** (abs y %), spreads compra/venta, volúmenes agregados, profundidad por
-  bandas de 0,5 %, variación intradía (apertura VET).
+  bandas de 0,5 %, variación intradía (apertura VET) — cubierto (`unit/test_calculos.py`,
+  `unit/test_process_p2p_snapshot.py`).
 - `[U/S]` **T2** (filtrado final) — snapshots sintéticos manipulados: filtrado MAD/IQR y marca
-  `low_confidence`; los outliers no distorsionan la brecha ni las señales.
-- `[U]` Reglas de **señales** configurables (umbral de brecha, spread anómalo, caída de liquidez) →
-  `signals.emitted` con **evidencia** (`inputs`, `rule`, `calc_version`).
-- `[U/S]` **T10** — toda señal es reproducible: misma entrada + `calc_version` ⇒ misma salida.
-- `[C]` Nuevo `schemas/signal.v1.json` (a crear) validado en productor.
-- `[U]` Manejo de `official_stale`: la brecha se marca cuando la tasa oficial está vencida.
-- `[E]` Flujo `p2p.snapshot` (+ `official.rate.updated`) → `indicators.updated` + `signals.emitted`.
+  `low_confidence`; los outliers no distorsionan la brecha ni las señales — cubierto.
+- `[U]` Reglas de **señales** configurables (ruleset `config/senales.v1.yaml`: `arranque_alcista`,
+  `techo_inminente`, `correccion_inminente`; cooldown 60 min) → `signals.emitted` con **evidencia**
+  (`inputs`, `rule`, `calc_version`) — cubierto (`unit/test_reglas.py`).
+- `[U/S]` **T10** — toda señal es reproducible: misma entrada + `calc_version` ⇒ misma salida —
+  cubierto.
+- `[C]` `schemas/signal.v1.json` (existe desde 2026-07-20) validado en el productor —
+  cubierto (`contract/test_signal_event_schema.py`).
+- `[U]` Manejo de `official_stale`: la brecha se marca cuando la tasa oficial está vencida —
+  cubierto.
+- `[I]` Persistencia de señales en la hypertable `signals` (migración 002) — cubierto
+  (`integration/test_signals_repository.py`).
+- `[E]` Flujo `p2p.snapshot` (+ `official.rate.updated`) → `indicators.updated` + `signals.emitted`
+  — verificado e2e (2026-07-22).
 
 ### 5.4 api-gateway (por construir — la suite acompaña al código)
 - `[U]` Validación estricta de inputs (fechas, `interval`, `side`, tópicos); políticas de
@@ -154,18 +165,20 @@ Notación: `[U]` unit · `[I]` integration · `[C]` contract · `[E]` e2e · `[S
 ## 6. Pruebas de sistema (cross-servicio)
 
 Más allá del e2e por servicio, un **e2e de plataforma** valida el camino completo con los cuatro
-servicios y la infra real:
+servicios del flujo en vivo y la infra real (el `ingestor-historico`, batch sin bus, queda fuera
+de este camino):
 
 1. `ingestor-bcv` publica `official.rate.updated` → `indicator-engine` recalcula → `api-gateway`
    expone `/rates/official/current` y empuja `rates.official` por WSS.
-2. `ingestor-binance` publica `p2p.snapshot` → `indicator-engine` (fase 2) calcula **brecha** →
+2. `ingestor-binance` publica `p2p.snapshot` → `indicator-engine` calcula **brecha** →
    `/indicators/current` y push `indicators`.
 3. Regla de señal se dispara → `signals.emitted` → `/signals` con evidencia y push `signals`.
 4. **Ruta de error del bus:** evento inválido inyectado → va a `market.events.dlq`, el resto del
    flujo sigue operativo (T5).
 
 Estos escenarios se automatizan como suite `e2e` a nivel raíz (nuevo `tests/` de plataforma) una
-vez que el `api-gateway` y la fase 2 del engine existan.
+vez que el `api-gateway` exista (el tramo del bus hasta `indicators.updated` + `signals.emitted`
+ya está verificado e2e, 2026-07-22).
 
 ## 7. Seguridad — trazabilidad a amenazas (T1–T12)
 
@@ -175,7 +188,7 @@ cierre de la columna «Verificación fase 04-testing».
 | ID | Amenaza | Caso de prueba | Dónde |
 |---|---|---|---|
 | T1 | Tasa oficial falsa (MITM / parse) | TLS anclado rechaza CA no esperada; HTML alterado + tasa fuera de rango → `suspect`/`stale` | ingestor-bcv `[I/S]`, `[U/S]` |
-| T2 | Anuncios P2P manipulados | Etiquetado MAD en ingesta + filtrado final con snapshots sintéticos y `low_confidence` | ingestor-binance `[U/S]`, engine fase 2 `[U/S]` |
+| T2 | Anuncios P2P manipulados | Etiquetado MAD en ingesta + filtrado final con snapshots sintéticos y `low_confidence` | ingestor-binance `[U/S]`, engine `[U/S]` |
 | T3 | Ataques al login | Attack protection + MFA en el tenant Auth0 (config verificada) | Auth0 (config) |
 | T4 | DoS API/WSS (flood, scraping) | Cuotas por token/IP, límites WSS, paginación y rango máx.; fuzzing | api-gateway `[I/S]` |
 | T5 | Eventos malformados en el bus | Schema inválido → DLQ, consumidor sobrevive | indicator-engine `[U/S]`; e2e plataforma |
@@ -183,7 +196,7 @@ cierre de la columna «Verificación fase 04-testing».
 | T7 | Baneo de IP por Binance | Simulación 429 → circuit breaker + backoff + presupuesto | ingestor-binance `[U/S]` → `[I]` |
 | T8 | Compromiso de dependencia (supply chain) | **SCA** con umbral de severidad; lockfiles; imágenes por digest | CI (Gate 2) |
 | T9 | SQL injection en histórico | Queries parametrizadas + validación; **SAST** + tests de inyección | api-gateway `[S]` |
-| T10 | Señales sin trazabilidad | Auditoría end-to-end de una señal; reproducibilidad por `calc_version` | engine fase 2 `[U/S]`; e2e plataforma |
+| T10 | Señales sin trazabilidad | Auditoría end-to-end de una señal; reproducibilidad por `calc_version` | engine `[U/S]`; e2e plataforma |
 | T11 | ID token / token de otra audiencia como bearer | Rechazo por `aud`/`iss` inválidos y firma JWKS → 401 | api-gateway `[U/S]` |
 | T12 | Robo de token en el navegador (XSS) | Token en memoria, vida corta y rotación (revisión en el SPA, fuera de este repo) | SPA (fuera de alcance) |
 
@@ -201,8 +214,8 @@ cierre de la columna «Verificación fase 04-testing».
 | Outliers + minimización + `merchant_ref` | ingesta-binance (esc. neg. 1–2) | U | ingestor-binance |
 | Circuit breaker ante 429 | ingesta-binance (esc. neg. 3) | U/I | ingestor-binance |
 | Recálculo reactivo por evento | motor-indicadores (esc. positivos) | U/E | indicator-engine |
-| Brecha, spreads, VWAP/mediana, profundidad | motor-indicadores (indicadores) | U | indicator-engine (F2) |
-| Señales con evidencia + reproducibilidad | motor-indicadores (esc. positivos 3) | U/S | indicator-engine (F2) |
+| Brecha, spreads, VWAP/mediana, profundidad | motor-indicadores (indicadores) | U | indicator-engine |
+| Señales con evidencia + reproducibilidad | motor-indicadores (esc. positivos 3) | U/S | indicator-engine |
 | DLQ ante evento inválido | motor-indicadores (esc. neg. 4) | U/S | indicator-engine |
 | Auth JWT + scopes | api-streaming (objetivos, esc. 1) | U/E | api-gateway |
 | Rate limit + lockout + límites WSS | api-streaming (esc. neg. 2–4) | I/S | api-gateway |
@@ -229,7 +242,7 @@ cierre de la columna «Verificación fase 04-testing».
 **Salida (cierre de Gate 2):**
 1. Cobertura de ramas **≥ 80 %** por servicio con código.
 2. Todos los casos de las secciones 5–7 aplicables al alcance entregado, en verde.
-3. Cada amenaza T1–T10 con su verificación satisfecha (tests o gate de CI).
+3. Cada amenaza T1–T12 con su verificación satisfecha (tests o gate de CI).
 4. Contract tests en verde en **productor y consumidor** para cada evento con schema.
 5. Gates de CI: **secrets scanning** (T6) y **SCA** (T8) sin hallazgos por encima del umbral.
 6. Sin tests marcados `xfail`/`skip` salvo los de infraestructura documentados.
@@ -246,9 +259,10 @@ cierre de la columna «Verificación fase 04-testing».
 
 ## 12. Riesgos y pendientes
 
-- **`signal.v1` sin definir:** bloquea los contract tests de señales; debe crearse en `schemas/`
-  con la fase 2 del engine (ya señalado en Gate 1).
-- **Umbrales de señales (HITL):** requieren decisión humana antes de fijar aserciones de negocio.
+- ~~`signal.v1` sin definir~~ **Resuelto:** `schemas/signal.v1.json` definido (2026-07-20) y con
+  contract tests del productor en verde (`contract/test_signal_event_schema.py`).
+- **Umbrales de señales (HITL):** los valores iniciales están fijados en `config/senales.v1.yaml`;
+  su recalibración requiere decisión humana con datos de producción.
 - **`api-gateway` sin código:** sus casos aquí son especificación; no computan cobertura hasta que
   exista.
 - **Secret store concreto:** definido para fase 05; los tests de rotación (T6) se afinan entonces.

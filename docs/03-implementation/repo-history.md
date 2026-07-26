@@ -1,3 +1,14 @@
+# Historial de implementación — VES Market Watch
+
+* **Estado:** review (documentación viva — regenerada por script, no editar a mano)
+* **Fecha:** 2026-07-26
+* **Decisores:** Jeremi Alcalá
+* **Fase AI-DLC:** 03-implementation
+* **Versión:** 0.3.0
+* **Gate:** 2
+* **Rama principal:** main
+* **Estrategia de branching:** GitFlow (main + develop + ramas feature)
+
 ## Historial del repositorio (documentación viva)
 
 Derivado de `git log` con `scripts/gitgraph_branches.py`
@@ -13,7 +24,6 @@ gitGraph
     commit id: "b34c3af" tag: "v0.1.0"
     commit id: "6c42e58"
     commit id: "bd9698b"
-    branch develop
     commit id: "9ad366f"
     commit id: "5ad050e"
     commit id: "f8922b6"
@@ -26,7 +36,7 @@ gitGraph
     commit id: "3dfba24"
     commit id: "f980ff5"
     commit id: "ac47922"
-    commit id: "b14c8f7"
+    commit id: "b14c8f7" tag: "v0.2.0"
     commit id: "92a9e3d"
     commit id: "31289f5"
     commit id: "fefef5c"
@@ -38,19 +48,53 @@ gitGraph
     commit id: "cee9891"
     commit id: "83cffde" type: HIGHLIGHT
     commit id: "8658d68"
+    commit id: "e7aac30"
+    commit id: "f8a159f"
+    commit id: "ed42b13"
+    commit id: "11da932"
+    commit id: "1d6eb1b"
+    commit id: "fb5db08"
+    commit id: "002a6af"
+    commit id: "8f9178e"
+    commit id: "949e87d"
+    commit id: "ec6c272"
+    branch develop
+    commit id: "d943a62"
+    checkout main
+    commit id: "2ec16da" tag: "v0.3.0" type: HIGHLIGHT
 ```
 
 ### Estado actual de las ramas
 
 | Rama | Punta | Fecha | Commits propios |
 |---|---|---|---|
-| `main` | `bd9698b` | 2026-07-05 | 3 |
-| `develop` | `8658d68` | 2026-07-14 | 24 |
+| `main` | `2ec16da` | 2026-07-26 | 38 |
+| `develop` | `d943a62` | 2026-07-26 | 1 |
+
+### Trazabilidad tag ↔ versión ↔ decisión
+
+| Tag | Commit | Fecha | Versión CHANGELOG | ADR / feature | Nota |
+|---|---|---|---|---|---|
+| v0.1.0 | `b34c3af` | 2026-07-05 | 0.1.0 | ADR-0001…0006; 4 PRDs; threat model v1 | Línea base documental (Gates 0 y 1 en borrador). Sin código ejecutable |
+| v0.2.0 | `b14c8f7` | 2026-07-11 | 0.2.0 | Gates 0 y 1 cerrados (HITL); ADR-0007…0012; ingestor-bcv, indicator-engine fase 1, ingestor-binance | Tres servicios implementados y verificados en vivo |
+| v0.3.0 | `2ec16da` | 2026-07-26 | 0.3.0 | ADR-0013…0015; ingestor-historico; engine fase 2 (microestructura P2P) + motor de señales RF-4/RF-5; OpenAPI del gateway | Cierre funcional del pipeline de datos; api-gateway aún sin código |
 
 ### Bitácora de cambios (fiel al repo)
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `d943a62` | commit | — | Jeremi Alcala | 2026-07-26 | docs: Regenerate repo-history tras el release 0.3.0 (merge a main + tags) |
+| `2ec16da` | merge | v0.3.0 | Jeremi Alcala | 2026-07-26 | Merge develop into main: release 0.3.0 |
+| `ec6c272` | commit | — | Jeremi Alcala | 2026-07-26 | docs: Corte 0.3.0 — motor de señales verificado (RF-4/RF-5) |
+| `949e87d` | commit | — | Jeremi Alcala | 2026-07-26 | fix(compose): restart unless-stopped en rabbitmq y timescaledb |
+| `8f9178e` | commit | — | Jeremi Alcala | 2026-07-22 | docs: Flip signals to implemented (RF-4) + ADR-0015, e2e coherence |
+| `002a6af` | commit | — | Jeremi Alcala | 2026-07-22 | feat(indicator-engine): Signal rules engine (RF-4) — emits signals.emitted |
+| `fb5db08` | commit | — | Jeremi Alcala | 2026-07-20 | feat(schemas): Define signal.v1 contract for signals.emitted (schema only) |
+| `1d6eb1b` | commit | — | Jeremi Alcala | 2026-07-20 | docs: Coherence pass post-fase-2 + ADR-0014 (microestructura P2P) |
+| `11da932` | commit | — | Jeremi Alcala | 2026-07-20 | feat: Implementar procesamiento de snapshots P2P y cálculo de indicadores |
+| `ed42b13` | commit | — | Jeremi Alcala | 2026-07-17 | feat(api-gateway): Add OpenAPI 3.1 REST spec (fase 03) |
+| `f8a159f` | commit | — | Jeremi Alcala | 2026-07-17 | chore: Ignore config.json (Auth0 tenant config, fase 03 api-gateway) |
+| `e7aac30` | commit | — | Jeremi Alcala | 2026-07-14 | docs: Close feat-ai-dlc branch, regenerate repo-history for main+develop |
 | `8658d68` | commit | — | Jeremi Alcala | 2026-07-14 | docs: Regenerate repo-history after Auth0 tenant merge |
 | `83cffde` | merge | — | Jeremi Alcala | 2026-07-14 | Merge feat-ai-dlc into develop: Auth0 dev tenant provisioned (api-gateway phase 03 start) |
 | `cee9891` | commit | — | Jeremi Alcala | 2026-07-14 | docs: Record provisioned Auth0 dev tenant in api-gateway design (ADR-0012) |
@@ -62,7 +106,7 @@ gitGraph
 | `fefef5c` | commit | — | Jeremi Alcala | 2026-07-11 | feat: Update project charter with additional scope, stakeholders, and success metrics |
 | `31289f5` | commit | — | Jeremi Alcala | 2026-07-11 | feat: Implement historical data ingestion service with adaptive parsing |
 | `92a9e3d` | commit | — | Jeremi Alcala | 2026-07-11 | feat: Add Dockerfiles for ingestor-binance, ingestor-bcv, and indicator-engine; create .dockerignore and analysis script |
-| `b14c8f7` | commit | — | Jeremi Alcala | 2026-07-11 | feat: Update documentation for version 0.2.0, closing Gates 0 and 1, and add implementation history |
+| `b14c8f7` | commit | v0.2.0 | Jeremi Alcala | 2026-07-11 | feat: Update documentation for version 0.2.0, closing Gates 0 and 1, and add implementation history |
 | `ac47922` | commit | — | Jeremi Alcala | 2026-07-11 | feat: Update API contracts and architecture to integrate Auth0 for authentication |
 | `f980ff5` | commit | — | Jeremi Alcala | 2026-07-07 | feat: Update Gate 0 and Gate 1 documentation with resolution of alias retention and ADR-0011 implementation details |
 | `3dfba24` | commit | — | Jeremi Alcala | 2026-07-06 | feat: Implement ADR-0011 for P2P advertiser pseudonymization |

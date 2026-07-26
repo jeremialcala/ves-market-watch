@@ -4,6 +4,7 @@
 - **Fecha:** 2026-07-05
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
+- **Versión:** 0.2.0
 - **Controles OWASP afectados:** A09, A10
 
 ## Contexto

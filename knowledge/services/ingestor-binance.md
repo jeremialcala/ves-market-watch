@@ -4,7 +4,7 @@ title: ingestor-binance
 description: Ingesta del mercado P2P de Binance (USDT/VES) con polling educado y eventos p2p.snapshot — implementado.
 resource: ../../apps/ingestor-binance/
 tags: [python, implementado, binance, p2p]
-timestamp: 2026-07-06T00:00:00Z
+timestamp: 2026-07-26T00:00:00Z
 ---
 
 # ingestor-binance
@@ -13,7 +13,8 @@ timestamp: 2026-07-06T00:00:00Z
 resuelto, fixtures reales versionados). Python 3.12, hexagonal, mismas convenciones
 que [ingestor-bcv](ingestor-bcv.md).
 
-Cada 60 s (± jitter) captura ambos lados del par USDT/VES (top-100 paginado,
+Cada 60 s (± jitter) captura ambos lados del par USDT/VES (top-100 paginado por
+default del código; en dev el `docker-compose.yml` raíz fija `TOP_K=200`,
 perspectiva del taker), normaliza, **etiqueta** outliers y publica
 [p2p.snapshot](../events/p2p-snapshot.md); el crudo queda en
 [p2p_snapshots_raw](../tables/p2p_snapshots_raw.md) (retención 90 d, RF-5).
@@ -32,7 +33,7 @@ perspectiva del taker), normaliza, **etiqueta** outliers y publica
   ID crudos jamás tocan disco ni bus. `MERCHANT_HMAC_KEY` requerida (fail fast).
 - Defensas de red: TLS estricto, timeout, tope de bytes por streaming (zip-bomb).
 - Páginas incompletas → snapshot `partial=true`; CLI `python -m ingestor_binance
-  [--once] [--dry-run]`. 40 tests (unit/contract/integration/e2e).
+  [--once] [--dry-run]`. 48 tests (unit/contract/integration/e2e).
 
 ## Referencias
 - PRD: `../../docs/01-requirements/ingesta-binance-p2p.md` · Diseño: `../../apps/ingestor-binance/docs/design.md`
@@ -41,5 +42,6 @@ perspectiva del taker), normaliza, **etiqueta** outliers y publica
 ## Pendiente
 - Nada en este servicio (ADR-0011 implementado 2026-07-06, correlación verificada en
   vivo: 88/96 anunciantes correlacionados entre dos corridas). El consumo de
-  `p2p.snapshot` (precio de referencia, brecha) es la fase 2 del
-  [indicator-engine](indicator-engine.md).
+  `p2p.snapshot` (precio de referencia, brecha, microestructura) ya está implementado
+  en la fase 2 del [indicator-engine](indicator-engine.md) (2026-07-20). Queda para
+  fase 05 el export de métricas operativas.

@@ -1,10 +1,10 @@
 # Diseño — api-gateway
 
 - **Estado:** review — diseño según Gate 1 (ADR-0012); pendiente de implementación (fase 03)
-- **Fecha:** 2026-07-14
+- **Fecha:** 2026-07-26
 - **Decisores:** Jeremi Alcalá
-- **Fase AI-DLC:** 02-design
-- **Versión:** 0.3.0
+- **Fase AI-DLC:** 03-implementation
+- **Versión:** 0.3.1
 
 Rol: **Resource Server** (OIDC/OAuth2). La identidad y la emisión de tokens viven en Auth0
 (ADR-0012); el gateway solo **valida** access tokens y autoriza por scopes/permisos.
@@ -56,5 +56,5 @@ JWKS_URI=https://dev-higerotech.us.auth0.com/.well-known/jwks.json
   scopes de Auth0.
 
 ## Pendiente (fase 03)
-- `<TODO: especificación AsyncAPI del canal WSS /ws/v1 (bloqueada en parte por signal.v1 del engine fase 2)>`
+- `<TODO: especificación AsyncAPI del canal WSS /ws/v1 — ya sin bloqueos: los 4 contratos de eventos existen (signal.v1 emitido desde 2026-07-22); se hace junto con el código del gateway>`
 - `<TODO: app SPA (cliente público, Auth Code + PKCE) en el tenant — se crea junto con el front-end; MFA del tenant se decide cuando haya usuarios reales>`

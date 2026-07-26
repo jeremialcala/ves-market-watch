@@ -4,6 +4,7 @@
 - **Fecha:** 2026-07-05
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 00-project
+- **Versión:** 0.1.0
 - **Controles OWASP afectados:** transversal (A01–A10 vía gates)
 
 ## Contexto

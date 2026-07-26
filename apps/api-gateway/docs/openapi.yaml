@@ -2,20 +2,21 @@ openapi: 3.1.0
 
 # ---------------------------------------------------------------------------
 # Estado:      review — fase 03 (implementación api-gateway)
-# Fecha:       2026-07-17
+# Fecha:       2026-07-26
 # Decisores:   Jeremi Alcalá
 # Fase AI-DLC: 03-implementation
-# Versión:     0.2.0
+# Versión:     0.3.1
 #
 # Generado desde docs/02-design/api-contracts.md (sección REST) y ADR-0012.
 # Cubre SOLO la superficie REST /api/v1. El canal WSS /ws/v1 se especifica
-# aparte en AsyncAPI (TODO fase 03). El contrato signal.v1 ya está definido; falta
-# el motor de reglas (RF-4) para que signals.emitted se emita de verdad.
+# aparte en AsyncAPI (TODO fase 03). El contrato signal.v1 está definido y el
+# evento signals.emitted ya se emite y persiste (motor de reglas RF-4/ADR-0015,
+# 2026-07-22); falta el código del gateway que lo sirva.
 # ---------------------------------------------------------------------------
 
 info:
   title: VES Market Watch API
-  version: 0.2.0
+  version: 0.3.1
   description: |
     API de solo lectura sobre datos públicos del mercado cambiario venezolano:
     tasa oficial BCV, referencia P2P de Binance, indicadores derivados y señales.
@@ -702,12 +703,29 @@ components:
           type: string
           enum: [alcista, bajista, neutral]
           description: Sesgo del movimiento anticipado (`neutral` = continuación/absorción).
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          description: Fiat del par evaluado (ISO 4217; VES en el par USDT/VES).
+        as_of:
+          type: string
+          format: date-time
+          description: Instante del dato de mercado que disparó la regla (no la hora de emisión).
         emitted_at:
           type: string
           format: date-time
+          description: |
+            Hora de emisión (columna de la hypertable `signals`; en el evento
+            `signal.v1` viaja como `occurred_at` del sobre).
         calc_version:
           type: integer
           minimum: 1
+        triggered_by:
+          type: string
+          format: uuid
+          description: |
+            `event_id` del evento cuyos indicadores satisficieron la regla
+            (cadena de trazabilidad, T10).
         evidence:
           type: object
           description: Insumos y regla que produjeron la señal (auditable/reproducible).
@@ -718,9 +736,9 @@ components:
               description: Valores de entrada usados por la regla.
             rule:
               type: string
-              description: Identificador o expresión de la regla evaluada.
+              description: Identificador versionado de la regla evaluada (`<type>@v<n>`).
           required: [inputs, rule]
-      required: [type, direction, emitted_at, calc_version, evidence]
+      required: [type, direction, currency, as_of, emitted_at, calc_version, triggered_by, evidence]
 
     SignalPage:
       type: object

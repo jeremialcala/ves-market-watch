@@ -4,13 +4,16 @@
 - **Fecha:** 2026-07-22
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 03-implementation
+- **Versión:** 0.3.0
 - **Controles OWASP afectados:** A02 (config sensible), A08 (integridad), A09 (trazabilidad), ASVS V14
 
 ## Contexto
 La fase 2 dejó la microestructura P2P (spread, ratio oferta/demanda, momentum, drenaje)
 como indicadores, con umbrales empíricos del backtest 11–20 jul (aprobados HITL 2026-07-22,
 `knowledge/metrics/microestructura-p2p.md`). Falta el motor que los evalúa y **emite**
-`signals.emitted` (contrato `signal.v1`, ADR anterior; RF-4/RF-5). Hay que decidir dónde
+`signals.emitted` (contrato `schemas/signal.v1.json`, definido 2026-07-20; su entrega
+se había aplazado explícitamente en ADR-0014 §6 — esta ADR cierra ese aplazamiento;
+RF-4/RF-5). Hay que decidir dónde
 viven las reglas, cómo se evita re-emitir la misma señal, y qué evidencia acompaña a cada
 una.
 
