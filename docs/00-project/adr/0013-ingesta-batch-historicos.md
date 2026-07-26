@@ -3,7 +3,8 @@
 - **Estado:** accepted
 - **Fecha:** 2026-07-11
 - **Decisores:** Jeremi Alcalá
-- **Fase AI-DLC:** 02-design
+- **Fase AI-DLC:** 03-implementation
+- **Versión:** 0.3.0
 - **Controles OWASP afectados:** A05 (validación de entradas), A08 (integridad de datos), A04 (diseño seguro)
 
 ## Contexto

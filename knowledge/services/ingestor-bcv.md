@@ -1,10 +1,10 @@
 ---
 type: Service
 title: ingestor-bcv
-description: Ingesta las tasas oficiales de cambio del BCV (multi-moneda) y publica cambios al bus. Único servicio implementado.
+description: Ingesta las tasas oficiales de cambio del BCV (multi-moneda) y publica cambios al bus — implementado.
 resource: ../../apps/ingestor-bcv/
 tags: [python, implementado, bcv, scraping]
-timestamp: 2026-07-05T00:00:00Z
+timestamp: 2026-07-26T00:00:00Z
 ---
 
 # ingestor-bcv
@@ -23,7 +23,7 @@ TRY, RUB) con descubrimiento dinámico de monedas nuevas.
   publica [official.rate.updated](../events/official-rate-updated.md) **solo si cambió** (ADR-0008).
 - Salud de fuente en [official_rate_source_health](../tables/official_rate_source_health.md):
   3 fallos consecutivos → alerta + `stale_since`.
-- CLI daemon: `python -m ingestor_bcv [--once] [--dry-run]`. 53 tests
+- CLI daemon: `python -m ingestor_bcv [--once] [--dry-run]`. 54 tests
   (unit/contract sin infra + integration/e2e contra RabbitMQ/TimescaleDB del
   `docker-compose.yml` raíz, con skip elegante sin infra).
 
@@ -33,5 +33,5 @@ TRY, RUB) con descubrimiento dinámico de monedas nuevas.
 - Amenaza T1 en `../../docs/02-design/threat-model.md`
 
 ## Pendiente
-- Nada en este servicio; el siguiente paso natural del sistema es el
-  [indicator-engine](indicator-engine.md) como consumidor del evento.
+- Nada en este servicio; el [indicator-engine](indicator-engine.md) ya consume
+  el evento (fase 1 implementada).

@@ -4,6 +4,7 @@
 - **Fecha:** YYYY-MM-DD
 - **Decisores:** <nombres>
 - **Fase AI-DLC:** 02-design
+- **Versión:** <MAYOR.MENOR.PARCHE — versión del CHANGELOG en cuyo corte quedó el estado actual de la ADR>
 - **Controles OWASP afectados:** <Axx, …>
 
 ## Contexto

@@ -4,7 +4,7 @@ title: indicators
 description: Serie de tiempo de indicadores calculados (formato largo) + processed_events para idempotencia del consumidor.
 resource: ../../apps/indicator-engine/db/migrations/001_indicators.sql
 tags: [indicadores, implementada]
-timestamp: 2026-07-05T00:00:00Z
+timestamp: 2026-07-26T00:00:00Z
 ---
 
 # indicators
@@ -18,11 +18,11 @@ de un indicador es su fila más reciente (sobrevive reinicios, ADR-0009 en espí
 | Columna | Tipo | Descripción |
 |---|---|---|
 | `as_of` | timestamptz | Instante del dato origen (captura BCV / snapshot P2P) |
-| `indicator` | text | Nombre canónico (`official_rate`, `official_rate_change_abs/pct`; fase 2: brecha, spreads…) |
+| `indicator` | text | Nombre canónico (`official_rate`, `official_rate_change_abs/pct`, y los `p2p_*` de fase 2: brecha, spreads, microestructura) |
 | `currency` | text | Código ISO 4217 |
 | `value` | numeric(24,8) | Valor (las variaciones pueden ser negativas) |
 | `calc_version` | integer | Versión de la fórmula (RF-3, reproducibilidad) |
-| `metadata` | jsonb | Reservado (banderas de calidad en fase 2) |
+| `metadata` | jsonb | Reservado; hoy sin uso |
 
 PK `(as_of, indicator, currency)` — la reentrega de un evento no duplica filas
 (`ON CONFLICT DO NOTHING`).

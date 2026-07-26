@@ -1,10 +1,10 @@
 # C4 — Diagrama de Contexto
 
 - **Estado:** approved (Gate 1, HITL 2026-07-11)
-- **Fecha:** 2026-07-11
+- **Fecha:** 2026-07-26
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
-- **Versión:** 0.2.0
+- **Versión:** 0.3.1
 
 *(Eje de estructura — ¿qué existe y quién lo usa?)*
 
@@ -20,6 +20,7 @@ C4Context
   System_Ext(auth0, "Auth0", "OpenID Provider — login OIDC y emisión de tokens")
   System_Ext(binance, "Binance P2P", "Portal público de anuncios P2P USDT/VES")
   System_Ext(bcv, "Sitio web BCV", "Publica la tasa oficial VES/USD")
+  System_Ext(legacy, "Sistema previo de captura", "Exports CSV con históricos de precio USDT/VES")
 
   Rel(consumerDev, auth0, "Inicia sesión (OIDC Auth Code + PKCE)", "HTTPS")
   Rel(consumerDev, vmw, "Consulta indicadores e histórico; recibe eventos", "HTTPS REST / WSS + access token")
@@ -27,11 +28,13 @@ C4Context
   Rel(admin, vmw, "Opera y configura", "HTTPS")
   Rel(vmw, binance, "Consulta anuncios P2P (polling continuo)", "HTTPS")
   Rel(vmw, bcv, "Consulta tasa oficial (2x/hora)", "HTTPS")
+  Rel(admin, legacy, "Carga históricos por lote (CLI, ADR-0013)", "export CSV local")
 
   UpdateRelStyle(vmw, binance, $offsetY="-20")
 ```
 
-**Trust boundaries:** todo lo externo (Auth0, Binance, BCV, usuarios) es no confiable. Las
-respuestas de Binance/BCV se validan antes de entrar al dominio; los usuarios se autentican
+**Trust boundaries:** todo lo externo (Auth0, Binance, BCV, exports del sistema previo,
+usuarios) es no confiable. Las respuestas de Binance/BCV y los exports CSV se validan
+antes de entrar al dominio; los usuarios se autentican
 en Auth0 y solo acceden con un access token válido a través del api-gateway, que verifica su
 firma y audiencia contra el JWKS de Auth0.

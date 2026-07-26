@@ -2,7 +2,7 @@
 type: Index
 title: Indicadores financieros
 description: Métricas que produce el indicator-engine a partir de la tasa oficial y el mercado P2P.
-timestamp: 2026-07-05T00:00:00Z
+timestamp: 2026-07-26T00:00:00Z
 ---
 
 # Indicadores
@@ -22,4 +22,4 @@ más la microestructura entre lados.
 | Volumen agregado por lado | `p2p_liquidez_{buy,sell}` — implementado |
 | Profundidad de mercado | volumen acumulado por banda de precio (0,5 %) — pendiente |
 | Variación intradía | Δ del precio de referencia vs. apertura del día (VET) — pendiente |
-| Señales de oportunidad | reglas configurables sobre los anteriores → [signals.emitted](../events/signals-emitted.md) — pendiente (umbrales iniciales en microestructura-p2p) |
+| Señales de oportunidad | reglas configurables sobre los anteriores → [signals.emitted](../events/signals-emitted.md) — implementadas (motor de reglas RF-4/ADR-0015, emite `signals.emitted` desde 2026-07-22; la recalibración HITL de umbrales queda como evolución) |

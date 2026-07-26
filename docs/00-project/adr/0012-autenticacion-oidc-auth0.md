@@ -4,6 +4,7 @@
 - **Fecha:** 2026-07-07
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
+- **Versión:** 0.2.0
 - **Controles OWASP afectados:** A07 (identificación y autenticación), A01 (control de acceso), A02 (fallas criptográficas — delegadas), A04 (diseño seguro)
 - **Supersede a:** ADR-0003
 

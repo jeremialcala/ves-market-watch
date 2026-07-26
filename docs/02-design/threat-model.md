@@ -1,13 +1,18 @@
 # Threat Model — VES Market Watch (sistema completo)
 
 - **Estado:** approved (Gate 1, HITL 2026-07-11)
-- **Fecha:** 2026-07-11
+- **Fecha:** 2026-07-26
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
-- **Versión:** 0.3.0
-- **Alcance:** sistema completo (4 servicios + RabbitMQ + TimescaleDB)
+- **Versión:** 0.3.1
+- **Alcance:** sistema completo (5 servicios + RabbitMQ + TimescaleDB)
 - **Metodología:** STRIDE + DREAD
 - **Clasificación de datos:** ver `docs/00-project/data-classification.md`
+
+> Adenda 2026-07-26 (post-aprobación, sin cambio del veredicto del Gate 1): alcance
+> ampliado al quinto servicio `ingestor-historico` (ADR-0013) y al ruleset del motor de
+> señales (ADR-0015) — fila STRIDE y amenazas **T13–T14** añadidas. La puntuación DREAD
+> de T13–T14 queda **pendiente de ratificación HITL**.
 
 ## Diagrama de flujo de datos
 
@@ -24,9 +29,11 @@ flowchart LR
       BUS -->|push interno| GW[api-gateway]
       IBCV -->|tasas y auditoria HITL| DB[(TimescaleDB)]
       IBIN -->|crudo minimizado 90 d| DB
-      ENG -->|indicadores calc_version| DB
+      ENG -->|indicadores calc_version y senales con evidencia| DB
+      HIST[ingestor-historico batch] -->|historicos inmutables sin bus| DB
       GW -->|solo lectura| DB
     end
+    CSV([Export CSV sistema previo]):::ext -->|archivo local via CLI| HIST
     USR -->|REST y WSS con access token| GW
     GW -->|valida RS256 via JWKS| AUTH0
     classDef ext fill:#999999,color:#ffffff
@@ -40,7 +47,8 @@ flowchart LR
 | ingestor-binance | Endpoint P2P suplantado (MITM) | Anuncios manipulados / respuesta alterada | Sin registro de snapshots capturados | — (datos públicos) | Baneo/429 de Binance; payloads gigantes | — |
 | ingestor-bcv | Dominio BCV suplantado (DNS/MITM) | Tasa falsa inyectada; HTML alterado | Sin auditoría de tasas capturadas | — | Caída del sitio BCV; parser roto | — |
 | RabbitMQ | Servicio se conecta con credencial ajena | Eventos inválidos/malformados publicados | Publicaciones sin trazabilidad | Credenciales AMQP filtradas | Tormenta de eventos; colas llenas | Usuario AMQP con permisos excesivos |
-| indicator-engine | — | Datos envenenados → señales falsas; duplicados/reorden | Señal sin evidencia de inputs | — | Backlog de eventos | — |
+| indicator-engine | — | Datos envenenados → señales falsas; duplicados/reorden; ruleset de señales alterado (T13) | Señal sin evidencia de inputs | — | Backlog de eventos | — |
+| ingestor-historico | — (entrada por archivo local, sin red) | Export CSV malicioso/alterado envenena el histórico (T14) | Cargas sin registro de archivo/fecha | — (datos públicos agregados) | CSV gigante/corrupto rompe la carga | — |
 | api-gateway | Tokens falsificados; ID token / token de otra audiencia usado como bearer | Manipulación de parámetros de consulta | Accesos sin log | Errores verbosos; PII de usuario en logs | Flood REST/WSS; scraping histórico | Usuario accede a scopes/permisos ajenos |
 | Auth0 (OP externo) | Ataques al login (credential stuffing, breached passwords); phishing de callback | Config del tenant alterada (audiencia, `redirect_uri`) | — | Enumeración de usuarios en login | Abuso del endpoint de login | Roles/permisos mal asignados en RBAC |
 | TimescaleDB | Conexión con rol ajeno | SQL injection vía parámetros | Cambios sin auditoría | Dump de credenciales de clientes | Consultas de histórico sin límites | Rol de servicio con privilegios amplios |
@@ -59,13 +67,17 @@ Escala 1–3 por factor (Damage, Reproducibility, Exploitability, Affected users
 | T7 | Baneo de IP por Binance por polling agresivo | 3 | 2 | 3 | 3 | 3 | 14 | Circuit breaker + backoff + presupuesto de requests — ADR-0005, A10 |
 | T8 | Compromiso de dependencia (supply chain) en cualquier servicio | 3 | 1 | 2 | 3 | 2 | 11 | Lockfiles + SCA en CI + imágenes por digest — A03 |
 | T9 | SQL injection vía parámetros de histórico en gateway | 3 | 2 | 2 | 3 | 3 | 13 | Queries parametrizadas + validación estricta de inputs — A05 |
-| T10 | Señales sin trazabilidad (repudio/no reproducibles) | 2 | 3 | 2 | 2 | 2 | 11 | Evidencia de inputs + `calc_version` + logging estructurado — A09; forense de anunciantes entre snapshots vía `merchant_ref` — ADR-0011 |
+| T10 | Señales sin trazabilidad (repudio/no reproducibles) | 2 | 3 | 2 | 2 | 2 | 11 | Evidencia de inputs + regla versionada `<type>@v<n>` + `calc_version` + logging estructurado — ADR-0015, A09; forense de anunciantes entre snapshots vía `merchant_ref` — ADR-0011 |
 | T11 | ID token o token de otra audiencia/tenant usado como bearer (confused deputy) | 2 | 2 | 2 | 2 | 2 | 10 | Validación estricta de `aud` (=API), `iss` (=tenant) y firma JWKS; solo se acepta el access token — ADR-0012, A01/A07 |
 | T12 | Robo de token en el navegador (XSS) del front-end/SPA | 3 | 1 | 2 | 2 | 2 | 10 | Token en memoria (no localStorage), access token de vida corta, refresh con rotación; el SPA está fuera de este repo — ADR-0012, A03/A07 |
+| T13 | Ruleset de señales manipulado (YAML) → señales arbitrarias a consumidores | 3 | 3 | 1 | 3 | 1 | 11* | Ruleset versionado en repo (cambio = commit auditable), carga estricta al arranque (mal formado ⇒ aborta), no editable en runtime, regla `<type>@v<n>` en la evidencia — ADR-0015, A02/A08, ASVS V14 |
+| T14 | Export CSV malicioso envenena el histórico (varianza/backtests sesgados) | 2 | 2 | 2 | 1 | 2 | 9* | Parseo adaptativo con rechazo completo sin columna de precio y descarte contado por fila; histórico inmutable e idempotente (PK + ON CONFLICT DO NOTHING); sin publicación al bus (no dispara el pipeline reactivo) — ADR-0013, A05/A08 |
+
+\* Puntuación propuesta en la adenda 2026-07-26, pendiente de ratificación HITL.
 
 ```mermaid
 quadrantChart
-    title Amenazas DREAD T1-T12 por probabilidad e impacto
+    title Amenazas DREAD T1-T14 por probabilidad e impacto
     x-axis Baja probabilidad --> Alta probabilidad
     y-axis Bajo impacto --> Alto impacto
     quadrant-1 Atender ya
@@ -84,6 +96,8 @@ quadrantChart
     T3 Ataques al login: [0.78, 0.65]
     T10 Senal sin traza: [0.75, 0.60]
     T11 Confused deputy: [0.66, 0.63]
+    T13 Ruleset manipulado: [0.48, 0.97]
+    T14 CSV historico malicioso: [0.70, 0.48]
 ```
 
 *Eje trazabilidad — fase 02 / Gate 1: probabilidad ≈ (R+E+D)/9, impacto ≈ (D+A)/6 de la tabla DREAD, con separación mínima para legibilidad. La tabla es la fuente de verdad; el cuadrante es la vista de priorización.*
@@ -92,7 +106,7 @@ quadrantChart
 | Amenaza | Control | Verificación (fase 04-testing) |
 |---|---|---|
 | T1 | ADR-0006; validación de rango en PRD ingesta-bcv RF-3 | Test de integración con fixture de HTML alterado y tasa fuera de rango |
-| T2 | PRD motor-indicadores escenario negativo 1; ADR-0011 | Etiquetado MAD verificado en ingestor-binance (unit tests + dato real); filtrado final con snapshots sintéticos manipulados en engine fase 2 |
+| T2 | PRD motor-indicadores escenario negativo 1; ADR-0011 | Etiquetado MAD verificado en ingestor-binance (unit tests + dato real); filtrado final y supresión `confianza_baja` verificados en el engine (fase 2 implementada 2026-07-20, unit/contract) |
 | T3 | ADR-0012; PRD api-streaming escenario 2; attack protection del tenant Auth0 | Verificación de config del tenant (brute-force, breached-password, MFA); revisión de logs de seguridad |
 | T4 | PRD api-streaming RF-4 | Test de carga con exceso de cuota; fuzzing de paginación |
 | T5 | ADR-0004; PRD motor-indicadores escenario 4 | Test contract de eventos + inyección de evento inválido → DLQ |
@@ -100,6 +114,8 @@ quadrantChart
 | T7 | ADR-0005 | Simulación de 429 → verificación de circuit breaker |
 | T8 | Pipeline CI (Gate 2) | SCA con umbral de severidad |
 | T9 | PRD api-streaming escenario 6 | SAST + tests de inyección |
-| T10 | PRD motor-indicadores RF-3 | Auditoría de una señal end-to-end |
+| T10 | PRD motor-indicadores RF-3; ADR-0015 (evidencia `rule` + `inputs`) | Auditoría de una señal end-to-end (verificada e2e 2026-07-22: snapshot → `correccion_inminente` en bus y tabla con evidencia) |
 | T11 | ADR-0012; PRD api-streaming escenario 3 | Test de rechazo de ID token y de token con `aud`/`iss` inválidos → 401 |
 | T12 | ADR-0012 | Revisión de manejo de token en el SPA (fuera de este repo); verificación de vida corta y rotación |
+| T13 | ADR-0015 (ruleset versionado, carga estricta, ASVS V14) | Test de arranque con ruleset mal formado (aborta, ya en la suite); revisión obligatoria de todo commit al YAML |
+| T14 | ADR-0013; parseo adaptativo del PRD ingesta-historica | Tests de parser con CSV corrupto/sin precio (rechazo/descarte); recarga idempotente verificada en vivo (0/1.064 duplicados) |

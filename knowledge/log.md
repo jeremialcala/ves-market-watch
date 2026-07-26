@@ -2,10 +2,20 @@
 type: Log
 title: Historia del knowledge bundle
 description: Registro cronológico de cambios en el contexto del proyecto (más reciente primero).
-timestamp: 2026-07-05T00:00:00Z
+timestamp: 2026-07-26T00:00:00Z
 ---
 
 # Log
+
+## 2026-07-26 — Barrido de coherencia post-0.3.0
+- Índices y fichas del knowledge sincronizados con el estado real: 5 servicios
+  (los 4 de datos implementados; api-gateway con tenant Auth0 y OpenAPI 3.1 listos
+  pero **sin código**), engine con fases 1 y 2 + señales, `p2p.snapshot` con
+  consumidor real (no «previsto»), gates 0/1 aprobados HITL, 5 PRDs y
+  ADR-0001…0015 en el índice raíz.
+- Conteos de tests actualizados a los reales: bcv 54, binance 48 (engine 77,
+  historico 39 ya estaban). Anotado que en dev el compose fija `TOP_K=200` en el
+  ingestor-binance (default del código: top-100).
 
 ## 2026-07-22 — Motor de reglas de señales (RF-4) implementado
 - El indicator-engine ya **emite** `signals.emitted` (ADR-0015): ruleset versionado

@@ -4,6 +4,7 @@
 - **Fecha:** 2026-07-20
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 03-implementation
+- **Versión:** 0.3.0
 - **Controles OWASP afectados:** A08 (integridad de datos), A04 (diseño seguro), A09 (trazabilidad)
 
 ## Contexto
@@ -50,6 +51,8 @@ snapshot es baja. Ninguna estaba cubierta por un ADR previo.
    **no** el evento de señal ni el motor de reglas (RF-4): su vocabulario y sus umbrales
    requieren calibración HITL y un contrato propio. Separar ambos scopes deja la
    microestructura verificable de inmediato sin bloquearla en la definición de señales.
+   *(Aplazamiento cerrado por ADR-0015, 2026-07-22: el motor de reglas existe y
+   `signals.emitted` se emite.)*
 
 ## Alternativas consideradas
 - **Evento nuevo `p2p.indicators` separado de `indicators.updated`**: daría un tópico
@@ -78,5 +81,6 @@ snapshot es baja. Ninguna estaba cubierta por un ADR previo.
 - (−) La semántica de cada indicador vive en el nombre string (convención), no en el
   schema: el catálogo canónico se mantiene en `knowledge/metrics/` y en
   `domain/models.py`, no en `indicators.v1.json`.
-- (−) El evento `signals.emitted` sigue sin existir: `api-contracts.md`, la OpenAPI del
-  gateway y la futura AsyncAPI arrastran ese `<TODO>` hasta la fase de señales.
+- (−) El evento `signals.emitted` quedó diferido a una fase propia. *(Superado por
+  ADR-0015, 2026-07-22: el evento se emite y `api-contracts.md`/OpenAPI del gateway
+  ya lo reflejan; solo la AsyncAPI del WSS sigue pendiente.)*

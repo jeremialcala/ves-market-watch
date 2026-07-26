@@ -1,10 +1,10 @@
 # Diseño — ingestor-binance
 
 - **Estado:** approved (implementado y verificado en vivo, 2026-07-06; ADR-0011 incluida)
-- **Fecha:** 2026-07-14
+- **Fecha:** 2026-07-26
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
-- **Versión:** 0.2.0
+- **Versión:** 0.3.1
 
 ## Capas (hexagonal)
 - **Dominio** (`src/ingestor_binance/domain/`): `Lado` (perspectiva del taker),
@@ -51,6 +51,7 @@
   respuesta de la fuente (local al adaptador).
 
 ## Pendiente
-- Consumo de `p2p.snapshot` en el indicator-engine (fase 2 del engine): precio de
-  referencia, brecha, spreads, coalescing, `low_confidence`.
 - Export de métricas operativas (RF-6) a un sistema de métricas (fase 05).
+
+(El consumo de `p2p.snapshot` en el indicator-engine — fase 2 del engine — quedó
+implementado el 2026-07-20 y ya no es pendiente de este servicio.)

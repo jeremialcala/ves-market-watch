@@ -17,6 +17,78 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-07-26
+
+Corte de mantenimiento documental (patch, sin cambios funcionales): barrido de
+coherencia post-0.3.0 en tres ejes — cabeceras/versiones, docs↔código y trazabilidad
+cruzada (~30 hallazgos corregidos en 47 archivos). Al corte se sincronizan a 0.3.1 los
+campos `Versión` de los artefactos con cambios de contenido en este ciclo.
+
+### Added
+
+- **`apps/ingestor-historico/docs/design.md`** (2026-07-26) — el quinto servicio era el
+  único sin documento de diseño (la entrada 0.3.0 hablaba de «los 4 `design.md`»):
+  capas hexagonales, propiedades (idempotencia por PK+hash, sin bus por ADR-0013,
+  entrada no confiable validada), verificación (39 tests, carga real 1.064 filas) y
+  pendientes.
+- **Threat model ampliado** (adenda 2026-07-26, post-aprobación del Gate 1): alcance a
+  5 servicios; `ingestor-historico` incorporado al DFD y a la tabla STRIDE; dos
+  amenazas nuevas — **T13** (ruleset de señales manipulado → señales arbitrarias;
+  controles de ADR-0015/ASVS V14) y **T14** (export CSV malicioso envenena el
+  histórico; controles de ADR-0013) — con filas de control/verificación. **La
+  puntuación DREAD de T13–T14 queda pendiente de ratificación HITL.** T2 y T10
+  actualizadas con la verificación ya realizada (fase 2 y e2e de señales).
+- **Cabecera de metadatos y tabla «Trazabilidad tag ↔ versión ↔ decisión» restauradas
+  en `repo-history.md`**: existían en 0.2.0 (generador del skill) y se perdieron al
+  migrar a `scripts/gitgraph_branches.py`; el generador ahora las emite siempre
+  (constante `TAG_NOTES` a actualizar por corte; fecha por commit taggeado, no por
+  creación del tag). v0.3.0 queda trazado a ADR-0013…0015. Regenerado: la rama
+  `develop` vuelve a aparecer con su lane y punta real.
+
+### Changed
+
+- **Barrido de coherencia documental post-0.3.0** (2026-07-26) — auditoría de tres ejes
+  (cabeceras/versiones · docs↔código · trazabilidad cruzada, ~30 hallazgos) y
+  corrección completa:
+  - **Restos pre-señales eliminados** (docs que aún negaban el corte 0.3.0): README
+    raíz (motor de señales visible, estado real de 4+1 servicios, CLIs reales por
+    servicio), `plan-de-pruebas.md` (5 servicios, alcance T1–T12, engine con 77 tests
+    y casos de señales marcados como cubiertos, riesgo «`signal.v1` sin definir»
+    resuelto), índices de `knowledge/` (index congelado en 07-05, services, metrics,
+    events) y fichas (bcv 54 tests, binance 48 + nota top-200 en dev, api-gateway con
+    tenant y OpenAPI como hechos), `$comment` de `schemas/signal.v1.json`, cabecera del
+    `openapi.yaml`, TODO del AsyncAPI en el design del gateway (ya sin bloqueos),
+    `tests/README.md` del engine y pendientes del design de binance.
+  - **C4 sincronizados** (context/container → 0.3.0): `ingestor-historico` como quinto
+    contenedor con el sistema previo (exports CSV) como sistema externo y su trust
+    boundary; descripción del engine con el ruleset (ADR-0015). Contexto DDD «Ingesta
+    Histórica» añadido en `architecture.md`.
+  - **Atribución de ADR corregida en el código de señales**: `002_signals.sql` y
+    `domain/reglas.py` citaban ADR-0014 (justo la que *difiere* las señales) en vez de
+    ADR-0015. ADR-0015 referencia ahora explícitamente el aplazamiento de ADR-0014 §6
+    que cierra; ADR-0014 lleva nota de superación (decisión 6 y consecuencia).
+  - **Gate 1 sin contradicciones internas**: corpus ADR-0001…0015 (citaba 0001…0012),
+    schemas «4 de 4» (una fila decía 3 de 4), STRIDE con 8 componentes.
+  - **Cabeceras**: campo `Versión` añadido a la plantilla de ADR y a las 15 ADRs
+    (asignado mecánicamente por rango de tags con git); ADR-0013 a fase
+    03-implementation (divergía de 0014/0015); Estado de `api-contracts.md` refleja la
+    OpenAPI hecha (decía «REST/WSS esqueleto»); `api-gateway/docs/design.md` a fase 03
+    y fecha real; payload WSS de señales alineado al contrato.
+  - **OpenAPI del gateway a 0.3.0**: schema `Signal` alineado de verdad con
+    `signal.v1` — añade `currency`, `as_of` y `triggered_by` (requeridos en el evento
+    y presentes en la tabla; relevante porque el cooldown es por `type`/`currency`) y
+    documenta `emitted_at` como columna de la tabla (`occurred_at` en el sobre).
+
+### Fixed
+
+- **Versiones imposibles o desincronizadas en cabeceras**: `ingesta-historica.md`
+  0.2.0 → 0.3.0 (el doc nació dentro del ciclo 0.3.0 — la nota del corte 0.3.0 que
+  justificaba 0.2.0 partía de una premisa errónea: el archivo no existía en v0.2.0 y
+  `0.1.1` nunca fue una versión publicada) y `design.md` de ingestor-bcv 0.2.0 → 0.3.0
+  (fechado 2026-07-14, posterior al corte 0.2.0); `design.md` de ingestor-binance y
+  plan de pruebas tenían el mismo error y, al recibir además contenido nuevo en este
+  ciclo, quedan en 0.3.1 con el corte.
+
 ## [0.3.0] - 2026-07-26
 
 Cierre funcional del pipeline de datos: el `indicator-engine` calcula la microestructura
@@ -455,7 +527,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/jeremialcala/ves-market-watch/releases/tag/v0.1.0

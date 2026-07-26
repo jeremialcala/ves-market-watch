@@ -1,3 +1,14 @@
+# Historial de implementación — VES Market Watch
+
+* **Estado:** review (documentación viva — regenerada por script, no editar a mano)
+* **Fecha:** 2026-07-26
+* **Decisores:** Jeremi Alcalá
+* **Fase AI-DLC:** 03-implementation
+* **Versión:** 0.3.0
+* **Gate:** 2
+* **Rama principal:** main
+* **Estrategia de branching:** GitFlow (main + develop + ramas feature)
+
 ## Historial del repositorio (documentación viva)
 
 Derivado de `git log` con `scripts/gitgraph_branches.py`
@@ -47,8 +58,10 @@ gitGraph
     commit id: "8f9178e"
     commit id: "949e87d"
     commit id: "ec6c272"
+    branch develop
+    commit id: "d943a62"
+    checkout main
     commit id: "2ec16da" tag: "v0.3.0" type: HIGHLIGHT
-    %% rama develop: sin commits propios o fork fuera del mapa
 ```
 
 ### Estado actual de las ramas
@@ -56,12 +69,21 @@ gitGraph
 | Rama | Punta | Fecha | Commits propios |
 |---|---|---|---|
 | `main` | `2ec16da` | 2026-07-26 | 38 |
-| `develop` | `ec6c272` | 2026-07-26 | 0 |
+| `develop` | `d943a62` | 2026-07-26 | 1 |
+
+### Trazabilidad tag ↔ versión ↔ decisión
+
+| Tag | Commit | Fecha | Versión CHANGELOG | ADR / feature | Nota |
+|---|---|---|---|---|---|
+| v0.1.0 | `b34c3af` | 2026-07-05 | 0.1.0 | ADR-0001…0006; 4 PRDs; threat model v1 | Línea base documental (Gates 0 y 1 en borrador). Sin código ejecutable |
+| v0.2.0 | `b14c8f7` | 2026-07-11 | 0.2.0 | Gates 0 y 1 cerrados (HITL); ADR-0007…0012; ingestor-bcv, indicator-engine fase 1, ingestor-binance | Tres servicios implementados y verificados en vivo |
+| v0.3.0 | `2ec16da` | 2026-07-26 | 0.3.0 | ADR-0013…0015; ingestor-historico; engine fase 2 (microestructura P2P) + motor de señales RF-4/RF-5; OpenAPI del gateway | Cierre funcional del pipeline de datos; api-gateway aún sin código |
 
 ### Bitácora de cambios (fiel al repo)
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `d943a62` | commit | — | Jeremi Alcala | 2026-07-26 | docs: Regenerate repo-history tras el release 0.3.0 (merge a main + tags) |
 | `2ec16da` | merge | v0.3.0 | Jeremi Alcala | 2026-07-26 | Merge develop into main: release 0.3.0 |
 | `ec6c272` | commit | — | Jeremi Alcala | 2026-07-26 | docs: Corte 0.3.0 — motor de señales verificado (RF-4/RF-5) |
 | `949e87d` | commit | — | Jeremi Alcala | 2026-07-26 | fix(compose): restart unless-stopped en rabbitmq y timescaledb |

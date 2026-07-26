@@ -4,6 +4,7 @@
 - **Fecha:** 2026-07-05
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
+- **Versión:** 0.2.0
 - **Controles OWASP afectados:** A01, A02, A04, A07
 
 > **Superada (2026-07-07) por [ADR-0012](0012-autenticacion-oidc-auth0.md):** el acceso pasó

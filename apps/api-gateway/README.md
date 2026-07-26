@@ -14,9 +14,17 @@ OIDC/OAuth2 — la identidad y la emisión de tokens viven en Auth0 (ADR-0012).
 - Contratos: `../../docs/02-design/api-contracts.md` · ADR-0012 (supersede ADR-0003)
 - Amenazas T3, T4, T9, T11, T12 en `../../docs/02-design/threat-model.md`
 
-## Estructura
+## Estado actual
+Único servicio de la plataforma **aún sin código**. Hoy solo existen este README,
+`docs/design.md`, `docs/openapi.yaml` y `tests/README.md`.
+- ✔ Tenant Auth0 configurado (2026-07-14)
+- ✔ Contrato OpenAPI 3.1 (`docs/openapi.yaml`, 8 endpoints `/api/v1`, 2026-07-17)
+- Pendiente: contrato AsyncAPI (WSS), SPA y toda la implementación (código + tests)
+
+## Estructura prevista (aún no creada)
 ```
-src/api_gateway/
-tests/                  # pirámide: unit / integration / contract / e2e
+src/api_gateway/        # a crear
+tests/                  # pirámide: unit / integration / contract / e2e (hoy solo tests/README.md)
 docs/design.md
+docs/openapi.yaml       # ✔ ya existe
 ```

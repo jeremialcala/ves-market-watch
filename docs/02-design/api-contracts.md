@@ -1,11 +1,11 @@
 # Contratos de API — VES Market Watch
 
-- **Estado:** approved (Gate 1, HITL 2026-07-11) — eventos formales; REST/WSS esqueleto
-  hasta el api-gateway
-- **Fecha:** 2026-07-11
+- **Estado:** approved (Gate 1, HITL 2026-07-11) — eventos formales (4/4) y REST con
+  OpenAPI 3.1; WSS esqueleto hasta la spec AsyncAPI
+- **Fecha:** 2026-07-26
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
-- **Versión:** 0.3.0
+- **Versión:** 0.3.1
 
 Los contratos de **eventos** ya son formales: JSON Schema 2020-12 en `schemas/` (raíz),
 verificados por contract tests en productor y consumidor. La superficie **REST** ya tiene
@@ -60,7 +60,7 @@ Tópicos permitidos (whitelist): `rates.official`, `p2p.snapshot`, `indicators`,
 | `rates.official` | `{rate, value_date, stale}` | `official.rate.updated` |
 | `p2p.snapshot` | `{side, best_price, median, vwap, volume, confidence}` | snapshot normalizado |
 | `indicators` | `{gap_abs, gap_pct, spread_buy, spread_sell, volumes, as_of}` | `indicators.updated` |
-| `signals` | `{type, direction, evidence, emitted_at}` | `signals.emitted` |
+| `signals` | payload de `signal.v1`: `{type, direction, currency, as_of, calc_version, triggered_by, evidence}` + `occurred_at` del sobre | `signals.emitted` |
 
 Límites: ≤ 5 conexiones y ≤ 10 suscripciones por client_id; ping/pong 30 s; cierre por
 token expirado con código 4401.

@@ -3,7 +3,7 @@
   "$id": "https://github.com/jeremialcala/ves-market-watch/schemas/signal.v1.json",
   "title": "signals.emitted v1",
   "description": "Señal financiera disparada por una regla del indicator-engine sobre la microestructura P2P, con evidencia trazable y reproducible (amenaza T10, ASVS V16). El vocabulario de `type` es abierto por convención: el catálogo canónico vive en knowledge/metrics/microestructura-p2p.md (mismo criterio que los nombres de indicadores). Nunca se emiten señales desde datos low_confidence ni duplicadas (idempotencia por event_id).",
-  "$comment": "Contrato definido en la fase de señales; la emisión depende del motor de reglas (RF-4), aún no implementado. Cuando exista un productor, sus contract tests validarán la forma emitida contra este schema.",
+  "$comment": "Contrato definido el 2026-07-20 (solo schema) y emitido desde el 2026-07-22 por el motor de reglas del indicator-engine (RF-4, ADR-0015). El productor valida la forma emitida contra este schema en apps/indicator-engine/tests/contract/test_signal_event_schema.py.",
   "type": "object",
   "required": ["event_id", "event_type", "schema_version", "occurred_at", "producer", "payload"],
   "additionalProperties": false,

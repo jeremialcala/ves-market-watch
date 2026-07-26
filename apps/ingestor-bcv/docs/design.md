@@ -4,7 +4,7 @@
 - **Fecha:** 2026-07-14
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
-- **Versión:** 0.2.0
+- **Versión:** 0.3.0
 
 ## Capas (hexagonal)
 - **Dominio** (`src/ingestor_bcv/domain/`): `TasaOficial` (moneda ISO 4217, valor,

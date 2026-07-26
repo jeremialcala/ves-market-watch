@@ -4,6 +4,7 @@
 - **Fecha:** 2026-07-05
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** transversal (00-project)
+- **Versión:** 0.2.0
 - **Controles OWASP afectados:** A09 (indirecto — trazabilidad del conocimiento)
 
 ## Contexto

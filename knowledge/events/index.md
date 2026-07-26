@@ -2,7 +2,7 @@
 type: Index
 title: Eventos AMQP
 description: Eventos del bus market.events (RabbitMQ topic exchange) — el contrato entre servicios.
-timestamp: 2026-07-05T00:00:00Z
+timestamp: 2026-07-26T00:00:00Z
 ---
 
 # Eventos — bus `market.events`
@@ -15,7 +15,7 @@ y consumidor. Eventos inválidos → DLQ `market.events.dlq`.
 | Routing key | Productor | Consumidor | Estado |
 |---|---|---|---|
 | [official.rate.updated](official-rate-updated.md) | ingestor-bcv | indicator-engine | **Implementado** (ambos lados) |
-| [p2p.snapshot](p2p-snapshot.md) | ingestor-binance | indicator-engine | **Implementado** (productor; consumo = engine fase 2) |
+| [p2p.snapshot](p2p-snapshot.md) | ingestor-binance | indicator-engine | **Implementado** (ambos lados) |
 | [indicators.updated](indicators-updated.md) | indicator-engine | api-gateway | **Implementado** (productor; consumidor = api-gateway) |
 | [signals.emitted](signals-emitted.md) | indicator-engine | api-gateway | **Implementado** (productor, RF-4/ADR-0015); consumidor = api-gateway (pendiente) |
 

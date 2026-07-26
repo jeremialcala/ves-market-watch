@@ -4,13 +4,14 @@ title: p2p.snapshot
 description: Snapshot normalizado de anuncios P2P de Binance para un lado del mercado (BUY o SELL) — implementado.
 resource: ../../schemas/p2p-snapshot.v1.json
 tags: [binance, p2p, implementado]
-timestamp: 2026-07-06T00:00:00Z
+timestamp: 2026-07-26T00:00:00Z
 ---
 
 # p2p.snapshot
 
-Productor: [ingestor-binance](../services/ingestor-binance.md) · Consumidor previsto:
-[indicator-engine](../services/indicator-engine.md) (fase 2). **Implementado.**
+Productor: [ingestor-binance](../services/ingestor-binance.md) · Consumidor:
+[indicator-engine](../services/indicator-engine.md) desde 2026-07-20 (binding en su
+cola durable, despacho por `event_type`). **Implementado (ambos lados).**
 
 Contrato: `schemas/p2p-snapshot.v1.json` (validado por contract test del productor).
 Payload: `{side (BUY/SELL, perspectiva del taker), asset, fiat, captured_at, partial,
@@ -27,4 +28,4 @@ requerido — HMAC-SHA256 del identificador estable del anunciante (clave dedica
 `MERCHANT_HMAC_KEY`), 32 hex, o `null` si la fuente no trajo el identificador.
 Cambio aditivo sobre v1 (el `schema_version` del sobre sigue en 1). El alias e ID
 crudos siguen sin viajar ni persistir. Habilita dedup de profundidad, concentración
-y recurrencia en la fase 2 del engine.
+y recurrencia en la fase 2 del engine (implementada 2026-07-20).
