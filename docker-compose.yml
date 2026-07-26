@@ -14,6 +14,9 @@ name: ves-market-watch
 services:
   rabbitmq:
     image: rabbitmq:4-management
+    # Sin esto, un reinicio del daemon de Docker deja la infra caída mientras
+    # los servicios (que sí reinician) quedan en crash-loop (visto 2026-07-23).
+    restart: unless-stopped
     ports:
       - "5672:5672"
       - "15672:15672" # UI de gestión: http://localhost:15672 (guest/guest)
@@ -25,6 +28,7 @@ services:
 
   timescaledb:
     image: timescale/timescaledb:latest-pg16
+    restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ves_market
