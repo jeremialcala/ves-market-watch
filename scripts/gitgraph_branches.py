@@ -99,43 +99,54 @@ def trazabilidad(repo):
 
 
 def build_multi(repo, branches):
-    fmt = "%H%x09%P%x09%s%x09%D"
-    meta = {}
-    for l in git(repo, "log", "--topo-order", f"--format={fmt}", *branches).splitlines():
+    """Grafo GitFlow real: el tronco (primera rama) SOLO dibuja su historia
+    first-parent — las ramas fusionadas no se aplanan en él — y cada release
+    aparece como `merge <rama>` en el tronco. Las demás ramas reclaman, en
+    orden, los commits restantes. Emisión en un solo paso topológico global
+    (padres primero) alternando lanes con `checkout`."""
+    fmt = "%H%x09%P%x09%D"
+    meta, orden = {}, []
+    for l in git(
+        repo, "log", "--topo-order", "--reverse", f"--format={fmt}", *branches
+    ).splitlines():
         if not l:
             continue
-        h, parents, subject, refs = (l.split("\t") + ["", "", ""])[:4]
-        meta[h] = (parents.split(), subject, refs)
+        h, parents, refs = (l.split("\t") + ["", ""])[:3]
+        meta[h] = (parents.split(), refs)
+        orden.append(h)
 
-    # Commits exclusivos de cada rama: la primera rama del orden dado que los contiene.
-    lane_commits, assigned, prev = {}, {}, []
-    for b in branches:
-        excl = [l for l in git(
-            repo, "rev-list", "--reverse", "--topo-order", b, *[f"^{p}" for p in prev]
-        ).splitlines() if l]
-        lane_commits[b] = excl
-        for h in excl:
-            assigned[h] = b
-        prev.append(b)
-
-    # Fork real de cada rama = primer padre de su primer commit exclusivo.
-    forks, sin_lane = {}, []
+    assigned = {}
+    tronco = [
+        h
+        for h in git(
+            repo, "rev-list", "--first-parent", "--reverse", branches[0]
+        ).splitlines()
+        if h
+    ]
+    lane_commits = {branches[0]: tronco}
+    for h in tronco:
+        assigned[h] = branches[0]
     for b in branches[1:]:
-        if not lane_commits[b]:
-            sin_lane.append(b)
-            continue
-        parents = meta.get(lane_commits[b][0], ([], "", ""))[0]
-        fork = parents[0] if parents else None
-        if fork in assigned:
-            forks.setdefault(fork, []).append(b)
-        else:
-            sin_lane.append(b)
+        propios = [
+            h
+            for h in git(
+                repo, "rev-list", "--reverse", "--topo-order", b
+            ).splitlines()
+            if h and h not in assigned
+        ]
+        lane_commits[b] = propios
+        for h in propios:
+            assigned[h] = b
 
     lines = []
     if branches[0] != "main":
-        lines.append("%%{init: { 'gitGraph': { 'mainBranchName': '" + branches[0] + "' } } }%%")
+        lines.append(
+            "%%{init: { 'gitGraph': { 'mainBranchName': '" + branches[0] + "' } } }%%"
+        )
     lines.append("gitGraph")
-    state = {"current": branches[0], "emitted": set()}
+    state = {"current": branches[0]}
+    creadas = {branches[0]}
+    emitted: set[str] = set()
     aproximado = False
 
     def checkout(b):
@@ -143,44 +154,62 @@ def build_multi(repo, branches):
             lines.append(f"    checkout {b}")
             state["current"] = b
 
-    def emit_lane(b):
-        nonlocal aproximado
-        for h in lane_commits[b]:
-            checkout(b)
-            parents, _subject, refs = meta.get(h, ([], "", ""))
-            tgs = tags_of(refs)
-            tag_sfx = f' tag: "{tgs[0]}"' if tgs else ""
-            if len(parents) > 1:
-                src = assigned.get(parents[1])
-                src_completa = src and src != b and set(lane_commits[src]) <= state["emitted"]
-                if len(parents) > 2 or not src_completa:
-                    aproximado = True
-                    lines.append(f'    commit id: "{short(h)}"{tag_sfx} type: HIGHLIGHT')
-                else:
-                    lines.append(f"    merge {src}{tag_sfx}")
+    for h in orden:
+        b = assigned.get(h)
+        if b is None:
+            continue
+        parents, refs = meta.get(h, ([], ""))
+        tgs = tags_of(refs)
+        tag_sfx = f' tag: "{tgs[0]}"' if tgs else ""
+        if b not in creadas:
+            # Crear la rama desde el lane de su primer padre. Mermaid bifurca
+            # desde el HEAD actual de ese lane: si este ya avanzó más allá del
+            # fork real, el punto dibujado es aproximado.
+            fork_lane = assigned.get(parents[0]) if parents else None
+            padre_es_head = bool(parents) and parents[0] in emitted and (
+                not lane_commits.get(fork_lane)
+                or _ultimo_emitido(lane_commits[fork_lane], emitted) == parents[0]
+            )
+            if fork_lane is None or not padre_es_head:
+                aproximado = True
+            checkout(fork_lane or branches[0])
+            lines.append(f"    branch {b}")
+            creadas.add(b)
+            state["current"] = b
+        checkout(b)
+        if len(parents) > 1:
+            src = assigned.get(parents[1])
+            if len(parents) == 2 and src and src != b and parents[1] in emitted:
+                lines.append(f"    merge {src}{tag_sfx}")
             else:
-                lines.append(f'    commit id: "{short(h)}"{tag_sfx}')
-            state["emitted"].add(h)
-            # Ramas que bifurcan exactamente en este commit: crearlas ahora, mientras
-            # el HEAD del lane sigue aquí (mermaid ramifica desde el HEAD actual).
-            for child in forks.get(h, []):
-                checkout(b)
-                lines.append(f"    branch {child}")
-                state["current"] = child
-                emit_lane(child)
+                aproximado = True
+                lines.append(f'    commit id: "{short(h)}"{tag_sfx} type: HIGHLIGHT')
+        else:
+            lines.append(f'    commit id: "{short(h)}"{tag_sfx}')
+        emitted.add(h)
 
-    emit_lane(branches[0])
-    for b in sin_lane:
-        aproximado = True
-        lines.append(f"    %% rama {b}: sin commits propios o fork fuera del mapa")
+    for b in branches[1:]:
+        if not lane_commits[b]:
+            aproximado = True
+            lines.append(f"    %% rama {b}: sin commits propios en este corte")
 
-    estado = ["| Rama | Punta | Fecha | Commits propios |", "|---|---|---|---|"]
+    estado = ["| Rama | Punta | Fecha | Commits en su lane |", "|---|---|---|---|"]
     for b in branches:
         tip = git(repo, "log", "-1", "--format=%h%x09%ad", "--date=short", b).strip()
         h, ad = (tip.split("\t") + [""])[:2]
         estado.append(f"| `{b}` | `{h}` | {ad} | {len(lane_commits[b])} |")
 
     return "\n".join(lines), "\n".join(estado), aproximado
+
+
+def _ultimo_emitido(lane, emitted):
+    ultimo = None
+    for h in lane:
+        if h in emitted:
+            ultimo = h
+        else:
+            break
+    return ultimo
 
 
 def render(repo, branches):

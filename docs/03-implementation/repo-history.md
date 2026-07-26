@@ -24,6 +24,7 @@ gitGraph
     commit id: "b34c3af" tag: "v0.1.0"
     commit id: "6c42e58"
     commit id: "bd9698b"
+    branch develop
     commit id: "9ad366f"
     commit id: "5ad050e"
     commit id: "f8922b6"
@@ -58,24 +59,30 @@ gitGraph
     commit id: "8f9178e"
     commit id: "949e87d"
     commit id: "ec6c272"
-    commit id: "2ec16da" tag: "v0.3.0" type: HIGHLIGHT
+    checkout main
+    merge develop tag: "v0.3.0"
+    checkout develop
     commit id: "d943a62"
     commit id: "75e6c3f"
-    commit id: "461d4dc" tag: "v0.3.1" type: HIGHLIGHT
+    checkout main
+    merge develop tag: "v0.3.1"
+    checkout develop
     commit id: "2d4a1f2"
     commit id: "9b6d94e"
     commit id: "f5a7215"
     commit id: "0d80bd6"
-    commit id: "779231f" tag: "v0.4.0" type: HIGHLIGHT
-    %% rama develop: sin commits propios o fork fuera del mapa
+    checkout main
+    merge develop tag: "v0.4.0"
+    checkout develop
+    commit id: "38abe5e"
 ```
 
 ### Estado actual de las ramas
 
-| Rama | Punta | Fecha | Commits propios |
+| Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
-| `main` | `779231f` | 2026-07-26 | 46 |
-| `develop` | `0d80bd6` | 2026-07-26 | 0 |
+| `main` | `779231f` | 2026-07-26 | 6 |
+| `develop` | `38abe5e` | 2026-07-26 | 41 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -91,8 +98,9 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
-| `0d80bd6` | commit | — | Jeremi Alcala | 2026-07-26 | docs: Corte 0.4.0 — api-gateway implementado, pipeline completo operativo |
+| `38abe5e` | commit | — | Jeremi Alcala | 2026-07-26 | docs: Regenerate repo-history tras el release 0.4.0 (merge a main + tag) |
 | `779231f` | merge | v0.4.0 | Jeremi Alcala | 2026-07-26 | Merge develop into main: release 0.4.0 |
+| `0d80bd6` | commit | — | Jeremi Alcala | 2026-07-26 | docs: Corte 0.4.0 — api-gateway implementado, pipeline completo operativo |
 | `f5a7215` | commit | — | Jeremi Alcala | 2026-07-26 | Implement integration and unit tests for API Gateway functionality |
 | `9b6d94e` | commit | — | Jeremi Alcala | 2026-07-26 | docs: Ratificación HITL del DREAD de T13/T14 (threat model + gate 1) |
 | `2d4a1f2` | commit | — | Jeremi Alcala | 2026-07-26 | docs: Regenerate repo-history tras el release 0.3.1 (merge a main + tag) |
