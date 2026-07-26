@@ -1,10 +1,15 @@
 # ADR-0003: OAuth2 client credentials + JWT para consumidores de API/WSS
 
-- **Estado:** accepted
+- **Estado:** superseded by ADR-0012
 - **Fecha:** 2026-07-05
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
 - **Controles OWASP afectados:** A01, A02, A04, A07
+
+> **Superada (2026-07-07) por [ADR-0012](0012-autenticacion-oidc-auth0.md):** el acceso pasó
+> de máquina-a-máquina a **usuarios humanos** con login OIDC. El Authorization Server ya no
+> es el propio gateway sino **Auth0**; el gateway pasa a ser Resource Server (solo valida
+> tokens). Se conserva este documento por trazabilidad histórica.
 
 ## Contexto
 Las aplicaciones consumidoras (machine-to-machine) necesitan autenticación con scopes y

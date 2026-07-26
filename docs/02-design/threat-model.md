@@ -1,12 +1,38 @@
 # Threat Model — VES Market Watch (sistema completo)
 
+- **Estado:** approved (Gate 1, HITL 2026-07-11)
+- **Fecha:** 2026-07-11
+- **Decisores:** Jeremi Alcalá
+- **Fase AI-DLC:** 02-design
+- **Versión:** 0.3.0
 - **Alcance:** sistema completo (4 servicios + RabbitMQ + TimescaleDB)
-- **Fecha / versión:** 2026-07-05 / v1
+- **Metodología:** STRIDE + DREAD
 - **Clasificación de datos:** ver `docs/00-project/data-classification.md`
 
 ## Diagrama de flujo de datos
-Ver `docs/architecture/c4-container.md` — trust boundaries marcados:
-Internet↔gateway, fuentes externas↔ingestores, servicios↔broker, servicios↔DB.
+
+```mermaid
+flowchart LR
+    BCV([Sitio BCV]):::ext -->|HTML de tasas / HTTPS TLS anclado| IBCV
+    BIN([Binance P2P]):::ext -->|JSON de anuncios / HTTPS| IBIN
+    USR([Usuario via SPA]):::ext -->|login OIDC PKCE| AUTH0([Auth0 OP]):::ext
+    subgraph TBP [Trust boundary: plataforma VMW]
+      IBCV[ingestor-bcv] -->|official.rate.updated| BUS[[RabbitMQ market.events]]
+      IBIN[ingestor-binance] -->|p2p.snapshot con merchant_ref| BUS
+      BUS -->|eventos validados por schema| ENG[indicator-engine]
+      ENG -->|indicators.updated y signals.emitted| BUS
+      BUS -->|push interno| GW[api-gateway]
+      IBCV -->|tasas y auditoria HITL| DB[(TimescaleDB)]
+      IBIN -->|crudo minimizado 90 d| DB
+      ENG -->|indicadores calc_version| DB
+      GW -->|solo lectura| DB
+    end
+    USR -->|REST y WSS con access token| GW
+    GW -->|valida RS256 via JWKS| AUTH0
+    classDef ext fill:#999999,color:#ffffff
+```
+
+*Eje comportamiento — fase 02 / Gate 1: DFD con trust boundaries que alimenta el STRIDE de abajo. Los actores grises son externos (no confiables o fuera de nuestro control). Estructura complementaria en `docs/architecture/c4-container.md`.*
 
 ## Análisis STRIDE
 | Componente | Spoofing | Tampering | Repudiation | Info Disclosure | DoS | Elevation |
@@ -15,7 +41,8 @@ Internet↔gateway, fuentes externas↔ingestores, servicios↔broker, servicios
 | ingestor-bcv | Dominio BCV suplantado (DNS/MITM) | Tasa falsa inyectada; HTML alterado | Sin auditoría de tasas capturadas | — | Caída del sitio BCV; parser roto | — |
 | RabbitMQ | Servicio se conecta con credencial ajena | Eventos inválidos/malformados publicados | Publicaciones sin trazabilidad | Credenciales AMQP filtradas | Tormenta de eventos; colas llenas | Usuario AMQP con permisos excesivos |
 | indicator-engine | — | Datos envenenados → señales falsas; duplicados/reorden | Señal sin evidencia de inputs | — | Backlog de eventos | — |
-| api-gateway | Tokens falsificados; credential stuffing | Manipulación de parámetros de consulta | Accesos sin log | Errores verbosos; enumeración de clients | Flood REST/WSS; scraping histórico | Consumidor accede a scopes ajenos |
+| api-gateway | Tokens falsificados; ID token / token de otra audiencia usado como bearer | Manipulación de parámetros de consulta | Accesos sin log | Errores verbosos; PII de usuario en logs | Flood REST/WSS; scraping histórico | Usuario accede a scopes/permisos ajenos |
+| Auth0 (OP externo) | Ataques al login (credential stuffing, breached passwords); phishing de callback | Config del tenant alterada (audiencia, `redirect_uri`) | — | Enumeración de usuarios en login | Abuso del endpoint de login | Roles/permisos mal asignados en RBAC |
 | TimescaleDB | Conexión con rol ajeno | SQL injection vía parámetros | Cambios sin auditoría | Dump de credenciales de clientes | Consultas de histórico sin límites | Rol de servicio con privilegios amplios |
 
 ## Amenazas priorizadas (DREAD)
@@ -24,26 +51,55 @@ Escala 1–3 por factor (Damage, Reproducibility, Exploitability, Affected users
 | ID | Amenaza | D | R | E | A | D | Score | Control / ADR |
 |---|---|---|---|---|---|---|---|---|
 | T1 | Tasa oficial falsa entra al sistema (MITM/parse erróneo del BCV) | 3 | 2 | 2 | 3 | 2 | 12 | TLS anclado + validación de rango + estado `suspect` — ADR-0006, A04/A08 |
-| T2 | Anuncios P2P manipulados distorsionan indicadores y señales | 3 | 3 | 3 | 3 | 3 | 15 | Filtro outliers MAD/IQR, mediana/VWAP top-N, `low_confidence` — A08 |
-| T3 | Credential stuffing / fuerza bruta contra /auth/token | 2 | 3 | 3 | 2 | 3 | 13 | Rate limit + lockout + secrets hasheados argon2 — ADR-0003, A07 |
+| T2 | Anuncios P2P manipulados distorsionan indicadores y señales | 3 | 3 | 3 | 3 | 3 | 15 | Filtro outliers MAD/IQR, mediana/VWAP top-N, `low_confidence` — A08; recurrencia de manipuladores rastreable vía `merchant_ref` — ADR-0011 |
+| T3 | Ataques al login (credential stuffing, fuerza bruta, breached passwords) | 2 | 2 | 2 | 2 | 3 | 11 | Login en Auth0 con attack protection (brute-force, bot detection, breached-password) + MFA; el gateway ya no expone /auth/token — ADR-0012, A07 |
 | T4 | DoS sobre API/WSS (flood, scraping de histórico) | 2 | 3 | 3 | 3 | 3 | 14 | Cuotas por token/IP, límites WSS, paginación y rangos máximos — A10 |
 | T5 | Eventos malformados/inyectados en el bus rompen el engine | 3 | 2 | 2 | 3 | 2 | 12 | Schema validation + DLQ + usuarios AMQP mínimos — ADR-0004, A05/A01 |
-| T6 | Fuga de secretos (claves JWT, credenciales DB/AMQP) | 3 | 1 | 2 | 3 | 2 | 11 | Secret store + rotación ≤ 90 d + secrets scanning CI — A02/A04 |
+| T6 | Fuga de secretos (credenciales DB/AMQP, clave HMAC de anunciantes) | 3 | 1 | 2 | 3 | 2 | 11 | Secret store + rotación ≤ 90 d + secrets scanning CI — A02/A04. Las claves de firma JWT ya no son activo propio (gestionadas por Auth0 — ADR-0012) |
 | T7 | Baneo de IP por Binance por polling agresivo | 3 | 2 | 3 | 3 | 3 | 14 | Circuit breaker + backoff + presupuesto de requests — ADR-0005, A10 |
 | T8 | Compromiso de dependencia (supply chain) en cualquier servicio | 3 | 1 | 2 | 3 | 2 | 11 | Lockfiles + SCA en CI + imágenes por digest — A03 |
 | T9 | SQL injection vía parámetros de histórico en gateway | 3 | 2 | 2 | 3 | 3 | 13 | Queries parametrizadas + validación estricta de inputs — A05 |
-| T10 | Señales sin trazabilidad (repudio/no reproducibles) | 2 | 3 | 2 | 2 | 2 | 11 | Evidencia de inputs + `calc_version` + logging estructurado — A09 |
+| T10 | Señales sin trazabilidad (repudio/no reproducibles) | 2 | 3 | 2 | 2 | 2 | 11 | Evidencia de inputs + `calc_version` + logging estructurado — A09; forense de anunciantes entre snapshots vía `merchant_ref` — ADR-0011 |
+| T11 | ID token o token de otra audiencia/tenant usado como bearer (confused deputy) | 2 | 2 | 2 | 2 | 2 | 10 | Validación estricta de `aud` (=API), `iss` (=tenant) y firma JWKS; solo se acepta el access token — ADR-0012, A01/A07 |
+| T12 | Robo de token en el navegador (XSS) del front-end/SPA | 3 | 1 | 2 | 2 | 2 | 10 | Token en memoria (no localStorage), access token de vida corta, refresh con rotación; el SPA está fuera de este repo — ADR-0012, A03/A07 |
+
+```mermaid
+quadrantChart
+    title Amenazas DREAD T1-T12 por probabilidad e impacto
+    x-axis Baja probabilidad --> Alta probabilidad
+    y-axis Bajo impacto --> Alto impacto
+    quadrant-1 Atender ya
+    quadrant-2 Monitorear
+    quadrant-3 Aceptar
+    quadrant-4 Planear
+    T2 P2P manipulado: [0.93, 0.93]
+    T7 Baneo de Binance: [0.88, 0.90]
+    T4 DoS API y WSS: [0.90, 0.80]
+    T9 SQLi en historico: [0.78, 0.88]
+    T1 Tasa falsa BCV: [0.65, 0.95]
+    T5 Eventos invalidos: [0.68, 0.90]
+    T6 Fuga de secretos: [0.55, 0.93]
+    T8 Supply chain: [0.53, 0.87]
+    T12 Robo token XSS: [0.56, 0.80]
+    T3 Ataques al login: [0.78, 0.65]
+    T10 Senal sin traza: [0.75, 0.60]
+    T11 Confused deputy: [0.66, 0.63]
+```
+
+*Eje trazabilidad — fase 02 / Gate 1: probabilidad ≈ (R+E+D)/9, impacto ≈ (D+A)/6 de la tabla DREAD, con separación mínima para legibilidad. La tabla es la fuente de verdad; el cuadrante es la vista de priorización.*
 
 ## Controles y trazabilidad
 | Amenaza | Control | Verificación (fase 04-testing) |
 |---|---|---|
 | T1 | ADR-0006; validación de rango en PRD ingesta-bcv RF-3 | Test de integración con fixture de HTML alterado y tasa fuera de rango |
-| T2 | PRD motor-indicadores escenario negativo 1 | Test unitario de filtrado con snapshots sintéticos manipulados |
-| T3 | ADR-0003; PRD api-streaming escenarios 2 y 7 | Test de rate limit y lockout; revisión de logs de seguridad |
+| T2 | PRD motor-indicadores escenario negativo 1; ADR-0011 | Etiquetado MAD verificado en ingestor-binance (unit tests + dato real); filtrado final con snapshots sintéticos manipulados en engine fase 2 |
+| T3 | ADR-0012; PRD api-streaming escenario 2; attack protection del tenant Auth0 | Verificación de config del tenant (brute-force, breached-password, MFA); revisión de logs de seguridad |
 | T4 | PRD api-streaming RF-4 | Test de carga con exceso de cuota; fuzzing de paginación |
 | T5 | ADR-0004; PRD motor-indicadores escenario 4 | Test contract de eventos + inyección de evento inválido → DLQ |
 | T6 | Política de secretos (data-classification) | Secrets scanning en CI; revisión de rotación |
 | T7 | ADR-0005 | Simulación de 429 → verificación de circuit breaker |
 | T8 | Pipeline CI (Gate 2) | SCA con umbral de severidad |
-| T9 | PRD api-streaming escenario 5 | SAST + tests de inyección |
+| T9 | PRD api-streaming escenario 6 | SAST + tests de inyección |
 | T10 | PRD motor-indicadores RF-3 | Auditoría de una señal end-to-end |
+| T11 | ADR-0012; PRD api-streaming escenario 3 | Test de rechazo de ID token y de token con `aud`/`iss` inválidos → 401 |
+| T12 | ADR-0012 | Revisión de manejo de token en el SPA (fuera de este repo); verificación de vida corta y rotación |

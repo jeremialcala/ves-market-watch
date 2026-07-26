@@ -1,0 +1,105 @@
+# Infraestructura compartida de desarrollo/test (ADR-0002, ADR-0004) más los
+# servicios de la plataforma para captura continua local.
+# Efímera a propósito: sin volúmenes persistentes, credenciales por defecto
+# SOLO para localhost. Producción se define en fase 05-deployment.
+#
+#   docker compose up -d --wait --build
+#   docker compose down
+#
+# Requiere .env en la raíz con MERCHANT_HMAC_KEY (ADR-0011); el .dockerignore
+# garantiza que el .env nunca entra en las imágenes.
+
+name: ves-market-watch
+
+services:
+  rabbitmq:
+    image: rabbitmq:4-management
+    # Sin esto, un reinicio del daemon de Docker deja la infra caída mientras
+    # los servicios (que sí reinician) quedan en crash-loop (visto 2026-07-23).
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672" # UI de gestión: http://localhost:15672 (guest/guest)
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ves_market
+    ports:
+      # 5433 en el host: el 5432 suele estar ocupado por un PostgreSQL local/WSL.
+      - "5433:5432"
+    volumes:
+      # La DB de desarrollo nace con el esquema del ingestor aplicado.
+      # Archivo individual (no el directorio): montar el directorio completo
+      # aplastaría el init propio de la imagen (000_install_timescaledb.sh),
+      # que instala la extensión en template1.
+      - ./apps/ingestor-bcv/db/migrations/001_official_rates.sql:/docker-entrypoint-initdb.d/900_official_rates.sql:ro
+      - ./apps/ingestor-bcv/db/migrations/002_suspect_resolution.sql:/docker-entrypoint-initdb.d/901_suspect_resolution.sql:ro
+      - ./apps/indicator-engine/db/migrations/001_indicators.sql:/docker-entrypoint-initdb.d/902_indicators.sql:ro
+      - ./apps/indicator-engine/db/migrations/002_signals.sql:/docker-entrypoint-initdb.d/902b_signals.sql:ro
+      - ./apps/ingestor-binance/db/migrations/001_p2p_snapshots.sql:/docker-entrypoint-initdb.d/903_p2p_snapshots.sql:ro
+      - ./apps/ingestor-historico/db/migrations/001_historical_snapshots.sql:/docker-entrypoint-initdb.d/904_historical_snapshots.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ves_market"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  ingestor-binance:
+    build:
+      context: .
+      dockerfile: apps/ingestor-binance/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@timescaledb:5432/ves_market
+      AMQP_URL: amqp://guest:guest@rabbitmq/
+      MERCHANT_HMAC_KEY: ${MERCHANT_HMAC_KEY:?definir MERCHANT_HMAC_KEY en .env (ADR-0011)}
+      # Captura del top-200 por lado, un ciclo por minuto. El presupuesto de
+      # requests (RF-1) cubre los 20 requests/ciclo con holgura.
+      TOP_K: "200"
+      FETCH_INTERVAL_SECONDS: "60"
+      REQUEST_BUDGET_PER_MIN: "40"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ingestor-bcv:
+    build:
+      context: .
+      dockerfile: apps/ingestor-bcv/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@timescaledb:5432/ves_market
+      AMQP_URL: amqp://guest:guest@rabbitmq/
+      FETCH_INTERVAL_SECONDS: "1800"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  indicator-engine:
+    build:
+      context: .
+      dockerfile: apps/indicator-engine/Dockerfile
+    # Modo reactivo continuo (CMD de la imagen): desde fase 2 el motor recalcula
+    # indicadores ante cada p2p.snapshot (2/min) y cada tasa BCV — procesar por
+    # lotes retrasaría justo lo que el motor existe para producir.
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@timescaledb:5432/ves_market
+      AMQP_URL: amqp://guest:guest@rabbitmq/
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    restart: unless-stopped

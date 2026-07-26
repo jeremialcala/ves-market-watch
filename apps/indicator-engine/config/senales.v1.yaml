@@ -1,0 +1,60 @@
+# Ruleset de señales del indicator-engine (RF-4) — CONFIG VERSIONADA EN REPO.
+#
+# Este archivo es la única fuente de las reglas de señal: se carga al arrancar,
+# no se edita en runtime (ASVS V14, A02/A08). Cambiar un umbral o una regla es un
+# commit auditable; subir `version` corta un nuevo ruleset (la evidencia de cada
+# señal referencia `<type>@v<version>`).
+#
+# Umbrales v1: derivados del backtest 11–20 jul 2026 (aprobados HITL 2026-07-22).
+# Definición de cada indicador y su lectura: knowledge/metrics/microestructura-p2p.md.
+# Contrato del evento emitido: schemas/signal.v1.json.
+#
+# Una regla dispara cuando TODAS sus condiciones (`when`) se cumplen y todos sus
+# indicadores están vigentes (frescura acotada por SIGNALS_MAX_AGE_MIN). El mismo
+# tipo no se re-emite dentro de `cooldown_min` (dedup, RF-4/A08).
+# Operadores: gt (>), gte (>=), lt (<), lte (<=). Valores decimales como string.
+
+version: 1
+cooldown_min: 60
+
+rules:
+  # Arranque alcista: el bid empieza a subir mientras la oferta se seca y hay
+  # más demanda que oferta. Precede corridas alcistas.
+  - type: arranque_alcista
+    direction: alcista
+    when:
+      - indicator: p2p_momentum_bid_3h_pct
+        op: gt
+        value: "0.5"
+      - indicator: p2p_drenaje_oferta_6h_pct
+        op: lt
+        value: "-40"
+      - indicator: p2p_ratio_oferta_demanda
+        op: lt
+        value: "0.3"
+
+  # Techo inminente: momentum fuerte + spread muy comprimido + oferta mínima —
+  # agotamiento de la subida. Anticipa el pico.
+  - type: techo_inminente
+    direction: bajista
+    when:
+      - indicator: p2p_momentum_bid_3h_pct
+        op: gt
+        value: "1.5"
+      - indicator: p2p_spread_pct
+        op: lt
+        value: "0.5"
+      - indicator: p2p_ratio_oferta_demanda
+        op: lt
+        value: "0.2"
+
+  # Corrección inminente: muro de oferta (ratio alto) con el bid ya cayendo.
+  - type: correccion_inminente
+    direction: bajista
+    when:
+      - indicator: p2p_ratio_oferta_demanda
+        op: gt
+        value: "2"
+      - indicator: p2p_momentum_bid_3h_pct
+        op: lt
+        value: "-1"

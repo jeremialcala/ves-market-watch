@@ -1,7 +1,17 @@
 # Tests — indicator-engine (pirámide AI-DLC)
 
-- `unit/` — cálculos de indicadores con snapshots sintéticos (incl. manipulados/outliers),
-  reglas de señal, idempotencia.
-- `integration/` — consumo AMQP con eventos duplicados/fuera de orden/inválidos → DLQ.
-- `contract/` — eventos emitidos cumplen `indicators.v1` y `signal.v1`.
-- `e2e/` — snapshot + tasa → indicador y señal persistidos y publicados.
+- `unit/` — cálculos puros (brecha, variación), caso de uso (dedup, `official_stale`),
+  validación de eventos contra el schema compartido.
+- `integration/` — consumo AMQP real: evento válido → indicador + publicación;
+  duplicado ignorado; inválido → DLQ.
+- `contract/` — lo emitido cumple `schemas/indicators.v1.json` (`signal.v1` llega con
+  las señales en fase 2).
+- `e2e/` — dos eventos `official.rate.updated` → variación calculada, persistida y
+  publicada contra RabbitMQ/TimescaleDB reales del `docker compose` raíz.
+
+```sh
+python -m pytest -m "not integration and not e2e"   # sin infraestructura
+docker compose up -d --wait && python -m pytest      # suite completa
+```
+
+Pendiente fase 2 (requiere `p2p.snapshot`): outliers/confianza, reglas de señal.

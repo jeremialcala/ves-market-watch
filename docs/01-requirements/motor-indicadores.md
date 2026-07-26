@@ -1,7 +1,14 @@
 # PRD — Motor de Indicadores
 
+- **Estado:** approved (Gate 0, HITL 2026-07-11) — implementado extremo a extremo en
+  `apps/indicator-engine`: fase 1 (tasas oficiales, 2026-07-05), fase 2 P2P/microestructura
+  (2026-07-20) y motor de reglas de señales (RF-4, 2026-07-22, ADR-0015) que emite
+  `signals.emitted` (`signal.v1`). Pendiente solo la recalibración HITL de umbrales (subir la
+  versión del ruleset) y mejoras menores (profundidad por bandas, variación intradía).
+- **Fecha:** 2026-07-11
+- **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 01-requirements
-- **Estado:** review
+- **Versión:** 0.3.0
 
 ## Problema y contexto
 Consolidar los eventos de las fuentes (P2P y BCV) y producir indicadores financieros de
@@ -52,6 +59,72 @@ forma reactiva: cada nuevo dato recalcula y publica los indicadores afectados.
 - RF-3: Persistir indicadores como series de tiempo con `calc_version` (reproducibilidad).
 - RF-4: Motor de reglas de señales configurable sin redeploy (config versionada).
 - RF-5: Publicar `indicators.updated` / `signals.emitted` al bus para el api-gateway.
+
+```mermaid
+requirementDiagram
+    requirement RF1 {
+      id: "RF-1"
+      text: "Suscripcion reactiva a market.events"
+      risk: medium
+      verifymethod: test
+    }
+    requirement RF2 {
+      id: "RF-2"
+      text: "Recalcular solo indicadores afectados"
+      risk: low
+      verifymethod: test
+    }
+    requirement RF3 {
+      id: "RF-3"
+      text: "Persistir series con calc_version"
+      risk: medium
+      verifymethod: test
+    }
+    requirement RF4 {
+      id: "RF-4"
+      text: "Motor de reglas de senales configurable"
+      risk: high
+      verifymethod: test
+    }
+    requirement RF5 {
+      id: "RF-5"
+      text: "Publicar indicators.updated y signals.emitted"
+      risk: medium
+      verifymethod: test
+    }
+    requirement SEC1 {
+      id: "ASVS-V5.1"
+      text: "Validacion de esquema de eventos consumidos"
+      risk: high
+      verifymethod: test
+    }
+    element Engine {
+      type: "servicio indicator-engine"
+    }
+    element SuiteFase1 {
+      type: "prueba"
+    }
+    element ReglasYaml {
+      type: "config versionada"
+    }
+    element SuiteSenales {
+      type: "prueba"
+    }
+    Engine - satisfies -> RF1
+    Engine - satisfies -> RF2
+    Engine - satisfies -> RF3
+    Engine - satisfies -> RF5
+    Engine - satisfies -> SEC1
+    ReglasYaml - satisfies -> RF4
+    SuiteFase1 - verifies -> RF1
+    SuiteFase1 - verifies -> RF3
+    SuiteFase1 - verifies -> RF5
+    SuiteFase1 - verifies -> SEC1
+    SuiteSenales - verifies -> RF4
+    SuiteSenales - verifies -> RF5
+```
+
+*Eje trazabilidad — fase 01 / Gate 0, actualizado a la implementación: RF-1/2/3/5 y la validación de esquema (ASVS V5.1) satisfechos y verificados por la suite. RF-4 (señales, `ReglasYaml`) quedó satisfecho por el motor de reglas versionado (RF-4/ADR-0015, 2026-07-22) y verificado por `SuiteSenales` (reglas, cooldown, contrato del productor, e2e en vivo). RF-5 se completa: el engine ya publica tanto `indicators.updated` como `signals.emitted`.*
 
 ## Requisitos de seguridad (mapeados a OWASP ASVS)
 | Req | ASVS | Nivel | OWASP Top 10 |

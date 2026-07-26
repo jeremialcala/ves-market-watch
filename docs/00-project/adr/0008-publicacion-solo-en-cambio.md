@@ -1,8 +1,8 @@
 # ADR-0008: Publicación de eventos solo-en-cambio con heartbeat operativo
 
-- **Estado:** proposed
+- **Estado:** accepted (implementado en `apps/ingestor-bcv`, 2026-07-05)
 - **Fecha:** 2026-07-05
-- **Decisores:** Jeremi Alcalá `<pendiente de aprobación>`
+- **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
 - **Controles OWASP afectados:** A09, A10
 
@@ -20,6 +20,9 @@ Separar señal de dominio y señal operativa:
   para sobrevivir reinicios sin re-publicar).
 - **Heartbeat operativo**: cada ciclo exitoso sin cambio emite métrica
   (`bcv_last_successful_check`) hacia observabilidad — no entra al bus de eventos.
+  Materializado hoy como `last_success_at` en `official_rate_source_health` más una
+  fila por captura en `official_rates`; el export a un sistema de métricas llega en
+  fase 05-deployment.
 - La ausencia de heartbeat > umbral dispara la alerta y el estado `stale` (ADR-0007);
   la ausencia de eventos de dominio no significa nada por sí sola.
 

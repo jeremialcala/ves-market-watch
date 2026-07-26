@@ -1,0 +1,36 @@
+[project]
+name = "indicator-engine"
+version = "0.1.0"
+description = "Motor reactivo de indicadores: consume eventos de mercado y produce indicadores y señales"
+requires-python = ">=3.12"
+dependencies = [
+    "aio-pika>=9.4",
+    "asyncpg>=0.29",
+    "jsonschema>=4.21",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[project.scripts]
+indicator-engine = "indicator_engine.__main__:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "integration: adaptadores contra infraestructura real (docker compose up -d --wait)",
+    "e2e: flujo completo contra RabbitMQ y TimescaleDB reales (docker compose up -d --wait)",
+]
