@@ -17,6 +17,13 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Changed
+
+- **Puntuación DREAD de T13–T14 ratificada (HITL 2026-07-26, Jeremi Alcalá)** — se
+  retira la marca «pendiente de ratificación» del threat model y del gate 1; los
+  scores propuestos en la adenda (T13 = 11, T14 = 9) quedan como definitivos. Con
+  esto se cierra el único pendiente humano del barrido 0.3.1.
+
 ## [0.3.1] - 2026-07-26
 
 Corte de mantenimiento documental (patch, sin cambios funcionales): barrido de

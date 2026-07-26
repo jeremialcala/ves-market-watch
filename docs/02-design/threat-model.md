@@ -11,8 +11,8 @@
 
 > Adenda 2026-07-26 (post-aprobación, sin cambio del veredicto del Gate 1): alcance
 > ampliado al quinto servicio `ingestor-historico` (ADR-0013) y al ruleset del motor de
-> señales (ADR-0015) — fila STRIDE y amenazas **T13–T14** añadidas. La puntuación DREAD
-> de T13–T14 queda **pendiente de ratificación HITL**.
+> señales (ADR-0015) — fila STRIDE y amenazas **T13–T14** añadidas. Puntuación DREAD
+> de T13–T14 **ratificada HITL 2026-07-26** (Jeremi Alcalá).
 
 ## Diagrama de flujo de datos
 
@@ -70,10 +70,8 @@ Escala 1–3 por factor (Damage, Reproducibility, Exploitability, Affected users
 | T10 | Señales sin trazabilidad (repudio/no reproducibles) | 2 | 3 | 2 | 2 | 2 | 11 | Evidencia de inputs + regla versionada `<type>@v<n>` + `calc_version` + logging estructurado — ADR-0015, A09; forense de anunciantes entre snapshots vía `merchant_ref` — ADR-0011 |
 | T11 | ID token o token de otra audiencia/tenant usado como bearer (confused deputy) | 2 | 2 | 2 | 2 | 2 | 10 | Validación estricta de `aud` (=API), `iss` (=tenant) y firma JWKS; solo se acepta el access token — ADR-0012, A01/A07 |
 | T12 | Robo de token en el navegador (XSS) del front-end/SPA | 3 | 1 | 2 | 2 | 2 | 10 | Token en memoria (no localStorage), access token de vida corta, refresh con rotación; el SPA está fuera de este repo — ADR-0012, A03/A07 |
-| T13 | Ruleset de señales manipulado (YAML) → señales arbitrarias a consumidores | 3 | 3 | 1 | 3 | 1 | 11* | Ruleset versionado en repo (cambio = commit auditable), carga estricta al arranque (mal formado ⇒ aborta), no editable en runtime, regla `<type>@v<n>` en la evidencia — ADR-0015, A02/A08, ASVS V14 |
-| T14 | Export CSV malicioso envenena el histórico (varianza/backtests sesgados) | 2 | 2 | 2 | 1 | 2 | 9* | Parseo adaptativo con rechazo completo sin columna de precio y descarte contado por fila; histórico inmutable e idempotente (PK + ON CONFLICT DO NOTHING); sin publicación al bus (no dispara el pipeline reactivo) — ADR-0013, A05/A08 |
-
-\* Puntuación propuesta en la adenda 2026-07-26, pendiente de ratificación HITL.
+| T13 | Ruleset de señales manipulado (YAML) → señales arbitrarias a consumidores | 3 | 3 | 1 | 3 | 1 | 11 | Ruleset versionado en repo (cambio = commit auditable), carga estricta al arranque (mal formado ⇒ aborta), no editable en runtime, regla `<type>@v<n>` en la evidencia — ADR-0015, A02/A08, ASVS V14 |
+| T14 | Export CSV malicioso envenena el histórico (varianza/backtests sesgados) | 2 | 2 | 2 | 1 | 2 | 9 | Parseo adaptativo con rechazo completo sin columna de precio y descarte contado por fila; histórico inmutable e idempotente (PK + ON CONFLICT DO NOTHING); sin publicación al bus (no dispara el pipeline reactivo) — ADR-0013, A05/A08 |
 
 ```mermaid
 quadrantChart
