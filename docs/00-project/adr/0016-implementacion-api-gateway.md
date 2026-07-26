@@ -4,7 +4,7 @@
 - **Fecha:** 2026-07-26
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 03-implementation
-- **Versión:** Unreleased (se sincroniza al próximo corte)
+- **Versión:** 0.4.0
 - **Controles OWASP afectados:** A01 (mínimo privilegio), A04 (diseño seguro), A05 (validación), A07 (authN), A10 (SSRF/recursos)
 
 ## Contexto

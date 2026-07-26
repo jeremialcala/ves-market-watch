@@ -5,7 +5,7 @@ asyncapi: 3.0.0
 # Fecha:       2026-07-26
 # Decisores:   Jeremi Alcalá
 # Fase AI-DLC: 03-implementation
-# Versión:     0.3.1
+# Versión:     0.4.0
 #
 # Contrato del canal WSS /ws/v1 (cierra el TODO de design.md). El servidor lo
 # implementa apps/api-gateway/src/api_gateway/adapters/http/ws.py; los payloads
@@ -15,7 +15,7 @@ asyncapi: 3.0.0
 
 info:
   title: VES Market Watch — Streaming WSS
-  version: 0.3.1
+  version: 0.4.0
   description: |
     Canal de streaming en tiempo casi real sobre WebSocket.
 

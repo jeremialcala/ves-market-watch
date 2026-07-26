@@ -17,6 +17,15 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-26
+
+Cierre de la fase de implementación de servicios: el `api-gateway` (quinto y último)
+tiene código, 78 tests y verificación en vivo. **Los 5 servicios están implementados
+y el pipeline completo fuente → bus → indicadores/señales → REST/WSS queda
+operativo.** Corte minor por funcionalidad nueva (convención del proyecto). Al corte
+se sincronizan a 0.4.0 los artefactos con contenido nuevo del ciclo (ADR-0016,
+design/OpenAPI/AsyncAPI del gateway, api-contracts, threat-model, plan de pruebas).
+
 ### Added
 
 - **`api-gateway` implementado — quinto y último servicio; el pipeline completo
@@ -592,7 +601,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.1.0...v0.2.0

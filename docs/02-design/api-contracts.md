@@ -5,7 +5,7 @@
 - **Fecha:** 2026-07-26
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
-- **Versión:** 0.3.1
+- **Versión:** 0.4.0
 
 Los contratos de **eventos** son formales: JSON Schema 2020-12 en `schemas/` (raíz),
 verificados por contract tests en productor y consumidor. La superficie **REST** tiene

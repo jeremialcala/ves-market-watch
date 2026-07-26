@@ -4,7 +4,7 @@
 - **Fecha:** 2026-07-26
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 03-implementation
-- **Versión:** 0.3.1
+- **Versión:** 0.4.0
 
 Rol: **Resource Server** (OIDC/OAuth2). La identidad y la emisión de tokens viven en Auth0
 (ADR-0012); el gateway solo **valida** access tokens y autoriza por scopes/permisos.
