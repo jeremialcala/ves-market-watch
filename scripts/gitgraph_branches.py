@@ -40,6 +40,12 @@ TAG_NOTES = {
         "trazabilidad tag↔ADR restaurada; design.md del ingestor-historico",
         "Patch solo de docs, sin cambios funcionales",
     ),
+    "v0.4.0": (
+        "ADR-0016; api-gateway implementado (REST /api/v1 + WSS /ws/v1, Resource "
+        "Server Auth0, 78 tests); AsyncAPI del WSS; OpenAPI ajustada",
+        "Los 5 servicios con código; pipeline completo fuente → bus → REST/WSS "
+        "operativo. Pendiente HITL: SPA + client M2M de prueba",
+    ),
 }
 
 

@@ -10,10 +10,11 @@ timestamp: 2026-07-22T00:00:00Z
 # signals.emitted
 
 Productor: [indicator-engine](../services/indicator-engine.md) · Consumidor:
-[api-gateway](../services/api-gateway.md). **Implementado (RF-4, 2026-07-22):** el
+[api-gateway](../services/api-gateway.md). **Implementado (ambos lados):** el
 motor evalúa el ruleset versionado (`apps/indicator-engine/config/senales.v1.yaml`,
-ADR-0015) sobre la microestructura vigente y emite este evento; el api-gateway aún
-no lo consume (servicio sin implementar).
+ADR-0015) sobre la microestructura vigente y emite este evento (RF-4, 2026-07-22);
+el api-gateway lo consume desde 2026-07-26 — push WSS al tópico `signals` (cola
+efímera, ADR-0016) y `GET /signals` desde la tabla [signals](../tables/signals.md).
 
 Payload: `{type, direction, currency, as_of, calc_version, triggered_by,
 evidence: {rule, inputs}}` (contrato `schemas/signal.v1.json`). El `occurred_at`

@@ -5,7 +5,7 @@ openapi: 3.1.0
 # Fecha:       2026-07-26
 # Decisores:   Jeremi Alcalá
 # Fase AI-DLC: 03-implementation
-# Versión:     0.3.1
+# Versión:     0.4.0
 #
 # Generado desde docs/02-design/api-contracts.md (sección REST) y ADR-0012.
 # Cubre SOLO la superficie REST /api/v1. El canal WSS /ws/v1 se especifica
@@ -16,7 +16,7 @@ openapi: 3.1.0
 
 info:
   title: VES Market Watch API
-  version: 0.3.1
+  version: 0.4.0
   description: |
     API de solo lectura sobre datos públicos del mercado cambiario venezolano:
     tasa oficial BCV, referencia P2P de Binance, indicadores derivados y señales.
@@ -70,6 +70,8 @@ paths:
       operationId: getOfficialRateCurrent
       security:
         - auth0: [read:rates]
+      parameters:
+        - $ref: '#/components/parameters/Currency'
       responses:
         '200':
           description: Tasa oficial vigente.
@@ -80,8 +82,10 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/OfficialRateCurrent' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
   /rates/official/history:
@@ -95,6 +99,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/FromDate'
         - $ref: '#/components/parameters/ToDate'
+        - $ref: '#/components/parameters/Currency'
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
       responses:
@@ -135,6 +140,7 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
   /indicators/current:
@@ -160,8 +166,10 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Indicators' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
   /indicators/history:
@@ -219,6 +227,7 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
   /signals:
@@ -431,6 +440,16 @@ components:
             title: Permiso insuficiente
             status: 403
             detail: "Se requiere el permiso 'read:signals'."
+    NotFound:
+      description: El recurso aún no tiene datos que servir.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: 'https://api.vesmarketwatch/errors/not-found'
+            title: Sin datos
+            status: 404
+            detail: Sin tasa oficial registrada para USD.
     UnprocessableRange:
       description: Rango de fechas inválido o mayor a 90 días.
       content:
@@ -603,20 +622,21 @@ components:
           oneOf:
             - { $ref: '#/components/schemas/SignedDecimal' }
             - { type: 'null' }
-          description: Brecha absoluta (P2P − oficial), en VES.
+          description: |
+            Brecha absoluta (P2P − oficial) en VES, del lado buy (comprar USDT
+            con VES — la referencia de compra del paralelo, ADR-0014).
         gap_pct:
           oneOf:
             - { $ref: '#/components/schemas/SignedDecimal' }
             - { type: 'null' }
-          description: Brecha porcentual.
-        spread_buy:
+          description: Brecha porcentual (mismo lado buy).
+        spread_pct:
           oneOf:
             - { $ref: '#/components/schemas/SignedDecimal' }
             - { type: 'null' }
-        spread_sell:
-          oneOf:
-            - { $ref: '#/components/schemas/SignedDecimal' }
-            - { type: 'null' }
+          description: |
+            Spread porcentual entre lados BUY↔SELL (microestructura P2P,
+            `p2p_spread_pct` — ADR-0014).
         volumes:
           oneOf:
             - type: object

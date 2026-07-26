@@ -103,3 +103,23 @@ services:
       timescaledb:
         condition: service_healthy
     restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: apps/api-gateway/Dockerfile
+    # Resource Server OIDC (ADR-0012): la config de Auth0 (issuer/audience/JWKS)
+    # es pública y va en defaults del código; aquí solo infra y bind del puerto.
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@timescaledb:5432/ves_market
+      AMQP_URL: amqp://guest:guest@rabbitmq/
+      HTTP_HOST: 0.0.0.0
+    ports:
+      # 8800 en el host: el 8000 suele estar ocupado por otro proyecto local.
+      - "8800:8000" # REST /api/v1 + WSS /ws/v1 (health público: /api/v1/health)
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    restart: unless-stopped
