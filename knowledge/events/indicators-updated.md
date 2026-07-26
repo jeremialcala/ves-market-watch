@@ -9,8 +9,9 @@ timestamp: 2026-07-26T00:00:00Z
 
 # indicators.updated
 
-Productor: [indicator-engine](../services/indicator-engine.md) · Consumidor previsto:
-[api-gateway](../services/api-gateway.md) (push WSS). **Implementado (fases 1 y 2).**
+Productor: [indicator-engine](../services/indicator-engine.md) · Consumidor:
+[api-gateway](../services/api-gateway.md) (push WSS al tópico `indicators`, cola
+efímera — 2026-07-26, ADR-0016). **Implementado (ambos lados).**
 
 Contrato: `schemas/indicators.v1.json` (validado por contract test del engine).
 Payload: `{as_of, calc_version, official_stale, triggered_by, indicators: [{indicator,

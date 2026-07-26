@@ -24,7 +24,7 @@ ves-market-watch/
     ├── ingestor-bcv/         # ✔ Ingesta tasas oficiales BCV (multi-moneda, HITL)
     ├── indicator-engine/     # ✔ fases 1+2 y señales: consume official.rate.updated y p2p.snapshot → emite indicators.updated y signals.emitted
     ├── ingestor-historico/   # ✔ backfill batch de históricos de precio + varianza (sin bus)
-    └── api-gateway/          # (diseñado) API REST + WSS para consumidores
+    └── api-gateway/          # ✔ REST /api/v1 + WSS /ws/v1 (Resource Server Auth0)
 ```
 
 ## Stack decidido (ver ADRs en `docs/00-project/adr/`)
@@ -50,12 +50,15 @@ si el compose no está levantado.
 
 ## Estado
 
-- **Implementado y verificado en vivo**: 4 servicios — `ingestor-bcv` (multi-moneda,
+- **Implementado y verificado en vivo: los 5 servicios** — `ingestor-bcv` (multi-moneda,
   re-validación HITL), `ingestor-binance` (polling P2P educado), `indicator-engine`
   (fases 1+2 con microestructura P2P y motor de señales RF-4/ADR-0015: brecha BCV↔P2P
-  → `indicators.updated` y `signals.emitted`) e `ingestor-historico` (backfill batch
-  de exports históricos + varianza, ADR-0013).
-  Pendiente: el `api-gateway` (aún sin código; tenant Auth0 y contrato OpenAPI listos).
+  → `indicators.updated` y `signals.emitted`), `ingestor-historico` (backfill batch
+  de exports históricos + varianza, ADR-0013) y `api-gateway` (REST `/api/v1` + WSS
+  `/ws/v1`, Resource Server contra Auth0 — ADR-0012/ADR-0016; en dev en
+  `http://localhost:8800`, `python -m api_gateway`). El pipeline completo
+  fuente → bus → indicadores/señales → REST/WSS está operativo.
+  Pendiente: front-end/SPA del tenant y client M2M de prueba (e2e autenticado en vivo).
 - Gate 0 (requisitos): ver `.ai-dlc/gates/gate-0-requirements.md`
 - Gate 1 (diseño): ver `.ai-dlc/gates/gate-1-design.md`
 - Inventario de cambios por ejecución: ver `CHANGELOG.md`

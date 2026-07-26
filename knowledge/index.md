@@ -16,17 +16,17 @@ la fuente de verdad (los documentos AI-DLC y el código).
 ## Estado del proyecto (resumen vivo)
 
 - Fase AI-DLC: Gates 0 y 1 **aprobados HITL** (2026-07-11); fase 03 en curso.
-- **Implementados los 4 servicios de datos:** [ingestor-bcv](services/ingestor-bcv.md)
-  (multi-moneda, HITL), [ingestor-binance](services/ingestor-binance.md) (polling
-  P2P educado, emite `p2p.snapshot`), [indicator-engine](services/indicator-engine.md)
-  con fases 1 y 2 + señales (consume `official.rate.updated` y `p2p.snapshot`;
-  emite `indicators.updated` y `signals.emitted`) e
-  [ingestor-historico](services/ingestor-historico.md) (backfill batch, sin bus).
-  Flujos productor→bus verificados en vivo contra las fuentes reales. Contratos
-  formales en `../schemas/`.
-- Sin código: api-gateway (tenant Auth0 y spec OpenAPI 3.1 ya listos). Siguiente
-  paso natural: **implementar el api-gateway** (consumir los eventos del bus y
-  exponer REST/WSS).
+- **Los 5 servicios implementados y verificados en vivo** (2026-07-26):
+  [ingestor-bcv](services/ingestor-bcv.md) (multi-moneda, HITL),
+  [ingestor-binance](services/ingestor-binance.md) (polling P2P educado),
+  [indicator-engine](services/indicator-engine.md) (fases 1 y 2 + señales),
+  [ingestor-historico](services/ingestor-historico.md) (backfill batch, sin bus) y
+  [api-gateway](services/api-gateway.md) (REST `/api/v1` + WSS `/ws/v1`, Resource
+  Server Auth0 — puerto 8800 en dev). El pipeline completo fuente → bus →
+  indicadores/señales → REST/WSS está operativo; contratos formales en
+  `../schemas/` + OpenAPI/AsyncAPI del gateway.
+- Siguiente paso natural: **front-end/SPA del tenant Auth0** (+ client M2M de
+  prueba para el e2e autenticado en vivo) y preparar la fase 04 (Gate 2).
 - Historia de cambios: [log.md](log.md) y `../CHANGELOG.md`.
 
 ## Mapa del bundle

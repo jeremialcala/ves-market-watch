@@ -9,9 +9,11 @@ timestamp: 2026-07-26T00:00:00Z
 
 # p2p.snapshot
 
-Productor: [ingestor-binance](../services/ingestor-binance.md) · Consumidor:
+Productor: [ingestor-binance](../services/ingestor-binance.md) · Consumidores:
 [indicator-engine](../services/indicator-engine.md) desde 2026-07-20 (binding en su
-cola durable, despacho por `event_type`). **Implementado (ambos lados).**
+cola durable, despacho por `event_type`) y [api-gateway](../services/api-gateway.md)
+(push WSS al tópico `p2p.snapshot` — 2026-07-26, ADR-0016). **Implementado (ambos
+lados).**
 
 Contrato: `schemas/p2p-snapshot.v1.json` (validado por contract test del productor).
 Payload: `{side (BUY/SELL, perspectiva del taker), asset, fiat, captured_at, partial,

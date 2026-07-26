@@ -1,0 +1,191 @@
+asyncapi: 3.0.0
+
+# ---------------------------------------------------------------------------
+# Estado:      review — fase 03 (implementación api-gateway)
+# Fecha:       2026-07-26
+# Decisores:   Jeremi Alcalá
+# Fase AI-DLC: 03-implementation
+# Versión:     0.3.1
+#
+# Contrato del canal WSS /ws/v1 (cierra el TODO de design.md). El servidor lo
+# implementa apps/api-gateway/src/api_gateway/adapters/http/ws.py; los payloads
+# de eventos REFERENCIAN los JSON Schema canónicos de schemas/ (raíz del repo)
+# — una sola fuente de verdad, sin duplicar contratos (ADR-0016).
+# ---------------------------------------------------------------------------
+
+info:
+  title: VES Market Watch — Streaming WSS
+  version: 0.3.1
+  description: |
+    Canal de streaming en tiempo casi real sobre WebSocket.
+
+    **Autenticación** (ADR-0012): el access token de Auth0 viaja en la query
+    del handshake (`/ws/v1?token=<access_token>`) porque el navegador no puede
+    fijar `Authorization` en un upgrade WebSocket. Se valida al conectar
+    (RS256/JWKS, `iss`, `aud`, `exp`) y exige el permiso `stream:events`; la
+    URL se redacta en los logs del servidor.
+
+    **Cierres**: `4401` sin token, token inválido o expirado (también a mitad
+    de sesión, al vencer `exp`) · `4403` sin permiso `stream:events` · `1008`
+    límite de conexiones excedido.
+
+    **Límites** (T4): ≤ 5 conexiones y ≤ 10 suscripciones por usuario (`sub`);
+    `ping` del servidor cada 30 s.
+
+    **Semántica del push** (ADR-0016): el servidor retransmite el payload del
+    evento del bus `market.events`, validado contra su JSON Schema — el estado
+    consultable vive en la API REST; un cliente que se reconecta repone estado
+    por REST y sigue por WSS.
+
+defaultContentType: application/json
+
+servers:
+  dev:
+    host: localhost:8800
+    protocol: ws
+    description: Desarrollo local (docker compose raíz).
+
+channels:
+  wsV1:
+    address: /ws/v1
+    title: Canal único de streaming
+    description: |
+      La selección de contenido se hace por mensajes de suscripción sobre la
+      conexión, con whitelist de tópicos: `rates.official`, `p2p.snapshot`,
+      `indicators`, `signals`.
+    messages:
+      suscribir:
+        $ref: '#/components/messages/suscribir'
+      desuscribir:
+        $ref: '#/components/messages/desuscribir'
+      confirmacion:
+        $ref: '#/components/messages/confirmacion'
+      error:
+        $ref: '#/components/messages/error'
+      ping:
+        $ref: '#/components/messages/ping'
+      evento:
+        $ref: '#/components/messages/evento'
+
+operations:
+  gestionarSuscripciones:
+    action: send
+    channel:
+      $ref: '#/channels/wsV1'
+    summary: El cliente (des)suscribe tópicos de la whitelist.
+    messages:
+      - $ref: '#/channels/wsV1/messages/suscribir'
+      - $ref: '#/channels/wsV1/messages/desuscribir'
+  recibirStream:
+    action: receive
+    channel:
+      $ref: '#/channels/wsV1'
+    summary: |
+      El cliente recibe confirmaciones, errores, pings y los eventos de los
+      tópicos suscritos.
+    messages:
+      - $ref: '#/channels/wsV1/messages/confirmacion'
+      - $ref: '#/channels/wsV1/messages/error'
+      - $ref: '#/channels/wsV1/messages/ping'
+      - $ref: '#/channels/wsV1/messages/evento'
+
+components:
+  schemas:
+    topico:
+      type: string
+      enum: [rates.official, p2p.snapshot, indicators, signals]
+
+  messages:
+    suscribir:
+      name: suscribir
+      title: Suscripción a tópicos
+      payload:
+        type: object
+        additionalProperties: false
+        required: [action, topics]
+        properties:
+          action:
+            const: subscribe
+          topics:
+            type: array
+            items:
+              $ref: '#/components/schemas/topico'
+    desuscribir:
+      name: desuscribir
+      title: Baja de tópicos
+      payload:
+        type: object
+        additionalProperties: false
+        required: [action, topics]
+        properties:
+          action:
+            const: unsubscribe
+          topics:
+            type: array
+            items:
+              $ref: '#/components/schemas/topico'
+    confirmacion:
+      name: confirmacion
+      title: Confirmación de (de)suscripción
+      payload:
+        type: object
+        additionalProperties: false
+        required: [type, topics]
+        properties:
+          type:
+            enum: [subscribed, unsubscribed]
+          topics:
+            type: array
+            description: Tópicos activos de la conexión tras aplicar el cambio.
+            items:
+              $ref: '#/components/schemas/topico'
+    error:
+      name: error
+      title: Error de protocolo (no cierra la conexión)
+      payload:
+        type: object
+        additionalProperties: false
+        required: [type, detail]
+        properties:
+          type:
+            const: error
+          detail:
+            type: string
+            description: Motivo legible, sin detalles internos (A05).
+    ping:
+      name: ping
+      title: Latido del servidor (cada 30 s)
+      payload:
+        type: object
+        additionalProperties: false
+        required: [type]
+        properties:
+          type:
+            const: ping
+    evento:
+      name: evento
+      title: Push de un evento del bus
+      payload:
+        type: object
+        additionalProperties: false
+        required: [topic, event_id, occurred_at, data]
+        properties:
+          topic:
+            $ref: '#/components/schemas/topico'
+          event_id:
+            type: string
+            description: '`event_id` del sobre del evento origen (trazabilidad).'
+          occurred_at:
+            type: string
+            description: '`occurred_at` del sobre del evento origen.'
+          data:
+            description: |
+              Payload del evento, según su contrato canónico (mapeo routing
+              key → tópico): `official.rate.updated` → `rates.official` ·
+              `p2p.snapshot` → `p2p.snapshot` · `indicators.updated` →
+              `indicators` · `signals.emitted` → `signals`.
+            oneOf:
+              - $ref: '../../../schemas/official-rate.v1.json#/properties/payload'
+              - $ref: '../../../schemas/p2p-snapshot.v1.json#/properties/payload'
+              - $ref: '../../../schemas/indicators.v1.json#/properties/payload'
+              - $ref: '../../../schemas/signal.v1.json#/properties/payload'

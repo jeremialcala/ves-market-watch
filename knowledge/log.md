@@ -7,6 +7,20 @@ timestamp: 2026-07-26T00:00:00Z
 
 # Log
 
+## 2026-07-26 — api-gateway implementado (quinto y último servicio)
+- FastAPI hexagonal en `apps/api-gateway/src/`: REST `/api/v1` (8 endpoints del
+  contrato, RFC 7807, paginación ≤ 90 días, rate limit por token) + WSS `/ws/v1`
+  (whitelist de tópicos, límites 5/10 por `sub`, ping 30 s, cierre 4401 al expirar).
+  Resource Server OIDC contra Auth0 (RS256/JWKS cache por kid; rechaza ID tokens —
+  T11); DB de **solo lectura** (`default_transaction_read_only=on`, T9); consume los
+  4 eventos con cola efímera para push best-effort (**ADR-0016**, nueva).
+- Contrato WSS formalizado: `apps/api-gateway/docs/asyncapi.yaml` (cierra el TODO);
+  OpenAPI ajustada (currency en tasa oficial, 404 en los current, `spread_pct` real).
+- 78 tests (unit/contract/integration/e2e) en verde; verificado en vivo en el compose
+  (puerto host 8800): health ok en DB/broker/auth y 401 correcto contra el tenant real.
+- Fichas y índices actualizados: los 5 servicios implementados; eventos con el
+  gateway como consumidor real. Pendiente: SPA + client M2M de prueba (HITL), MFA.
+
 ## 2026-07-26 — Barrido de coherencia post-0.3.0
 - Índices y fichas del knowledge sincronizados con el estado real: 5 servicios
   (los 4 de datos implementados; api-gateway con tenant Auth0 y OpenAPI 3.1 listos

@@ -17,8 +17,66 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **`api-gateway` implementado — quinto y último servicio; el pipeline completo
+  fuente → bus → indicadores/señales → REST/WSS queda operativo** (2026-07-26,
+  **ADR-0016** *accepted*):
+  - **Resource Server OIDC** (ADR-0012): valida access tokens de Auth0 — RS256 vía
+    JWKS con cache por `kid` y refresco acotado (≥ 60 s entre fetches); exige
+    `aud` = API e `iss` = tenant, rechaza ID tokens, audiencias ajenas, alg ≠ RS256
+    y kid desconocido con 401 genérico (el motivo solo va al log — T11); autoriza
+    por el claim `permissions` (RBAC `access_token_authz`, fallback `scope`).
+  - **REST `/api/v1`** (FastAPI, hexagonal): los 8 endpoints del contrato — tasa
+    oficial current/history (una fila por `value_date`, estado `valid`, bandera
+    `stale` por ADR-0007), referencia P2P por lado (confianza `low` > 30 %
+    outliers), indicadores current (brecha lado buy + `spread_pct` + volúmenes,
+    con frescura ≤ `P2P_FRESCURA_MIN`: dato rancio → 404, nunca «vigente» falso),
+    histórico de indicadores agregado por `time_bucket` (5m/1h/1d, `last()`),
+    profundidad por bandas de 0,5 % proyectada del último crudo minimizado
+    (interim hasta `p2p_top_of_book` — ADR-0016), señales con evidencia y health
+    público por componente. Errores RFC 7807, paginación obligatoria (rango > 90
+    días → 422), rate limit por token (ventana fija 60 s, `X-RateLimit-*`, 429 +
+    `Retry-After`), decimales siempre string exacto.
+  - **WSS `/ws/v1?token=…`**: whitelist de tópicos, ≤ 5 conexiones y ≤ 10
+    suscripciones por `sub`, ping 30 s, cierres 4401/4403/1008 (incl. cierre
+    programado al expirar el token en sesión), token de la query redactado en los
+    access logs. **Push = payload canónico del evento del bus** validado contra
+    `schemas/` en el sobre `{topic, event_id, occurred_at, data}`, consumido con
+    **cola AMQP efímera** (exclusiva/auto-delete — el estado se repone por REST;
+    ADR-0016). Si el broker falta al arrancar, REST sirve y `/health` reporta
+    `degraded`.
+  - **DB de solo lectura reforzada**: pool asyncpg con
+    `default_transaction_read_only=on` (un INSERT inyectado falla en el servidor —
+    T9, verificado por test).
+  - **Contrato AsyncAPI 3.0 del WSS** (`apps/api-gateway/docs/asyncapi.yaml`) —
+    cierra el TODO de fase 03; los payloads referencian los JSON Schema canónicos
+    de `schemas/` (sin duplicar contratos).
+  - **78 tests** (unit: dominio + validador con par RSA/JWKS local propio ·
+    contract: cada respuesta y error validado contra el `openapi.yaml` ·
+    integration: TimescaleDB y RabbitMQ reales, incl. rechazo de escritura y
+    descarte de evento inválido · e2e: REST autenticado + `signals.emitted`
+    publicado en el bus → frame por el WSS suscrito). Suite completa en verde.
+  - **Verificado en vivo** en el compose raíz (nuevo servicio, puerto host
+    **8800** — el 8000 lo ocupa otro proyecto local): `/api/v1/health` →
+    `{"status":"ok","components":{"database":"ok","broker":"ok","auth":"ok"}}`
+    contra la plataforma corriendo y el tenant Auth0 real; sin token → 401
+    `problem+json` del contrato.
+  - Docs sincronizados: design/README/tests-README del servicio, `api-contracts.md`
+    (WSS formal + consumidores reales), threat model (trazabilidad T4/T9/T11 con
+    la verificación ya cubierta), knowledge (ficha, índices, 4 eventos con el
+    gateway como consumidor, log) y plan de pruebas (§5.4 con cobertura real).
+  - **Pendiente (HITL)**: app SPA del tenant + client M2M de prueba para el e2e
+    autenticado en vivo con token real; MFA cuando haya usuarios reales.
+
 ### Changed
 
+- **OpenAPI del gateway ajustada al implementarse (contract-first)**: parámetro
+  `currency` opcional (default USD) en tasa oficial current/history, respuesta
+  404 (`NotFound`, problem+json) en los endpoints «current» sin datos frescos, y
+  el schema `Indicators` refleja la microestructura real del engine —
+  `spread_pct` (BUY↔SELL, ADR-0014) reemplaza a `spread_buy`/`spread_sell`, que
+  no existen como indicadores; la brecha servida se documenta como lado buy.
 - **Puntuación DREAD de T13–T14 ratificada (HITL 2026-07-26, Jeremi Alcalá)** — se
   retira la marca «pendiente de ratificación» del threat model y del gate 1; los
   scores propuestos en la adenda (T13 = 11, T14 = 9) quedan como definitivos. Con

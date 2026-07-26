@@ -12,7 +12,7 @@ timestamp: 2026-07-26T00:00:00Z
 | [ingestor-bcv](ingestor-bcv.md) | **Implementado** (multi-moneda, HITL; verificado en vivo) | Ingesta tasas oficiales BCV |
 | [ingestor-binance](ingestor-binance.md) | **Implementado** (verificado en vivo) | Ingesta anuncios P2P USDT/VES |
 | [indicator-engine](indicator-engine.md) | **Fases 1 y 2 + señales implementadas** (tasas oficiales, microestructura P2P, `signals.emitted`) | Cálculo reactivo de indicadores y señales |
-| [api-gateway](api-gateway.md) | Specs listas (tenant Auth0, OpenAPI 3.1); **sin código** | REST + WSS; Resource Server OIDC (Auth0) |
+| [api-gateway](api-gateway.md) | **Implementado** (2026-07-26; verificado en vivo, 78 tests) | REST `/api/v1` + WSS `/ws/v1`; Resource Server OIDC (Auth0) |
 | [ingestor-historico](ingestor-historico.md) | **Implementado** (batch por demanda, verificado con export real) | Backfill de históricos de precio + varianza histórica |
 
 Comunicación entre servicios: solo vía eventos del bus (ver [events/](../events/index.md));

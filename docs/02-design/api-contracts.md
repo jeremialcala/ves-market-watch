@@ -1,19 +1,20 @@
 # Contratos de API — VES Market Watch
 
-- **Estado:** approved (Gate 1, HITL 2026-07-11) — eventos formales (4/4) y REST con
-  OpenAPI 3.1; WSS esqueleto hasta la spec AsyncAPI
+- **Estado:** approved (Gate 1, HITL 2026-07-11) — eventos formales (4/4), REST con
+  OpenAPI 3.1 y WSS con AsyncAPI 3.0; todo implementado por el api-gateway
 - **Fecha:** 2026-07-26
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
 - **Versión:** 0.3.1
 
-Los contratos de **eventos** ya son formales: JSON Schema 2020-12 en `schemas/` (raíz),
-verificados por contract tests en productor y consumidor. La superficie **REST** ya tiene
-spec formal OpenAPI 3.1 en `apps/api-gateway/docs/openapi.yaml` (2026-07-17); las tablas de
-abajo son su resumen legible. El canal **WSS** sigue como esqueleto hasta la spec AsyncAPI
-(fase 03). Los 4 contratos de eventos están definidos y con productor: `signals.emitted`
-(`signal.v1`) ya se emite desde el motor de reglas (RF-4/ADR-0015, 2026-07-22); falta el
-api-gateway que lo sirva por REST/WSS.
+Los contratos de **eventos** son formales: JSON Schema 2020-12 en `schemas/` (raíz),
+verificados por contract tests en productor y consumidor. La superficie **REST** tiene
+spec formal OpenAPI 3.1 en `apps/api-gateway/docs/openapi.yaml` (2026-07-17; ajustada al
+implementarse el gateway, 2026-07-26) y el canal **WSS** su spec AsyncAPI 3.0 en
+`apps/api-gateway/docs/asyncapi.yaml` (2026-07-26); las tablas de abajo son el resumen
+legible. **Todo está implementado**: el api-gateway sirve REST/WSS y consume los 4
+eventos (`signals.emitted` se emite desde RF-4/ADR-0015 y se sirve por `GET /signals`
+y push WSS — ADR-0016).
 
 ## Autenticación (OIDC con Auth0 — ADR-0012)
 El gateway **no emite tokens**: es Resource Server. El login y la emisión ocurren en Auth0
@@ -49,29 +50,35 @@ fechas/intervalos; errores RFC 7807 sin detalles internos; rate limit por token
 (headers `X-RateLimit-*`).
 
 ## WSS — `/ws/v1?token=<access_token>`
-El token es el access token de Auth0 (el navegador no puede fijar cabecera `Authorization`
-en el handshake WebSocket). Se valida al conectar y en cada reconexión; la URL con el token
-se redacta en logs. Mensaje de suscripción:
-`{"action":"subscribe","topics":["indicators","signals"]}`
+Spec formal: `apps/api-gateway/docs/asyncapi.yaml` (AsyncAPI 3.0). El token es el access
+token de Auth0 (el navegador no puede fijar cabecera `Authorization` en el handshake
+WebSocket). Se valida al conectar y en cada reconexión; la URL con el token se redacta en
+logs. Mensaje de suscripción: `{"action":"subscribe","topics":["indicators","signals"]}`.
 Tópicos permitidos (whitelist): `rates.official`, `p2p.snapshot`, `indicators`, `signals`.
 
-| Evento (server→client) | Payload (resumen) | Disparador |
-|---|---|---|
-| `rates.official` | `{rate, value_date, stale}` | `official.rate.updated` |
-| `p2p.snapshot` | `{side, best_price, median, vwap, volume, confidence}` | snapshot normalizado |
-| `indicators` | `{gap_abs, gap_pct, spread_buy, spread_sell, volumes, as_of}` | `indicators.updated` |
-| `signals` | payload de `signal.v1`: `{type, direction, currency, as_of, calc_version, triggered_by, evidence}` + `occurred_at` del sobre | `signals.emitted` |
+**Semántica del push (ADR-0016):** el servidor retransmite el **payload canónico del
+evento del bus**, validado contra su schema, en el sobre
+`{topic, event_id, occurred_at, data}` — sin proyecciones propias por tópico (una sola
+fuente de verdad de contratos). Mapeo routing key → tópico:
 
-Límites: ≤ 5 conexiones y ≤ 10 suscripciones por client_id; ping/pong 30 s; cierre por
-token expirado con código 4401.
+| Tópico (server→client) | `data` = payload de | Contrato |
+|---|---|---|
+| `rates.official` | `official.rate.updated` | `schemas/official-rate.v1.json` |
+| `p2p.snapshot` | `p2p.snapshot` | `schemas/p2p-snapshot.v1.json` |
+| `indicators` | `indicators.updated` | `schemas/indicators.v1.json` |
+| `signals` | `signals.emitted` | `schemas/signal.v1.json` |
+
+Límites: ≤ 5 conexiones y ≤ 10 suscripciones por usuario (`sub`); ping del servidor cada
+30 s; cierres 4401 (sin token/inválido/expirado), 4403 (sin `stream:events`), 1008
+(límite de conexiones).
 
 ## Eventos internos (AMQP `market.events`, topic exchange)
 | Routing key | Productor | Consumidor | Schema |
 |---|---|---|---|
-| `p2p.snapshot` | ingestor-binance | indicator-engine | `schemas/p2p-snapshot.v1.json` (v1.1: `merchant_ref`, ADR-0011) |
-| `official.rate.updated` | ingestor-bcv | indicator-engine | `schemas/official-rate.v1.json` |
-| `indicators.updated` | indicator-engine | api-gateway | `schemas/indicators.v1.json` |
-| `signals.emitted` | indicator-engine | api-gateway | `schemas/signal.v1.json` (emitido — motor de reglas RF-4/ADR-0015; consumo del gateway pendiente) |
+| `p2p.snapshot` | ingestor-binance | indicator-engine · api-gateway (push) | `schemas/p2p-snapshot.v1.json` (v1.1: `merchant_ref`, ADR-0011) |
+| `official.rate.updated` | ingestor-bcv | indicator-engine · api-gateway (push) | `schemas/official-rate.v1.json` |
+| `indicators.updated` | indicator-engine | api-gateway (push WSS) | `schemas/indicators.v1.json` |
+| `signals.emitted` | indicator-engine | api-gateway (`GET /signals` + push WSS) | `schemas/signal.v1.json` (emitido RF-4/ADR-0015 · consumido 2026-07-26, ADR-0016) |
 
 Todos los eventos llevan sobre: `{event_id, event_type, schema_version, occurred_at,
 producer}` para idempotencia y trazabilidad (implementado así en ingestor-bcv e

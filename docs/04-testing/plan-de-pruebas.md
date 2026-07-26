@@ -16,7 +16,8 @@ Verificar que la plataforma mide correctamente la brecha entre la tasa oficial *
 y el mercado P2P **VES/USDT (Binance)**, que los contratos entre servicios se respetan, y que
 los controles de seguridad priorizados en el threat model (T1–T12) se comportan según diseño.
 El plan sirve como criterio de cierre del **Gate 2** y como guía viva para completar lo pendiente
-(el `api-gateway`, único servicio aún sin código).
+(los 5 servicios ya tienen código y suite; queda el e2e autenticado en vivo con token real —
+client M2M, HITL — la suite `security` transversal y el pipeline CI).
 
 ## 2. Estrategia de pruebas
 
@@ -68,7 +69,7 @@ Estado observado en el repo (conteo de funciones `test_`):
 | `ingestor-binance` | Implementado | **48** (unit, integration, contract, e2e) | Igual que arriba; escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local |
 | `indicator-engine` | Fases 1, 2 y señales implementadas (RF-4/RF-5, ADR-0015) | **77** (unit, contract, integration, e2e) | Confirmar cobertura de ramas ≥ 80 %; recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) |
 | `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) | **39** (unit + integración contra TimescaleDB real) | Confirmar cobertura de ramas ≥ 80 % |
-| `api-gateway` | Diseñado, sin código | **0** (solo `tests/README.md` con la pirámide esperada) | Suite completa por construir: unit/integration/contract/e2e/**security** |
+| `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **78** (unit, contract vs. OpenAPI, integration incl. pool read-only, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura ≥ 80 % |
 
 > El plan cubre tanto la **consolidación** de lo existente como la **especificación** de los casos
 > que deben acompañar el código pendiente, para que se escriban junto con la implementación (no
@@ -140,27 +141,32 @@ casos cubiertos por la suite actual (77 tests):**
 - `[E]` Flujo `p2p.snapshot` (+ `official.rate.updated`) → `indicators.updated` + `signals.emitted`
   — verificado e2e (2026-07-22).
 
-### 5.4 api-gateway (por construir — la suite acompaña al código)
-- `[U]` Validación estricta de inputs (fechas, `interval`, `side`, tópicos); políticas de
-  **scopes/permisos**; validación del **access token de Auth0** (RS256 vía JWKS; `iss`/`aud`/`exp`).
-  El gateway **no emite** tokens (ADR-0012).
-- `[U/S]` **T11** — el gateway rechaza el **ID token** y tokens de otra audiencia/tenant usados como
-  bearer: verificación estricta de `aud` (=API) e `iss` → 401 (ADR-0012, escenario negativo 3).
+### 5.4 api-gateway (implementado 2026-07-26 — 78 tests; ✔ = cubierto por la suite)
+- `[U]` ✔ Validación estricta de inputs (fechas, `interval`, `side`, tópicos); políticas de
+  **scopes/permisos**; validación del **access token de Auth0** (RS256 vía JWKS; `iss`/`aud`/`exp`)
+  con par RSA/JWKS local de test (`tests/soporte_auth.py`). El gateway **no emite** tokens (ADR-0012).
+- `[U/S]` ✔ **T11** — rechazo del **ID token** y de tokens de otra audiencia/tenant usados como
+  bearer (`aud`/`iss`/alg/kid → 401) en `unit/test_validador_token.py` (escenario negativo 3).
 - `[S]` **T3** — ataques al login mitigados en Auth0 (attack protection, MFA); verificación de la
-  config del tenant, no del gateway (escenario negativo 2).
-- `[I/S]` **T4** — scraping del histórico: rate limit por token, **paginación obligatoria**, rango
-  máx. 90 días/request; headers `X-RateLimit-*`; fuzzing de paginación (escenario negativo 4).
-- `[I/S]` **T4** — WSS: máx. 5 conexiones y 10 suscripciones por `sub`; ping/pong 30 s; cierre
-  **4401** por token expirado; el token de `?token=` no aparece en logs (escenario negativo 5).
-- `[S]` **T9** — inyección en parámetros (fechas/intervalos/tópicos): queries parametrizadas +
-  whitelist de tópicos; SAST (escenario negativo 6).
-- `[S]` **T1-token** — tokens alterados/expirados → 401 **sin diagnóstico interno** (RFC 7807);
-  replay de token en WSS rechazado por `exp` (escenarios negativos 1 y 8).
-- `[S]` **Elevación entre usuarios**: un token con `read:indicators` no accede a scopes/permisos
-  que su rol no otorga (escenario negativo 7).
-- `[C]` Respuestas REST vs. **OpenAPI 3.1** (a generar con el gateway); eventos WSS vs. AsyncAPI;
-  errores RFC 7807.
-- `[E]` Flujo usuario: login en Auth0 (Auth Code + PKCE) → access token → REST → push WSS.
+  config del tenant, no del gateway (escenario negativo 2). *(Sigue siendo revisión de config.)*
+- `[I/S]` ✔ **T4** — scraping del histórico: rate limit por token (429 + `Retry-After`),
+  **paginación obligatoria**, rango máx. 90 días → 422; headers `X-RateLimit-*` (contract tests).
+  Pendiente: fuzzing sistemático de paginación (escenario negativo 4).
+- `[I/S]` ✔ **T4** — WSS: máx. 5 conexiones (1008) y 10 suscripciones por `sub`; ping 30 s; cierre
+  **4401** por token expirado en sesión; el token de `?token=` se redacta en logs
+  (`unit/test_ws.py`, filtro en `__main__.py`) (escenario negativo 5).
+- `[S]` ✔ **T9** — inyección en parámetros: queries parametrizadas + whitelist de tópicos +
+  **pool de solo lectura verificado** (INSERT rechazado, `integration/test_repositorio.py`).
+  Pendiente: SAST en CI (escenario negativo 6).
+- `[S]` ✔ **T1-token** — tokens alterados/expirados → 401 **sin diagnóstico interno** (RFC 7807,
+  detalle genérico verificado); replay en WSS limitado por `exp` (escenarios negativos 1 y 8).
+- `[S]` ✔ **Elevación entre usuarios**: un token con `read:indicators` no accede a `read:rates`
+  (403 con el permiso requerido en el detalle) (escenario negativo 7).
+- `[C]` ✔ Respuestas REST validadas contra **OpenAPI 3.1** (`contract/test_rest_contract.py`);
+  eventos push validados contra los schemas canónicos (la AsyncAPI los referencia); errores RFC 7807.
+- `[E]` ✔ parcial — REST autenticado + evento del bus → push WSS (`e2e/test_flujo_completo.py`,
+  token de test). El flujo con **login real** (Auth Code + PKCE → access token de Auth0) queda
+  pendiente del client de prueba (HITL).
 
 ## 6. Pruebas de sistema (cross-servicio)
 
@@ -176,9 +182,10 @@ de este camino):
 4. **Ruta de error del bus:** evento inválido inyectado → va a `market.events.dlq`, el resto del
    flujo sigue operativo (T5).
 
-Estos escenarios se automatizan como suite `e2e` a nivel raíz (nuevo `tests/` de plataforma) una
-vez que el `api-gateway` exista (el tramo del bus hasta `indicators.updated` + `signals.emitted`
-ya está verificado e2e, 2026-07-22).
+Estos escenarios se automatizan como suite `e2e` a nivel raíz (nuevo `tests/` de plataforma);
+los tramos ya están verificados por partes: bus → indicadores/señales (e2e del engine,
+2026-07-22) y bus → REST/WSS del gateway (e2e del gateway, 2026-07-26). Falta encadenarlos
+desde las fuentes vivas en una sola suite raíz.
 
 ## 7. Seguridad — trazabilidad a amenazas (T1–T12)
 
@@ -263,8 +270,8 @@ cierre de la columna «Verificación fase 04-testing».
   contract tests del productor en verde (`contract/test_signal_event_schema.py`).
 - **Umbrales de señales (HITL):** los valores iniciales están fijados en `config/senales.v1.yaml`;
   su recalibración requiere decisión humana con datos de producción.
-- **`api-gateway` sin código:** sus casos aquí son especificación; no computan cobertura hasta que
-  exista.
+- ~~`api-gateway` sin código~~ **Resuelto:** implementado 2026-07-26 con 78 tests (§5.4);
+  queda el e2e autenticado en vivo (client M2M de prueba — HITL).
 - **Secret store concreto:** definido para fase 05; los tests de rotación (T6) se afinan entonces.
 - **Pipeline CI aún no presente en el repo:** los gates T6/T8 y la matriz de la sección 11 son
   requisito a materializar como parte de Gate 2.
