@@ -4,7 +4,7 @@
 - **Fecha:** 2026-07-11
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
-- **Versión:** 0.2.0
+- **Versión:** 0.3.0
 - **Alcance:** sistema completo (4 servicios + RabbitMQ + TimescaleDB)
 - **Metodología:** STRIDE + DREAD
 - **Clasificación de datos:** ver `docs/00-project/data-classification.md`

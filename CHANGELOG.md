@@ -17,6 +17,16 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-26
+
+Cierre funcional del pipeline de datos: el `indicator-engine` calcula la microestructura
+P2P por ingesta (fase 2, ADR-0014) y **emite señales operables** (`signals.emitted`,
+RF-4/RF-5 satisfechos y verificados e2e, ADR-0015). Además: quinto servicio
+`ingestor-historico` (ADR-0013), arranque de la fase 03 del api-gateway (tenant Auth0
+aprovisionado + spec OpenAPI 3.1) y evidencia diagramática de los tres ejes completada.
+Corte por hito funcional (convención: minor = nueva funcionalidad). El api-gateway aún
+no consume los eventos — es el único servicio sin código.
+
 ### Added
 
 - **Motor de reglas de señales (RF-4) — `signals.emitted` ya se emite** (indicator-engine,
@@ -154,6 +164,11 @@ Convención de mantenimiento (inventario por ejecución):
   ahora en `threat-model.md` (antes solo remitía al C4 Container).
 
 ### Fixed
+
+- **`docker-compose.yml`: `restart: unless-stopped` en rabbitmq y timescaledb**
+  (2026-07-26) — un reinicio del daemon de Docker dejaba la infraestructura caída
+  mientras los tres servicios (que sí reinician) quedaban en crash-loop
+  (visto 2026-07-23).
 
 - **Publisher de `indicators.updated`: valores siempre en punto fijo** (2026-07-20) —
   `str(Decimal)` puede emitir notación científica, que viola el patrón
@@ -440,6 +455,7 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/jeremialcala/ves-market-watch/releases/tag/v0.1.0

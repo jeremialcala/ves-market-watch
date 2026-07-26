@@ -6,7 +6,7 @@
 - **Decisores:** Jeremi Alcalá
 - **Sponsor / Owner:** Jeremi Alcalá
 - **Fase AI-DLC:** 00-project
-- **Versión:** 0.2.0
+- **Versión:** 0.3.0
 
 ## Visión
 
