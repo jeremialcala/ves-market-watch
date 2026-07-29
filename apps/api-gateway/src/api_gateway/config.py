@@ -30,6 +30,8 @@ class Settings:
     # HTTP.
     http_host: str
     http_port: int
+    # CORS: orígenes browser permitidos (allowlist — el SPA en dev y en nginx).
+    allowed_origins: tuple[str, ...]
     # Rate limiting por token (ventana fija de 60 s).
     rate_limit_per_min: int
     # Frescura de la tasa oficial (ADR-0007: 6 h).
@@ -61,6 +63,13 @@ class Settings:
             schemas_dir=env.get("SCHEMAS_DIR", str(SCHEMAS_POR_DEFECTO)),
             http_host=env.get("HTTP_HOST", "127.0.0.1"),
             http_port=int(env.get("HTTP_PORT", "8000")),
+            allowed_origins=tuple(
+                origen.strip()
+                for origen in env.get(
+                    "ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:8080"
+                ).split(",")
+                if origen.strip()
+            ),
             rate_limit_per_min=int(env.get("RATE_LIMIT_PER_MIN", "120")),
             stale_threshold_hours=int(env.get("STALE_THRESHOLD_HOURS", "6")),
             p2p_frescura_min=int(env.get("P2P_FRESCURA_MIN", "20")),

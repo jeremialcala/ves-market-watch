@@ -15,6 +15,7 @@ from decimal import Decimal
 from types import SimpleNamespace
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from api_gateway.adapters.amqp.consumer import ConsumidorPushWss
 from api_gateway.adapters.auth.jwks import ValidadorTokenAuth0
@@ -108,6 +109,22 @@ def create_app(
         docs_url=None,
         redoc_url=None,
         openapi_url=None,
+    )
+    # CORS por allowlist para el SPA (ADR-0017): API solo-GET con bearer, sin
+    # cookies → sin credentials. Los X-RateLimit-* se exponen para que el front
+    # pueda leerlos. El WSS no pasa por CORS (los navegadores no lo aplican).
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.allowed_origins),
+        allow_methods=["GET"],
+        allow_headers=["Authorization"],
+        expose_headers=[
+            "X-RateLimit-Limit",
+            "X-RateLimit-Remaining",
+            "X-RateLimit-Reset",
+            "Retry-After",
+        ],
+        max_age=600,
     )
     registrar_manejadores(app)
     app.include_router(rest.router)

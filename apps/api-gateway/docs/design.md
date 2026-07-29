@@ -50,6 +50,11 @@ rate limit in-memory, profundidad interim): **ADR-0016**.
 - Límites WSS: ≤ 5 conexiones y ≤ 10 suscripciones por usuario (`sub`); cierre 4401 al
   expirar token; el token de `?token=` no se registra en logs.
 - Rate limit por `sub` (ventana fija 60 s, `X-RateLimit-*`, 429 + `Retry-After`) — T4.
+- **CORS por allowlist** (2026-07-27, ADR-0017): env `ALLOWED_ORIGINS` (default
+  `http://localhost:5173,http://localhost:8080` — el web-spa en dev y en nginx),
+  solo `GET`, header `Authorization`, sin credentials, `expose_headers` para
+  `X-RateLimit-*`/`Retry-After` (T15). El WSS no pasa por CORS (browsers no lo
+  aplican); validar `Origin` en el handshake queda como hardening futuro.
 - Logging de seguridad: authN fallida (motivo solo en log), rate limits (sin PII; solo `sub`).
 
 ## Tenant Auth0 (aprovisionado 2026-07-14)
