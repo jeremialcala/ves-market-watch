@@ -1,0 +1,75 @@
+# web-spa
+
+Dashboard web de VES Market Watch (React + Vite + TypeScript — ADR-0017): brecha
+cambiaria, referencia P2P, microestructura, profundidad y señales en tiempo casi
+real, autenticado contra Auth0 (Auth Code + PKCE) y alimentado por el api-gateway
+(REST `/api/v1` + WSS `/ws/v1`).
+
+## Qué hace
+- **Login** vía Universal Login de Auth0 (cliente público, PKCE). Tokens SOLO en
+  memoria del SDK + refresh rotation (controles T12); al recargar, el SDK
+  re-autentica en silencio por iframe con la cookie de sesión SSO (sin login
+  visible y sin tocar storage).
+- **Dashboard en vivo**: tasa oficial multi-moneda (badge `stale`), referencia
+  P2P de ambos lados (confianza `low` resaltada), brecha + spread como stat
+  tile, microestructura, profundidad por bandas (small multiples buy/sell) y
+  feed de señales con su evidencia completa (regla + insumos — T10).
+- **Stream WSS** con reconexión (backoff + watchdog de ping), renovación
+  proactiva del token a `exp − 60 s` y **reposición del estado por REST** en
+  cada (re)conexión (el push es best-effort — ADR-0016).
+- **Histórico** con gráficos (tasa oficial por fecha-valor; indicador canónico
+  por bucket 5m/1h/1d), rango ≤ 90 días validado en cliente y paginación
+  transparente con progreso y cancelación.
+- **Decimales como string exacto** de punta a punta: prohibido float para
+  lógica (`src/lib/decimal.ts`); la única conversión es para coordenadas de
+  gráfico, con el string original en tooltips.
+
+## Ejecución
+
+```bash
+npm install
+npm run dev                  # http://localhost:5173 (HMR; gateway en :8800 vía CORS)
+npm test                     # check de tipos del contrato + suite con cobertura (≥80 % ramas)
+npm run build                # dist/ estático
+docker compose up -d --build web-spa   # (raíz) nginx en http://localhost:8080
+```
+
+Config pública en `src/config.ts` (overrides por `.env.local`, gitignored):
+`VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`, `VITE_AUTH0_AUDIENCE`,
+`VITE_API_BASE_URL`. **Jamás un secreto en una `VITE_*`** (se hornean en el
+bundle); las credenciales del client M2M del e2e viven en el `.env` de la raíz.
+Regla del monorepo: ningún archivo aquí se llama `config.json` (el `.gitignore`
+raíz lo ignoraría en silencio).
+
+## Estructura
+```
+src/
+  auth/          # Auth0Provider (memory + rotation), guard, puente de tokens
+  api/           # types.gen.ts (GENERADO del openapi.yaml — commiteado),
+                 # cliente openapi-fetch, endpoints tipados, RFC 7807
+  ws/            # StreamClient singleton + políticas puras + useStream (guard HMR)
+  state/         # marketStore (useSyncExternalStore) + reducers puros + resync
+  lib/           # decimal.ts (strings exactos), freshness.ts
+  components/    # paneles del dashboard (dataviz: paleta validada)
+  views/         # DashboardView · HistoryView (Recharts)
+tests/           # unit / component / contract / e2e (ver npm test)
+docs/design.md   # diseño con cabecera AI-DLC
+```
+
+Contrato: `npm run generate:api` regenera `src/api/types.gen.ts` desde
+`../api-gateway/docs/openapi.yaml`; `npm test` falla si está desactualizado.
+
+## Requisitos y diseño
+- PRD: `../../docs/01-requirements/web-spa-dashboard.md`
+- ADR-0017 (este producto) · ADR-0012 (auth) · ADR-0016 (semántica del push)
+- Amenazas T12 (tokens en el browser — implementación aquí), T15 (CORS) en
+  `../../docs/02-design/threat-model.md`
+
+## Pendiente
+- `VITE_AUTH0_CLIENT_ID` real: se rellena al aprovisionar la app SPA en el
+  tenant (F1 de ADR-0017 — requiere `auth0 login`).
+- e2e en vivo con token real: `npm run test:e2e:live` con
+  `AUTH0_M2M_CLIENT_ID/SECRET` (client M2M de prueba, F1).
+- Multi-pestaña: elección de líder (BroadcastChannel) para no agotar las 5
+  conexiones WSS por usuario.
+- Code-splitting de la vista Histórico (Recharts pesa en el bundle).

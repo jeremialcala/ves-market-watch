@@ -1,0 +1,42 @@
+{
+  "name": "web-spa",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "generate:api": "openapi-typescript ../api-gateway/docs/openapi.yaml -o src/api/types.gen.ts",
+    "check:api-types": "node scripts/check-api-types.mjs",
+    "test": "npm run check:api-types && vitest run --coverage",
+    "test:watch": "vitest",
+    "test:e2e:live": "vitest run --config vitest.e2e.config.ts"
+  },
+  "dependencies": {
+    "@auth0/auth0-react": "^2.22.0",
+    "openapi-fetch": "^0.17.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "recharts": "^3.10.1"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "@vitest/coverage-v8": "^4.1.10",
+    "jsdom": "^30.0.0",
+    "mock-socket": "^9.3.1",
+    "msw": "^2.15.0",
+    "openapi-typescript": "^7.13.0",
+    "oxlint": "^1.71.0",
+    "typescript": "~5.9.0",
+    "vite": "^8.1.1",
+    "vitest": "^4.1.10"
+  }
+}

@@ -9,3 +9,6 @@ knowledge/
 **/*.egg-info
 **/.pytest_cache
 **/tests/
+**/node_modules/
+**/dist/
+**/coverage/

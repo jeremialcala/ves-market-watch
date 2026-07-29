@@ -114,6 +114,8 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@timescaledb:5432/ves_market
       AMQP_URL: amqp://guest:guest@rabbitmq/
       HTTP_HOST: 0.0.0.0
+      # SPA en dev (vite, 5173) y build nginx del compose (8080) — ADR-0017.
+      ALLOWED_ORIGINS: http://localhost:5173,http://localhost:8080
     ports:
       # 8800 en el host: el 8000 suele estar ocupado por otro proyecto local.
       - "8800:8000" # REST /api/v1 + WSS /ws/v1 (health público: /api/v1/health)
@@ -122,4 +124,17 @@ services:
         condition: service_healthy
       timescaledb:
         condition: service_healthy
+    restart: unless-stopped
+
+  web-spa:
+    build:
+      context: .
+      dockerfile: apps/web-spa/Dockerfile
+    # Dashboard estático (nginx). El browser del host llama al gateway por
+    # localhost:8800 (CORS allowlist) — el contenedor solo sirve archivos.
+    ports:
+      - "8080:80"
+    depends_on:
+      api-gateway:
+        condition: service_started
     restart: unless-stopped

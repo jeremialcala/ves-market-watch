@@ -15,4 +15,12 @@ htmlcov/
 
 # Logs de servicios locales (scripts/dev-run-services.ps1)
 logs/
+# Protege la sesión del CLI de Auth0 (.config/auth0/config.json). Regla de
+# equipo: ningún archivo del SPA se llama config.json (quedaría ignorado).
 config.json
+
+# Node / front-end (apps/web-spa)
+node_modules/
+dist/
+coverage/
+*.local

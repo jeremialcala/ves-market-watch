@@ -1,0 +1,424 @@
+/* Tokens del dashboard (skill dataviz: paleta validada 2026-07-27 — series
+   buy/sell = slots categóricos 1/2; direcciones de señal = par divergente
+   blue↔red con neutro gris; texto SIEMPRE en tinta, nunca en color de serie). */
+
+:root {
+  --surface-0: #f4f3f1;
+  --surface-1: #fcfcfb;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #78766f;
+  --border: #e3e1dc;
+  --series-buy: #2a78d6;
+  --series-sell: #eb6834;
+  /* Slot 3 — indicadores sin lado (intradía). Queda en 2,74:1 sobre la
+     superficie clara: por eso todo panel que lo use lleva etiqueta y valor
+     visibles (regla de relieve del skill dataviz). */
+  --series-aqua: #1baf7a;
+  --dir-alcista: #2a78d6;
+  --dir-bajista: #e34948;
+  --dir-neutral: #78766f;
+  --alerta-fondo: #fdf3e7;
+  --alerta-borde: #eda100;
+  --grid-chart: #ecebe7;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface-0: #111110;
+    --surface-1: #1a1a19;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #8f8d84;
+    --border: #33322f;
+    --series-buy: #3987e5;
+    --series-sell: #d95926;
+    --series-aqua: #199e70;
+    --dir-alcista: #3987e5;
+    --dir-bajista: #e66767;
+    --dir-neutral: #8f8d84;
+    --alerta-fondo: #2b2416;
+    --alerta-borde: #c98500;
+    --grid-chart: #262624;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--surface-0);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.pantalla-centrada {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+/* -- shell ---------------------------------------------------------------- */
+
+.shell-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 1.2rem;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.shell-header h1 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.tabs button {
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text-secondary);
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.tabs button[aria-selected="true"] {
+  background: var(--surface-0);
+  border-color: var(--border);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.header-derecha {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.header-derecha button {
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-primary);
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+}
+
+/* -- grid y paneles ------------------------------------------------------- */
+
+.tablero {
+  display: grid;
+  gap: 0.9rem;
+  padding: 0.9rem 1.2rem 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  align-items: start;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.panel {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.8rem 1rem 1rem;
+  min-width: 0;
+}
+
+.panel-ancho {
+  grid-column: 1 / -1;
+}
+
+.panel h2 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin: 0 0 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* -- badges y estados ----------------------------------------------------- */
+
+.badge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.badge-rancio,
+.badge-low,
+.badge-stale {
+  background: var(--alerta-fondo);
+  border-color: var(--alerta-borde);
+  color: var(--text-primary);
+}
+
+.sin-datos {
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 0.6rem 0;
+}
+
+/* -- tarjetas de tasa / KPI ----------------------------------------------- */
+
+.tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.6rem;
+}
+
+.tarjeta {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+}
+
+.tarjeta .moneda {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.tarjeta .valor {
+  font-size: 1.15rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.tarjeta .detalle,
+.detalle {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* Stat tile del headline (brecha): número héroe, no un gráfico. */
+.kpi {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.kpi .numero {
+  font-size: 2.1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi .sufijo {
+  color: var(--text-secondary);
+}
+
+.metricas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.5rem 1rem;
+}
+
+.metrica dt {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.metrica dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* -- señales -------------------------------------------------------------- */
+
+.senal {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.2rem;
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--dir-neutral);
+  padding-left: 0.6rem;
+  background: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.senal[data-direction="alcista"] {
+  border-left-color: var(--dir-alcista);
+}
+
+.senal[data-direction="bajista"] {
+  border-left-color: var(--dir-bajista);
+}
+
+.senal .tipo {
+  font-weight: 600;
+}
+
+.senal .cuando {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+/* -- modal ----------------------------------------------------------------- */
+
+.modal-fondo {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 45%);
+  display: grid;
+  place-items: center;
+  z-index: 20;
+}
+
+.modal {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+  max-width: 520px;
+  width: calc(100vw - 3rem);
+  max-height: 80vh;
+  overflow: auto;
+}
+
+.modal table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.modal td,
+.modal th {
+  text-align: left;
+  padding: 0.25rem 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal code {
+  background: var(--surface-0);
+  padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+}
+
+/* -- histórico ------------------------------------------------------------- */
+
+.controles {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}
+
+.controles select,
+.controles input,
+.controles button {
+  font: inherit;
+  color: inherit;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+}
+
+.barra-progreso {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* -- intradía (parrilla de small multiples) -------------------------------- */
+
+.parrilla-intradia {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 0.75rem;
+}
+
+.tarjeta-intradia {
+  margin: 0;
+  padding: 0.6rem 0.7rem 0.4rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-width: 0;
+}
+
+.intradia-titulo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.intradia-unidad {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.intradia-valor {
+  margin: 0.15rem 0 0;
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+/* El número va SIEMPRE en tinta; el color solo viste el glifo de dirección. */
+.intradia-delta {
+  margin: 0.05rem 0 0.2rem;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.intradia-apertura {
+  margin: 0.15rem 0 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.intradia-sello,
+.intradia-dia {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.intradia-dia {
+  margin: 0.2rem 0 0;
+}
