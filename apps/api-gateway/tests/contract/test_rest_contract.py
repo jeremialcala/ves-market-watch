@@ -132,6 +132,42 @@ def test_historial_indicadores_cumple_schema(cliente, repositorio, auth):
     validar_contra("IndicatorHistoryPage", r.json())
 
 
+def test_historial_indicadores_filtra_por_indicador_y_moneda(
+    cliente, repositorio, auth
+):
+    ahora = datetime.now(UTC)
+    repositorio.historial_ind = [
+        {
+            "as_of": ahora,
+            "indicator": nombre,
+            "currency": moneda,
+            "value": "1.00000000",
+            "calc_version": 1,
+        }
+        for nombre, moneda in (
+            ("p2p_brecha_pct_buy", "VES"),
+            ("p2p_spread_pct", "VES"),
+            ("official_rate", "USD"),
+            ("official_rate", "EUR"),
+        )
+    ]
+    r = cliente.get(
+        "/api/v1/indicators/history",
+        headers=auth,
+        params={
+            "from": (ahora - timedelta(days=1)).isoformat(),
+            "to": (ahora + timedelta(minutes=1)).isoformat(),
+            "indicator": "official_rate",
+            "currency": "EUR",
+        },
+    )
+    assert r.status_code == 200
+    cuerpo = r.json()
+    validar_contra("IndicatorHistoryPage", cuerpo)
+    assert cuerpo["pagination"]["total_items"] == 1
+    assert cuerpo["data"][0]["currency"] == "EUR"
+
+
 def test_profundidad_cumple_schema(cliente, repositorio, auth):
     repositorio.snapshots["BUY"] = {
         "captured_at": datetime.now(UTC),

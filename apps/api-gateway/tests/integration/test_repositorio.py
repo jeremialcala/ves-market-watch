@@ -87,11 +87,33 @@ async def test_historial_indicadores_agrega_por_bucket(pool, repo):
             valor,
         )
     filas, total = await repo.historial_indicadores(
-        base - timedelta(hours=3), base, "1h", 0, 100
+        base - timedelta(hours=3), base, "1h", None, None, 0, 100
     )
     assert total == 2  # dos buckets de 1 h
     # el bucket más reciente primero; dentro del bucket viejo gana el último valor
     assert [f["value"] for f in filas] == ["102.00000000", "101.00000000"]
+
+
+async def test_historial_indicadores_filtra_en_servidor(pool, repo):
+    """El filtro por indicador/moneda es del SQL, no del cliente: sin él, un
+    dashboard paginaría toda la tabla y agotaría su cuota (visto en vivo)."""
+    for nombre, moneda in (
+        ("p2p_brecha_pct_buy", "VES"),
+        ("p2p_spread_pct", "VES"),
+        ("official_rate", "USD"),
+    ):
+        await _sembrar_indicador(pool, nombre, "1.0", currency=moneda)
+    filas, total = await repo.historial_indicadores(
+        AHORA - timedelta(hours=1),
+        AHORA + timedelta(minutes=1),
+        "1h",
+        "p2p_brecha_pct_buy",
+        "VES",
+        0,
+        100,
+    )
+    assert total == 1
+    assert filas[0]["indicator"] == "p2p_brecha_pct_buy"
 
 
 async def test_snapshot_p2p_reciente_decodifica_items(pool, repo):

@@ -109,6 +109,8 @@ async def historial_indicadores(
     desde: datetime = Query(alias="from"),
     hasta: datetime = Query(alias="to"),
     interval: Literal["5m", "1h", "1d"] = Query(default="1h"),
+    indicator: str | None = Query(default=None, min_length=1, max_length=80),
+    currency: str | None = Query(default=None, pattern=r"^[A-Z]{3}$"),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=100, ge=1, le=500),
 ) -> dict:
@@ -116,7 +118,7 @@ async def historial_indicadores(
     validar_rango(desde, hasta)
     pagina = validar_pagina(page, page_size)
     return await request.app.state.consultas.historial_indicadores.ejecutar(
-        desde, hasta, interval, pagina
+        desde, hasta, interval, pagina, indicator, currency
     )
 
 

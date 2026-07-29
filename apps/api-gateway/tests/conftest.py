@@ -93,8 +93,16 @@ class RepositorioEnMemoria(LecturaRepository):
             if (n, currency) in self.vigentes
         }
 
-    async def historial_indicadores(self, desde, hasta, intervalo, offset, limite):
-        filas = [f for f in self.historial_ind if desde <= f["as_of"] <= hasta]
+    async def historial_indicadores(
+        self, desde, hasta, intervalo, indicador, moneda, offset, limite
+    ):
+        filas = [
+            f
+            for f in self.historial_ind
+            if desde <= f["as_of"] <= hasta
+            and (indicador is None or f["indicator"] == indicador)
+            and (moneda is None or f["currency"] == moneda)
+        ]
         return filas[offset : offset + limite], len(filas)
 
     async def snapshot_p2p_reciente(self, side):

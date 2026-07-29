@@ -186,6 +186,8 @@ paths:
         - $ref: '#/components/parameters/FromDateTime'
         - $ref: '#/components/parameters/ToDateTime'
         - $ref: '#/components/parameters/Interval'
+        - $ref: '#/components/parameters/IndicatorName'
+        - $ref: '#/components/parameters/CurrencyFilter'
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
       responses:
@@ -388,6 +390,28 @@ components:
         type: string
         pattern: '^[A-Z]{3}$'
         default: USD
+    IndicatorName:
+      name: indicator
+      in: query
+      description: |
+        Filtra la serie por nombre canónico de indicador (p. ej.
+        `p2p_brecha_pct_buy`). Sin el filtro se devuelve el formato largo
+        completo — para gráficos de UN indicador, usar SIEMPRE este filtro
+        (evita paginar toda la tabla y agotar la cuota).
+      required: false
+      schema:
+        type: string
+    CurrencyFilter:
+      name: currency
+      in: query
+      description: |
+        Filtra por moneda del indicador (los `p2p_*` viven bajo `VES`; los
+        `official_rate*` bajo su moneda BCV). Sin default: sin el filtro se
+        devuelven todas las monedas.
+      required: false
+      schema:
+        type: string
+        pattern: '^[A-Z]{3}$'
     SignalType:
       name: type
       in: query

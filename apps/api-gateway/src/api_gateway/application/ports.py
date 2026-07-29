@@ -50,10 +50,13 @@ class LecturaRepository(ABC):
         desde: datetime,
         hasta: datetime,
         intervalo: str,
+        indicador: str | None,
+        moneda: str | None,
         offset: int,
         limite: int,
     ) -> tuple[list[dict], int]:
-        """Serie agregada por time_bucket (último valor del bucket), formato largo."""
+        """Serie agregada por time_bucket (último valor del bucket), formato
+        largo; filtros opcionales por indicador canónico y moneda."""
 
     @abstractmethod
     async def snapshot_p2p_reciente(self, side: str) -> dict | None:

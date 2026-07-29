@@ -121,6 +121,8 @@ class TimescaleLecturaRepository(LecturaRepository):
         desde: datetime,
         hasta: datetime,
         intervalo: str,
+        indicador: str | None,
+        moneda: str | None,
         offset: int,
         limite: int,
     ) -> tuple[list[dict], int]:
@@ -133,13 +135,17 @@ class TimescaleLecturaRepository(LecturaRepository):
                    last(calc_version, as_of) AS calc_version
             FROM indicators
             WHERE as_of BETWEEN $2 AND $3
+              AND ($4::text IS NULL OR indicator = $4)
+              AND ($5::text IS NULL OR currency = $5)
             GROUP BY 1, indicator, currency
             ORDER BY 1 DESC, indicator, currency
-            OFFSET $4 LIMIT $5
+            OFFSET $6 LIMIT $7
             """,
             intervalo_sql,
             desde,
             hasta,
+            indicador,
+            moneda,
             offset,
             limite,
         )
@@ -149,12 +155,16 @@ class TimescaleLecturaRepository(LecturaRepository):
                 SELECT 1
                 FROM indicators
                 WHERE as_of BETWEEN $2 AND $3
+                  AND ($4::text IS NULL OR indicator = $4)
+                  AND ($5::text IS NULL OR currency = $5)
                 GROUP BY time_bucket($1::interval, as_of), indicator, currency
             ) buckets
             """,
             intervalo_sql,
             desde,
             hasta,
+            indicador,
+            moneda,
         )
         return [dict(f) for f in filas], int(total)
 

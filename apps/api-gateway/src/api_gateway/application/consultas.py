@@ -183,10 +183,16 @@ class ConsultarHistoricoIndicadores:
         self._repo = repo
 
     async def ejecutar(
-        self, desde: datetime, hasta: datetime, intervalo: str, pagina: Pagina
+        self,
+        desde: datetime,
+        hasta: datetime,
+        intervalo: str,
+        pagina: Pagina,
+        indicador: str | None = None,
+        moneda: str | None = None,
     ) -> dict:
         filas, total = await self._repo.historial_indicadores(
-            desde, hasta, intervalo, pagina.offset, pagina.tamano
+            desde, hasta, intervalo, indicador, moneda, pagina.offset, pagina.tamano
         )
         return {
             "data": [
