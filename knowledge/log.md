@@ -2,10 +2,46 @@
 type: Log
 title: Historia del knowledge bundle
 description: Registro cronológico de cambios en el contexto del proyecto (más reciente primero).
-timestamp: 2026-07-26T00:00:00Z
+timestamp: 2026-07-29T00:00:00Z
 ---
 
 # Log
+
+## 2026-07-29 — Intradía: la variación vs. apertura VET, por fin calculada
+- Nueva vista **Intradía** del `web-spa` (RF-7): parrilla de small multiples con
+  TODOS los indicadores del día operativo VET (UTC−4 fijo), agrupados en
+  oficial / compra / venta / microestructura. Cada panel lleva último valor,
+  sparkline con la apertura marcada y la **variación intradía** (Δ abs y %).
+- La métrica estaba en el glosario y en los requisitos del motor desde el inicio,
+  pero **nadie la calculaba**: el plan de pruebas la daba por cubierta en
+  `indicator-engine` desde 0.3.0 y era falso (cero referencias a apertura en su
+  código y sus tests); `knowledge/metrics` sí decía «pendiente». Plan corregido.
+  Se deriva en el cliente sobre `/indicators/history`, sin tocar `calc_version`;
+  persistirla como indicador del motor sigue pendiente.
+- Aritmética exacta con `BigInt` en `lib/decimal.ts` (`restarDecimales`,
+  `porcentajeRelativo`): la regla «decimales como string exacto» ahora cubre el
+  CÁLCULO, no solo el formateo. Apertura cero ⇒ «—», nunca ∞ ni NaN.
+- Excepción documentada a «filtra siempre por indicador»: con ventana de un día
+  conviene pedir el formato largo (~23 series en una pasada por moneda) en vez
+  de ~23 requests filtrados; el filtro de `currency` sí sigue siendo obligatorio.
+- Color = lado del mercado y nada más; el signo de la Δ va en glifo + texto.
+  Slots 1/2/3 revalidados **all-pairs** en claro y oscuro (small multiples topan
+  en tres slots); token nuevo `--series-aqua`. Suite del SPA: 65 → **100 tests**
+  (85,7 % ramas).
+
+## 2026-07-27 — web-spa: el front-end entra al monorepo (ADR-0017)
+- Enmienda HITL del charter: el SPA deja de ser «proyecto aparte». Nueva app
+  `apps/web-spa` (React + Vite + TS + @auth0/auth0-react): dashboard en vivo
+  (brecha, P2P por lado, microestructura, profundidad, señales con evidencia) +
+  histórico con Recharts; tokens SOLO en memoria + refresh rotation (T12
+  implementado); StreamClient singleton con backoff/watchdog/renovación y resync
+  REST (ADR-0016); tipos del contrato generados del openapi.yaml y commiteados.
+- Gateway con **CORS por allowlist** (`ALLOWED_ORIGINS`, solo GET, expose
+  X-RateLimit) — nueva amenaza **T15** mitigada; T12 pasa a verificarse aquí.
+- 65 tests (86,5 % ramas — Gate 2 ≥80 %) + 5 tests CORS del gateway (83 en su
+  suite); e2e en vivo con M2M listo (skip sin credenciales). Compose: servicio
+  `web-spa` (nginx, 8080). Pendiente HITL: `auth0 login` → F1 (client_id SPA,
+  M2M, rotation en el tenant).
 
 ## 2026-07-26 — api-gateway implementado (quinto y último servicio)
 - FastAPI hexagonal en `apps/api-gateway/src/`: REST `/api/v1` (8 endpoints del

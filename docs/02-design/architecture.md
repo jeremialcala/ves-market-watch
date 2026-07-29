@@ -19,7 +19,7 @@ no conoce infraestructura. Comunicación entre servicios **event-driven** vía R
 | Ingesta Oficial | `ingestor-bcv` | Capturar y validar tasa oficial | TasaOficial |
 | Ingesta Histórica | `ingestor-historico` | Cargar históricos externos por lote (batch, sin bus — ADR-0013) | SnapshotHistorico, DatoBanco, VarianzaHistorica |
 | Indicadores | `indicator-engine` | Calcular indicadores y señales | Indicador, Señal, PrecioReferencia, Profundidad |
-| Acceso | `api-gateway` | Validación de tokens (Resource Server), REST, WSS, rate limiting | Usuario, Suscripción |
+| Acceso | `api-gateway` + `web-spa` (capa de presentación, no un contexto nuevo — ADR-0017) | Validación de tokens (Resource Server), REST, WSS, rate limiting; dashboard en el browser | Usuario, Suscripción |
 
 ## Flujo crítico (secuencia)
 

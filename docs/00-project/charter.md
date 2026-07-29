@@ -2,11 +2,16 @@
 
 - **Estado:** approved (Gate 0, HITL 2026-07-11) — residuales en seguimiento: ratificación
   del marco legal y nombrar apps consumidoras concretas
-- **Fecha:** 2026-07-11
+- **Fecha:** 2026-07-27
 - **Decisores:** Jeremi Alcalá
 - **Sponsor / Owner:** Jeremi Alcalá
 - **Fase AI-DLC:** 00-project
 - **Versión:** 0.3.0
+
+> Enmienda 2026-07-27 (HITL, Jeremi Alcalá — ADR-0017): el front-end/SPA consumidor,
+> originalmente en no-scope como «proyecto aparte», se incorpora al alcance del
+> monorepo como `apps/web-spa`. Con ello se resuelve además el residual «nombrar
+> apps consumidoras concretas»: la primera app consumidora es el propio dashboard.
 
 ## Visión
 
@@ -24,6 +29,9 @@ indicadores financieros que apoyen la administración eficiente del presupuesto 
     diferencial porcentual, volúmenes agregados, profundidad de mercado, variaciones
     intradía, tendencias de liquidez y señales de oportunidad.
   - Exposición vía API REST (histórico + indicadores) y WebSocket (eventos en tiempo real).
+  - Front-end/SPA web (`apps/web-spa`): dashboard React autenticado vía Auth0 que
+    consume la API REST y el WSS *(incorporado por enmienda HITL 2026-07-27 —
+    ADR-0017; antes en no-scope como «proyecto aparte»)*.
   - Persistencia histórica en series de tiempo para análisis.
 - **No incluye (no-scope):**
   - Ejecución de operaciones de compra/venta (no es un bot de trading).
@@ -31,8 +39,6 @@ indicadores financieros que apoyen la administración eficiente del presupuesto 
   - Asesoría financiera; los indicadores son informativos.
   - Construir un IdP/login propio: la autenticación de usuarios se delega a Auth0 (OIDC,
     ADR-0012); el login usa la Universal Login hospedada de Auth0.
-  - Front-end/SPA consumidor: es un proyecto aparte; este alcance cubre la API/WSS
-    (Resource Server) que dicho front-end consume.
   - Otras criptomonedas o pares distintos de VES/USDT y VES/USD en la fase inicial.
 
 ```mermaid
@@ -46,13 +52,14 @@ mindmap
         Spreads y volumenes
         Senales de oportunidad
       API REST y WSS
+      Front-end SPA web-spa
+        Enmienda HITL 2026-07-27
       Historico en series de tiempo
     No incluye
       Trading o custodia
       Asesoria financiera
       IdP o login propio
         Delegado a Auth0
-      Front-end SPA
     Actores
       Usuario autenticado
       Operador HITL

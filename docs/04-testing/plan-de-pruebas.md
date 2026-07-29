@@ -36,6 +36,12 @@ ejecutar la suite con o sin `docker compose`.
 Regla transversal (ya vigente): **sin infraestructura, los tests que la requieren hacen `skip`
 elegante con instrucciones**, nunca fallan por ausencia de compose.
 
+El front-end (`apps/web-spa`, ADR-0017) replica la pirámide en **vitest**: unit/component/
+contract corren **sin infraestructura por diseño** (MSW + WebSocket mock; fixtures
+`satisfies` los tipos generados del OpenAPI = contrato verificado en compilación, con
+check de frescura de tipos en `npm test`), umbral de cobertura ≥ 80 % de ramas aplicado
+en la config, y el e2e en vivo (`npm run test:e2e:live`) hace skip sin credenciales M2M.
+
 ```sh
 python -m pytest -m "not integration and not e2e"   # rápido, sin infraestructura
 docker compose up -d --wait && python -m pytest      # suite completa
@@ -69,7 +75,8 @@ Estado observado en el repo (conteo de funciones `test_`):
 | `ingestor-binance` | Implementado | **48** (unit, integration, contract, e2e) | Igual que arriba; escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local |
 | `indicator-engine` | Fases 1, 2 y señales implementadas (RF-4/RF-5, ADR-0015) | **77** (unit, contract, integration, e2e) | Confirmar cobertura de ramas ≥ 80 %; recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) |
 | `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) | **39** (unit + integración contra TimescaleDB real) | Confirmar cobertura de ramas ≥ 80 % |
-| `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **78** (unit, contract vs. OpenAPI, integration incl. pool read-only, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura ≥ 80 % |
+| `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **83** (unit incl. CORS, contract vs. OpenAPI, integration incl. pool read-only, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura ≥ 80 % |
+| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **65** vitest (unit, component, contract `satisfies` + check de frescura de tipos) — **86,5 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
 
 > El plan cubre tanto la **consolidación** de lo existente como la **especificación** de los casos
 > que deben acompañar el código pendiente, para que se escriban junto con la implementación (no
@@ -123,8 +130,13 @@ casos cubiertos por la suite actual (77 tests):**
 - `[U]` Precio de referencia P2P: **mediana y VWAP** del top-N filtrado por lado — cubierto
   (`unit/test_referencia_p2p.py`).
 - `[U]` **Brecha BCV↔P2P** (abs y %), spreads compra/venta, volúmenes agregados, profundidad por
-  bandas de 0,5 %, variación intradía (apertura VET) — cubierto (`unit/test_calculos.py`,
-  `unit/test_process_p2p_snapshot.py`).
+  bandas de 0,5 % — cubierto (`unit/test_calculos.py`, `unit/test_process_p2p_snapshot.py`).
+- **Variación intradía (apertura VET)**: este plan la daba por cubierta en el motor hasta el
+  2026-07-29; era un error de redacción — no existe ningún cálculo de apertura en
+  `indicator-engine` (ni código ni tests). Hoy se deriva en el **cliente**, sobre las series que
+  ya devuelve `/indicators/history` (`web-spa`: `lib/intradia.ts`, `unit/intradia.test.ts`,
+  `component/intradia.test.tsx`). Persistirla como indicador propio del motor sigue pendiente y
+  exigiría `calc_version` nuevo.
 - `[U/S]` **T2** (filtrado final) — snapshots sintéticos manipulados: filtrado MAD/IQR y marca
   `low_confidence`; los outliers no distorsionan la brecha ni las señales — cubierto.
 - `[U]` Reglas de **señales** configurables (ruleset `config/senales.v1.yaml`: `arranque_alcista`,

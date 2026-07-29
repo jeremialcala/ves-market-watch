@@ -21,5 +21,5 @@ más la microestructura entre lados.
 | Microestructura P2P (spread, ratio O/D, momentum bid, drenaje de oferta) | [microestructura-p2p](microestructura-p2p.md) — implementada, con umbrales de señal |
 | Volumen agregado por lado | `p2p_liquidez_{buy,sell}` — implementado |
 | Profundidad de mercado | volumen acumulado por banda de precio (0,5 %) — pendiente |
-| Variación intradía | Δ del precio de referencia vs. apertura del día (VET) — pendiente |
+| Variación intradía | Δ vs. apertura del día operativo (VET, UTC−4 fijo) — **derivada en el cliente** desde 2026-07-29 para TODOS los indicadores, no solo el precio de referencia ([web-spa](../services/web-spa.md), `lib/intradia.ts`); no está persistida como indicador del motor |
 | Señales de oportunidad | reglas configurables sobre los anteriores → [signals.emitted](../events/signals-emitted.md) — implementadas (motor de reglas RF-4/ADR-0015, emite `signals.emitted` desde 2026-07-22; la recalibración HITL de umbrales queda como evolución) |

@@ -17,6 +17,138 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **`web-spa` — el front-end entra al monorepo (2026-07-27, ADR-0017 *accepted*;
+  enmienda HITL del charter: dejaba de ser «proyecto aparte»)**. Dashboard web
+  React + Vite + TypeScript con `@auth0/auth0-react`, primera app consumidora de
+  la plataforma (cierra además el residual del charter «nombrar apps consumidoras»):
+  - **Auth (T12 implementado, ya no control externo)**: Auth Code + PKCE contra
+    Universal Login; tokens SOLO en memoria (`cacheLocation: memory`), refresh
+    rotation sin fallback iframe, renovación proactiva del token del WSS a
+    `exp − 60 s`; CSP del nginx sin `unsafe-inline` y `frame-ancestors 'none'`.
+  - **Dashboard en vivo**: brecha + spread como stat tile, referencia P2P por
+    lado con confianza (`low` resaltado), tasa oficial multi-moneda con `stale`,
+    microestructura, profundidad por bandas (small multiples buy/sell — paleta
+    categórica/divergente validada con el validador del skill dataviz, light y
+    dark), feed de señales con evidencia completa (regla + insumos — T10).
+  - **StreamClient WSS** singleton (respeta el límite de 5 conexiones/usuario;
+    guard de HMR): suscripción a los 4 tópicos, backoff exponencial con jitter,
+    watchdog de ping (75 s), política por cierre (4401 → refresh y reconexión ·
+    4403 → detener · 1008 → espera larga) y **resync REST en cada (re)conexión**
+    (ADR-0016). Vista de **histórico** con Recharts (rango ≤ 90 días validado en
+    cliente, paginación con progreso y cancelación, bucket 5m/1h/1d).
+  - **Contrato tipado**: `src/api/types.gen.ts` GENERADO del `openapi.yaml` del
+    gateway y commiteado, con check de frescura en `npm test`; decimales como
+    string exacto de punta a punta (`lib/decimal.ts`, sin float — única
+    conversión: coordenadas de gráfico).
+  - **65 tests** vitest (unit/component/contract con MSW y WebSocket mock;
+    fixtures `satisfies` los tipos del contrato) — **86,5 % de ramas** (umbral
+    Gate 2 ≥ 80 % aplicado en la config) + e2e en vivo `test:e2e:live` (token
+    M2M real → REST + WSS) con skip elegante sin credenciales.
+  - **Compose**: servicio `web-spa` (multi-stage node:24 → nginx, puerto host
+    **8080**); dev diario con Vite en 5173. `.gitignore`/`.dockerignore`
+    ampliados para Node (node_modules/dist/coverage; regla: ningún archivo del
+    SPA se llama `config.json`).
+  - Docs: PRD `web-spa-dashboard.md`, ADR-0017, charter enmendado (front-end al
+    alcance), C4 context/container con el SPA como contenedor en el browser,
+    plan de pruebas (pirámide vitest), knowledge (ficha + índices + log).
+  - **Pendiente (HITL — bloquea el e2e con login real)**: `auth0 login` y F1 de
+    ADR-0017: app SPA del tenant (callbacks 5173/8080, rotation) → `client_id` a
+    `src/config.ts`; client M2M de prueba (5 scopes) → `.env` raíz;
+    `allow_offline_access` en la API del tenant.
+
+- **Vista «Intradía» del `web-spa` — todos los indicadores del día operativo
+  (2026-07-29)**. Tercera pestaña con una parrilla de small multiples: un panel
+  por indicador (oficial / compra / venta / microestructura) con último valor,
+  sparkline y la **variación intradía** — la Δ contra la apertura del día VET
+  que el glosario define y que hasta ahora no calculaba nadie.
+  - **Ventana = día operativo VET** (UTC−4 fijo: sin horario de verano desde
+    2016), no las últimas 24 h móviles. El borde probado es el cruce de
+    medianoche: entre las 00:00 y las 04:00 UTC el día operativo sigue siendo
+    el anterior.
+  - **Δ exacta sin float**: `restarDecimales` y `porcentajeRelativo` sobre
+    enteros escalados con `BigInt` (`lib/decimal.ts`), truncando, nunca
+    redondeando; base cero ⇒ `null` y se muestra «—», jamás ∞ ni NaN. La regla
+    «decimales como string exacto» pasa a aplicar también al CÁLCULO, no solo
+    al formateo.
+  - **Una pasada por moneda SIN filtro de indicador**: es la excepción legítima
+    a la regla «filtra siempre» del histórico — con una ventana de un día, el
+    formato largo trae las ~23 series de una vez en lugar de ~23 requests. El
+    filtro de `currency` sí es obligatorio (si no, se paginan las 5 monedas BCV
+    para dibujar una).
+  - **Color = lado del mercado y nada más** (azul compra / naranja venta / aqua
+    sin lado), coherente con `DepthChart`; el signo de la Δ va en glifo ▲▼●
+    más texto, nunca en color solo, y el número siempre en tinta. Slots 1/2/3
+    revalidados **all-pairs** en claro y oscuro con el validador del skill
+    dataviz (small multiples usan la lista completa de pares, que topa en tres
+    slots); el aqua queda en 2,74:1 sobre superficie clara, de ahí que cada
+    panel lleve etiqueta y valor visibles (regla de relieve). Token nuevo
+    `--series-aqua`.
+  - Un indicador que el motor añada en el futuro aparece solo en la parrilla,
+    con su nombre canónico: el catálogo de etiquetas no es lista blanca.
+  - **35 tests nuevos** (suite del SPA: 65 → **100**, 85,7 % de ramas) y
+    maquetación revisada en claro y oscuro con una previsualización estática
+    del CSS real.
+
+- **CORS por allowlist en el api-gateway** (2026-07-27, parte de ADR-0017): env
+  `ALLOWED_ORIGINS` (default: SPA en dev 5173 y nginx 8080), solo `GET`, header
+  `Authorization`, sin credentials, `expose_headers` de `X-RateLimit-*` y
+  `Retry-After`; los errores RFC 7807 también llevan las cabeceras (sin ellas el
+  browser oculta el error real). **5 tests nuevos** (`tests/unit/test_cors.py`,
+  suite del gateway en 83) y verificación en vivo: origen permitido con ACAO,
+  origen ajeno sin ACAO.
+
+### Fixed
+
+- **El plan de pruebas daba por cubierta una métrica que no existía
+  (2026-07-29)** — desde el corte 0.3.0 listaba «variación intradía (apertura
+  VET)» entre los casos `[U]` cubiertos del `indicator-engine`, pero no hay
+  ningún cálculo de apertura en el motor (ni en `domain/calculos.py` ni en sus
+  tests); `knowledge/metrics/index.md` sí la marcaba correctamente como
+  pendiente. Corregido el plan y anotado dónde vive ahora el cálculo (cliente,
+  `web-spa/src/lib/intradia.ts`) y qué seguiría pendiente para persistirla como
+  indicador del motor (`calc_version` nuevo).
+
+- **Recargar la página mandaba a Universal Login visible en cada F5 (visto en
+  vivo, 2026-07-28)** — la versión inicial deshabilitaba el fallback de iframe
+  del SDK y la app del tenant no tenía **Allowed Web Origins** (el flag
+  `--origins` del CLI configura `allowed_origins`, no `web_origins`).
+  Corrección: `useRefreshTokensFallback: true` (re-autenticación silenciosa
+  `prompt=none` con la cookie de sesión SSO — T12 intacto: nada toca storage) +
+  `web_origins` de la app SPA con los dos orígenes de dev. ADR-0017 enmendada
+  (decisión 3 y alternativa descartada).
+
+- **429 al cambiar intervalos del histórico (visto en vivo, 2026-07-27)** — el
+  contrato de `/indicators/history` no tenía filtro por indicador, así que el
+  SPA paginaba el **formato largo completo** (todos los indicadores/monedas) y
+  filtraba en cliente: con bucket `5m` × 90 días eso son cientos de miles de
+  filas → 1.400+ páginas → cuota de 120 req/min fulminada. Corrección
+  contract-first: **nuevos parámetros `indicator` y `currency` (sin default) en
+  `/indicators/history`** (OpenAPI + gateway con filtro en SQL + 2 tests; suite
+  en 85), el SPA filtra SIEMPRE en servidor (los `p2p_*` bajo VES;
+  `official_rate*` bajo la moneda BCV elegida), reintento único ante 429
+  respetando `Retry-After` en la paginación, y el bucket `5m` queda limitado a
+  rangos ≤ 7 días en la UI (26k buckets en 90 días no son ni graficables).
+- **Tokens recién emitidos rechazados por drift de reloj del contenedor**
+  («The token is not yet valid (iat)», visto en el primer e2e con token real):
+  leeway estándar de 30 s en la validación JWKS del gateway.
+- **403 con cuenta sin rol (RBAC estricto)**: la primera sesión real entró con
+  Google sin rol asignado → token sin `permissions` → 403 en REST y 4403 en WSS
+  (comportamiento diseñado). Se asignó `operator` a la cuenta del owner, se
+  creó el usuario de prueba `test@vesmarketwatch.local` (rol `viewer`) y se
+  habilitó la conexión de base de datos para la app SPA (venía con 0 clients).
+
+### Security
+
+- **T12 pasa de control declarativo externo a implementación verificada en el
+  repo** (tokens en memoria + rotation + CSP; checklist en DevTools) y nueva
+  **T15** «origen web no autorizado consume la API» mitigada por la allowlist
+  CORS — fila STRIDE del browser añadida; **DREAD de T15 pendiente de
+  ratificación HITL**. El WSS queda fuera de CORS por diseño del browser (el
+  token explícito mitiga CSWSH); validar `Origin` en el handshake anotado como
+  hardening futuro.
+
 ## [0.4.0] - 2026-07-26
 
 Cierre de la fase de implementación de servicios: el `api-gateway` (quinto y último)

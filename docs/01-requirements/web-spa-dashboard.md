@@ -1,0 +1,99 @@
+# PRD — Dashboard web (front-end/SPA `apps/web-spa`)
+
+- **Estado:** accepted — en implementación (fase 03)
+- **Fecha:** 2026-07-27
+- **Decisores:** Jeremi Alcalá
+- **Fase AI-DLC:** 01-requirements
+- **Versión:** Unreleased (se sincroniza al próximo corte)
+- **Gate:** 0 (incremental — enmienda HITL del charter 2026-07-27, ADR-0017)
+- **Feature ID:** web-spa-dashboard
+
+Primera app consumidora de la plataforma: dashboard web autenticado (React,
+ADR-0017) que muestra en tiempo casi real la brecha cambiaria, la referencia
+P2P, la microestructura y las señales, con vista de histórico. Consume
+exclusivamente los contratos públicos del api-gateway
+(`apps/api-gateway/docs/openapi.yaml` y `asyncapi.yaml`); no habla con la DB ni
+con el bus. El flujo de autenticación (login Auth0 → REST → WSS → expiración)
+está especificado en el journey del PRD `api-streaming.md` §journey — este PRD
+lo **referencia** y no lo duplica.
+
+## Usuarios
+Personas autenticadas vía Auth0 (roles `viewer`/`operator`, ambos con los 5
+permisos de lectura/streaming hoy). Sin usuarios anónimos: solo la pantalla de
+login y el estado de salud son visibles sin sesión.
+
+## Requisitos funcionales
+- **RF-1 — Login y sesión**: Auth Code + PKCE contra Universal Login (ADR-0012);
+  tokens solo en memoria; renovación silenciosa por refresh rotation; logout.
+  La recarga de página re-autentica **en silencio** (iframe `prompt=none` con la
+  cookie SSO — sin storage persistente ni login visible, T12).
+- **RF-2 — Vista en vivo (dashboard)**: tasa oficial multi-moneda
+  (USD/EUR/CNY/TRY/RUB) con bandera `stale`; referencia P2P de ambos lados con
+  `confidence` visible (low resaltado); brecha (`gap_abs`/`gap_pct`, lado buy) y
+  `spread_pct`; microestructura (ratio oferta/demanda, momentum 3 h, drenaje
+  6 h, liquidez, merchants %, outliers %); profundidad por bandas; feed de
+  señales con su evidencia (`rule` + `inputs`, trazabilidad T10) accesible.
+- **RF-3 — Tiempo real**: suscripción WSS a los 4 tópicos; la UI refleja un push
+  en < 1 s desde su recepción; reconexión automática con backoff y **reposición
+  del estado por REST** en cada (re)conexión (el push es best-effort,
+  ADR-0016); renovación del token del WSS antes de `exp` sin interacción.
+- **RF-4 — Histórico**: series de tasa oficial (por `value_date`) y de
+  indicadores (bucket 5m/1h/1d) con rango máximo de 90 días validado en
+  cliente, paginación transparente (`has_more`) con progreso y cancelación.
+- **RF-5 — Honestidad del dato**: los 404 de los endpoints «current» se muestran
+  como «sin datos frescos» (nunca error); los null de brecha/spread como «—»;
+  decimales renderizados desde el string exacto del contrato (nunca float para
+  lógica); frescura relativa visible por fuente (P2P 20 min, oficial 6 h).
+- **RF-6 — Estado de la conexión**: indicador visible de WSS
+  (conectado/reconectando), cuota `X-RateLimit-Remaining` y salud del gateway.
+- **RF-7 — Intradía (día operativo VET)**: parrilla con **todos** los indicadores
+  disponibles del día operativo de Venezuela (00:00 VET → ahora; UTC−4 fijo),
+  agrupados por oficial / compra / venta / microestructura. Cada panel muestra el
+  último valor, su serie del día y la **variación intradía** — Δ absoluta y
+  porcentual contra la **apertura** del día, según la define el glosario. La Δ se
+  calcula sobre el string decimal exacto (sin float); si la apertura es cero, el
+  porcentaje se muestra «—», nunca ∞ ni NaN. Un indicador nuevo del motor aparece
+  sin cambios en el front. Refresco manual y automático cada 5 min.
+
+## Requisitos no funcionales
+- Cobertura de ramas ≥ 80 % (criterio Gate 2, suite vitest sin infraestructura).
+- Bundle servible como estático (nginx) sin config en runtime: toda la
+  configuración es pública y horneada (`VITE_*`); cero secretos en el bundle.
+- Accesible sin datos: cada panel tiene estado vacío/degradado explícito.
+
+## Escenarios de abuso (superficie browser)
+1. **Robo de token por XSS (T12)**: script inyectado intenta leer el token →
+   mitigación: tokens solo en memoria del SDK (no localStorage/sessionStorage),
+   vida 900 s, refresh rotation (un refresh token robado se invalida al rotar),
+   CSP del nginx sin `unsafe-inline`, dependencias con lockfile (SCA en CI,
+   Gate 2). Verificación: test + revisión de `AuthProvider` + DevTools en e2e.
+2. **Origen web no autorizado (T15)**: una página de terceros intenta consumir
+   la API con el token de un usuario → CORS por allowlist en el gateway (solo
+   orígenes del despliegue); el WSS queda fuera de CORS por diseño del browser
+   (hardening futuro: validar `Origin` en el handshake).
+3. **Clickjacking**: el dashboard embebido en un iframe hostil → cabeceras del
+   nginx (`frame-ancestors 'none'` en CSP).
+4. **Token expirado/alterado**: el gateway responde 401 genérico → el SPA
+   fuerza refresh una sola vez y, si falla, vuelve al login; nunca muestra
+   diagnóstico interno (escenarios 1 y 3 de `api-streaming.md`).
+5. **Agotamiento del cupo WSS (1008)**: múltiples pestañas del mismo usuario →
+   singleton por pestaña + guard HMR; ante 1008, reintento con delay largo y
+   aviso «¿múltiples pestañas?» (elección de líder queda para v2).
+6. **Degradación silenciosa**: gateway `degraded`/datos rancios → la UI lo
+   pinta (RF-5/RF-6); jamás presenta dato viejo como vigente.
+
+## Trazabilidad
+- ASVS: **V3** (gestión de sesión: vida corta, rotación, sin storage
+  persistente), **V50/V5** (salida codificada por React + CSP, anti-XSS),
+  **V4** (control de acceso: scopes/permisos del token).
+- Amenazas: T12 (implementación aquí), T15 (CORS), T4 (límites respetados por
+  el cliente), T10 (evidencia de señales visible).
+- Contratos: `openapi.yaml` (tipos generados y verificados en compilación),
+  `asyncapi.yaml` (protocolo del StreamClient).
+- Decisiones: ADR-0012 (auth), ADR-0016 (semántica del push), ADR-0017 (este
+  producto).
+
+## Métricas de éxito
+- Push → UI < 1 s (heredada de `api-streaming.md`); reconexión con estado
+  coherente < 10 s tras recuperar red/gateway; cero tokens en storage
+  persistente (verificable en DevTools); suite en verde con ≥ 80 % de ramas.

@@ -25,8 +25,12 @@ la fuente de verdad (los documentos AI-DLC y el código).
   Server Auth0 — puerto 8800 en dev). El pipeline completo fuente → bus →
   indicadores/señales → REST/WSS está operativo; contratos formales en
   `../schemas/` + OpenAPI/AsyncAPI del gateway.
-- Siguiente paso natural: **front-end/SPA del tenant Auth0** (+ client M2M de
-  prueba para el e2e autenticado en vivo) y preparar la fase 04 (Gate 2).
+- **Front-end [web-spa](services/web-spa.md) implementado** (2026-07-27,
+  ADR-0017): dashboard React autenticado vía Auth0 con stream WSS + histórico;
+  CORS por allowlist en el gateway. Pendiente HITL: `auth0 login` para
+  aprovisionar la app SPA (client_id) y el client M2M del e2e en vivo.
+- Siguiente paso natural: aprovisionar el tenant (F1 de ADR-0017), checklist
+  e2e con login real, y preparar la fase 04 (Gate 2).
 - Historia de cambios: [log.md](log.md) y `../CHANGELOG.md`.
 
 ## Mapa del bundle
