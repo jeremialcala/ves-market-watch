@@ -67,6 +67,10 @@ class ValidadorTokenAuth0(TokenValidator):
                 audience=self._audience,
                 issuer=self._issuer,
                 options={"require": ["exp", "sub", "aud", "iss"]},
+                # Tolerancia estándar a deriva de reloj entre Auth0 y este host
+                # (iat/nbf/exp): sin esto, un contenedor con segundos de drift
+                # rechaza tokens recién emitidos («not yet valid (iat)»).
+                leeway=30,
             )
         except jwt.PyJWTError as exc:
             raise self._rechazar(f"claims/firma inválidos: {exc}") from exc
