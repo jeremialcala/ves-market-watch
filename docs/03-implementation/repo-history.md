@@ -110,6 +110,8 @@ gitGraph
     commit id: "95dbde8"
     commit id: "04eab58"
     commit id: "dfb061e"
+    commit id: "6b07555"
+    commit id: "0d2ecd9"
 ```
 
 ### Estado actual de las ramas
@@ -117,7 +119,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `dfb061e` | 2026-08-01 | 76 |
+| `develop` | `0d2ecd9` | 2026-08-01 | 78 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -133,6 +135,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `0d2ecd9` | commit | — | Jeremi Alcala | 2026-08-01 | fix(ingestor-historico): banks[].volume estaba vacío con el dato en el archivo |
+| `6b07555` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `dfb061e` | commit | — | Jeremi Alcala | 2026-08-01 | data(ingestor-historico): histórico P2P al día + defecto conocido en banks[].volume |
 | `04eab58` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `95dbde8` | commit | — | Jeremi Alcala | 2026-08-01 | feat(ingestor-historico): histórico de tasas oficiales del BCV desde 2020 |
