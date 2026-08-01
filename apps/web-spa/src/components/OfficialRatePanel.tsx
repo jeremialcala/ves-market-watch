@@ -1,5 +1,8 @@
+import type { CSSProperties } from "react";
+
+import { useI18n } from "../i18n/contexto";
 import { formatDecimal } from "../lib/decimal";
-import { UMBRAL_OFICIAL_MS } from "../lib/freshness";
+import { relativo, UMBRAL_OFICIAL_MS } from "../lib/freshness";
 import { useMarket } from "../state/marketStore";
 import { MONEDAS_BCV } from "../state/resync";
 import { FreshnessBadge } from "./FreshnessBadge";
@@ -7,30 +10,69 @@ import { NoDataState } from "./NoDataState";
 
 /** Tasa oficial BCV multi-moneda con bandera stale (ADR-0007). */
 export function OfficialRatePanel() {
+  const { t, idioma } = useI18n();
   const { tasas } = useMarket();
   const disponibles = MONEDAS_BCV.filter((moneda) => tasas[moneda]);
+  const referencia = tasas["USD"] ?? tasas[disponibles[0]];
+
   return (
-    <section className="panel" aria-label="Tasa oficial BCV">
-      <h2>Tasa oficial BCV</h2>
+    <section className="vmw-seccion" aria-label={t("oficial.titulo")}>
+      <div className="vmw-seccion__cabecera">
+        <h3 className="vmw-seccion__titulo">{t("oficial.titulo")}</h3>
+        {referencia !== undefined ? (
+          <span className="vmw-seccion__bajada">
+            {t("oficial.bajada", {
+              fecha: referencia.value_date,
+              cuando: (() => {
+                const { clave, n } = relativo(referencia.captured_at);
+                return t(clave, { n });
+              })(),
+            })}
+          </span>
+        ) : null}
+      </div>
       {disponibles.length === 0 ? (
-        <NoDataState detalle="Sin tasas oficiales registradas todavía." />
+        <div className="vmw-tarjeta">
+          <NoDataState detalle={t("oficial.sinDatos")} />
+        </div>
       ) : (
-        <div className="tarjetas">
+        <div className="vmw-grid" style={{ "--min": "150px" } as CSSProperties}>
           {disponibles.map((moneda) => {
             const tasa = tasas[moneda];
             return (
-              <div className="tarjeta" key={moneda}>
-                <div className="moneda">
+              <div className="vmw-tarjeta" key={moneda} style={{ padding: "20px 22px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    gap: "8px",
+                    fontSize: "var(--fs-micro)",
+                    letterSpacing: "0.08em",
+                    color: "var(--text-dim)",
+                  }}
+                >
                   <span>{moneda}/VES</span>
                   {tasa.stale ? (
-                    <span className="badge badge-stale">stale</span>
+                    <span className="vmw-badge vmw-badge--alerta">
+                      {t("oficial.stale")}
+                    </span>
                   ) : null}
                 </div>
-                <div className="valor">
-                  {formatDecimal(tasa.rate, { maxDecimales: 4 })}
+                <div
+                  className="vmw-cifra"
+                  style={{ marginTop: "8px", fontSize: "26px" }}
+                >
+                  {formatDecimal(tasa.rate, { maxDecimales: 4, idioma })}
                 </div>
-                <div className="detalle">
-                  vigente {tasa.value_date} ·{" "}
+                <div
+                  style={{
+                    marginTop: "8px",
+                    fontSize: "var(--fs-micro)",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  {t("oficial.vigente", { fecha: tasa.value_date })}{" "}
                   <FreshnessBadge
                     asOf={tasa.captured_at}
                     umbralMs={UMBRAL_OFICIAL_MS}

@@ -3,20 +3,16 @@ import { useEffect, useState } from "react";
 
 import { alCambiarCuota } from "./api/client";
 import { RequireAuth } from "./auth/RequireAuth";
-import { ConnectionStatus } from "./components/ConnectionStatus";
+import { Footer } from "./components/shell/Footer";
+import { NavBar } from "./components/shell/NavBar";
+import { StatusStrip } from "./components/shell/StatusStrip";
 import { marketStore } from "./state/marketStore";
+import { AnalysisView } from "./views/AnalysisView";
 import { DashboardView } from "./views/DashboardView";
 import { HistoryView } from "./views/HistoryView";
 import { IntradayView } from "./views/IntradayView";
+import type { Vista } from "./views/vistas";
 import { useStream } from "./ws/useStream";
-
-type Vista = "dashboard" | "intradia" | "historico";
-
-const VISTAS: ReadonlyArray<{ clave: Vista; etiqueta: string }> = [
-  { clave: "dashboard", etiqueta: "Dashboard" },
-  { clave: "intradia", etiqueta: "Intradía" },
-  { clave: "historico", etiqueta: "Histórico" },
-];
 
 function Tablero() {
   const [vista, setVista] = useState<Vista>("dashboard");
@@ -29,37 +25,24 @@ function Tablero() {
   }, []);
 
   return (
-    <>
-      <header className="shell-header">
-        <h1>VES Market Watch</h1>
-        <nav className="tabs" role="tablist" aria-label="Vistas">
-          {VISTAS.map(({ clave, etiqueta }) => (
-            <button
-              key={clave}
-              role="tab"
-              aria-selected={vista === clave}
-              onClick={() => setVista(clave)}
-            >
-              {etiqueta}
-            </button>
-          ))}
-        </nav>
-        <div className="header-derecha">
-          <ConnectionStatus />
-          <span>{user?.name ?? user?.email ?? ""}</span>
-          <button
-            onClick={() =>
-              logout({ logoutParams: { returnTo: window.location.origin } })
-            }
-          >
-            Salir
-          </button>
-        </div>
+    <div className="vmw-app">
+      <header className="vmw-shell">
+        <StatusStrip />
+        <NavBar
+          vista={vista}
+          onVista={setVista}
+          usuario={user?.name ?? user?.email ?? ""}
+          onSalir={() =>
+            logout({ logoutParams: { returnTo: window.location.origin } })
+          }
+        />
       </header>
       {vista === "dashboard" ? <DashboardView /> : null}
+      {vista === "analisis" ? <AnalysisView /> : null}
       {vista === "intradia" ? <IntradayView /> : null}
       {vista === "historico" ? <HistoryView /> : null}
-    </>
+      <Footer />
+    </div>
   );
 }
 

@@ -2,7 +2,7 @@
  * lo que se prueba es el mapeo de datos, los estados vacíos/error y la
  * paginación con progreso — no el dibujo SVG. */
 
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
@@ -16,6 +16,8 @@ import {
   it,
   vi,
 } from "vitest";
+
+import { renderConProveedores as render } from "../render";
 
 import { config } from "../../src/config";
 import { marketStore } from "../../src/state/marketStore";
@@ -69,18 +71,27 @@ afterAll(() => {
 });
 
 describe("DepthChart", () => {
-  it("mapea niveles a puntos de gráfico y marca el lado faltante", () => {
+  // El rediseño cambió las barras de recharts por barras del sistema: lo que
+  // se comprueba ahora es el string exacto por banda y el ancho relativo al
+  // volumen acumulado mayor, no el mapeo a coordenadas.
+  it("pinta una barra por banda con su volumen exacto y marca el lado faltante", () => {
     marketStore.profundidad("buy", FIXTURE_PROFUNDIDAD);
     render(<DepthChart />);
-    const barchart = screen.getByTestId("barchart");
-    const puntos = JSON.parse(barchart.dataset.puntos ?? "[]") as {
-      volumen: number;
-      volumenStr: string;
-    }[];
-    expect(puntos).toHaveLength(2);
-    expect(puntos[1].volumen).toBe(120000);
-    expect(puntos[1].volumenStr).toBe("120000"); // string exacto para tooltip
-    expect(screen.getByText(/sin snapshot del lado sell/i)).toBeTruthy();
+
+    expect(screen.getByText("854,2")).toBeTruthy();
+    expect(screen.getByText("858,5")).toBeTruthy();
+    expect(screen.getByText("50.000")).toBeTruthy();
+    // El total del lado (último acumulado) sale en la cabecera y en la barra.
+    expect(screen.getAllByText(/120\.000/).length).toBeGreaterThan(0);
+
+    const barras = document.querySelectorAll<HTMLElement>(
+      ".vmw-profundidad__fila .vmw-barra__relleno",
+    );
+    expect(barras).toHaveLength(2);
+    expect(barras[1].style.width).toBe("100%"); // el mayor acumulado
+    expect(barras[0].style.width).toBe("41.7%"); // 50.000 / 120.000
+
+    expect(screen.getByText(/sin profundidad servida/i)).toBeTruthy();
   });
 });
 

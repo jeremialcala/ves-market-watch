@@ -1,0 +1,37 @@
+/* Higerotech — radios, bordes, sombras, movimiento. */
+:root {
+  /* Radios: escala del sitio. 100px = cápsula (botones, tags, pills). */
+  --radius-sm: 4px;
+  --radius-btn-icon: 12px;
+  --radius: 14px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-pill: 100px;
+
+  /* Bordes: hairlines blancos translúcidos, nunca gris opaco */
+  --border: rgb(255 255 255 / 8%);
+  --border-2: rgb(255 255 255 / 14%);
+  --border-width: 1px;
+  --border-width-btn: 1.5px;
+
+  /* Sombras */
+  --shadow: 0 8px 40px rgb(0 0 0 / 35%);
+  --shadow-teal: 0 6px 26px rgb(138 214 204 / 28%);
+  --shadow-teal-hover: 0 10px 34px rgb(138 214 204 / 42%);
+  --shadow-coral: 0 4px 18px rgb(249 113 113 / 28%);
+  --glow-dot: 0 0 10px currentcolor;
+
+  /* Vidrio */
+  --blur-nav: blur(16px);
+  --nav-bg: rgb(21 24 27 / 82%);
+
+  /* Movimiento */
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 0.2s;
+  --dur-card: 0.25s;
+  --dur-card-lg: 0.28s;
+  --dur-reveal: 0.7s;
+  --lift-sm: translateY(-2px);
+  --lift: translateY(-4px);
+  --lift-lg: translateY(-6px);
+}

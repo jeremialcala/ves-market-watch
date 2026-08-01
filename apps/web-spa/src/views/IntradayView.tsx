@@ -29,10 +29,11 @@ import {
 import { historialIntradia, type Intervalo } from "../api/endpoints";
 import { ApiError } from "../api/problem";
 import { NoDataState } from "../components/NoDataState";
+import type { Clave } from "../i18n/dict";
+import { useI18n } from "../i18n/contexto";
 import { formatDecimal, toChartNumber } from "../lib/decimal";
 import {
   etiquetaDiaVET,
-  ETIQUETA_LADO,
   grupoDe,
   horaVET,
   ladoDe,
@@ -40,8 +41,8 @@ import {
   ORDEN_GRUPOS,
   presentacionDe,
   resumenIntradia,
-  TITULO_GRUPO,
   type Grupo,
+  type Lado,
   type PuntoIntradia,
 } from "../lib/intradia";
 import { MONEDAS_BCV } from "../state/resync";
@@ -52,6 +53,21 @@ const COLOR_LADO = {
   venta: "var(--series-sell)",
   "sin-lado": "var(--series-aqua)",
 } as const;
+
+/** Los títulos de grupo y de lado viven en el diccionario: la parrilla se lee
+ * igual en inglés (el nombre canónico del indicador nunca se traduce). */
+const CLAVE_GRUPO: Record<Grupo, Clave> = {
+  oficial: "intradia.grupoOficial",
+  compra: "intradia.grupoCompra",
+  venta: "intradia.grupoVenta",
+  microestructura: "intradia.grupoMicro",
+};
+
+const CLAVE_LADO: Record<Lado, Clave> = {
+  compra: "intradia.ladoCompra",
+  venta: "intradia.ladoVenta",
+  "sin-lado": "intradia.ladoSinLado",
+};
 
 const GLIFO_DIRECCION = { "-1": "▼", "0": "●", "1": "▲" } as const;
 const COLOR_DIRECCION = {
@@ -74,6 +90,7 @@ function Chispa({
   color: string;
   decimales: number;
 }) {
+  const { t, idioma } = useI18n();
   const datos = puntos.map((punto) => ({
     t: punto.t,
     valor: toChartNumber(punto.valor),
@@ -93,17 +110,18 @@ function Chispa({
         />
         <Tooltip
           contentStyle={{
-            background: "var(--surface-1)",
+            background: "var(--surface-card)",
             border: "1px solid var(--border)",
-            borderRadius: 8,
-            color: "var(--text-primary)",
+            borderRadius: 14,
+            color: "var(--text)",
           }}
           labelFormatter={(t) => `${horaVET(t as number)} VET`}
           formatter={(_valor, _nombre, item) => [
             formatDecimal((item.payload as { valorStr: string }).valorStr, {
               maxDecimales: decimales,
+              idioma,
             }),
-            "valor",
+            t("intradia.valor"),
           ]}
         />
         <Line
@@ -127,30 +145,41 @@ function PanelIndicador({
   indicador: string;
   puntos: readonly PuntoIntradia[];
 }) {
+  const { t, idioma } = useI18n();
   const { etiqueta, unidad, decimales } = presentacionDe(indicador);
   const resumen = resumenIntradia(puntos);
   if (resumen === null) {
     return (
-      <figure className="tarjeta-intradia">
+      <figure className="vmw-tarjeta vmw-tarjeta--sm" style={{ margin: 0 }}>
         <figcaption className="intradia-titulo">
           {etiqueta}
           {unidad !== "" ? <span className="intradia-unidad">{unidad}</span> : null}
         </figcaption>
-        <NoDataState detalle="Sin datos hoy." />
+        <NoDataState detalle={t("intradia.sinHoy")} />
       </figure>
     );
   }
   const clave = String(resumen.direccion) as "-1" | "0" | "1";
-  const valorFmt = formatDecimal(resumen.ultimo, { maxDecimales: decimales });
-  const deltaFmt = formatDecimal(resumen.deltaAbs, { maxDecimales: decimales });
+  const valorFmt = formatDecimal(resumen.ultimo, {
+    maxDecimales: decimales,
+    idioma,
+  });
+  const deltaFmt = formatDecimal(resumen.deltaAbs, {
+    maxDecimales: decimales,
+    idioma,
+  });
+  const aperturaFmt = formatDecimal(resumen.apertura, {
+    maxDecimales: decimales,
+    idioma,
+  });
   const pctFmt =
     resumen.deltaPct === null
       ? "—"
-      : `${formatDecimal(resumen.deltaPct, { maxDecimales: 2 })} %`;
+      : `${formatDecimal(resumen.deltaPct, { maxDecimales: 2, idioma })} %`;
   const signoTexto = resumen.direccion > 0 ? "+" : "";
 
   return (
-    <figure className="tarjeta-intradia">
+    <figure className="vmw-tarjeta vmw-tarjeta--sm" style={{ margin: 0 }}>
       <figcaption className="intradia-titulo" title={indicador}>
         {etiqueta}
         {unidad !== "" ? <span className="intradia-unidad">{unidad}</span> : null}
@@ -166,9 +195,13 @@ function PanelIndicador({
       </p>
       <div
         role="img"
-        aria-label={`${etiqueta}: apertura ${formatDecimal(resumen.apertura, {
-          maxDecimales: decimales,
-        })}, último ${valorFmt}, variación ${signoTexto}${deltaFmt} (${signoTexto}${pctFmt})`}
+        aria-label={t("intradia.descripcionPanel", {
+          etiqueta,
+          apertura: aperturaFmt,
+          ultimo: valorFmt,
+          delta: `${signoTexto}${deltaFmt}`,
+          pct: `${signoTexto}${pctFmt}`,
+        })}
       >
         <Chispa
           puntos={puntos}
@@ -178,13 +211,14 @@ function PanelIndicador({
         />
       </div>
       <p className="intradia-apertura">
-        apertura {formatDecimal(resumen.apertura, { maxDecimales: decimales })}
+        {t("intradia.apertura", { valor: aperturaFmt })}
       </p>
     </figure>
   );
 }
 
 export function IntradayView() {
+  const { t } = useI18n();
   const [moneda, setMoneda] = useState("USD");
   const [intervalo, setIntervalo] = useState<Intervalo>("5m");
   const [series, setSeries] = useState<Map<string, PuntoIntradia[]>>(new Map());
@@ -198,17 +232,13 @@ export function IntradayView() {
     const abort = new AbortController();
     abortRef.current = abort;
     setError(null);
-    setProgreso("cargando…");
+    setProgreso(t("generico.cargando"));
     void (async () => {
       try {
         const resultado = await historialIntradia(moneda, intervalo, new Date(), {
           signal: abort.signal,
-          alProgresar: (paginas, items, hayMas) =>
-            setProgreso(
-              hayMas
-                ? `página ${paginas} · ${items} puntos…`
-                : `${items} puntos en ${paginas} página(s)`,
-            ),
+          alProgresar: (paginas, items) =>
+            setProgreso(t("historico.progreso", { paginas, items })),
         });
         if (abort.signal.aborted) {
           return;
@@ -222,13 +252,11 @@ export function IntradayView() {
         }
         setProgreso(null);
         setError(
-          excepcion instanceof ApiError
-            ? excepcion.message
-            : "No se pudo cargar el intradía.",
+          excepcion instanceof ApiError ? excepcion.message : t("intradia.error"),
         );
       }
     })();
-  }, [moneda, intervalo]);
+  }, [moneda, intervalo, t]);
 
   useEffect(() => {
     cargar();
@@ -253,11 +281,12 @@ export function IntradayView() {
   const diaVET = etiquetaDiaVET(new Date());
 
   return (
-    <main className="tablero">
-      <section className="panel panel-ancho" aria-label="Controles de intradía">
-        <div className="controles">
+    <main className="vmw-vista">
+      <div className="vmw-contenedor">
+        <section className="vmw-controles" aria-label={t("intradia.controles")}>
           <select
-            aria-label="Moneda de la tasa oficial"
+            className="vmw-select"
+            aria-label={t("intradia.monedaOficial")}
             value={moneda}
             onChange={(evento) => setMoneda(evento.target.value)}
           >
@@ -266,62 +295,69 @@ export function IntradayView() {
             ))}
           </select>
           <select
-            aria-label="Intervalo"
+            className="vmw-select"
+            aria-label={t("historico.bucket")}
             value={intervalo}
             onChange={(evento) => setIntervalo(evento.target.value as Intervalo)}
           >
-            <option value="5m">5 min</option>
-            <option value="1h">1 hora</option>
+            <option value="5m">{t("intradia.bucket5m")}</option>
+            <option value="1h">{t("historico.bucket1h")}</option>
           </select>
-          <button type="button" onClick={cargar}>
-            Actualizar
+          <button type="button" className="vmw-chip" onClick={cargar}>
+            {t("intradia.actualizar")}
           </button>
+          <span className="vmw-nav__relleno" />
           {progreso !== null ? (
-            <span className="barra-progreso" role="status">
+            <span
+              role="status"
+              style={{ fontSize: "var(--fs-micro)", color: "var(--text-muted)" }}
+            >
               {progreso}
             </span>
           ) : null}
           {progreso === null && actualizado !== null ? (
-            <span className="intradia-sello" role="status">
-              actualizado {horaVET(actualizado)} VET
+            <span
+              role="status"
+              style={{ fontSize: "var(--fs-micro)", color: "var(--text-dim)" }}
+            >
+              {t("intradia.actualizado", { hora: horaVET(actualizado) })}
             </span>
           ) : null}
-        </div>
-        <p className="intradia-dia">
-          Día operativo (VET): {diaVET} — la Δ de cada panel se mide contra la
-          apertura del día.
+        </section>
+        <p className="vmw-nota" style={{ marginTop: "12px" }}>
+          {t("intradia.dia", { dia: diaVET })}
         </p>
-        {error !== null ? <p className="sin-datos">{error}</p> : null}
-      </section>
+        {error !== null ? <p className="vmw-sin-datos">{error}</p> : null}
 
-      {series.size === 0 && progreso === null && error === null ? (
-        <section className="panel panel-ancho">
-          <NoDataState detalle="Todavía no hay indicadores para el día operativo en curso." />
-        </section>
-      ) : null}
-
-      {ORDEN_GRUPOS.filter((grupo) => porGrupo.has(grupo)).map((grupo) => (
-        <section
-          key={grupo}
-          className="panel panel-ancho"
-          aria-label={TITULO_GRUPO[grupo]}
-        >
-          <h2>
-            {TITULO_GRUPO[grupo]}
-            <span
-              className="badge"
-              style={{ borderColor: COLOR_LADO[ladoDeGrupo(grupo)] }}
-            >
-              {ETIQUETA_LADO[ladoDeGrupo(grupo)]}
-            </span>
-          </h2>
-          <div className="parrilla-intradia">
-            {(porGrupo.get(grupo) ?? []).map(([nombre, puntos]) => (
-              <PanelIndicador key={nombre} indicador={nombre} puntos={puntos} />
-            ))}
+        {series.size === 0 && progreso === null && error === null ? (
+          <div className="vmw-tarjeta vmw-seccion">
+            <NoDataState detalle={t("intradia.sinDia")} />
           </div>
-        </section>
-      ))}
+        ) : null}
+
+        {ORDEN_GRUPOS.filter((grupo) => porGrupo.has(grupo)).map((grupo) => (
+          <section
+            key={grupo}
+            className="vmw-seccion"
+            aria-label={t(CLAVE_GRUPO[grupo])}
+          >
+            <div className="vmw-seccion__cabecera">
+              <h3 className="vmw-seccion__titulo">{t(CLAVE_GRUPO[grupo])}</h3>
+              <span
+                className="vmw-badge"
+                style={{ borderColor: COLOR_LADO[ladoDeGrupo(grupo)] }}
+              >
+                {t(CLAVE_LADO[ladoDeGrupo(grupo)])}
+              </span>
+            </div>
+            <div className="vmw-grid" style={{ "--min": "210px", gap: "0.75rem" } as React.CSSProperties}>
+              {(porGrupo.get(grupo) ?? []).map(([nombre, puntos]) => (
+                <PanelIndicador key={nombre} indicador={nombre} puntos={puntos} />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
     </main>
   );
 }

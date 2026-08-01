@@ -5,6 +5,9 @@ cambiaria, referencia P2P, microestructura, profundidad y señales en tiempo cas
 real, autenticado contra Auth0 (Auth Code + PKCE) y alimentado por el api-gateway
 (REST `/api/v1` + WSS `/ws/v1`).
 
+Viste el **sistema de diseño Higerotech** con tema claro/oscuro e interfaz ES/EN
+(ADR-0018).
+
 ## Qué hace
 - **Login** vía Universal Login de Auth0 (cliente público, PKCE). Tokens SOLO en
   memoria del SDK + refresh rotation (controles T12); al recargar, el SDK
@@ -20,6 +23,15 @@ real, autenticado contra Auth0 (Auth Code + PKCE) y alimentado por el api-gatewa
 - **Histórico** con gráficos (tasa oficial por fecha-valor; indicador canónico
   por bucket 5m/1h/1d), rango ≤ 90 días validado en cliente y paginación
   transparente con progreso y cancelación.
+- **Análisis**: escenarios y riesgos del mercado. Los bloques que la plataforma
+  todavía no calcula van marcados **`demo · sin fuente`** — la regla de
+  honestidad del dato también aplica al diseño (ADR-0018).
+- **Idioma y tema**: selector ES/EN y claro/oscuro en la barra; ambos se
+  recuerdan (preferencias de UI; los tokens siguen solo en memoria).
+- **Intradía** (RF-7): parrilla con TODOS los indicadores del día operativo VET
+  (UTC−4 fijo) agrupados por oficial / compra / venta / microestructura, cada uno
+  con su sparkline del día y la **variación contra la apertura** (Δ abs y %),
+  calculada con aritmética exacta sobre el string decimal.
 - **Decimales como string exacto** de punta a punta: prohibido float para
   lógica (`src/lib/decimal.ts`); la única conversión es para coordenadas de
   gráfico, con el string original en tooltips.
@@ -49,9 +61,13 @@ src/
                  # cliente openapi-fetch, endpoints tipados, RFC 7807
   ws/            # StreamClient singleton + políticas puras + useStream (guard HMR)
   state/         # marketStore (useSyncExternalStore) + reducers puros + resync
-  lib/           # decimal.ts (strings exactos), freshness.ts
-  components/    # paneles del dashboard (dataviz: paleta validada)
-  views/         # DashboardView · HistoryView (Recharts)
+  ds/            # sistema de diseño Higerotech: tokens, fuentes, componentes
+  i18n/          # diccionario ES/EN tipado + proveedor
+  theme/         # claro/oscuro por data-theme (ADR-0018)
+  lib/           # decimal.ts (strings exactos + aritmética BigInt), freshness.ts,
+                 # intradia.ts (día operativo VET), series.ts (sparkline y calor)
+  components/    # paneles del dashboard y sello de bloque sin fuente
+  views/         # Dashboard · Analysis · History · Intraday
 tests/           # unit / component / contract / e2e (ver npm test)
 docs/design.md   # diseño con cabecera AI-DLC
 ```

@@ -4,7 +4,7 @@ title: web-spa
 description: Dashboard web (React + Vite + TS) autenticado vía Auth0 — implementado 2026-07-27 (ADR-0017); pendiente el client_id real del tenant y el e2e autenticado en vivo.
 resource: ../../apps/web-spa/
 tags: [typescript, react, implementado, front-end, spa]
-timestamp: 2026-07-27T00:00:00Z
+timestamp: 2026-07-31T00:00:00Z
 ---
 
 # web-spa
@@ -24,8 +24,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   backoff+jitter, watchdog de ping, política por cierre (4401/4403/1008) y
   **resync REST en cada (re)conexión** (push best-effort — ADR-0016).
 - **Histórico**: tasa oficial e indicador canónico por bucket 5m/1h/1d
-  (Recharts; paleta validada con el skill dataviz), rango ≤ 90 días, paginación
-  con progreso/cancelación.
+  (Recharts), rango ≤ 90 días, paginación con progreso/cancelación.
 - **Intradía (2026-07-29)**: parrilla de small multiples con TODOS los
   indicadores del día operativo VET (UTC−4 fijo), agrupados en oficial /
   compra / venta / microestructura. Cada panel lleva último valor, sparkline
@@ -38,8 +37,28 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   tipos del contrato GENERADOS de `openapi.yaml` y commiteados con check de
   frescura (`npm test`).
 
+## Sistema de diseño (2026-07-31, ADR-0018)
+- Viste el **sistema Higerotech**: tokens copiados al repo (`src/ds/`), fuentes
+  Inter + Space Grotesk **autoalojadas** (la CSP no se abre a ningún CDN) y los
+  componentes del sistema portados a TSX. Tema claro/oscuro explícito
+  (`data-theme` reasigna los MISMOS tokens) e interfaz **ES/EN** con diccionario
+  tipado — una traducción olvidada no compila.
+- Cuarta vista **Análisis**; la evidencia de las señales se despliega en línea.
+- Lo que el diseño pide y la plataforma no calcula (régimen, percentiles del
+  ruleset, escenarios, riesgos) lleva sello **`demo · sin fuente`**: la lista de
+  sellos es el trabajo pendiente del motor. Lo derivable sí se deriva de
+  `/indicators/history` (sparkline 24 h, mapa de calor 14 d × hora VET,
+  comparativas 7/30/90 d).
+
+## Pendiente de accesibilidad (2026-07-31)
+- Al mapear las series a los acentos de marca, la **separación CVD en tema claro
+  cae a ΔE 5,9** en el par compra/venta (protan) — por debajo del piso de 6, así
+  que el rótulo visible ya no lo excusa. En oscuro el mismo par da ΔE 13,2 y pasa.
+  Medido con el validador del skill dataviz; detalle y remedio en el `design.md`
+  del servicio.
+
 ## Verificación
-- **100 tests** (unit/component/contract con MSW y WS mock) — **85,7 % de ramas**
+- **156 tests** (unit/component/contract con MSW y WS mock) — **88,6 % de ramas**
   (umbral Gate 2: 80 %). E2E en vivo (`npm run test:e2e:live`) con client M2M:
   token real → REST + WSS; skip elegante sin credenciales.
 - La parrilla intradía se eyebalizó en claro y oscuro con una previsualización

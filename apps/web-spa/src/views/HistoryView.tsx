@@ -3,6 +3,9 @@
  * indicador canónico agregado por bucket (5m/1h/1d), con rango ≤ 90 días
  * validado en cliente, paginación transparente con progreso y cancelación.
  * Un solo eje por gráfico (dataviz); tooltips muestran el string exacto.
+ *
+ * El rediseño cambia el cromo (chips, selects y tarjetas del sistema) y deja
+ * intacta la mecánica de paginación: es la parte cara y ya verificada.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -23,9 +26,11 @@ import {
   type Intervalo,
 } from "../api/endpoints";
 import { ApiError } from "../api/problem";
+import { NoDataState } from "../components/NoDataState";
+import { useI18n } from "../i18n/contexto";
+import type { Idioma } from "../i18n/idioma";
 import { formatDecimal, toChartNumber } from "../lib/decimal";
 import { MONEDAS_BCV } from "../state/resync";
-import { NoDataState } from "../components/NoDataState";
 
 interface Punto {
   t: number;
@@ -48,18 +53,23 @@ const INDICADORES_CANONICOS = [
 ];
 
 const PRESETS = [7, 30, 90] as const;
+const LOCALE: Record<Idioma, string> = { es: "es-VE", en: "en-US" };
 
-function formatoFechaCorta(t: number): string {
-  return new Intl.DateTimeFormat("es-VE", {
-    day: "2-digit",
-    month: "2-digit",
-  }).format(new Date(t));
-}
-
-function Grafico({ puntos, titulo }: { puntos: Punto[]; titulo: string }) {
+function Grafico({
+  puntos,
+  titulo,
+  idioma,
+  vacio,
+}: {
+  puntos: Punto[];
+  titulo: string;
+  idioma: Idioma;
+  vacio: string;
+}) {
   if (puntos.length === 0) {
-    return <NoDataState detalle="Sin datos en el rango seleccionado." />;
+    return <NoDataState detalle={vacio} />;
   }
+  const locale = LOCALE[idioma];
   return (
     <ResponsiveContainer width="100%" height={260}>
       <LineChart data={puntos} margin={{ left: 12, right: 12, top: 8 }}>
@@ -69,42 +79,50 @@ function Grafico({ puntos, titulo }: { puntos: Punto[]; titulo: string }) {
           type="number"
           domain={["dataMin", "dataMax"]}
           scale="time"
-          tickFormatter={formatoFechaCorta}
-          tick={{ fill: "var(--text-secondary)", fontSize: 11 }}
+          tickFormatter={(t: number) =>
+            new Intl.DateTimeFormat(locale, {
+              day: "2-digit",
+              month: "2-digit",
+            }).format(new Date(t))
+          }
+          tick={{ fill: "var(--text-dim)", fontSize: 11 }}
           stroke="var(--border)"
         />
         <YAxis
-          tick={{ fill: "var(--text-secondary)", fontSize: 11 }}
+          tick={{ fill: "var(--text-dim)", fontSize: 11 }}
           stroke="var(--border)"
           width={78}
           domain={["auto", "auto"]}
           tickFormatter={(valor: number) =>
-            Intl.NumberFormat("es-VE", { notation: "compact" }).format(valor)
+            Intl.NumberFormat(locale, { notation: "compact" }).format(valor)
           }
         />
         <Tooltip
           contentStyle={{
-            background: "var(--surface-1)",
+            background: "var(--surface-card)",
             border: "1px solid var(--border)",
-            borderRadius: 8,
-            color: "var(--text-primary)",
+            borderRadius: 14,
+            color: "var(--text)",
           }}
           labelFormatter={(t) =>
-            new Intl.DateTimeFormat("es-VE", {
+            new Intl.DateTimeFormat(locale, {
               dateStyle: "medium",
               timeStyle: "short",
             }).format(new Date(t as number))
           }
           formatter={(_valor, _nombre, item) => [
-            formatDecimal((item.payload as Punto).valorStr, { maxDecimales: 4 }),
+            formatDecimal((item.payload as Punto).valorStr, {
+              maxDecimales: 4,
+              idioma,
+            }),
             titulo,
           ]}
         />
         <Line
           type="monotone"
           dataKey="valor"
-          stroke="var(--series-buy)"
-          strokeWidth={2}
+          stroke="var(--teal)"
+          strokeWidth={2.4}
           dot={false}
           activeDot={{ r: 4 }}
           isAnimationActive={false}
@@ -115,6 +133,7 @@ function Grafico({ puntos, titulo }: { puntos: Punto[]; titulo: string }) {
 }
 
 export function HistoryView() {
+  const { t, idioma } = useI18n();
   const [dias, setDias] = useState<number>(30);
   const [moneda, setMoneda] = useState("USD");
   const [indicador, setIndicador] = useState("p2p_brecha_pct_buy");
@@ -134,7 +153,7 @@ export function HistoryView() {
       hasta.getTime() - Math.min(dias, RANGO_MAX_DIAS) * 86_400_000,
     );
     setError(null);
-    setProgreso("cargando…");
+    setProgreso(t("generico.cargando"));
 
     // Filtro SIEMPRE en servidor (sin él se pagina el formato largo completo
     // y se agota la cuota): los p2p_* viven bajo VES; official_rate* bajo la
@@ -149,12 +168,8 @@ export function HistoryView() {
           historialTasa(moneda, desde, hasta, { signal: abort.signal }),
           historialIndicadores(desde, hasta, intervalo, filtro, {
             signal: abort.signal,
-            alProgresar: (paginas, items, hayMas) =>
-              setProgreso(
-                hayMas
-                  ? `página ${paginas} · ${items} puntos…`
-                  : `${items} puntos en ${paginas} página(s)`,
-              ),
+            alProgresar: (paginas, items) =>
+              setProgreso(t("historico.progreso", { paginas, items })),
           }),
         ]);
         if (abort.signal.aborted) {
@@ -189,23 +204,23 @@ export function HistoryView() {
         setError(
           excepcion instanceof ApiError
             ? excepcion.message
-            : "No se pudo cargar el histórico.",
+            : t("historico.error"),
         );
       }
     })();
     return () => abort.abort();
-  }, [dias, moneda, indicador, intervalo]);
+  }, [dias, moneda, indicador, intervalo, t]);
 
   return (
-    <main className="tablero">
-      <section className="panel panel-ancho" aria-label="Controles de histórico">
-        <div className="controles">
+    <main className="vmw-vista">
+      <div className="vmw-contenedor">
+        <section className="vmw-controles" aria-label={t("historico.controles")}>
           {PRESETS.map((preset) => (
             <button
               key={preset}
               type="button"
+              className="vmw-chip"
               aria-pressed={dias === preset}
-              style={dias === preset ? { fontWeight: 700 } : undefined}
               onClick={() => {
                 setDias(preset);
                 // 5m solo para rangos cortos: en 90 días serían ~26k buckets.
@@ -214,11 +229,18 @@ export function HistoryView() {
                 }
               }}
             >
-              {preset} días
+              {t(
+                preset === 7
+                  ? "historico.rango7"
+                  : preset === 30
+                    ? "historico.rango30"
+                    : "historico.rango90",
+              )}
             </button>
           ))}
           <select
-            aria-label="Moneda"
+            className="vmw-select"
+            aria-label={t("historico.moneda")}
             value={moneda}
             onChange={(evento) => setMoneda(evento.target.value)}
           >
@@ -227,7 +249,8 @@ export function HistoryView() {
             ))}
           </select>
           <select
-            aria-label="Indicador"
+            className="vmw-select"
+            aria-label={t("historico.indicador")}
             value={indicador}
             onChange={(evento) => setIndicador(evento.target.value)}
           >
@@ -236,34 +259,71 @@ export function HistoryView() {
             ))}
           </select>
           <select
-            aria-label="Intervalo"
+            className="vmw-select"
+            aria-label={t("historico.bucket")}
             value={intervalo}
             onChange={(evento) => setIntervalo(evento.target.value as Intervalo)}
           >
             <option value="5m" disabled={dias > 7}>
-              5 min (rangos ≤ 7 días)
+              {t("historico.bucket5m")}
             </option>
-            <option value="1h">1 hora</option>
-            <option value="1d">1 día</option>
+            <option value="1h">{t("historico.bucket1h")}</option>
+            <option value="1d">{t("historico.bucket1d")}</option>
           </select>
+          <span className="vmw-nav__relleno" />
           {progreso !== null ? (
-            <span className="barra-progreso" role="status">
+            <span
+              role="status"
+              style={{
+                fontSize: "var(--fs-micro)",
+                color: "var(--text-muted)",
+              }}
+            >
               {progreso}
             </span>
-          ) : null}
-        </div>
-        {error !== null ? <p className="sin-datos">{error}</p> : null}
-      </section>
-      <section className="panel panel-ancho" aria-label="Histórico de tasa oficial">
-        <h2>Tasa oficial {moneda}/VES por fecha-valor</h2>
-        <Grafico puntos={tasas} titulo={`oficial ${moneda}`} />
-      </section>
-      <section className="panel panel-ancho" aria-label="Histórico del indicador">
-        <h2>
-          {indicador} · bucket {intervalo}
-        </h2>
-        <Grafico puntos={serie} titulo={indicador} />
-      </section>
+          ) : (
+            <span className="vmw-seccion__bajada">{t("historico.limite")}</span>
+          )}
+        </section>
+        {error !== null ? <p className="vmw-sin-datos">{error}</p> : null}
+
+        <section
+          className="vmw-tarjeta vmw-seccion"
+          aria-label={t("historico.tasaTitulo", { moneda })}
+        >
+          <div className="vmw-seccion__cabecera">
+            <h3 className="vmw-seccion__titulo" style={{ fontSize: "20px" }}>
+              {t("historico.tasaTitulo", { moneda })}
+            </h3>
+            <span className="vmw-seccion__bajada">
+              {t("historico.rangoLabel", { dias })}
+            </span>
+          </div>
+          <Grafico
+            puntos={tasas}
+            titulo={`${moneda}/VES`}
+            idioma={idioma}
+            vacio={t("historico.sinSerie")}
+          />
+        </section>
+
+        <section
+          className="vmw-tarjeta vmw-seccion"
+          aria-label={t("historico.serieTitulo", { indicador, bucket: intervalo })}
+        >
+          <div className="vmw-seccion__cabecera">
+            <h3 className="vmw-seccion__titulo" style={{ fontSize: "20px" }}>
+              {t("historico.serieTitulo", { indicador, bucket: intervalo })}
+            </h3>
+          </div>
+          <Grafico
+            puntos={serie}
+            titulo={indicador}
+            idioma={idioma}
+            vacio={t("historico.sinSerie")}
+          />
+        </section>
+      </div>
     </main>
   );
 }

@@ -1,0 +1,58 @@
+/* Higerotech — color tokens.
+   Valores tomados literalmente de :root en higerotech/landing @ index.html.
+   Los nombres base (--ink, --teal, --coral, --sage) son los del sitio real:
+   no se renombran para que el código copiado siga compilando. */
+:root {
+  /* ── Escala oscura (fondos y superficies) ── */
+  --ink: #15181b; /* fondo base profundo */
+  --dark: #1e2226; /* superficie primaria / bandas alternas */
+  --dark-2: #262b30; /* antracita: tarjetas, paneles */
+  --dark-3: #2d3134; /* tarjeta elevada (= Gris Antracita de marca) */
+  --dark-4: #353b41; /* hover / borde acentuado */
+
+  /* ── Acentos de marca ── */
+  --teal: #8ad6cc; /* Azul Cielo Digital — acento primario, "tech" */
+  --teal-dim: #6fb9b0;
+  --teal-hover: #9fe0d7; /* hover de .btn-primary */
+  --coral: #f97171; /* Terracota / Coral Cívico — CTA y alertas */
+  --coral-hover: #ff8585; /* hover de .btn-nav */
+  --coral-ink: #2a0f0f; /* texto sobre coral */
+  --sage: #9ebcb6; /* Verde Salvia — éxito, validación */
+  --white: #ffffff;
+
+  /* ── Texto ── */
+  --text: #e7ecef; /* cuerpo sobre --ink */
+  --text-muted: #97a4ae; /* 6,97:1 sobre --ink — WCAG AA */
+  --text-dim: #909ea9; /* 4,78:1 sobre --dark-3, el peor fondo donde se usa */
+
+  /* ── Tintes y líneas (los rgba() literales del sitio) ── */
+  --teal-tint: rgb(138 214 204 / 10%);
+  --teal-tint-strong: rgb(138 214 204 / 14%);
+  --teal-line: rgb(138 214 204 / 28%);
+  --coral-tint: rgb(249 113 113 / 10%);
+  --coral-tint-strong: rgb(249 113 113 / 14%);
+  --coral-line: rgb(249 113 113 / 30%);
+  --sage-tint: rgb(158 188 182 / 10%);
+  --sage-tint-strong: rgb(158 188 182 / 14%);
+  --sage-line: rgb(158 188 182 / 30%);
+  --pill-tierra-bg: rgb(249 113 113 / 12%);
+  --pill-tierra-line: rgb(249 113 113 / 25%);
+  --pill-cielo-bg: rgb(138 214 204 / 12%);
+  --pill-cielo-line: rgb(138 214 204 / 25%);
+  --overlay-soft: rgb(255 255 255 / 5%); /* nav-toggle, lang-toggle */
+
+  /* ── Alias semánticos ── */
+  --surface-page: var(--ink);
+  --surface-band: var(--dark);
+  --surface-panel: var(--dark-2);
+  --surface-card: var(--dark-3);
+  --surface-raised: var(--dark-4);
+  --text-body: var(--text);
+  --text-secondary: var(--text-muted);
+  --text-tertiary: var(--text-dim);
+  --text-heading: var(--white);
+  --accent-primary: var(--teal);
+  --accent-action: var(--coral);
+  --accent-success: var(--sage);
+  --focus-ring: var(--teal);
+}

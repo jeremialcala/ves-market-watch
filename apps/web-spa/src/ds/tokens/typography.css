@@ -1,0 +1,49 @@
+/* Higerotech — tipografía. Space Grotesk (display) + Inter (UI y cuerpo).
+   Las pilas de respaldo NO caen a serif: el sitio debe leerse igual sin webfonts. */
+:root {
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", roboto, helvetica,
+    arial, sans-serif;
+  --font-display: "Space Grotesk", "Inter", system-ui, -apple-system, "Segoe UI",
+    roboto, sans-serif;
+
+  /* Pesos disponibles (fuentes variables 400–700) */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* Escala tipográfica — valores literales del sitio, sin redondear */
+  --fs-hero: clamp(38px, 5.4vw, 66px);
+  --fs-cta-title: clamp(30px, 4.4vw, 48px);
+  --fs-section-title: clamp(28px, 4vw, 44px);
+  --fs-stat: 34px;
+  --fs-sla: 30px;
+  --fs-h3-lg: 22px;
+  --fs-h3: 20px;
+  --fs-h3-sm: 19px;
+  --fs-lead: clamp(16px, 2vw, 19px);
+  --fs-cta-sub: 17.5px;
+  --fs-section-sub: 17px;
+  --fs-card-title: 16.5px;
+  --fs-body: 15px;
+  --fs-body-sm: 14.5px;
+  --fs-body-xs: 14px;
+  --fs-meta: 13.5px;
+  --fs-micro: 13px;
+  --fs-caption: 12.5px;
+  --fs-tiny: 12px;
+
+  /* Alturas de línea y tracking */
+  --lh-hero: 1.06;
+  --lh-title: 1.12;
+  --lh-lead: 1.68;
+  --lh-body: 1.6;
+  --lh-body-relaxed: 1.66;
+  --lh-tight: 1.4;
+  --ls-hero: -0.03em;
+  --ls-title: -0.025em;
+  --ls-tight: -0.01em;
+  --ls-eyebrow: 0.08em;
+  --ls-kicker: 0.1em;
+  --ls-num: 0.14em;
+}

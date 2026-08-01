@@ -1,34 +1,40 @@
+import { Tag } from "../ds/components";
+import { useT } from "../i18n/contexto";
 import { useMarket } from "../state/marketStore";
 
-const ETIQUETA: Record<string, string> = {
-  desconectado: "desconectado",
-  conectando: "conectando…",
-  conectado: "en vivo",
-  reconectando: "reconectando…",
-  detenido: "stream detenido",
-};
+const CLAVE = {
+  conectado: "estado.conectado",
+  conectando: "estado.conectando",
+  reconectando: "estado.reconectando",
+  desconectado: "estado.desconectado",
+  detenido: "estado.detenido",
+} as const;
 
-/** Estado del WSS + cuota REST + salud del gateway (RF-6). */
+/** Estado del WSS + cuota REST + salud del gateway (RF-6), como Tag del
+ * sistema: salvia solo cuando hay stream Y el gateway está sano. */
 export function ConnectionStatus() {
+  const t = useT();
   const { conexion, detalleConexion, cuota, salud } = useMarket();
-  const alerta = conexion !== "conectado";
+  const enVivo = conexion === "conectado";
+  const degradado = salud !== null && salud.status !== "ok";
+  const titulo =
+    [
+      detalleConexion,
+      cuota.remaining !== undefined
+        ? t("estado.cuotaTitulo", {
+            restante: cuota.remaining,
+            limite: cuota.limit ?? "—",
+          })
+        : null,
+      salud !== null ? t("estado.gateway", { estado: salud.status }) : null,
+    ]
+      .filter(Boolean)
+      .join(" · ") || undefined;
+
   return (
-    <span
-      className={alerta ? "badge badge-rancio" : "badge"}
-      title={
-        [
-          detalleConexion,
-          cuota.remaining !== undefined
-            ? `cuota REST: ${cuota.remaining}/${cuota.limit} por minuto`
-            : null,
-          salud !== null ? `gateway: ${salud.status}` : null,
-        ]
-          .filter(Boolean)
-          .join(" · ") || undefined
-      }
-    >
-      {ETIQUETA[conexion] ?? conexion}
-      {salud !== null && salud.status !== "ok" ? ` · gateway ${salud.status}` : ""}
-    </span>
+    <Tag tone={enVivo && !degradado ? "sage" : "coral"} title={titulo}>
+      {t(CLAVE[conexion])}
+      {degradado ? ` · ${t("estado.gateway", { estado: salud.status })}` : ""}
+    </Tag>
   );
 }

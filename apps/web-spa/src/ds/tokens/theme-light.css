@@ -1,0 +1,86 @@
+/* Higerotech — variante clara (documentos, propuestas y material impreso).
+   La web es oscura por decisión arquitectónica; esta variante existe para papel,
+   PDF y cualquier superficie que se lea con luz reflejada.
+
+   Estrategia: se reasignan los MISMOS tokens base, no se crean nombres nuevos.
+   Así cualquier componente del sistema funciona en claro sin tocar su código —
+   basta con `data-theme="light"` en el <html>, <body> o el contenedor.
+
+   Los acentos se oscurecen para conservar el contraste sobre blanco: el teal
+   #8AD6CC da 1,6:1 sobre blanco y no sirve para texto ni para fondo de botón con
+   texto blanco. Los tonos claros originales quedan disponibles como
+   --teal-pale / --coral-pale / --sage-pale para rellenos y gráficos. */
+[data-theme="light"] {
+  /* Superficies (antes la escala oscura) */
+  --ink: #ffffff; /* fondo de página / papel */
+  --dark: #f1f4f4; /* banda alterna */
+  --dark-2: #f7f9f9; /* panel */
+  --dark-3: #ffffff; /* tarjeta */
+  --dark-4: #e7ebec; /* elevación / reposo de control */
+
+  /* Texto */
+  --white: #15181b; /* el nivel de máximo contraste: títulos de tarjeta */
+  --text: #2d3134; /* cuerpo — Gris Antracita de marca */
+  --text-muted: #5c666d; /* 6,3:1 sobre blanco */
+  --text-dim: #79848c; /* 4,6:1 sobre blanco — solo metadatos */
+
+  /* Acentos accesibles sobre claro */
+  --teal: #1f7a70; /* 5,1:1 sobre blanco · fondo de botón con texto blanco */
+  --teal-dim: #2e8c82;
+  --teal-hover: #17635b;
+  --coral: #d2494b; /* 4,7:1 sobre blanco */
+  --coral-hover: #b93b3d;
+  --coral-ink: #ffffff; /* texto sobre coral */
+  --sage: #4e756d; /* 5,4:1 sobre blanco */
+
+  /* Los claros originales, ahora como rellenos de gráfico */
+  --teal-pale: #8ad6cc;
+  --coral-pale: #f97171;
+  --sage-pale: #9ebcb6;
+
+  /* Tintes y líneas */
+  --teal-tint: rgb(31 122 112 / 8%);
+  --teal-tint-strong: rgb(31 122 112 / 12%);
+  --teal-line: rgb(31 122 112 / 28%);
+  --coral-tint: rgb(210 73 75 / 8%);
+  --coral-tint-strong: rgb(210 73 75 / 12%);
+  --coral-line: rgb(210 73 75 / 28%);
+  --sage-tint: rgb(78 117 109 / 8%);
+  --sage-tint-strong: rgb(78 117 109 / 12%);
+  --sage-line: rgb(78 117 109 / 28%);
+  --pill-tierra-bg: rgb(210 73 75 / 10%);
+  --pill-tierra-line: rgb(210 73 75 / 25%);
+  --pill-cielo-bg: rgb(31 122 112 / 10%);
+  --pill-cielo-line: rgb(31 122 112 / 25%);
+  --overlay-soft: rgb(45 49 52 / 4%);
+
+  /* Bordes: antracita translúcido, nunca gris opaco */
+  --border: rgb(45 49 52 / 10%);
+  --border-2: rgb(45 49 52 / 20%);
+
+  /* Sombras: más cortas y frías que en oscuro */
+  --shadow: 0 8px 30px rgb(21 24 27 / 9%);
+  --shadow-teal: 0 6px 20px rgb(31 122 112 / 22%);
+  --shadow-teal-hover: 0 10px 26px rgb(31 122 112 / 30%);
+  --shadow-coral: 0 4px 16px rgb(210 73 75 / 24%);
+  --glow-dot: none; /* sin glow sobre papel */
+  --nav-bg: rgb(255 255 255 / 88%);
+
+  /* Alias semánticos */
+  --surface-page: var(--ink);
+  --surface-band: var(--dark);
+  --surface-panel: var(--dark-2);
+  --surface-card: var(--dark-3);
+  --text-heading: var(--white);
+}
+
+[data-theme="light"] body,
+body[data-theme="light"] {
+  background: var(--ink);
+  color: var(--text);
+}
+
+[data-theme="light"] ::selection {
+  background: var(--teal-pale);
+  color: #15181b;
+}

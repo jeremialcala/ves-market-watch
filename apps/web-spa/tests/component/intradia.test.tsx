@@ -2,7 +2,7 @@
  * agrupado por familia, la Δ contra la apertura y los estados vacío/error —
  * no el dibujo SVG. */
 
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
@@ -16,6 +16,8 @@ import {
   it,
   vi,
 } from "vitest";
+
+import { renderConProveedores as render } from "../render";
 
 import { config } from "../../src/config";
 import { limpiarTokenDeTest, registrarTokenDeTest } from "../soporte";

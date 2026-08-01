@@ -49,6 +49,9 @@ export interface EstadoMercado {
   cuota: CuotaRateLimit;
   salud: Salud | null;
   eventosVistos: string[];
+  /** `occurred_at` del último push aceptado — la barra de estado muestra su
+   * antigüedad («último evento hace 34 s»); `null` mientras no llegue ninguno. */
+  ultimoEventoEn: string | null;
 }
 
 export const ESTADO_INICIAL: EstadoMercado = {
@@ -63,6 +66,7 @@ export const ESTADO_INICIAL: EstadoMercado = {
   cuota: {},
   salud: null,
   eventosVistos: [],
+  ultimoEventoEn: null,
 };
 
 const MAX_SENALES = 50;
@@ -83,6 +87,7 @@ export function aplicarPush(
       0,
       MAX_EVENTOS_VISTOS,
     ),
+    ultimoEventoEn: push.occurred_at,
   };
   switch (push.topic) {
     case "rates.official":

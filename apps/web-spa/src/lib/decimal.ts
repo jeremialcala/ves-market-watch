@@ -8,6 +8,8 @@
  * string original en tooltips/etiquetas.
  */
 
+import type { Idioma } from "../i18n/idioma";
+
 const PATRON_DECIMAL = /^-?[0-9]+(\.[0-9]+)?$/;
 
 export function esDecimal(valor: string): boolean {
@@ -116,26 +118,63 @@ export function porcentajeRelativo(
   return desdeEscalado(numerador / aEscalado(base, escalaComun), escala);
 }
 
-// Símbolos de es-VE (grupo "." y decimal ","), obtenidos una sola vez de Intl
-// — solo los símbolos: el número jamás pasa por float.
-const partesLocale = new Intl.NumberFormat("es-VE").formatToParts(11111.1);
-const SIMBOLO_GRUPO =
-  partesLocale.find((p) => p.type === "group")?.value ?? ".";
-const SIMBOLO_DECIMAL =
-  partesLocale.find((p) => p.type === "decimal")?.value ?? ",";
+/**
+ * Media aritmética exacta de una lista de decimales: se suman como enteros
+ * escalados y se divide truncando a `escala`. `null` con la lista vacía — no
+ * hay promedio de nada, y el llamador muestra «—».
+ */
+export function promediarDecimales(
+  valores: readonly string[],
+  escala = 2,
+): string | null {
+  if (valores.length === 0) {
+    return null;
+  }
+  const escalaComun = valores.reduce(
+    (max, v) => Math.max(max, partes(v).fraccion.length),
+    0,
+  );
+  const suma = valores.reduce(
+    (total, v) => total + aEscalado(v, escalaComun),
+    0n,
+  );
+  const numerador = suma * 10n ** BigInt(escala);
+  return desdeEscalado(
+    numerador / (BigInt(valores.length) * 10n ** BigInt(escalaComun)),
+    escala,
+  );
+}
+
+// Símbolos por idioma (es-VE: grupo "." decimal ","; en-US al revés), obtenidos
+// una sola vez de Intl — solo los símbolos: el número jamás pasa por float.
+function simbolos(locale: string): { grupo: string; decimal: string } {
+  const partesLocale = new Intl.NumberFormat(locale).formatToParts(11111.1);
+  return {
+    grupo: partesLocale.find((p) => p.type === "group")?.value ?? ".",
+    decimal: partesLocale.find((p) => p.type === "decimal")?.value ?? ",",
+  };
+}
+
+const SIMBOLOS: Record<Idioma, { grupo: string; decimal: string }> = {
+  es: simbolos("es-VE"),
+  en: simbolos("en-US"),
+};
 
 export interface OpcionesFormato {
   /** Máximo de decimales mostrados (truncado, no redondeo — el dato es exacto). */
   maxDecimales?: number;
   /** Mínimo de decimales (padding con ceros). */
   minDecimales?: number;
+  /** Idioma de los separadores. Por defecto es (es-VE), el locale del producto. */
+  idioma?: Idioma;
 }
 
-/** Formatea el string exacto con separadores es-VE, sin conversión a float. */
+/** Formatea el string exacto con los separadores del idioma, sin float. */
 export function formatDecimal(
   valor: string,
-  { maxDecimales, minDecimales = 0 }: OpcionesFormato = {},
+  { maxDecimales, minDecimales = 0, idioma = "es" }: OpcionesFormato = {},
 ): string {
+  const { grupo: SIMBOLO_GRUPO, decimal: SIMBOLO_DECIMAL } = SIMBOLOS[idioma];
   const p = partes(valor);
   const enteroAgrupado = p.entero.replace(
     /\B(?=(\d{3})+(?!\d))/g,
@@ -159,8 +198,12 @@ export function formatDecimal(
 }
 
 /** Porcentaje: formatea y añade el símbolo (el valor ya viene en %). */
-export function formatPct(valor: string, maxDecimales = 2): string {
-  return `${formatDecimal(valor, { maxDecimales })} %`;
+export function formatPct(
+  valor: string,
+  maxDecimales = 2,
+  idioma: Idioma = "es",
+): string {
+  return `${formatDecimal(valor, { maxDecimales, idioma })} %`;
 }
 
 /**

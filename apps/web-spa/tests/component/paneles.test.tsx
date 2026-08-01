@@ -1,9 +1,11 @@
 /** Paneles del dashboard alimentados por el marketStore real (sin red):
  * estados con datos, degradados (low/stale/rancio) y vacíos honestos. */
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
+
+import { renderConProveedores as render } from "../render";
 
 import { ConnectionStatus } from "../../src/components/ConnectionStatus";
 import { GapPanel } from "../../src/components/GapPanel";
@@ -111,15 +113,30 @@ describe("MicrostructurePanel", () => {
 });
 
 describe("SignalsFeed", () => {
-  it("lista la señal y el clic abre la evidencia (T10)", async () => {
+  // El rediseño despliega la evidencia EN LÍNEA (antes era un modal): la
+  // trazabilidad de T10 sigue completa —regla, insumos y evento disparador—
+  // pero sin sacar al usuario de la cronología.
+  it("lista la señal y el clic despliega su evidencia (T10)", async () => {
     const usuario = userEvent.setup();
     marketStore.resync({ senales: [FIXTURE_SENAL] });
     render(<SignalsFeed />);
-    await usuario.click(screen.getByRole("button", { name: /correccion/i }));
-    const modal = screen.getByRole("dialog");
-    expect(modal.textContent).toContain("correccion_inminente@v1");
-    expect(modal.textContent).toContain("p2p_ratio_oferta_demanda");
-    expect(modal.textContent).toContain("2,4");
+
+    const boton = screen.getByRole("button", { name: /correccion/i });
+    expect(boton.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText("p2p_ratio_oferta_demanda")).toBeNull();
+
+    await usuario.click(boton);
+    expect(boton.getAttribute("aria-expanded")).toBe("true");
+    const evidencia = document.querySelector(".vmw-evidencia");
+    expect(evidencia).toBeTruthy();
+    expect(evidencia?.textContent).toContain("p2p_ratio_oferta_demanda");
+    expect(evidencia?.textContent).toContain("2,4");
+    expect(evidencia?.textContent).toContain(FIXTURE_SENAL.triggered_by);
+    // La regla versionada vive en la cabecera de la señal, siempre visible.
+    expect(screen.getByText("correccion_inminente@v1")).toBeTruthy();
+
+    await usuario.click(boton); // vuelve a plegarse
+    expect(screen.queryByText("p2p_ratio_oferta_demanda")).toBeNull();
   });
 });
 
@@ -128,6 +145,14 @@ describe("ConnectionStatus", () => {
     marketStore.conexion("reconectando", "límite de conexiones");
     marketStore.salud({ status: "degraded", components: { broker: "down" } });
     render(<ConnectionStatus />);
-    expect(screen.getByText(/reconectando…\s*· gateway degraded/)).toBeTruthy();
+    expect(
+      screen.getByText(/WSS reconectando\s*· gateway degraded/),
+    ).toBeTruthy();
+  });
+
+  it("traduce el estado al cambiar de idioma", () => {
+    marketStore.conexion("conectado");
+    render(<ConnectionStatus />, { idioma: "en" });
+    expect(screen.getByText("WSS connected")).toBeTruthy();
   });
 });
