@@ -50,6 +50,15 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   `/indicators/history` (sparkline 24 h, mapa de calor 14 d × hora VET,
   comparativas 7/30/90 d).
 
+## Shell responsive (2026-07-31)
+- La tira de estado vive solo en la barra ancha (así lo declara el diseño): en
+  compacto su información se reparte entre el punto de la barra (estado +
+  antigüedad) y la línea meta del menú. Entre 760 y 1080 px ceden suscripciones
+  y cuota; el estado del stream no cede nunca.
+- El estado del WSS es región viva (`role=status`, `aria-live=polite`) en las dos
+  variantes y lleva el estado en texto accesible: el color del punto no codifica
+  solo. Escalera medida en navegador de 1280 a 320 px, sin desbordes ni solapes.
+
 ## Pendiente de accesibilidad (2026-07-31)
 - Al mapear las series a los acentos de marca, la **separación CVD en tema claro
   cae a ΔE 5,9** en el par compra/venta (protan) — por debajo del piso de 6, así
@@ -58,7 +67,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   del servicio.
 
 ## Verificación
-- **156 tests** (unit/component/contract con MSW y WS mock) — **88,6 % de ramas**
+- **162 tests** (unit/component/contract con MSW y WS mock) — **88,9 % de ramas**
   (umbral Gate 2: 80 %). E2E en vivo (`npm run test:e2e:live`) con client M2M:
   token real → REST + WSS; skip elegante sin credenciales.
 - La parrilla intradía se eyebalizó en claro y oscuro con una previsualización

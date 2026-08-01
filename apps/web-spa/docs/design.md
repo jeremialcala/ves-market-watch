@@ -60,6 +60,26 @@ venta en tema claro.**
 No se repinta aquí porque elegir pasos nuevos de las rampas de marca es decisión
 de diseño, no de implementación. Queda en «Pendiente» con el remedio concreto.
 
+## Shell responsive (2026-07-31)
+El diseño declara la tira de estado dentro de `isWide`: **en compacto no
+existe**, y su información se reparte en vez de perderse. La escalera, medida en
+el navegador (las media queries no corren en jsdom):
+
+| Ancho | Barra | Tira de estado | Vista actual |
+|---|---|---|---|
+| ≥ 1080 px | ancha, 1 fila | completa (estado · suscripciones · último evento · cuota · calc) | — |
+| 760–1079 px | ancha, 2 filas | se repliegan suscripciones y cuota | — |
+| 480–759 px | compacta | ausente → punto + antigüedad en la barra; detalle completo en la línea meta del menú | visible |
+| < 480 px | compacta | ídem | retirada |
+| < 360 px | compacta, título con elipsis | ídem | retirada |
+
+Lo que **nunca** se repliega es el estado del stream: en ancho va como `Tag`, en
+compacto como punto + antigüedad, y en ambos casos es región viva (`role=status`,
+`aria-live="polite"`) con el estado en texto accesible — el color del punto no
+codifica solo. La etiqueta de vista lleva `flex: none` a propósito: sin él, flex
+la estruja a 0 px mucho antes de su punto de corte y el texto queda partido a
+media palabra; o entra entera, o se retira.
+
 ## Bloques sin fuente de datos (regla RF-5 aplicada al rediseño)
 El diseño pide secciones que la plataforma **no calcula**: régimen de mercado,
 percentiles de backtest de los medidores, escenarios con probabilidades y
@@ -124,7 +144,7 @@ la descomposición reparte el precio P2P con la tasa oficial vigente y el VWAP.
 - Lockfile commiteado (SCA en CI — Gate 2); cero secretos en el bundle.
 
 ## Verificación
-- **156 tests** (unit / component / contract) con **88,6 % de ramas** (umbral
+- **162 tests** (unit / component / contract) con **88,9 % de ramas** (umbral
   Gate 2: 80 %): decimal exhaustivo (incl. la aritmética `BigInt` y el borde de
   medianoche del día operativo VET), reducers, políticas WSS, StreamClient
   contra servidor WS mockeado, endpoints contra MSW, paneles con fixtures

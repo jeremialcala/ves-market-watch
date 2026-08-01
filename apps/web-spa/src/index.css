@@ -231,6 +231,7 @@ body {
 
 .vmw-nav__tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
 }
 
@@ -327,10 +328,33 @@ body {
 .vmw-nav-compacta img {
   width: 22px;
   height: 22px;
+  flex: none;
 }
 
 .vmw-nav-compacta .vmw-nav__titulo {
   font-size: 15.5px;
+}
+
+/* La vista actual sustituye a las pestañas mientras el menú está plegado.
+   `flex: none` es deliberado: sin él, flex la estruja a 0 px mucho antes de su
+   punto de corte y el texto queda partido a media palabra. O cabe entera, o se
+   retira; nunca a medias. */
+.vmw-nav-compacta__vista {
+  flex: none;
+  font-size: var(--fs-micro);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* El que sí cede es el título de marca, con elipsis en vez de desbordar. */
+.vmw-nav-compacta .vmw-nav__marca {
+  min-width: 0;
+}
+
+.vmw-nav-compacta .vmw-nav__titulo {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .vmw-icono-boton {
@@ -403,6 +427,27 @@ body {
   text-transform: uppercase;
   color: var(--text-dim);
   line-height: 1.7;
+}
+
+/* -- repliegue responsivo del shell ---------------------------------------- */
+
+/* Entre la barra ancha y la compacta la tira se queda sin sitio antes de que
+   la nav cambie de variante: se repliegan los datos secundarios (suscripciones
+   y cuota) para no partirla en dos filas. Lo que nunca se repliega es el estado
+   del stream ni la antigüedad del último evento. */
+@media (max-width: 1079px) {
+  .vmw-tira__secundario {
+    display: none;
+  }
+}
+
+/* Móvil estrecho: el nombre de la vista cede el sitio antes que la marca o el
+   pulso del stream — está a un toque de distancia en el menú. El corte está en
+   480 px, que es donde deja de caber entera junto a marca, pulso y botón. */
+@media (max-width: 479px) {
+  .vmw-nav-compacta__vista {
+    display: none;
+  }
 }
 
 /* -- hero de la brecha ----------------------------------------------------- */

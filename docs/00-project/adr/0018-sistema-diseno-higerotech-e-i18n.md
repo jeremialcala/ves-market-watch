@@ -61,6 +61,12 @@ El rediseño trae tres cosas que hay que decidir, no solo copiar:
 7. **La vista «Análisis» entra como cuarta pestaña** junto a Dashboard,
    Intradía e Histórico. Su prosa y sus escenarios son demo; sus números
    (presión de liquidez, merchants, spread) son reales.
+8. **El shell no se encoge: se reparte** (enmienda 2026-07-31). La barra
+   compacta no es la ancha estrujada — el diseño declara la tira de estado
+   dentro de `isWide`, así que en compacto desaparece y su contenido va al punto
+   de la barra y a la línea meta del menú. Lo único que no se repliega en ningún
+   ancho es el estado del stream, que además es región viva con el estado en
+   texto accesible: el color del punto no puede ser el único portador.
 
 ## Alternativas consideradas
 - **Reestilizar sin adoptar el sistema**: más barato hoy, pero deja dos fuentes

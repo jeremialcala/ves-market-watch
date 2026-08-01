@@ -19,6 +19,26 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Shell responsive del rediseño (2026-07-31)** — el diseño declara la tira de
+  estado dentro de `isWide` y la implementación la pintaba en todos los anchos,
+  que es lo que la partía en dos filas en pantallas medianas:
+  - **La tira desaparece en compacto** y su información se reparte: punto con la
+    antigüedad del último evento en la barra, y detalle completo (usuario ·
+    estado · suscripciones · versión de cálculo) en la línea meta del menú.
+  - **Repliegue intermedio** (< 1080 px): ceden suscripciones y cuota; el estado
+    del stream y el último evento no ceden nunca.
+  - La barra compacta recupera la **vista actual** que pedía el diseño, con
+    `flex: none` para que entre entera o se retire — sin él, flex la estruja a
+    0 px antes de su punto de corte y parte el texto a media palabra.
+  - **El estado del WSS deja de depender del color**: `role="status"` +
+    `aria-live="polite"` en las dos variantes, y en compacto el punto lleva el
+    estado en `aria-label`, así que una caída se anuncia en vez de solo cambiar
+    de tinte.
+  - Escalera verificada midiendo en el navegador a 1280/1000/900/800/759/560/
+    500/480/440/400/360/320 px (las media queries no corren en jsdom): una sola
+    fila en la tira, sin desbordamiento horizontal ni solapes en ningún ancho.
+  - 156 → **162 tests** (88,9 % de ramas).
+
 - **Rediseño del dashboard con el sistema de diseño Higerotech (2026-07-31,
   ADR-0018)** — importado del proyecto de diseño `Rediseño dashboard Higerotech`
   (`VES Market Watch.dc.html`) vía MCP de Claude Design:

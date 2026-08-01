@@ -7,6 +7,22 @@ timestamp: 2026-07-31T00:00:00Z
 
 # Log
 
+## 2026-07-31 — El shell se reparte en vez de encogerse
+- La tira de estado se pintaba en todos los anchos y el diseño la declara dentro
+  de `isWide`: por eso se partía en dos filas en pantallas medianas. Ahora en
+  compacto no existe y su contenido va al punto de la barra (estado + antigüedad)
+  y a la línea meta del menú.
+- Regla que salió de aquí: **lo que no cabe se retira entero, no se estruja**. La
+  etiqueta de vista llevaba flex por defecto y se encogía a 0 px mucho antes de
+  su breakpoint, partiendo el texto a media palabra; con `flex: none` o entra
+  entera o se retira.
+- El estado del WSS deja de depender del color: región viva en las dos variantes
+  y con el estado en texto accesible.
+- Las media queries no corren en jsdom, así que la escalera se **midió en el
+  navegador** con iframes de ancho fijo (cada uno tiene su propio viewport) de
+  1280 a 320 px: una fila en la tira, sin desbordes ni solapes. Un "solape" que
+  aparecio al medir era artefacto de un nodo con display:none.
+
 ## 2026-07-31 — Barrido tras el rediseño: la paleta ya no estaba validada
 - El rediseño mapeó las series a los acentos de marca y los docs seguían
   diciendo «paleta validada con el skill dataviz». Se volvió a **correr el

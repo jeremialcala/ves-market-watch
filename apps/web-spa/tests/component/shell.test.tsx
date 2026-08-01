@@ -60,6 +60,37 @@ describe("StatusStrip", () => {
     render(<StatusStrip />);
     expect(screen.getByText("cuota 118/120")).toBeTruthy();
   });
+
+  // El diseño declara la tira dentro de `isWide`: en compacto no existe, y su
+  // información vive en la barra y en el menú (ver más abajo).
+  it("no se pinta en compacto", () => {
+    fijarCompacto(true);
+    const { container } = render(<StatusStrip />);
+    expect(container.querySelector(".vmw-tira")).toBeNull();
+  });
+
+  it("marca como secundarios los datos que se repliegan antes de envolver", () => {
+    marketStore.cuota({ remaining: 118, limit: 120 });
+    render(<StatusStrip />);
+    const secundarios = [
+      ...document.querySelectorAll(".vmw-tira__secundario"),
+    ].map((n) => n.textContent);
+    // Suscripciones y cuota ceden; estado y último evento nunca.
+    expect(secundarios.some((texto) => texto?.includes("suscripciones"))).toBe(
+      true,
+    );
+    expect(secundarios.some((texto) => texto?.includes("cuota"))).toBe(true);
+    expect(secundarios.some((texto) => texto?.includes("último evento"))).toBe(
+      false,
+    );
+  });
+
+  it("el estado del stream es región viva: se anuncia si cae", () => {
+    render(<StatusStrip />);
+    const estado = screen.getByRole("status");
+    expect(estado.getAttribute("aria-live")).toBe("polite");
+    expect(estado.textContent).toContain("WSS");
+  });
 });
 
 describe("NavBar (ancha)", () => {
@@ -127,6 +158,58 @@ describe("NavBar (compacta)", () => {
     await usuario.click(menu);
     expect(menu.getAttribute("aria-expanded")).toBe("true");
     expect(screen.getByRole("tab", { name: "Histórico" })).toBeTruthy();
+  });
+
+  it("muestra la vista actual mientras el menú está plegado", () => {
+    render(<NavBar {...props} vista="historico" />);
+    expect(screen.getByText("Histórico")).toBeTruthy();
+    // …y no como pestaña: las pestañas viven dentro del menú.
+    expect(screen.queryByRole("tab", { name: "Histórico" })).toBeNull();
+  });
+
+  it("el pulso del stream no depende solo del color", () => {
+    marketStore.conexion("reconectando");
+    marketStore.push({
+      topic: "indicators",
+      event_id: "evento-compacto",
+      occurred_at: new Date(Date.now() - 34_000).toISOString(),
+      data: {
+        as_of: new Date().toISOString(),
+        calc_version: 1,
+        official_stale: false,
+        triggered_by: "11111111-2222-3333-4444-555555555555",
+        indicators: [],
+      },
+    });
+    render(<NavBar {...props} />);
+    const pulso = screen.getByRole("status");
+    expect(pulso.getAttribute("aria-label")).toBe("WSS reconectando · hace 34 s");
+    expect(pulso.getAttribute("aria-live")).toBe("polite");
+  });
+
+  it("el menú recoge el detalle que la tira no puede mostrar aquí", async () => {
+    const usuario = userEvent.setup();
+    marketStore.conexion("conectado");
+    marketStore.push({
+      topic: "indicators",
+      event_id: "evento-meta",
+      occurred_at: new Date().toISOString(),
+      data: {
+        as_of: new Date().toISOString(),
+        calc_version: 7,
+        official_stale: false,
+        triggered_by: "11111111-2222-3333-4444-555555555555",
+        indicators: [],
+      },
+    });
+    render(<NavBar {...props} />);
+    await usuario.click(screen.getByRole("button", { name: "Menú" }));
+
+    const meta = document.querySelector(".vmw-menu__meta")?.textContent ?? "";
+    expect(meta).toContain("Jeremi Alcalá");
+    expect(meta).toContain("WSS conectado");
+    expect(meta).toContain("4 suscripciones");
+    expect(meta).toContain("calc v7");
   });
 
   it("elegir una vista cierra el menú", async () => {
