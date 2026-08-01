@@ -104,6 +104,8 @@ gitGraph
     commit id: "c543b08"
     commit id: "7471953"
     commit id: "28a1d5d"
+    commit id: "df2c185"
+    commit id: "ee29078"
 ```
 
 ### Estado actual de las ramas
@@ -111,7 +113,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `28a1d5d` | 2026-08-01 | 70 |
+| `develop` | `ee29078` | 2026-08-01 | 72 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -127,6 +129,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `ee29078` | commit | — | Jeremi Alcala | 2026-08-01 | docs: barrido de coherencia tras ADR-0021 |
+| `df2c185` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `28a1d5d` | commit | — | Jeremi Alcala | 2026-08-01 | feat(indicator-engine,web-spa): lectura del estado de mercado por revisión |
 | `7471953` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `c543b08` | commit | — | Jeremi Alcala | 2026-08-01 | perf(indicator-engine): comprimir `indicators` en vez de aplicarle retencion |
