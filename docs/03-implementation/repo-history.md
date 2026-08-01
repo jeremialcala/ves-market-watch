@@ -119,6 +119,8 @@ gitGraph
     commit id: "078d7f7"
     commit id: "4989144"
     commit id: "f9ca6cf"
+    commit id: "e759414"
+    commit id: "a0c26d3"
 ```
 
 ### Estado actual de las ramas
@@ -126,7 +128,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `f9ca6cf` | 2026-08-01 | 85 |
+| `develop` | `a0c26d3` | 2026-08-01 | 87 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -142,6 +144,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `a0c26d3` | commit | — | Jeremi Alcala | 2026-08-01 | feat(web-spa): el mapa de calor mira el lado venta, que es el que tiene historia |
+| `e759414` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `f9ca6cf` | commit | — | Jeremi Alcala | 2026-08-01 | docs: fase 5 — AI-DLC de la comparativa histórica y barrido de coherencia |
 | `4989144` | commit | — | Jeremi Alcala | 2026-08-01 | fix(indicator-engine,web-spa): la media de 90 d estaba sesgada y la prosa citaba una cifra invisible |
 | `078d7f7` | commit | — | Jeremi Alcala | 2026-08-01 | feat(web-spa): la descomposición compara los dos lados y rotula el tramo real |
