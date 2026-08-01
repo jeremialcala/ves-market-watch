@@ -100,6 +100,8 @@ gitGraph
     commit id: "b4ca2c5"
     commit id: "657184e"
     commit id: "af3a347"
+    commit id: "3b440a4"
+    commit id: "c543b08"
 ```
 
 ### Estado actual de las ramas
@@ -107,7 +109,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `af3a347` | 2026-08-01 | 66 |
+| `develop` | `c543b08` | 2026-08-01 | 68 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -123,6 +125,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `c543b08` | commit | — | Jeremi Alcala | 2026-08-01 | perf(indicator-engine): comprimir `indicators` en vez de aplicarle retencion |
+| `3b440a4` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `af3a347` | commit | — | Jeremi Alcala | 2026-08-01 | docs(rendimiento): medida la consulta de percentiles, sobra margen |
 | `657184e` | commit | — | Jeremi Alcala | 2026-08-01 | docs: cerrar dos pendientes que sobrevivieron a su propio cumplimiento |
 | `b4ca2c5` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
