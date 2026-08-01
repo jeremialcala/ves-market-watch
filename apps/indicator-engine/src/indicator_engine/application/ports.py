@@ -5,8 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Protocol
+from typing import Protocol, Sequence
 
+from indicator_engine.domain.analisis import Analisis, Distribucion
 from indicator_engine.domain.models import AnuncioP2P, Indicador
 from indicator_engine.domain.reglas import Senal
 
@@ -66,6 +67,37 @@ class IndicatorRepository(Protocol):
         """Persiste las señales emitidas con su evidencia (RF-5, tabla `signals`)."""
         ...
 
+    async def guardar_analisis(self, analisis: Analisis, payload: dict) -> None:
+        """Persiste el análisis de la revisión (RF-6, tabla `indicator_analysis`).
+
+        `payload` es el `payload` del evento publicado TAL CUAL: se guarda
+        verbatim para que el GET del gateway devuelva exactamente lo que salió al
+        bus (ADR-0019). Reentregas no duplican: la PK (as_of, currency,
+        triggered_by) es determinista.
+        """
+        ...
+
+
+class DistribucionRepository(Protocol):
+    """Puerto separado de `IndicatorRepository` a propósito: la distribución es
+    una consulta agregada y cara, con su propia política de cache y su propio
+    doble en memoria para los tests del análisis."""
+
+    async def distribuciones(
+        self,
+        nombres: Sequence[str],
+        moneda: str,
+        desde: datetime,
+        percentiles: Sequence[Decimal],
+    ) -> dict[str, Distribucion]:
+        """Distribución de cada indicador en la ventana `[desde, ∞)`.
+
+        Un indicador sin filas en la ventana NO aparece en el dict (no se
+        fabrica una distribución vacía). Un fallo devuelve `{}`, que degrada al
+        respaldo del ruleset de forma visible en el payload.
+        """
+        ...
+
 
 class EventPublisher(Protocol):
     async def publish_indicators_updated(
@@ -80,6 +112,11 @@ class EventPublisher(Protocol):
 
     async def publish_signal_emitted(self, senal: Senal) -> None:
         """Publica `signals.emitted` (schemas/signal.v1.json)."""
+        ...
+
+    async def publish_analysis_updated(self, evento: dict) -> None:
+        """Publica `analysis.updated` (schemas/analysis.v1.json): el sobre
+        completo, cuyo `payload` es el mismo documento que se persistió."""
         ...
 
 

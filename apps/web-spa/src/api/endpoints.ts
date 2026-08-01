@@ -22,6 +22,15 @@ export type Senal = Schemas["Signal"];
 export type PaginaSenales = Schemas["SignalPage"];
 export type Salud = Schemas["Health"];
 
+/** Lectura de los medidores del panel en una revisión (RF-6, ADR-0019). */
+export type Analisis = Schemas["IndicatorAnalysis"];
+export type LecturaMedidor = Schemas["AnalysisIndicator"];
+export type ProximidadRegla = Schemas["RuleProximity"];
+/** Vocabulario NEUTRO de idioma que clasifica el engine; la prosa la pone el
+ *  diccionario del SPA. Tiparlo sobre el enum generado significa que si el
+ *  engine añade una banda, la UI deja de compilar en vez de callarse. */
+export type Banda = LecturaMedidor["band"];
+
 export type Lado = "buy" | "sell";
 export type Intervalo = "5m" | "1h" | "1d";
 
@@ -105,6 +114,14 @@ export async function referenciaP2P(lado: Lado): Promise<ReferenciaP2P | null> {
 export async function indicadores(currency = "USD"): Promise<Indicadores | null> {
   return oNull(
     await client.GET("/indicators/current", { params: { query: { currency } } }),
+  );
+}
+
+/** 404 = sin análisis vigente (o más viejo que la frescura P2P): el panel
+ *  muestra los valores sin explicación, nunca una lectura rancia. */
+export async function analisis(currency = "VES"): Promise<Analisis | null> {
+  return oNull(
+    await client.GET("/analysis/current", { params: { query: { currency } } }),
   );
 }
 

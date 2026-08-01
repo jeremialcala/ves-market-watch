@@ -14,6 +14,7 @@ from referencing.jsonschema import DRAFT202012
 
 from tests.conftest import (
     OPENAPI,
+    fila_analisis,
     fila_indicador,
     fila_senal,
     fila_tasa,
@@ -106,6 +107,55 @@ def test_indicadores_con_nulls_cumplen_schema(cliente, repositorio, auth):
     )
     assert r.status_code == 200
     validar_contra("Indicators", r.json())
+
+
+def test_analisis_vigente_cumple_schema(cliente, repositorio, auth):
+    repositorio.analisis["VES"] = fila_analisis()
+    r = cliente.get("/api/v1/analysis/current", headers=auth)
+    assert r.status_code == 200
+    validar_contra("IndicatorAnalysis", r.json())
+
+
+def test_analisis_en_respaldo_de_ruleset_cumple_schema(cliente, repositorio, auth):
+    """La banda `unscaled` y una escala sin percentiles también son contrato."""
+    repositorio.analisis["VES"] = fila_analisis(fuente="ruleset")
+    r = cliente.get("/api/v1/analysis/current", headers=auth)
+    assert r.status_code == 200
+    cuerpo = r.json()
+    validar_contra("IndicatorAnalysis", cuerpo)
+    assert cuerpo["indicators"][0]["band"] == "unscaled"
+
+
+def test_analisis_usa_ves_por_defecto(cliente, repositorio, auth):
+    """Los p2p_* se persisten bajo el fiat del par, no bajo la pierna oficial."""
+    repositorio.analisis["VES"] = fila_analisis()
+    assert cliente.get("/api/v1/analysis/current", headers=auth).status_code == 200
+    # Sin fila para otra moneda: 404, no la de VES por descuido.
+    r = cliente.get(
+        "/api/v1/analysis/current", headers=auth, params={"currency": "COP"}
+    )
+    assert r.status_code == 404
+    validar_contra("Problem", r.json())
+
+
+def test_analisis_reutiliza_el_permiso_de_indicadores(cliente, repositorio):
+    """Decisión consciente (ADR-0019): un `read:analysis` nuevo daría 403 a todo
+    token ya emitido. Con `read:indicators` basta; sin él, 403."""
+    repositorio.analisis["VES"] = fila_analisis()
+    con_permiso = firmar_token(permisos=["read:indicators"])
+    r = cliente.get(
+        "/api/v1/analysis/current",
+        headers={"Authorization": f"Bearer {con_permiso}"},
+    )
+    assert r.status_code == 200
+
+    sin_permiso = firmar_token(permisos=["read:rates"])
+    r = cliente.get(
+        "/api/v1/analysis/current",
+        headers={"Authorization": f"Bearer {sin_permiso}"},
+    )
+    assert r.status_code == 403
+    assert "read:indicators" in r.json()["detail"]
 
 
 def test_historial_indicadores_cumple_schema(cliente, repositorio, auth):

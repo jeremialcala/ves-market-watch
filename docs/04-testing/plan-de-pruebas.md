@@ -75,10 +75,10 @@ Estado observado en el repo (conteo de funciones `test_`):
 |---|---|---|---|
 | `ingestor-bcv` | Implementado | **54** (unit, integration, contract, e2e) | Confirmar cobertura de ramas ≥ 80 %; añadir marcador `security` para escenarios T1 (HTML alterado + tasa fuera de rango) |
 | `ingestor-binance` | Implementado | **48** (unit, integration, contract, e2e) | Igual que arriba; escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local |
-| `indicator-engine` | Fases 1, 2 y señales implementadas (RF-4/RF-5, ADR-0015) | **77** (unit, contract, integration, e2e) | Confirmar cobertura de ramas ≥ 80 %; recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) |
+| `indicator-engine` | Fases 1, 2, señales (RF-4/RF-5, ADR-0015) y análisis de la revisión (RF-6, ADR-0019) | **170** (unit, contract, integration, e2e) | Confirmar cobertura de ramas ≥ 80 %; recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`); medir con `EXPLAIN ANALYZE` la consulta de percentiles con la tabla en régimen |
 | `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) | **39** (unit + integración contra TimescaleDB real) | Confirmar cobertura de ramas ≥ 80 % |
-| `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **90** (unit incl. CORS y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura ≥ 80 % |
-| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **179** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, shell responsive y canarios de paleta, punto de corte y cabeceras CSP) — **88,7 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
+| `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **103** (unit incl. CORS y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura ≥ 80 % |
+| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **210** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores con lectura real en ES/EN, shell responsive y canarios de paleta, punto de corte y cabeceras CSP) — **88,7 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
 
 > El plan cubre tanto la **consolidación** de lo existente como la **especificación** de los casos
 > que deben acompañar el código pendiente, para que se escriban junto con la implementación (no
@@ -134,7 +134,7 @@ Notación: `[U]` unit · `[I]` integration · `[C]` contract · `[E]` e2e · `[S
 - `[I]` Consumidor AMQP real; `[E]` flujo `official.rate.updated` → `indicators.updated`.
 
 **Fase 2 y señales (implementadas y verificadas e2e, 2026-07-22 — RF-4/RF-5, ADR-0015) —
-casos cubiertos por la suite actual (77 tests):**
+casos cubiertos por la suite actual (170 tests):**
 - `[U]` Precio de referencia P2P: **mediana y VWAP** del top-N filtrado por lado — cubierto
   (`unit/test_referencia_p2p.py`).
 - `[U]` **Brecha BCV↔P2P** (abs y %), spreads compra/venta, volúmenes agregados, profundidad por
@@ -161,7 +161,53 @@ casos cubiertos por la suite actual (77 tests):**
 - `[E]` Flujo `p2p.snapshot` (+ `official.rate.updated`) → `indicators.updated` + `signals.emitted`
   — verificado e2e (2026-07-22).
 
-### 5.4 api-gateway (implementado 2026-07-26 — 90 tests; ✔ = cubierto por la suite)
+**Análisis de la revisión (implementado y verificado e2e, 2026-08-01 — RF-6, ADR-0019):**
+- `[U]` Las cuatro bandas cubren el rango sin huecos, con el **valor exacto en el corte**
+  contando hacia arriba — `unit/test_analisis.py`.
+- `[U]` La escala degrada al respaldo del ruleset por muestras insuficientes, serie
+  constante o **cortes coincidentes**, y la elección viaja en el payload. El último caso
+  es el que destapó el defecto de `p2p_outliers_pct_buy` con datos reales (ver abajo).
+- `[U]` Posición acotada a [0,1], nudos de igual x colapsados sin dividir por cero, y
+  `None` cuando no hay cortes: cero píxeles inventados.
+- `[U]` **Canario**: el `30` de `config/analisis.v1.yaml` es el mismo
+  `UMBRAL_CONFIANZA_OUTLIERS_PCT` de `calculos.py` — si alguien cambia uno, el test cae.
+- `[U]` Config inválida aborta el arranque; desempates (`bloqueada_por`, `closest_rule`)
+  deterministas y documentados en el schema.
+- `[U]` Proximidad k/n: indicador ausente ⇒ regla no evaluable con `value: null`; con
+  `confidence: low` ninguna regla es evaluable; cuando una regla dispara, `completa`
+  coincide con `evaluar_reglas` — `unit/test_reglas.py`.
+- `[U]` Cache de distribuciones con **reloj inyectado** (sin `sleep`): dentro del TTL no
+  reconsulta, vencido refresca, un fallo sirve la entrada vencida y sin cache previa
+  devuelve `{}` (degradación visible) — `unit/test_cache_distribuciones.py`.
+- `[U]` **No-regresión del camino de señales**: la vista ampliada que pide el análisis no
+  cambia las señales emitidas — se comparan lado a lado con y sin análisis.
+- `[U]` Un fallo del análisis no manda el snapshot a la DLQ ni impide publicar
+  indicadores y señales.
+- `[C]` `schemas/analysis.v1.json` validado sobre el evento del **productor real**, con
+  todos los decimales en punto fijo — `contract/test_analysis_event_schema.py`.
+- `[I]` `percentile_disc` devuelve `Decimal` exacto y valores realmente observados; la
+  ventana recorta; un indicador sin filas no aparece — `integration/test_distribuciones_timescale.py`.
+- `[I]` Payload verbatim en `indicator_analysis`, reentrega que no duplica y las
+  revisiones de BUY y SELL del mismo instante conviviendo — `integration/test_analysis_repository.py`.
+- `[E]` Flujo `p2p.snapshot` → `analysis.updated` al bus y a la tabla, con la escala de
+  percentiles reales ejercitada — `e2e/test_flujo_snapshot_a_analisis.py`.
+
+> **Arranque en frío: comportamiento correcto, no un bug.** En un compose recién
+> levantado `indicators` está vacía, `samples < 200` y **los seis medidores salen en
+> respaldo del ruleset**: cifras reales, pie con el contador de muestras y sin relleno
+> donde no hay cortes. Hacen falta ~100 min de captura (2 snapshots/min) para entrar en
+> régimen de percentiles, y no todos a la vez —los de ventana móvil solo se emiten en su
+> lado—. Para ejercitarlo sin esperar: bajar `muestras_minimas` (es lo que hace el test
+> e2e), correr el `ingestor-historico`, o dejar el compose ~2 h.
+
+> **Lo que solo aparece con datos reales.** El test unitario de bandas pasaba con
+> distribuciones sintéticas bien formadas; fue el compose con 14 039 muestras reales de
+> `p2p_outliers_pct_buy` —casi todas cero, p10 = p50 = p90 = 0— el que mostró un snapshot
+> impecable clasificado `very_high`. La lección para el plan: **una suite verde sobre
+> fixtures no sustituye mirar el payload que sale en vivo**, sobre todo en distribuciones
+> con moda en un extremo.
+
+### 5.4 api-gateway (implementado 2026-07-26 — 103 tests; ✔ = cubierto por la suite)
 - `[U]` ✔ Validación estricta de inputs (fechas, `interval`, `side`, tópicos); políticas de
   **scopes/permisos**; validación del **access token de Auth0** (RS256 vía JWKS; `iss`/`aud`/`exp`)
   con par RSA/JWKS local de test (`tests/soporte_auth.py`). El gateway **no emite** tokens (ADR-0012).

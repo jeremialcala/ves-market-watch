@@ -52,7 +52,7 @@ describe("StatusStrip", () => {
       },
     });
     render(<StatusStrip />);
-    expect(screen.getByText(/flujo \/ws\/v1 · 4 suscripciones/)).toBeTruthy();
+    expect(screen.getByText(/flujo \/ws\/v1 · 5 suscripciones/)).toBeTruthy();
     expect(screen.getByText(/último evento hace 34 s/)).toBeTruthy();
     expect(screen.getByText(/calc v3 · ruleset v1/)).toBeTruthy();
   });
@@ -224,7 +224,7 @@ describe("NavBar (compacta)", () => {
     const meta = document.querySelector(".vmw-menu__meta")?.textContent ?? "";
     expect(meta).toContain("Jeremi Alcalá");
     expect(meta).toContain("WSS conectado");
-    expect(meta).toContain("4 suscripciones");
+    expect(meta).toContain("5 suscripciones");
     expect(meta).toContain("calc v7");
   });
 

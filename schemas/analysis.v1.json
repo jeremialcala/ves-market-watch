@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jeremialcala/ves-market-watch/schemas/analysis.v1.json",
+  "title": "analysis.updated v1",
+  "description": "Lectura mecánica de los indicadores del panel en CADA revisión (cada lote emitido ante un p2p.snapshot). El engine CLASIFICA en vocabulario neutro de idioma —igual que `type`/`direction` de las señales— y publica la escala usada con su FUENTE y sus parámetros; la prosa ES/EN la redacta el cliente. No contiene pronósticos: `rule_proximity` es proximidad aritmética a las reglas del ruleset versionado (schemas/signal.v1.json, ADR-0015), no una predicción.",
+  "$comment": "Contrato definido y emitido en ADR-0019. El productor valida la forma emitida en apps/indicator-engine/tests/contract/test_analysis_event_schema.py; el consumidor (api-gateway) valida cada mensaje contra este archivo antes del push WSS.",
+  "type": "object",
+  "required": ["event_id", "event_type", "schema_version", "occurred_at", "producer", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "event_id": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" },
+    "event_type": { "const": "analysis.updated" },
+    "schema_version": { "const": 1 },
+    "occurred_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}" },
+    "producer": { "type": "string", "minLength": 1 },
+
+    "payload": {
+      "type": "object",
+      "required": ["as_of", "currency", "calc_version", "analysis_version", "ruleset_version",
+                   "confidence", "official_stale", "triggered_by",
+                   "indicators", "rule_proximity", "summary"],
+      "additionalProperties": false,
+      "properties": {
+        "as_of": {
+          "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}",
+          "description": "Instante del dato de mercado de la revisión (captured_at del snapshot), no la hora de emisión."
+        },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "calc_version": { "type": "integer", "minimum": 1,
+          "description": "Versión de la fórmula de los indicadores leídos (RF-3)." },
+        "analysis_version": { "type": "integer", "minimum": 1,
+          "description": "Versión de config/analisis.v*.yaml (cortes, ventana, mínimo de muestras, dominios de respaldo)." },
+        "ruleset_version": { "type": "integer", "minimum": 1,
+          "description": "Versión del ruleset de señales evaluado (config/senales.v*.yaml)." },
+        "confidence": { "enum": ["normal", "low"],
+          "description": "`low` = > 30 % de outliers en el snapshot: las señales se suprimen y `rule_proximity[].evaluable` es false en todas las reglas." },
+        "official_stale": { "type": "boolean" },
+        "triggered_by": {
+          "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "event_id del p2p.snapshot que produjo la revisión (cadena de trazabilidad, T10)."
+        },
+
+        "indicators": {
+          "type": "array",
+          "description": "Una entrada por indicador del panel con valor VIGENTE (del lote o del último conocido aún fresco). Un indicador sin valor vigente NO aparece: nunca se infiere.",
+          "items": {
+            "type": "object",
+            "required": ["indicator", "value", "as_of", "band", "position", "scale", "rules"],
+            "additionalProperties": false,
+            "properties": {
+              "indicator": { "type": "string", "minLength": 1,
+                "description": "Nombre canónico (knowledge/metrics/). No se traduce." },
+              "value": { "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?$" },
+              "as_of": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}" },
+              "band": {
+                "enum": ["very_low", "low", "high", "very_high", "unscaled"],
+                "description": "Vocabulario neutro de idioma. percentiles: very_low <p10 · low [p10,p50) · high [p50,p90) · very_high >=p90. `unscaled` cuando la escala viene del respaldo del ruleset (no hay distribución empírica que sostenga una banda)."
+              },
+              "position": {
+                "oneOf": [{ "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$" }, { "type": "null" }],
+                "description": "COORDENADA DE DIBUJO en [0,1] del valor sobre la escala publicada (interpolación lineal entre `scale.cuts` y `scale.domain`, acotada). NO es el percentil empírico del valor: es reproducible a partir de este mismo payload. `null` cuando no hay escala dibujable."
+              },
+              "scale": {
+                "type": "object",
+                "required": ["source", "window_days", "samples", "min_samples", "computed_at", "domain", "cuts"],
+                "additionalProperties": false,
+                "properties": {
+                  "source": { "enum": ["percentiles", "ruleset"],
+                    "description": "`percentiles` = percentiles REALES de la hypertable `indicators` en la ventana. `ruleset` = respaldo con los umbrales reales de senales.v*.yaml porque samples < min_samples." },
+                  "window_days": { "type": "integer", "minimum": 1 },
+                  "samples": { "type": "integer", "minimum": 0,
+                    "description": "Filas encontradas en la ventana (real, también en el respaldo)." },
+                  "min_samples": { "type": "integer", "minimum": 1 },
+                  "computed_at": {
+                    "oneOf": [{ "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}" }, { "type": "null" }],
+                    "description": "Instante en que se calculó la distribución (puede ser anterior al as_of: se cachea con TTL). `null` si nunca se pudo consultar."
+                  },
+                  "domain": {
+                    "type": "object", "required": ["min", "max"], "additionalProperties": false,
+                    "properties": {
+                      "min": { "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?$" },
+                      "max": { "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?$" }
+                    },
+                    "description": "Extremos de la escala dibujada. Con source=percentiles son el min/max REALES de la ventana; con source=ruleset son el dominio declarado en config/analisis.v*.yaml (constante de presentación, no dato de mercado)."
+                  },
+                  "cuts": {
+                    "type": "array",
+                    "description": "Cortes ordenados por `value` ascendente. Vacío solo en el respaldo de un indicador que no alimenta ninguna regla ni umbral de sistema.",
+                    "items": {
+                      "type": "object",
+                      "required": ["key", "value", "position"],
+                      "additionalProperties": false,
+                      "properties": {
+                        "key": { "type": "string", "minLength": 1,
+                          "description": "`p10`|`p50`|`p90` con source=percentiles; con source=ruleset, la regla versionada (`arranque_alcista@v1`) o el umbral de sistema (`confianza_baja`)." },
+                        "value": { "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?$" },
+                        "position": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$" }
+                      }
+                    }
+                  }
+                }
+              },
+              "rules": {
+                "type": "array",
+                "description": "Condiciones del ruleset que consumen ESTE indicador, con su umbral, su operador y cuánto le falta al valor para satisfacerlas. Vacío si no alimenta ninguna.",
+                "items": {
+                  "type": "object",
+                  "required": ["rule", "type", "direction", "op", "threshold", "met", "distance", "threshold_position"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "rule": { "type": "string", "minLength": 1,
+                      "description": "Regla versionada `<type>@v<version>` (mismo identificador que signal.v1 evidence.rule)." },
+                    "type": { "type": "string", "minLength": 1 },
+                    "direction": { "enum": ["alcista", "bajista", "neutral"] },
+                    "op": { "enum": ["gt", "gte", "lt", "lte"] },
+                    "threshold": { "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?$" },
+                    "met": { "type": "boolean" },
+                    "distance": {
+                      "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                      "description": "Cuánto debe moverse el valor EN LA DIRECCIÓN EXIGIDA para satisfacer la condición: `threshold - value` con gt/gte y `value - threshold` con lt/lte. <= 0 significa satisfecha (met=true). Nunca es una predicción de cuándo ocurrirá."
+                    },
+                    "threshold_position": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$",
+                      "description": "Coordenada de dibujo del umbral sobre la misma escala, acotada a [0,1]." }
+                  }
+                }
+              }
+            }
+          }
+        },
+
+        "rule_proximity": {
+          "type": "array",
+          "description": "Una entrada por regla del ruleset: cuántas condiciones se cumplen y cuál bloquea. Es aritmética sobre el estado presente, NO un pronóstico ni un régimen.",
+          "items": {
+            "type": "object",
+            "required": ["rule", "type", "direction", "conditions_total", "conditions_met", "evaluable", "blocked_by", "conditions"],
+            "additionalProperties": false,
+            "properties": {
+              "rule": { "type": "string", "minLength": 1 },
+              "type": { "type": "string", "minLength": 1 },
+              "direction": { "enum": ["alcista", "bajista", "neutral"] },
+              "conditions_total": { "type": "integer", "minimum": 1 },
+              "conditions_met": { "type": "integer", "minimum": 0 },
+              "evaluable": { "type": "boolean",
+                "description": "false si algún indicador de la regla no está vigente (igual criterio que evaluar_reglas: una regla con un indicador ausente NO dispara) o si confidence=low." },
+              "blocked_by": {
+                "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }],
+                "description": "Indicador de la condición NO cumplida con mayor `distance`; empate resuelto por orden alfabético del nombre canónico. `null` si la regla se cumple entera o no es evaluable."
+              },
+              "conditions": {
+                "type": "array", "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": ["indicator", "op", "threshold", "value", "met", "distance"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "indicator": { "type": "string", "minLength": 1 },
+                    "op": { "enum": ["gt", "gte", "lt", "lte"] },
+                    "threshold": { "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?$" },
+                    "value": {
+                      "oneOf": [{ "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?$" }, { "type": "null" }],
+                      "description": "`null` si el indicador no está vigente. Nunca se rellena con el último conocido rancio."
+                    },
+                    "met": { "type": "boolean" },
+                    "distance": { "oneOf": [{ "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?$" }, { "type": "null" }] }
+                  }
+                }
+              }
+            }
+          }
+        },
+
+        "summary": {
+          "type": "object",
+          "required": ["rules_total", "rules_evaluable", "closest_rule", "conditions_met", "conditions_total", "blocked_by", "rules_met"],
+          "additionalProperties": false,
+          "description": "Síntesis MECÁNICA del panel: qué regla del ruleset está más cerca de cumplirse y qué la bloquea. Sin probabilidades, sin horizontes temporales, sin régimen.",
+          "properties": {
+            "rules_total": { "type": "integer", "minimum": 0 },
+            "rules_evaluable": { "type": "integer", "minimum": 0 },
+            "closest_rule": {
+              "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }],
+              "description": "Entre las reglas evaluables no cumplidas: la de mayor `conditions_met`; empate por menor `conditions_total` y luego orden alfabético de `rule`. `null` si ninguna es evaluable o todas se cumplen."
+            },
+            "conditions_met": { "type": "integer", "minimum": 0 },
+            "conditions_total": { "type": "integer", "minimum": 0 },
+            "blocked_by": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+            "rules_met": {
+              "type": "array", "items": { "type": "string", "minLength": 1 },
+              "description": "Reglas con TODAS sus condiciones cumplidas en esta revisión. NO implica que se haya emitido la señal: el cooldown (RF-4) pudo suprimirla. La emisión real vive en signals.emitted."
+            }
+          }
+        }
+      }
+    }
+  }
+}

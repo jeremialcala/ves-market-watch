@@ -28,6 +28,11 @@ login y el estado de salud son visibles sin sesión.
 > regla de presentación de bloques sin fuente de datos, que es RF-5 aplicada al
 > diseño.
 
+> Enmienda 2026-08-01 (ADR-0019): el motor ya calcula la lectura de los
+> medidores (RF-6 del PRD del motor), así que el panel de instrumentos deja de
+> ser un bloque demo y pasa a explicarse en ES/EN con dato servido — **RF-11**,
+> más la enmienda correspondiente a «RF-5 ampliado».
+
 ## Requisitos funcionales
 - **RF-1 — Login y sesión**: Auth Code + PKCE contra Universal Login (ADR-0012);
   tokens solo en memoria; renovación silenciosa por refresh rotation; logout.
@@ -73,10 +78,39 @@ login y el estado de salud son visibles sin sesión.
 - **RF-10 — Tema claro/oscuro**: el tema es explícito (oscuro por marca, no
   `prefers-color-scheme`), se cambia desde la barra y se recuerda. Ambos temas
   se pintan con los mismos tokens del sistema de diseño.
+- **RF-11 — Explicación de los medidores (ES/EN)** (2026-08-01, ADR-0019): cada
+  medidor del panel debe decir **qué mide**, **qué dice ahora** y **a qué aviso
+  alimenta**, en los dos idiomas, a partir de la lectura que sirve el gateway
+  (`GET /api/v1/analysis/current` y tópico WSS `analysis`).
+
+  - El pie de la tarjeta muestra la escala **real** contra la que se compara: los
+    cortes publicados, o el contador de muestras cuando todavía se está en
+    respaldo.
+  - La barra se rellena en la posición del contrato y lleva **una marca por cada
+    regla** que el medidor alimenta (hay indicadores que alimentan tres). Si el
+    contrato no trae posición, **no se dibuja relleno**.
+  - El SPA no calcula nada de esto: banda, posición, posición de umbral,
+    distancia y estado de cada umbral vienen del motor. La única aritmética
+    permitida es convertir la fracción [0,1] a un ancho CSS.
+  - Registro **didáctico**, no de mesa de operaciones: las frases describen el
+    presente y nunca el futuro, ninguna dice «percentil X» (una sola cadena, en
+    el desplegable, explica cómo se lee la escala) y «señal» se dice **aviso**.
+    La síntesis del panel lleva siempre la aclaración de que no es una predicción.
+  - Estados degradados explícitos y distinguibles entre sí: sin análisis, medidor
+    sin lectura en esta revisión, sin valor vigente, escala en respaldo,
+    confianza baja y tasa oficial rancia.
+
 - **RF-5 ampliado — bloques sin fuente**: todo bloque que el diseño pida y la
   plataforma no calcule debe distinguirse del dato servido **a simple vista**
   (sello `demo · sin fuente` + explicación en la sección). Un ejemplo que se lee
   igual que un dato del gateway es una violación de RF-5, no un detalle estético.
+
+  **Enmienda 2026-08-01 (ADR-0019): el panel de medidores deja de ser bloque
+  demo.** Lo que se marcaba —la escala percentil, el relleno, la marca de umbral
+  y la nota— ya lo calcula el motor por revisión, así que el sello se **retira**
+  del panel: mantenerlo sobre dato real sería tan deshonesto como no ponerlo
+  sobre un ejemplo. El sello sigue en el régimen de mercado y en la vista de
+  análisis, que continúan sin fuente.
 
 ## Requisitos no funcionales
 - Cobertura de ramas ≥ 80 % (criterio Gate 2, suite vitest sin infraestructura).

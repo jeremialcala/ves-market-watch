@@ -19,8 +19,14 @@ rate limit in-memory, profundidad interim): **ADR-0016**.
 - **Aplicación** (`application/`): puertos `TokenValidator` y `LecturaRepository`
   (`ports.py`); casos de uso de lectura que arman las respuestas del contrato con
   frescura (`consultas.py` — un indicador P2P más viejo que `P2P_FRESCURA_MIN` no
-  se sirve como vigente); `GestorSuscripciones` WSS (whitelist de tópicos, límites
-  por `sub`, difusión best-effort — `suscripciones.py`).
+  se sirve como vigente, y lo mismo aplica a `ConsultarAnalisisVigente`);
+  `GestorSuscripciones` WSS (whitelist de tópicos, límites por `sub`, difusión
+  best-effort — `suscripciones.py`).
+- **Análisis (RF-6, ADR-0019)**: `ConsultarAnalisisVigente` devuelve el payload **tal
+  como se publicó** — el gateway no reclasifica bandas ni recalcula escalas. Hacerlo
+  abriría una segunda fuente de verdad sobre la lectura del panel, y dos fuentes que se
+  contradicen es peor que ninguna. El codec `jsonb` ya registrado lo decodifica
+  manteniendo los decimales como string exacto.
 - **Adaptadores** (`adapters/`):
   - `auth/jwks.py` — `ValidadorTokenAuth0`: RS256 vía JWKS con cache por `kid` y
     refresco acotado (≥ 60 s entre fetches); exige `aud` = API e `iss` = tenant —
@@ -31,7 +37,7 @@ rate limit in-memory, profundidad interim): **ADR-0016**.
     string exacto; `DISTINCT ON` para «última fila por día/indicador»;
     `time_bucket` + `last()` para el histórico agregado.
   - `amqp/consumer.py` — cola **efímera** (exclusiva, auto-delete) sobre
-    `market.events` con bind a los 4 routing keys; valida cada evento contra su
+    `market.events` con bind a los 5 routing keys; valida cada evento contra su
     schema (`schemas/`) y difunde `{topic, event_id, occurred_at, data}`.
     **Auto-recuperable** (2026-07-30): si el bus no está al arrancar, un
     supervisor reintenta con backoff exponencial + jitter hasta conectar; una
@@ -90,7 +96,10 @@ JWKS_URI=https://dev-higerotech.us.auth0.com/.well-known/jwks.json
 
 ## Contratos
 - **REST:** `docs/openapi.yaml` (OpenAPI 3.1, validada con `openapi-spec-validator`).
-  8 endpoints `/api/v1`, seguridad OAuth2 con los 5 scopes; ajustes al implementarse:
+  9 endpoints `/api/v1` (v0.5.0 suma `/analysis/current`), seguridad OAuth2 con los 5
+  scopes — el análisis **reutiliza `read:indicators`** (ADR-0019: un permiso nuevo
+  exigiría aprovisionarlo en el tenant y daría 403 a todo token ya emitido); ajustes al
+  implementarse:
   `currency` opcional en tasa oficial, 404 en los «current» sin datos, `spread_pct`
   (la microestructura real del engine) en lugar de spreads por lado inexistentes.
 - **WSS:** `docs/asyncapi.yaml` (AsyncAPI 3.0, 2026-07-26 — cierra el TODO): canal

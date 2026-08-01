@@ -231,6 +231,30 @@ class ConsultarProfundidad:
         }
 
 
+class ConsultarAnalisisVigente:
+    """Última lectura de los medidores del panel (RF-6, ADR-0019).
+
+    Devuelve el payload **tal como se publicó**: el gateway no reclasifica
+    bandas ni recalcula escalas. Hacerlo abriría una segunda fuente de verdad
+    sobre la lectura del panel, y dos fuentes que se contradicen es peor que
+    ninguna. Mismo criterio de frescura que `/rates/p2p/current`: una revisión
+    más vieja que la frescura P2P no se sirve como vigente (A10).
+    """
+
+    def __init__(self, repo: LecturaRepository, frescura: timedelta) -> None:
+        self._repo = repo
+        self._frescura = frescura
+
+    async def ejecutar(self, currency: str) -> dict | None:
+        fila = await self._repo.analisis_vigente(currency)
+        if fila is None:
+            return None
+        as_of: datetime = fila["as_of"]
+        if datetime.now(UTC) - as_of > self._frescura:
+            return None
+        return fila["payload"]
+
+
 class ConsultarSenales:
     def __init__(self, repo: LecturaRepository) -> None:
         self._repo = repo

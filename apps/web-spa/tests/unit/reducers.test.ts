@@ -12,6 +12,10 @@ import type {
   PayloadTasaOficial,
   PushEvento,
 } from "../../src/ws/messages";
+import {
+  FIXTURE_ANALISIS,
+  FIXTURE_ANALISIS_RESPALDO,
+} from "../contract/fixtures.test";
 
 let contador = 0;
 function push(topic: PushEvento["topic"], data: unknown): PushEvento {
@@ -139,7 +143,45 @@ describe("aplicarPush", () => {
   });
 });
 
+describe("aplicarPush · analysis", () => {
+  it("REEMPLAZA el análisis completo, no lo mezcla con el anterior", () => {
+    const primero = aplicarPush(
+      ESTADO_INICIAL,
+      push("analysis", FIXTURE_ANALISIS),
+    );
+    expect(primero.analisis?.indicators).toHaveLength(2);
+
+    // La revisión siguiente reevalúa TODO: un indicador que desaparece del
+    // array es uno que dejó de estar vigente, y su barra debe irse con él.
+    const segundo = aplicarPush(
+      primero,
+      push("analysis", FIXTURE_ANALISIS_RESPALDO),
+    );
+    expect(segundo.analisis?.indicators.map((i) => i.indicator)).toEqual([
+      "p2p_brecha_pct_buy",
+      "p2p_ratio_oferta_demanda",
+    ]);
+    expect(segundo.analisis?.summary.closest_rule).toBeNull();
+  });
+
+  it("la reentrega del mismo evento no cambia el estado (idempotencia)", () => {
+    const evento = push("analysis", FIXTURE_ANALISIS);
+    const uno = aplicarPush(ESTADO_INICIAL, evento);
+    expect(aplicarPush(uno, evento)).toBe(uno);
+  });
+});
+
 describe("aplicarResync", () => {
+  it("el resync REST es autoritativo también para el análisis", () => {
+    const conPush = aplicarPush(
+      ESTADO_INICIAL,
+      push("analysis", FIXTURE_ANALISIS),
+    );
+    // 404 del gateway (sin análisis vigente) borra el que quedó del push: el
+    // panel prefiere decir «sin lectura» antes que enseñar una rancia.
+    expect(aplicarResync(conPush, { analisis: null }).analisis).toBeNull();
+  });
+
   it("sobrescribe solo las vistas presentes en el snapshot", () => {
     const conSenal = aplicarPush(ESTADO_INICIAL, push("signals", SENAL));
     const resync = aplicarResync(conSenal, {

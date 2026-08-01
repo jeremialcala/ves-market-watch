@@ -12,12 +12,20 @@ from datetime import UTC, datetime
 
 import aio_pika
 
+from indicator_engine.domain.analisis import Analisis, Escala, LecturaIndicador
 from indicator_engine.domain.models import Indicador
-from indicator_engine.domain.reglas import Senal
+from indicator_engine.domain.reglas import ProximidadRegla, Senal
 
 ROUTING_KEY = "indicators.updated"
 ROUTING_KEY_SIGNAL = "signals.emitted"
+ROUTING_KEY_ANALISIS = "analysis.updated"
 SCHEMA_VERSION = 1
+
+
+def _dec(valor) -> str:
+    """Decimal → string en punto fijo. `str(Decimal)` puede dar notación
+    científica y todos los contratos exigen `^-?[0-9]+(\\.[0-9]+)?$`."""
+    return format(valor, "f")
 
 
 def construir_evento_indicadores(
@@ -77,6 +85,112 @@ def construir_evento_senal(senal: Senal) -> dict:
     }
 
 
+def _escala_a_dict(escala: Escala) -> dict:
+    return {
+        "source": escala.fuente,
+        "window_days": escala.ventana_dias,
+        "samples": escala.muestras,
+        "min_samples": escala.muestras_minimas,
+        "computed_at": (
+            escala.calculada_en.isoformat() if escala.calculada_en else None
+        ),
+        "domain": {
+            "min": _dec(escala.dominio_min),
+            "max": _dec(escala.dominio_max),
+        },
+        "cuts": [
+            {
+                "key": corte.clave,
+                "value": _dec(corte.valor),
+                "position": _dec(corte.posicion),
+            }
+            for corte in escala.cortes
+        ],
+    }
+
+
+def _lectura_a_dict(lectura: LecturaIndicador) -> dict:
+    return {
+        "indicator": lectura.indicador,
+        "value": _dec(lectura.valor),
+        "as_of": lectura.as_of.isoformat(),
+        "band": lectura.banda,
+        "position": _dec(lectura.posicion) if lectura.posicion is not None else None,
+        "scale": _escala_a_dict(lectura.escala),
+        "rules": [
+            {
+                "rule": regla.regla,
+                "type": regla.tipo,
+                "direction": regla.direccion,
+                "op": regla.op,
+                "threshold": _dec(regla.umbral),
+                "met": regla.cumple,
+                "distance": _dec(regla.distancia),
+                "threshold_position": _dec(regla.posicion_umbral),
+            }
+            for regla in lectura.reglas
+        ],
+    }
+
+
+def _proximidad_a_dict(proximidad: ProximidadRegla) -> dict:
+    return {
+        "rule": proximidad.regla,
+        "type": proximidad.tipo,
+        "direction": proximidad.direccion,
+        "conditions_total": proximidad.total,
+        "conditions_met": proximidad.cumplidas,
+        "evaluable": proximidad.evaluable,
+        "blocked_by": proximidad.bloqueada_por,
+        "conditions": [
+            {
+                "indicator": cond.condicion.indicador,
+                "op": cond.condicion.op,
+                "threshold": _dec(cond.condicion.umbral),
+                # `null`, nunca el último conocido rancio: un indicador que no
+                # está vigente no tiene valor en esta revisión.
+                "value": _dec(cond.valor) if cond.valor is not None else None,
+                "met": cond.cumple,
+                "distance": _dec(cond.distancia) if cond.distancia is not None else None,
+            }
+            for cond in proximidad.condiciones
+        ],
+    }
+
+
+def construir_evento_analisis(analisis: Analisis) -> dict:
+    """Sobre + payload del evento `analysis.updated` (schemas/analysis.v1.json)."""
+    sintesis = analisis.sintesis
+    return {
+        "event_id": str(uuid.uuid4()),
+        "event_type": ROUTING_KEY_ANALISIS,
+        "schema_version": SCHEMA_VERSION,
+        "occurred_at": datetime.now(UTC).isoformat(),
+        "producer": "indicator-engine",
+        "payload": {
+            "as_of": analisis.as_of.isoformat(),
+            "currency": analisis.moneda,
+            "calc_version": analisis.calc_version,
+            "analysis_version": analisis.analysis_version,
+            "ruleset_version": analisis.ruleset_version,
+            "confidence": analisis.confianza,
+            "official_stale": analisis.official_stale,
+            "triggered_by": analisis.triggered_by,
+            "indicators": [_lectura_a_dict(l) for l in analisis.indicadores],
+            "rule_proximity": [_proximidad_a_dict(p) for p in analisis.proximidad],
+            "summary": {
+                "rules_total": sintesis.reglas_total,
+                "rules_evaluable": sintesis.reglas_evaluables,
+                "closest_rule": sintesis.regla_mas_cercana,
+                "conditions_met": sintesis.condiciones_cumplidas,
+                "conditions_total": sintesis.condiciones_totales,
+                "blocked_by": sintesis.bloqueada_por,
+                "rules_met": list(sintesis.reglas_cumplidas),
+            },
+        },
+    }
+
+
 class AmqpEventPublisher:
     """Adaptador del puerto `EventPublisher` sobre aio-pika (confirms + persistente)."""
 
@@ -124,6 +238,19 @@ class AmqpEventPublisher:
             timestamp=datetime.now(UTC),
         )
         await exchange.publish(mensaje, routing_key=ROUTING_KEY_SIGNAL)
+
+    async def publish_analysis_updated(self, evento: dict) -> None:
+        # Recibe el sobre YA construido: su `payload` es el mismo objeto que se
+        # persistió verbatim, así bus y tabla no pueden divergir (ADR-0019).
+        exchange = await self._asegurar_canal()
+        mensaje = aio_pika.Message(
+            body=json.dumps(evento, ensure_ascii=False).encode("utf-8"),
+            content_type="application/json",
+            delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+            message_id=evento["event_id"],
+            timestamp=datetime.now(UTC),
+        )
+        await exchange.publish(mensaje, routing_key=ROUTING_KEY_ANALISIS)
 
     async def close(self) -> None:
         if self._connection is not None:

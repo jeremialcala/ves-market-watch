@@ -189,6 +189,8 @@ async def pool(timescale_listo: str):
     import asyncpg
 
     pool = await asyncpg.create_pool(timescale_listo, min_size=1, max_size=4)
-    await pool.execute("TRUNCATE indicators, processed_events, signals")
+    await pool.execute(
+        "TRUNCATE indicators, processed_events, signals, indicator_analysis"
+    )
     yield pool
     await pool.close()

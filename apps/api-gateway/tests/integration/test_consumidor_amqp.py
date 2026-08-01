@@ -14,7 +14,7 @@ import pytest
 from api_gateway.adapters.amqp.consumer import ConsumidorPushWss
 from api_gateway.application.suscripciones import GestorSuscripciones
 from api_gateway.domain.modelos import Usuario
-from tests.conftest import SCHEMAS_DIR, evento_senal
+from tests.conftest import SCHEMAS_DIR, evento_analisis, evento_senal
 
 pytestmark = pytest.mark.integration
 
@@ -158,5 +158,37 @@ async def test_sobrevive_a_una_caida_del_bus_y_reanuda_el_push(amqp_listo):
                 raise AssertionError("el push no se reanudó tras la reconexión")
             await _publicar(amqp_listo, evento)
             await asyncio.sleep(0.5)
+    finally:
+        await consumidor.close()
+
+
+async def test_el_analisis_llega_a_su_topico_y_el_invalido_se_descarta(amqp_listo):
+    """Alta del tópico `analysis` de punta a punta: bind, validación contra
+    `schemas/analysis.v1.json` y push. Un evento que no valida no se difunde —
+    el SPA nunca recibe una lectura mal formada."""
+    gestor = GestorSuscripciones(max_conexiones=5, max_suscripciones=10)
+    canal = _suscriptor(gestor, ["analysis"])
+
+    consumidor = ConsumidorPushWss(
+        amqp_url=amqp_listo,
+        exchange_name="market.events",
+        gestor=gestor,
+        schemas_dir=str(SCHEMAS_DIR),
+    )
+    await consumidor.start()
+    try:
+        evento = evento_analisis()
+        await _publicar(amqp_listo, evento)
+        await _esperar(lambda: canal.enviados)
+        mensaje = canal.enviados[0]
+        assert mensaje["topic"] == "analysis"
+        assert mensaje["event_id"] == evento["event_id"]
+        assert mensaje["data"]["summary"]["closest_rule"] == "techo_inminente@v1"
+
+        invalido = evento_analisis()
+        invalido["payload"]["indicators"][0]["band"] = "medio"  # fuera del enum
+        await _publicar(amqp_listo, invalido)
+        await asyncio.sleep(1.0)
+        assert len(canal.enviados) == 1
     finally:
         await consumidor.close()

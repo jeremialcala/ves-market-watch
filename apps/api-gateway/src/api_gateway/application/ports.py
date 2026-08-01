@@ -85,4 +85,9 @@ class LecturaRepository(ABC):
     ) -> tuple[list[dict], int]: ...
 
     @abstractmethod
+    async def analisis_vigente(self, currency: str) -> dict | None:
+        """Última revisión de `indicator_analysis` por (currency, as_of DESC):
+        {as_of, payload}. El payload es el documento publicado tal cual (RF-6)."""
+
+    @abstractmethod
     async def ping(self) -> bool: ...

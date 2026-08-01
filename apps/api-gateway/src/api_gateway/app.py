@@ -23,6 +23,7 @@ from api_gateway.adapters.http import rest, ws
 from api_gateway.adapters.http.problem import registrar_manejadores
 from api_gateway.adapters.timescale.repository import TimescaleLecturaRepository
 from api_gateway.application.consultas import (
+    ConsultarAnalisisVigente,
     ConsultarHistoricoIndicadores,
     ConsultarHistoricoTasaOficial,
     ConsultarIndicadoresVigentes,
@@ -81,6 +82,7 @@ def create_app(
                 repo, Decimal(settings.depth_band_pct), settings.depth_niveles
             ),
             senales=ConsultarSenales(repo),
+            analisis=ConsultarAnalisisVigente(repo, frescura_p2p),
         )
         app.state.consumidor = None
         if con_amqp:

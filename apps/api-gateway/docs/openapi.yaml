@@ -16,7 +16,7 @@ openapi: 3.1.0
 
 info:
   title: VES Market Watch API
-  version: 0.4.0
+  version: 0.5.0
   description: |
     API de solo lectura sobre datos públicos del mercado cambiario venezolano:
     tasa oficial BCV, referencia P2P de Binance, indicadores derivados y señales.
@@ -55,6 +55,11 @@ tags:
     description: Profundidad del mercado P2P.
   - name: signals
     description: Señales financieras con evidencia trazable.
+  - name: analysis
+    description: |
+      Lectura mecánica de los medidores del panel (RF-6, ADR-0019): en qué banda
+      cae cada indicador dentro de su propia historia y a cuánto está de cada
+      umbral del ruleset. No contiene pronósticos.
   - name: system
     description: Salud del servicio (público).
 
@@ -204,6 +209,45 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/UnprocessableRange' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /analysis/current:
+    get:
+      tags: [analysis]
+      summary: Análisis de la última revisión
+      description: |
+        Lectura de los seis medidores del panel en la última revisión del
+        indicator-engine: banda dentro de la escala de percentiles reales de la
+        ventana (o del respaldo del ruleset, declarado en `scale.source`),
+        posición de dibujo, y proximidad de cada regla del ruleset versionado.
+
+        Se devuelve **tal como se publicó** en `analysis.updated`: el gateway no
+        reclasifica bandas ni recalcula escalas. Un análisis más viejo que la
+        frescura P2P no se sirve como vigente (404) — nunca se presenta dato
+        rancio como actual.
+
+        **No es un pronóstico**: `rule_proximity` y `summary` son aritmética
+        sobre el estado presente (k de n condiciones y cuál bloquea). Usa el
+        permiso `read:indicators`, el mismo que los indicadores que lee.
+      operationId: getAnalysisCurrent
+      security:
+        - auth0: [read:indicators]
+      parameters:
+        - $ref: '#/components/parameters/CurrencyP2P'
+      responses:
+        '200':
+          description: Análisis vigente.
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/XRateLimitLimit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/XRateLimitRemaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/XRateLimitReset' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IndicatorAnalysis' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
   /market/depth:
@@ -401,6 +445,17 @@ components:
       required: false
       schema:
         type: string
+    CurrencyP2P:
+      name: currency
+      in: query
+      description: |
+        Fiat del par sobre el que se leyó el panel. Los indicadores `p2p_*` se
+        persisten bajo el fiat (`VES`), no bajo la pierna oficial (ADR-0014).
+      required: false
+      schema:
+        type: string
+        pattern: '^[A-Z]{3}$'
+        default: VES
     CurrencyFilter:
       name: currency
       in: query
@@ -793,6 +848,286 @@ components:
           items: { $ref: '#/components/schemas/Signal' }
         pagination: { $ref: '#/components/schemas/PageMeta' }
       required: [data, pagination]
+
+    Fraction:
+      type: string
+      pattern: '^[0-9]+(\.[0-9]+)?$'
+      description: |
+        Fracción en [0,1] como string exacto. **Coordenada de dibujo**, no un
+        percentil empírico: reproducible a partir de los `cuts` del mismo payload.
+      example: '0.3140'
+
+    AnalysisScaleCut:
+      type: object
+      additionalProperties: false
+      description: Un corte de la escala, con su valor real y dónde se dibuja.
+      properties:
+        key:
+          type: string
+          description: |
+            `p10`|`p50`|`p90` con `source: percentiles`; con `source: ruleset`,
+            la regla versionada (`arranque_alcista@v1`) o el umbral de sistema
+            (`confianza_baja`).
+        value: { $ref: '#/components/schemas/SignedDecimal' }
+        position: { $ref: '#/components/schemas/Fraction' }
+      required: [key, value, position]
+
+    AnalysisScale:
+      type: object
+      additionalProperties: false
+      description: |
+        La escala contra la que se leyó el medidor, con su FUENTE y sus
+        parámetros. Que la fuente viaje en el payload es lo que permite a la UI
+        decir contra qué se compara, en vez de degradar en silencio.
+      properties:
+        source:
+          type: string
+          enum: [percentiles, ruleset]
+          description: |
+            `percentiles` = percentiles reales de la ventana. `ruleset` =
+            respaldo con los umbrales reales del ruleset porque
+            `samples < min_samples`.
+        window_days:
+          type: integer
+          minimum: 1
+        samples:
+          type: integer
+          minimum: 0
+          description: Filas encontradas en la ventana (real, también en el respaldo).
+        min_samples:
+          type: integer
+          minimum: 1
+        computed_at:
+          oneOf:
+            - { type: string, format: date-time }
+            - { type: 'null' }
+          description: |
+            Cuándo se calculó la distribución. Puede ir por detrás de `as_of`
+            (se cachea con TTL); `null` si nunca se pudo consultar.
+        domain:
+          type: object
+          additionalProperties: false
+          description: |
+            Extremos de la barra. Con `percentiles` son el min/max reales de la
+            ventana; con `ruleset`, el dominio declarado en la config versionada
+            (constante de presentación, no dato de mercado).
+          properties:
+            min: { $ref: '#/components/schemas/SignedDecimal' }
+            max: { $ref: '#/components/schemas/SignedDecimal' }
+          required: [min, max]
+        cuts:
+          type: array
+          items: { $ref: '#/components/schemas/AnalysisScaleCut' }
+          description: |
+            Cortes ordenados por `value` ascendente. Vacío solo en el respaldo de
+            un indicador que no alimenta ninguna regla ni umbral de sistema.
+      required: [source, window_days, samples, min_samples, computed_at, domain, cuts]
+
+    AnalysisRuleRef:
+      type: object
+      additionalProperties: false
+      description: |
+        Una condición del ruleset que consume ESTE indicador, con cuánto le falta
+        al valor para satisfacerla.
+      properties:
+        rule:
+          type: string
+          description: Regla versionada `<type>@v<n>` (mismo id que `Signal.evidence.rule`).
+        type: { type: string }
+        direction:
+          type: string
+          enum: [alcista, bajista, neutral]
+        op:
+          type: string
+          enum: [gt, gte, lt, lte]
+        threshold: { $ref: '#/components/schemas/SignedDecimal' }
+        met: { type: boolean }
+        distance:
+          allOf:
+            - { $ref: '#/components/schemas/SignedDecimal' }
+          description: |
+            Cuánto debe moverse el valor EN LA DIRECCIÓN EXIGIDA:
+            `threshold - value` con gt/gte, `value - threshold` con lt/lte.
+            `<= 0` significa satisfecha. Nunca es una predicción de cuándo pasará.
+        threshold_position: { $ref: '#/components/schemas/Fraction' }
+      required: [rule, type, direction, op, threshold, met, distance, threshold_position]
+
+    AnalysisIndicator:
+      type: object
+      additionalProperties: false
+      description: |
+        La lectura de un medidor. Un indicador sin valor vigente NO aparece en el
+        array: nunca se infiere.
+      properties:
+        indicator:
+          type: string
+          description: Nombre canónico (`knowledge/metrics/`). No se traduce.
+        value: { $ref: '#/components/schemas/SignedDecimal' }
+        as_of:
+          type: string
+          format: date-time
+        band:
+          type: string
+          enum: [very_low, low, high, very_high, unscaled]
+          description: |
+            Vocabulario neutro de idioma; la prosa la redacta el cliente.
+            Con percentiles: `very_low` <p10 · `low` [p10,p50) · `high` [p50,p90)
+            · `very_high` >=p90. `unscaled` con el respaldo del ruleset: sin
+            distribución empírica no existe alto/bajo, y emitir ahí una banda
+            sería inventar dato.
+        position:
+          oneOf:
+            - { $ref: '#/components/schemas/Fraction' }
+            - { type: 'null' }
+          description: '`null` cuando no hay escala dibujable: nada que pintar.'
+        scale: { $ref: '#/components/schemas/AnalysisScale' }
+        rules:
+          type: array
+          items: { $ref: '#/components/schemas/AnalysisRuleRef' }
+          description: Vacío si el indicador no alimenta ninguna condición.
+      required: [indicator, value, as_of, band, position, scale, rules]
+
+    RuleCondition:
+      type: object
+      additionalProperties: false
+      properties:
+        indicator: { type: string }
+        op:
+          type: string
+          enum: [gt, gte, lt, lte]
+        threshold: { $ref: '#/components/schemas/SignedDecimal' }
+        value:
+          oneOf:
+            - { $ref: '#/components/schemas/SignedDecimal' }
+            - { type: 'null' }
+          description: |
+            `null` si el indicador no está vigente. Nunca se rellena con el
+            último conocido rancio.
+        met: { type: boolean }
+        distance:
+          oneOf:
+            - { $ref: '#/components/schemas/SignedDecimal' }
+            - { type: 'null' }
+      required: [indicator, op, threshold, value, met, distance]
+
+    RuleProximity:
+      type: object
+      additionalProperties: false
+      description: |
+        Cuántas condiciones de una regla se cumplen y cuál bloquea. Aritmética
+        sobre el estado presente, NO un pronóstico ni un régimen.
+      properties:
+        rule: { type: string }
+        type: { type: string }
+        direction:
+          type: string
+          enum: [alcista, bajista, neutral]
+        conditions_total:
+          type: integer
+          minimum: 1
+        conditions_met:
+          type: integer
+          minimum: 0
+        evaluable:
+          type: boolean
+          description: |
+            `false` si algún indicador de la regla no está vigente (mismo criterio
+            que la emisión: una regla con un indicador ausente no dispara) o si
+            `confidence: low`.
+        blocked_by:
+          oneOf:
+            - { type: string }
+            - { type: 'null' }
+          description: |
+            Indicador de la condición NO cumplida con mayor `distance`; empate por
+            orden alfabético. `null` si la regla se cumple entera o no es evaluable.
+        conditions:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/RuleCondition' }
+      required: [rule, type, direction, conditions_total, conditions_met, evaluable, blocked_by, conditions]
+
+    AnalysisSummary:
+      type: object
+      additionalProperties: false
+      description: |
+        Síntesis MECÁNICA del panel: qué regla está más cerca de cumplirse y qué
+        la bloquea. Sin probabilidades, sin horizontes temporales, sin régimen.
+      properties:
+        rules_total:
+          type: integer
+          minimum: 0
+        rules_evaluable:
+          type: integer
+          minimum: 0
+        closest_rule:
+          oneOf:
+            - { type: string }
+            - { type: 'null' }
+          description: |
+            Entre las evaluables no cumplidas: la de mayor `conditions_met`;
+            empate por menor `conditions_total` y luego orden alfabético. `null`
+            si ninguna es evaluable o todas se cumplen.
+        conditions_met:
+          type: integer
+          minimum: 0
+          description: Condiciones cumplidas de `closest_rule` (0 si no hay ninguna).
+        conditions_total:
+          type: integer
+          minimum: 0
+        blocked_by:
+          oneOf:
+            - { type: string }
+            - { type: 'null' }
+        rules_met:
+          type: array
+          items: { type: string }
+          description: |
+            Reglas con TODAS sus condiciones cumplidas en esta revisión. NO
+            implica que la señal se emitiera: el cooldown pudo suprimirla. La
+            emisión real vive en `/signals`.
+      required: [rules_total, rules_evaluable, closest_rule, conditions_met, conditions_total, blocked_by, rules_met]
+
+    IndicatorAnalysis:
+      type: object
+      additionalProperties: false
+      description: |
+        Lectura de los medidores del panel en una revisión (ADR-0019). Es el
+        `payload` del evento `analysis.updated`, servido verbatim.
+      properties:
+        as_of:
+          type: string
+          format: date-time
+          description: Instante del dato de mercado de la revisión, no la hora de emisión.
+        currency: { $ref: '#/components/schemas/Currency' }
+        calc_version:
+          type: integer
+          minimum: 1
+        analysis_version:
+          type: integer
+          minimum: 1
+          description: Versión de la config de análisis (ventana, cortes, dominios).
+        ruleset_version:
+          type: integer
+          minimum: 1
+        confidence:
+          type: string
+          enum: [normal, low]
+          description: |
+            `low` = > 30 % de outliers en el snapshot: las señales se suprimen y
+            ninguna regla es evaluable.
+        official_stale: { type: boolean }
+        triggered_by:
+          type: string
+          description: '`event_id` del `p2p.snapshot` que produjo la revisión (T10).'
+        indicators:
+          type: array
+          items: { $ref: '#/components/schemas/AnalysisIndicator' }
+        rule_proximity:
+          type: array
+          items: { $ref: '#/components/schemas/RuleProximity' }
+        summary: { $ref: '#/components/schemas/AnalysisSummary' }
+      required: [as_of, currency, calc_version, analysis_version, ruleset_version, confidence, official_stale, triggered_by, indicators, rule_proximity, summary]
 
     Health:
       type: object

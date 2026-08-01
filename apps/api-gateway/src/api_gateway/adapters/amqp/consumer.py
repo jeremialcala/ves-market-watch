@@ -45,6 +45,7 @@ _SCHEMA_POR_EVENTO = {
     "p2p.snapshot": "p2p-snapshot.v1.json",
     "indicators.updated": "indicators.v1.json",
     "signals.emitted": "signal.v1.json",
+    "analysis.updated": "analysis.v1.json",
 }
 
 

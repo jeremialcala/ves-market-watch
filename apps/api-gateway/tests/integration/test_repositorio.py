@@ -160,3 +160,34 @@ async def test_el_pool_del_gateway_es_solo_lectura(repo):
 
 async def test_ping(repo):
     assert await repo.ping() is True
+
+
+async def test_analisis_vigente_toma_la_ultima_revision_y_conserva_los_strings(
+    pool, repo
+):
+    """El codec jsonb ya registrado decodifica el documento sin round-trip por
+    float: los decimales llegan al SPA como el string exacto que se publicó."""
+    for minutos, posicion in ((10, "0.1000"), (1, "0.2996")):
+        await pool.execute(
+            "INSERT INTO indicator_analysis (as_of, currency, triggered_by,"
+            " calc_version, analysis_version, ruleset_version, confidence,"
+            " official_stale, scale_source, payload)"
+            " VALUES ($1, 'VES', gen_random_uuid(), 1, 1, 1, 'normal', false,"
+            " 'percentiles', $2::jsonb)",
+            AHORA - timedelta(minutes=minutos),
+            json.dumps(
+                {
+                    "as_of": (AHORA - timedelta(minutes=minutos)).isoformat(),
+                    "indicators": [{"position": posicion, "value": "13.220000"}],
+                }
+            ),
+        )
+
+    fila = await repo.analisis_vigente("VES")
+
+    assert fila["payload"]["indicators"][0]["position"] == "0.2996"  # la última
+    assert fila["payload"]["indicators"][0]["value"] == "13.220000"  # ceros intactos
+
+
+async def test_analisis_vigente_sin_fila_es_none(pool, repo):
+    assert await repo.analisis_vigente("COP") is None

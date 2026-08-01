@@ -15,7 +15,7 @@ asyncapi: 3.0.0
 
 info:
   title: VES Market Watch — Streaming WSS
-  version: 0.4.0
+  version: 0.5.0
   description: |
     Canal de streaming en tiempo casi real sobre WebSocket.
 
@@ -52,7 +52,7 @@ channels:
     description: |
       La selección de contenido se hace por mensajes de suscripción sobre la
       conexión, con whitelist de tópicos: `rates.official`, `p2p.snapshot`,
-      `indicators`, `signals`.
+      `indicators`, `signals`, `analysis`.
     messages:
       suscribir:
         $ref: '#/components/messages/suscribir'
@@ -93,7 +93,7 @@ components:
   schemas:
     topico:
       type: string
-      enum: [rates.official, p2p.snapshot, indicators, signals]
+      enum: [rates.official, p2p.snapshot, indicators, signals, analysis]
 
   messages:
     suscribir:
@@ -183,9 +183,11 @@ components:
               Payload del evento, según su contrato canónico (mapeo routing
               key → tópico): `official.rate.updated` → `rates.official` ·
               `p2p.snapshot` → `p2p.snapshot` · `indicators.updated` →
-              `indicators` · `signals.emitted` → `signals`.
+              `indicators` · `signals.emitted` → `signals` ·
+              `analysis.updated` → `analysis`.
             oneOf:
               - $ref: '../../../schemas/official-rate.v1.json#/properties/payload'
               - $ref: '../../../schemas/p2p-snapshot.v1.json#/properties/payload'
               - $ref: '../../../schemas/indicators.v1.json#/properties/payload'
               - $ref: '../../../schemas/signal.v1.json#/properties/payload'
+              - $ref: '../../../schemas/analysis.v1.json#/properties/payload'

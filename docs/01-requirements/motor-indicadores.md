@@ -2,13 +2,15 @@
 
 - **Estado:** approved (Gate 0, HITL 2026-07-11) — implementado extremo a extremo en
   `apps/indicator-engine`: fase 1 (tasas oficiales, 2026-07-05), fase 2 P2P/microestructura
-  (2026-07-20) y motor de reglas de señales (RF-4, 2026-07-22, ADR-0015) que emite
-  `signals.emitted` (`signal.v1`). Pendiente solo la recalibración HITL de umbrales (subir la
-  versión del ruleset) y mejoras menores (profundidad por bandas, variación intradía).
+  (2026-07-20), motor de reglas de señales (RF-4, 2026-07-22, ADR-0015) que emite
+  `signals.emitted` (`signal.v1`) y análisis de la revisión (RF-6, 2026-08-01, ADR-0019)
+  que emite `analysis.updated` (`analysis.v1`). Pendiente solo la recalibración HITL de
+  umbrales (subir la versión del ruleset) y mejoras menores (profundidad por bandas,
+  variación intradía).
 - **Fecha:** 2026-07-11
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 01-requirements
-- **Versión:** 0.3.0
+- **Versión:** 0.4.0
 
 ## Problema y contexto
 Consolidar los eventos de las fuentes (P2P y BCV) y producir indicadores financieros de
@@ -59,6 +61,26 @@ forma reactiva: cada nuevo dato recalcula y publica los indicadores afectados.
 - RF-3: Persistir indicadores como series de tiempo con `calc_version` (reproducibilidad).
 - RF-4: Motor de reglas de señales configurable sin redeploy (config versionada).
 - RF-5: Publicar `indicators.updated` / `signals.emitted` al bus para el api-gateway.
+- RF-6: **Análisis de la revisión.** Por cada lote de indicadores emitido, producir y
+  publicar la lectura mecánica de los medidores del panel: en qué banda cae cada valor
+  dentro de una escala de **percentiles reales** de su propia historia (ventana
+  configurable), su posición de dibujo sobre esa escala con los cortes que la generan, y
+  a cuánto está de cada umbral del ruleset que lo consume (`analysis.updated`).
+
+  Reglas que lo acotan, todas verificables:
+  - La escala usada **viaja en el payload** (`scale.source`): sin historia suficiente se
+    cae a un respaldo con los umbrales reales del ruleset y se declara. Nunca se degrada
+    en silencio.
+  - Sin distribución empírica que la sostenga **no se emite banda** (`unscaled`): ni con
+    el respaldo, ni cuando los cortes de la ventana coinciden entre sí.
+  - Un indicador sin valor vigente **no produce lectura** y una condición cuyo indicador
+    falta lleva `value: null`; jamás se rellena con el último conocido rancio.
+  - El motor **clasifica** en vocabulario neutro de idioma; la prosa la redacta el cliente.
+  - **No es un pronóstico**: nada de régimen, probabilidades ni horizontes temporales. La
+    síntesis es proximidad aritmética a reglas ya versionadas, y `rules_met` no implica
+    emisión (el cooldown pudo suprimirla).
+  - Un fallo del análisis **no** manda el snapshot a la DLQ ni impide publicar
+    indicadores y señales.
 
 ```mermaid
 requirementDiagram
@@ -92,6 +114,12 @@ requirementDiagram
       risk: medium
       verifymethod: test
     }
+    requirement RF6 {
+      id: "RF-6"
+      text: "Analisis de la revision: banda, escala y proximidad a reglas"
+      risk: high
+      verifymethod: test
+    }
     requirement SEC1 {
       id: "ASVS-V5.1"
       text: "Validacion de esquema de eventos consumidos"
@@ -110,6 +138,12 @@ requirementDiagram
     element SuiteSenales {
       type: "prueba"
     }
+    element AnalisisYaml {
+      type: "config versionada"
+    }
+    element SuiteAnalisis {
+      type: "prueba"
+    }
     Engine - satisfies -> RF1
     Engine - satisfies -> RF2
     Engine - satisfies -> RF3
@@ -122,9 +156,12 @@ requirementDiagram
     SuiteFase1 - verifies -> SEC1
     SuiteSenales - verifies -> RF4
     SuiteSenales - verifies -> RF5
+    AnalisisYaml - satisfies -> RF6
+    Engine - satisfies -> RF6
+    SuiteAnalisis - verifies -> RF6
 ```
 
-*Eje trazabilidad — fase 01 / Gate 0, actualizado a la implementación: RF-1/2/3/5 y la validación de esquema (ASVS V5.1) satisfechos y verificados por la suite. RF-4 (señales, `ReglasYaml`) quedó satisfecho por el motor de reglas versionado (RF-4/ADR-0015, 2026-07-22) y verificado por `SuiteSenales` (reglas, cooldown, contrato del productor, e2e en vivo). RF-5 se completa: el engine ya publica tanto `indicators.updated` como `signals.emitted`.*
+*Eje trazabilidad — fase 01 / Gate 0, actualizado a la implementación: RF-1/2/3/5 y la validación de esquema (ASVS V5.1) satisfechos y verificados por la suite. RF-4 (señales, `ReglasYaml`) quedó satisfecho por el motor de reglas versionado (RF-4/ADR-0015, 2026-07-22) y verificado por `SuiteSenales` (reglas, cooldown, contrato del productor, e2e en vivo). RF-6 (análisis de la revisión, ADR-0019, 2026-08-01) lo satisfacen el engine y `AnalisisYaml` —la config versionada que declara ventana, cortes, mínimo de muestras y dominios de respaldo— y lo verifica `SuiteAnalisis` (bandas, degradación de escala, desempates deterministas, cache con reloj inyectado, contrato del productor y e2e en vivo). RF-5 se completa: el engine publica `indicators.updated`, `signals.emitted` y `analysis.updated`.*
 
 ## Requisitos de seguridad (mapeados a OWASP ASVS)
 | Req | ASVS | Nivel | OWASP Top 10 |

@@ -4,7 +4,7 @@ title: web-spa
 description: Dashboard web (React + Vite + TS) autenticado vía Auth0 — implementado 2026-07-27 (ADR-0017); pendiente el client_id real del tenant y el e2e autenticado en vivo.
 resource: ../../apps/web-spa/
 tags: [typescript, react, implementado, front-end, spa]
-timestamp: 2026-07-31T00:00:00Z
+timestamp: 2026-08-01T00:00:00Z
 ---
 
 # web-spa
@@ -44,11 +44,28 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   (`data-theme` reasigna los MISMOS tokens) e interfaz **ES/EN** con diccionario
   tipado — una traducción olvidada no compila.
 - Cuarta vista **Análisis**; la evidencia de las señales se despliega en línea.
-- Lo que el diseño pide y la plataforma no calcula (régimen, percentiles del
-  ruleset, escenarios, riesgos) lleva sello **`demo · sin fuente`**: la lista de
-  sellos es el trabajo pendiente del motor. Lo derivable sí se deriva de
-  `/indicators/history` (sparkline 24 h, mapa de calor 14 d × hora VET,
-  comparativas 7/30/90 d).
+- Lo que el diseño pide y la plataforma no calcula (régimen, escenarios,
+  riesgos) lleva sello **`demo · sin fuente`**: la lista de sellos es el trabajo
+  pendiente del motor. Lo derivable sí se deriva de `/indicators/history`
+  (sparkline 24 h, mapa de calor 14 d × hora VET, comparativas 7/30/90 d).
+
+## Panel de instrumentos con lectura real (2026-08-01, ADR-0019)
+- **El sello demo se retira del panel.** Los seis medidores dibujan lo que el
+  motor calcula por revisión (`analysis.updated` / `GET /analysis/current`, RF-6):
+  pie con los percentiles reales de su ventana de 90 días, relleno en la posición
+  publicada, **una marca por cada regla** que el medidor alimenta y la frase de
+  banda que le corresponde.
+- El SPA **no hace aritmética**: banda, posición, posición de umbral, distancia y
+  `met` vienen calculados del contrato. La única conversión a `number` es la
+  fracción → ancho CSS (`lib/escala.ts`).
+- 67 claves nuevas × 2 idiomas en registro **didáctico**, no de mesa de
+  operaciones: describen el presente, nunca el futuro; ninguna dice «percentil X»
+  (una sola cadena, en el desplegable, enseña a leer la escala); «señal» se dice
+  **aviso**. La síntesis del panel lleva siempre la aclaración de que no es una
+  predicción.
+- Estados degradados explícitos: sin análisis, medidor sin lectura en la
+  revisión, sin valor vigente, escala en respaldo (`unscaled`, con el contador de
+  muestras), confianza baja y tasa oficial rancia. Ninguno inventa una barra.
 
 ## Shell responsive (2026-07-31)
 - La tira de estado vive solo en la barra ancha (así lo declara el diseño): en
@@ -71,8 +88,9 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   y obliga a volver a pasar el validador.
 
 ## Verificación
-- **179 tests** (unit/component/contract con MSW y WS mock) — **88,7 % de ramas**
-  (umbral Gate 2: 80 %). E2E en vivo (`npm run test:e2e:live`) con client M2M:
+- **210 tests** (unit/component/contract con MSW y WS mock) — **88,7 % de ramas**
+  (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
+  lectura real en ambos idiomas, incluida la **ausencia del sello demo**. E2E en vivo (`npm run test:e2e:live`) con client M2M:
   token real → REST + WSS; skip elegante sin credenciales.
 - La parrilla intradía se eyebalizó en claro y oscuro con una previsualización
   estática del CSS real (paso «render y míralo» del skill dataviz); la vista

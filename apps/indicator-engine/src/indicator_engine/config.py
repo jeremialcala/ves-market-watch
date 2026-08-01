@@ -15,6 +15,7 @@ _APP_DIR = Path(__file__).resolve().parents[2]
 
 SCHEMAS_POR_DEFECTO = _RAIZ_REPO / "schemas"
 RULESET_POR_DEFECTO = _APP_DIR / "config" / "senales.v1.yaml"
+ANALISIS_POR_DEFECTO = _APP_DIR / "config" / "analisis.v1.yaml"
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,6 +36,13 @@ class Settings:
     signals_ruleset_path: str
     # Antigüedad máxima (min) de un indicador para contar como vigente al evaluar reglas.
     signals_max_age_min: int
+    # Config del análisis de la revisión (RF-6); sin archivo, análisis deshabilitado.
+    # La ventana y el mínimo de muestras NO viven aquí: son parte de la definición
+    # publicada (viajan en el payload) y por eso van en el YAML versionado. Aquí
+    # solo lo operativo: cada cuánto se refresca la distribución y cuánto se espera.
+    analysis_config_path: str
+    analysis_cache_ttl_min: int
+    analysis_query_timeout_s: float
 
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> "Settings":
@@ -57,4 +65,9 @@ class Settings:
                 "SIGNALS_RULESET_PATH", str(RULESET_POR_DEFECTO)
             ),
             signals_max_age_min=int(env.get("SIGNALS_MAX_AGE_MIN", "20")),
+            analysis_config_path=env.get(
+                "ANALYSIS_CONFIG_PATH", str(ANALISIS_POR_DEFECTO)
+            ),
+            analysis_cache_ttl_min=int(env.get("ANALYSIS_CACHE_TTL_MIN", "15")),
+            analysis_query_timeout_s=float(env.get("ANALYSIS_QUERY_TIMEOUT_S", "5.0")),
         )

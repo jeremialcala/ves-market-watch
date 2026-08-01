@@ -77,10 +77,164 @@ export const ES = {
   "regimen.confianza": "Confianza",
 
   // -- medidores -------------------------------------------------------------
+  // Registro DIDÁCTICO, no de mesa de operaciones: quien lee esto compra o vende
+  // divisas, no analiza libros de órdenes. Reglas que gobiernan las 134 cadenas
+  // (ADR-0019): describen el presente y nunca el futuro · ninguna dice
+  // «percentil X» (los cortes se rotulan bajo/normal/alto y una sola cadena
+  // explica qué significan) · el número vive en la cifra y en el pie, no en la
+  // prosa · `{tipo}`, `{regla}` e `{indicador}` son vocabulario del contrato y
+  // se interpolan crudos · «señal» se dice **aviso**.
   "medidores.titulo": "Panel de instrumentos",
   "medidores.bajada":
-    "Cada medidor con su valor vigente. El percentil de backtest y el umbral son de ejemplo: la plataforma no expone el ruleset ni sus percentiles.",
+    "Cada medidor comparado con su propia historia de 90 días: qué significa el número y qué tan cerca está de disparar un aviso, en cada lectura.",
   "medidores.sinValor": "sin valor vigente",
+  "medidores.brecha": "Brecha buy",
+
+  // Qué mide (definición, en el desplegable).
+  "medidores.def.brecha":
+    "Cuánto más caro está el dólar en el mercado P2P que en la tasa oficial del BCV. Si la brecha es 13 %, por cada 100 bolívares que costaría al cambio oficial, en la calle pagas 113.",
+  "medidores.def.spread":
+    "La diferencia entre lo que pagas al comprar y lo que recibes al vender. Si es 0,5 %, comprar y vender de inmediato te cuesta medio por ciento. En negativo pasa algo raro: se vende más caro de lo que se compra.",
+  "medidores.def.ratio":
+    "Compara cuántos dólares hay en venta con cuántos se quieren comprar. Por debajo de 1 hay más gente queriendo comprar que dólares disponibles; por encima de 1 sobran dólares y falta quien los compre.",
+  "medidores.def.momentum":
+    "Cuánto ha subido o bajado el precio en las últimas tres horas, en porcentaje. Positivo es que va subiendo; negativo, que va bajando.",
+  "medidores.def.drenaje":
+    "Cuánto ha cambiado en seis horas la cantidad de dólares puestos en venta. Negativo es que se están agotando; positivo, que están entrando más.",
+  "medidores.def.outliers":
+    "Qué parte de los anuncios se descartó por tener un precio disparatado. Si pasa de 30 %, los datos de esta lectura dejan de ser confiables y el sistema no envía avisos.",
+
+  // Qué dice ahora: una frase por indicador y banda. Sin marcadores a propósito
+  // — el número ya está en la cifra grande y en el pie de la escala.
+  "medidores.lectura.brecha.muyBajo":
+    "La brecha está de las más estrechas de los últimos 90 días: el precio de la calle se ha acercado al oficial.",
+  "medidores.lectura.brecha.bajo":
+    "La brecha está más estrecha que de costumbre: comprar fuera del oficial cuesta menos de lo habitual.",
+  "medidores.lectura.brecha.alto":
+    "La brecha está más ancha que de costumbre: comprar fuera del oficial cuesta más de lo habitual.",
+  "medidores.lectura.brecha.muyAlto":
+    "La brecha está de las más anchas de los últimos 90 días: el precio de la calle se ha alejado mucho del oficial.",
+  "medidores.lectura.brecha.sinEscala":
+    "Todavía no hay suficiente historia para decir si esta brecha es alta o baja comparada con lo normal.",
+
+  "medidores.lectura.spread.muyBajo":
+    "La diferencia entre comprar y vender está de las más pequeñas de los últimos 90 días: entrar y salir sale barato.",
+  "medidores.lectura.spread.bajo":
+    "Comprar y vender están más cerca de lo habitual: la vuelta cuesta poco.",
+  "medidores.lectura.spread.alto":
+    "Comprar y vender están más separados de lo habitual: la vuelta sale más cara.",
+  "medidores.lectura.spread.muyAlto":
+    "La diferencia entre comprar y vender está de las más grandes de los últimos 90 días: entrar y salir sale caro.",
+  "medidores.lectura.spread.sinEscala":
+    "Todavía no hay suficiente historia para decir si esta diferencia es grande o pequeña comparada con lo normal.",
+
+  "medidores.lectura.ratio.muyBajo":
+    "Quedan muy pocos dólares en venta frente a la gente que quiere comprar: de lo más escaso de los últimos 90 días.",
+  "medidores.lectura.ratio.bajo":
+    "Hay menos dólares en venta de lo habitual para la gente que quiere comprar.",
+  "medidores.lectura.ratio.alto":
+    "Hay más dólares en venta de lo habitual: no escasean.",
+  "medidores.lectura.ratio.muyAlto":
+    "Hay muchos más dólares en venta que compradores: de lo más abundante de los últimos 90 días.",
+  "medidores.lectura.ratio.sinEscala":
+    "Todavía no hay suficiente historia para decir si esta proporción es alta o baja comparada con lo normal.",
+
+  "medidores.lectura.momentum.muyBajo":
+    "El precio viene cayendo con una fuerza que casi no se ha visto en los últimos 90 días.",
+  "medidores.lectura.momentum.bajo":
+    "El precio viene flojo o bajando algo en las últimas horas.",
+  "medidores.lectura.momentum.alto":
+    "El precio viene subiendo más de lo habitual en las últimas horas.",
+  "medidores.lectura.momentum.muyAlto":
+    "El precio viene subiendo con una fuerza que casi no se ha visto en los últimos 90 días.",
+  "medidores.lectura.momentum.sinEscala":
+    "Todavía no hay suficiente historia para decir si este movimiento es fuerte o flojo comparado con lo normal.",
+
+  "medidores.lectura.drenaje.muyBajo":
+    "Los dólares en venta se están agotando a una velocidad que casi no se ha visto en los últimos 90 días.",
+  "medidores.lectura.drenaje.bajo":
+    "Los dólares en venta se están agotando más rápido de lo habitual.",
+  "medidores.lectura.drenaje.alto":
+    "Están entrando más dólares en venta: lo contrario de una corrida.",
+  "medidores.lectura.drenaje.muyAlto":
+    "Están entrando dólares en venta a un ritmo poco común en los últimos 90 días.",
+  "medidores.lectura.drenaje.sinEscala":
+    "Todavía no hay suficiente historia para decir si este cambio es grande o pequeño comparado con lo normal.",
+
+  "medidores.lectura.outliers.muyBajo":
+    "Casi ningún anuncio con precio raro: la lectura se apoya en un mercado limpio.",
+  "medidores.lectura.outliers.bajo":
+    "Pocos anuncios con precio raro: la lectura es confiable.",
+  "medidores.lectura.outliers.alto":
+    "Más anuncios con precio raro de lo habitual.",
+  "medidores.lectura.outliers.muyAlto":
+    "Muchos anuncios con precio raro, de lo más alto de los últimos 90 días: la lectura se acerca al punto donde deja de ser confiable.",
+  "medidores.lectura.outliers.sinEscala":
+    "Todavía no hay historia suficiente para comparar; se mira contra el límite de 30 % a partir del cual la lectura deja de ser confiable.",
+
+  // Pie de la escala y su glosa. `explicacion` es la ÚNICA cadena que enseña a
+  // leer la escala, y va solo en el desplegable para que el pie siga corto.
+  "medidores.escala.percentiles": "bajo {p10} · normal {p50} · alto {p90} · {dias} d",
+  "medidores.escala.ruleset":
+    "comparando con los umbrales de aviso · {muestras}/{minimo} lecturas en {dias} d",
+  "medidores.escala.explicacion":
+    "«Bajo» es el valor que solo se queda por debajo 1 de cada 10 veces; «normal» es el punto medio; «alto», el que solo se supera 1 de cada 10 veces. Comparado con los últimos {dias} días.",
+
+  // Distancia a la regla de aviso.
+  "medidores.regla.porEncima":
+    "{tipo}: el sistema avisa cuando pasa de {umbral}. Ahora faltan {distancia}.",
+  "medidores.regla.porDebajo":
+    "{tipo}: el sistema avisa cuando baja de {umbral}. Ahora faltan {distancia}.",
+  "medidores.regla.cumplida":
+    "{tipo}: ya está del lado que el sistema vigila ({umbral}).",
+  "medidores.regla.sinReglas":
+    "Este medidor no dispara ningún aviso por sí solo; sirve de contexto.",
+
+  // Detalle desplegable.
+  "medidores.detalle.abrir": "Ver explicación",
+  "medidores.detalle.cerrar": "Ocultar explicación",
+  "medidores.detalle.definicionTitulo": "Qué mide",
+  "medidores.detalle.lecturaTitulo": "Qué dice ahora",
+  "medidores.detalle.reglasTitulo": "Avisos que dependen de este medidor",
+
+  // Síntesis del panel. `aclaracion` va SIEMPRE: es la frontera explícita entre
+  // proximidad aritmética y pronóstico.
+  "medidores.sintesis.titulo": "Qué dice el panel",
+  "medidores.sintesis.cerca":
+    "El aviso más cerca de activarse es {regla}: cumple {cumplidas} de {totales} condiciones. Falta que se mueva {indicador}.",
+  "medidores.sintesis.cumplidas":
+    "Ahora mismo se cumplen todas las condiciones de: {reglas}. Que el aviso se haya enviado depende además de si ya salió uno igual hace poco.",
+  "medidores.sintesis.ninguna":
+    "Ningún aviso está cerca de activarse con los datos de esta lectura.",
+  "medidores.sintesis.noEvaluable":
+    "Solo {evaluables} de {totales} avisos se pueden evaluar: a los demás les falta algún dato actualizado.",
+  "medidores.sintesis.confianzaBaja":
+    "Datos poco confiables ({outliers} de anuncios con precio raro): los avisos están desactivados en esta lectura.",
+  "medidores.sintesis.aclaracion":
+    "Describe qué tan cerca están los avisos de activarse con los datos de ahora. No es una predicción de lo que va a pasar.",
+
+  // Bandas, para el detalle y la etiqueta accesible de la barra.
+  "medidores.banda.muyBajo": "de los más bajos",
+  "medidores.banda.bajo": "por debajo de lo normal",
+  "medidores.banda.alto": "por encima de lo normal",
+  "medidores.banda.muyAlto": "de los más altos",
+  "medidores.banda.sinEscala": "sin comparación todavía",
+
+  // Con qué se compara.
+  "medidores.fuente.percentiles": "su propia historia",
+  "medidores.fuente.ruleset": "los umbrales de aviso",
+
+  "medidores.barraEtiqueta": "{etiqueta}: {valor}, {banda}, comparado con {fuente}.",
+
+  // Estados degradados: todos explícitos, ninguno inventa.
+  "medidores.sinAnalisis":
+    "Sin lectura disponible: se muestran los valores, pero no su explicación.",
+  "medidores.sinLectura":
+    "Sin explicación en esta lectura: el motor no recalculó este medidor.",
+  "medidores.escalaEnFormacion":
+    "Aún comparando: {muestras} de {minimo} lecturas necesarias en {dias} días.",
+  "medidores.oficialStale":
+    "La tasa oficial con la que se calculó esta brecha lleva más de 6 horas sin actualizarse.",
 
   // -- descomposición --------------------------------------------------------
   "descomposicion.titulo": "Descomposición de la brecha",
@@ -198,21 +352,6 @@ export const ES = {
   "regimen.ejemploConfianza": "media",
   "micro.ratioNota": "insumo de las reglas de señal",
   "micro.outliersNota": "por encima de 30 % la confianza baja",
-  "medidores.brecha": "Brecha buy",
-  "medidores.brechaEscala": "p12 · 90 d",
-  "medidores.brechaNota": "Tercio bajo del rango de 90 días.",
-  "medidores.spreadEscala": "p10 0,55 · p90 2,13",
-  "medidores.spreadNota":
-    "Cerca del p10: comprimido, sin llegar al umbral de «techo».",
-  "medidores.ratioEscala": "p50 0,47",
-  "medidores.ratioNota": "Por encima de la mediana: la oferta no escasea.",
-  "medidores.momentumEscala": "> 0,5 / > 1,5",
-  "medidores.momentumNota": "Plano. Lejos de las dos reglas alcistas.",
-  "medidores.drenajeEscala": "< −40 %",
-  "medidores.drenajeNota":
-    "Oferta reponiéndose: signo contrario al de una corrida.",
-  "medidores.outliersEscala": "confianza baja > 30 %",
-  "medidores.outliersNota2": "Snapshot limpio: las señales no se suprimen.",
   "descomposicion.lectura":
     "La barra parte el precio P2P de compra en su pierna oficial y la brecha: es la misma cifra del titular, vista como reparto.",
   "descomposicion.sinPiernas":
@@ -343,10 +482,146 @@ export const EN: Record<Clave, string> = {
   "regimen.titulo": "Market regime",
   "regimen.confianza": "Confidence",
 
+  // Traducción, no reescritura: mismos marcadores y misma afirmación que ES, o
+  // `tests/unit/i18n.test.tsx` falla.
   "medidores.titulo": "Instrument panel",
   "medidores.bajada":
-    "Each gauge with its current value. The backtest percentile and threshold are samples: the platform exposes neither the ruleset nor its percentiles.",
+    "Each gauge compared with its own 90-day history: what the number means and how close it is to triggering an alert, on every reading.",
   "medidores.sinValor": "no current value",
+  "medidores.brecha": "Gap buy",
+
+  "medidores.def.brecha":
+    "How much more expensive the dollar is on the P2P market than at the BCV official rate. If the gap is 13 %, for every 100 bolívares it would cost officially, on the street you pay 113.",
+  "medidores.def.spread":
+    "The difference between what you pay when buying and what you get when selling. At 0.5 %, buying and selling right away costs you half a percent. A negative value means something odd: selling pays more than buying costs.",
+  "medidores.def.ratio":
+    "Compares how many dollars are up for sale with how many are wanted for purchase. Below 1 there are more people wanting to buy than dollars available; above 1, dollars are plentiful and buyers are scarce.",
+  "medidores.def.momentum":
+    "How much the price has risen or fallen over the last three hours, as a percentage. Positive means it is going up; negative, that it is coming down.",
+  "medidores.def.drenaje":
+    "How much the amount of dollars up for sale has changed over six hours. Negative means they are running out; positive, that more are coming in.",
+  "medidores.def.outliers":
+    "What share of the listings was discarded for having an absurd price. Above 30 % the data behind this reading stops being reliable and the system sends no alerts.",
+
+  "medidores.lectura.brecha.muyBajo":
+    "The gap is among the narrowest of the last 90 days: the street price has moved closer to the official one.",
+  "medidores.lectura.brecha.bajo":
+    "The gap is narrower than usual: buying outside the official rate costs less than it normally does.",
+  "medidores.lectura.brecha.alto":
+    "The gap is wider than usual: buying outside the official rate costs more than it normally does.",
+  "medidores.lectura.brecha.muyAlto":
+    "The gap is among the widest of the last 90 days: the street price has moved far away from the official one.",
+  "medidores.lectura.brecha.sinEscala":
+    "Not enough history yet to say whether this gap is high or low compared with normal.",
+
+  "medidores.lectura.spread.muyBajo":
+    "The difference between buying and selling is among the smallest of the last 90 days: going in and out is cheap.",
+  "medidores.lectura.spread.bajo":
+    "Buying and selling are closer than usual: the round trip costs little.",
+  "medidores.lectura.spread.alto":
+    "Buying and selling are further apart than usual: the round trip costs more.",
+  "medidores.lectura.spread.muyAlto":
+    "The difference between buying and selling is among the largest of the last 90 days: going in and out is expensive.",
+  "medidores.lectura.spread.sinEscala":
+    "Not enough history yet to say whether this difference is large or small compared with normal.",
+
+  "medidores.lectura.ratio.muyBajo":
+    "Very few dollars left for sale against the people wanting to buy: among the scarcest of the last 90 days.",
+  "medidores.lectura.ratio.bajo":
+    "Fewer dollars for sale than usual for the people wanting to buy.",
+  "medidores.lectura.ratio.alto":
+    "More dollars for sale than usual: they are not scarce.",
+  "medidores.lectura.ratio.muyAlto":
+    "Far more dollars for sale than buyers: among the most plentiful of the last 90 days.",
+  "medidores.lectura.ratio.sinEscala":
+    "Not enough history yet to say whether this ratio is high or low compared with normal.",
+
+  "medidores.lectura.momentum.muyBajo":
+    "The price has been falling with a force barely seen in the last 90 days.",
+  "medidores.lectura.momentum.bajo":
+    "The price has been weak or slipping over the last few hours.",
+  "medidores.lectura.momentum.alto":
+    "The price has been rising more than usual over the last few hours.",
+  "medidores.lectura.momentum.muyAlto":
+    "The price has been rising with a force barely seen in the last 90 days.",
+  "medidores.lectura.momentum.sinEscala":
+    "Not enough history yet to say whether this move is strong or weak compared with normal.",
+
+  "medidores.lectura.drenaje.muyBajo":
+    "Dollars for sale are running out at a speed barely seen in the last 90 days.",
+  "medidores.lectura.drenaje.bajo":
+    "Dollars for sale are running out faster than usual.",
+  "medidores.lectura.drenaje.alto":
+    "More dollars for sale are coming in: the opposite of a run.",
+  "medidores.lectura.drenaje.muyAlto":
+    "Dollars for sale are coming in at a rate uncommon in the last 90 days.",
+  "medidores.lectura.drenaje.sinEscala":
+    "Not enough history yet to say whether this change is large or small compared with normal.",
+
+  "medidores.lectura.outliers.muyBajo":
+    "Almost no listings with odd prices: the reading rests on a clean market.",
+  "medidores.lectura.outliers.bajo":
+    "Few listings with odd prices: the reading is reliable.",
+  "medidores.lectura.outliers.alto": "More listings with odd prices than usual.",
+  "medidores.lectura.outliers.muyAlto":
+    "Many listings with odd prices, among the highest of the last 90 days: the reading is nearing the point where it stops being reliable.",
+  "medidores.lectura.outliers.sinEscala":
+    "Not enough history to compare yet; it is checked against the 30 % limit beyond which the reading stops being reliable.",
+
+  "medidores.escala.percentiles": "low {p10} · normal {p50} · high {p90} · {dias} d",
+  "medidores.escala.ruleset":
+    "compared against alert thresholds · {muestras}/{minimo} readings in {dias} d",
+  "medidores.escala.explicacion":
+    "“Low” is the value only fallen below 1 time in 10; “normal” is the midpoint; “high”, the one only exceeded 1 time in 10. Compared with the last {dias} days.",
+
+  "medidores.regla.porEncima":
+    "{tipo}: the system alerts when it goes above {umbral}. It is {distancia} away.",
+  "medidores.regla.porDebajo":
+    "{tipo}: the system alerts when it drops below {umbral}. It is {distancia} away.",
+  "medidores.regla.cumplida":
+    "{tipo}: it is already on the side the system watches ({umbral}).",
+  "medidores.regla.sinReglas":
+    "This gauge does not trigger any alert on its own; it provides context.",
+
+  "medidores.detalle.abrir": "Show explanation",
+  "medidores.detalle.cerrar": "Hide explanation",
+  "medidores.detalle.definicionTitulo": "What it measures",
+  "medidores.detalle.lecturaTitulo": "What it says now",
+  "medidores.detalle.reglasTitulo": "Alerts that depend on this gauge",
+
+  "medidores.sintesis.titulo": "What the panel says",
+  "medidores.sintesis.cerca":
+    "The alert closest to firing is {regla}: {cumplidas} of {totales} conditions met. It is waiting on {indicador}.",
+  "medidores.sintesis.cumplidas":
+    "All conditions are currently met for: {reglas}. Whether the alert was actually sent also depends on whether an identical one went out recently.",
+  "medidores.sintesis.ninguna":
+    "No alert is close to firing with the data in this reading.",
+  "medidores.sintesis.noEvaluable":
+    "Only {evaluables} of {totales} alerts can be evaluated: the rest are missing up-to-date data.",
+  "medidores.sintesis.confianzaBaja":
+    "Unreliable data ({outliers} of listings with odd prices): alerts are switched off for this reading.",
+  "medidores.sintesis.aclaracion":
+    "Describes how close the alerts are to firing with current data. It is not a prediction of what will happen.",
+
+  "medidores.banda.muyBajo": "among the lowest",
+  "medidores.banda.bajo": "below normal",
+  "medidores.banda.alto": "above normal",
+  "medidores.banda.muyAlto": "among the highest",
+  "medidores.banda.sinEscala": "not comparable yet",
+
+  "medidores.fuente.percentiles": "its own history",
+  "medidores.fuente.ruleset": "the alert thresholds",
+
+  "medidores.barraEtiqueta": "{etiqueta}: {valor}, {banda}, compared against {fuente}.",
+
+  "medidores.sinAnalisis":
+    "No reading available: values are shown without their explanation.",
+  "medidores.sinLectura":
+    "No explanation in this reading: the engine did not recalculate this gauge.",
+  "medidores.escalaEnFormacion":
+    "Still building the comparison: {muestras} of {minimo} readings needed over {dias} days.",
+  "medidores.oficialStale":
+    "The official rate used for this gap has not been updated in over 6 hours.",
 
   "descomposicion.titulo": "Gap decomposition",
   "descomposicion.bajada": "which leg moves the number",
@@ -451,20 +726,6 @@ export const EN: Record<Clave, string> = {
   "regimen.ejemploConfianza": "medium",
   "micro.ratioNota": "input of the signal rules",
   "micro.outliersNota": "above 30 % confidence drops",
-  "medidores.brecha": "Gap buy",
-  "medidores.brechaEscala": "p12 · 90 d",
-  "medidores.brechaNota": "Lowest third of the 90-day range.",
-  "medidores.spreadEscala": "p10 0.55 · p90 2.13",
-  "medidores.spreadNota":
-    "Close to the p10: compressed but not at the top threshold.",
-  "medidores.ratioEscala": "p50 0.47",
-  "medidores.ratioNota": "Above the median: supply is not scarce.",
-  "medidores.momentumEscala": "> 0.5 / > 1.5",
-  "medidores.momentumNota": "Flat. Far from both bullish rules.",
-  "medidores.drenajeEscala": "< −40 %",
-  "medidores.drenajeNota": "Supply rebuilding — the opposite sign of a run.",
-  "medidores.outliersEscala": "low confidence > 30 %",
-  "medidores.outliersNota2": "Clean snapshot: signals are not suppressed.",
   "descomposicion.lectura":
     "The bar splits the P2P buy price into its official leg and the gap: the same headline number, seen as a share.",
   "descomposicion.sinPiernas":

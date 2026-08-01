@@ -101,14 +101,45 @@ media palabra; o entra entera, o se retira.
 
 ## Bloques sin fuente de datos (regla RF-5 aplicada al rediseño)
 El diseño pide secciones que la plataforma **no calcula**: régimen de mercado,
-percentiles de backtest de los medidores, escenarios con probabilidades y
-riesgos. Se implementan —el dueño del producto lo pidió así para poder evaluar
-el diseño completo— y **cada una lleva el sello `demo · sin fuente`**
-(`components/DemoBadge.tsx`) más la explicación en la bajada de la sección. Lo
-que sí se deriva de verdad se deriva: sparkline de 24 h, mapa de calor de 14 d
-× hora (VET) y comparativas 7/30/90 d salen de `/indicators/history`
-(`state/useHistorialBrecha.ts`, dos llamadas filtradas por indicador y moneda);
-la descomposición reparte el precio P2P con la tasa oficial vigente y el VWAP.
+escenarios con probabilidades y riesgos. Se implementan —el dueño del producto
+lo pidió así para poder evaluar el diseño completo— y **cada una lleva el sello
+`demo · sin fuente`** (`components/DemoBadge.tsx`) más la explicación en la
+bajada de la sección. Lo que sí se deriva de verdad se deriva: sparkline de 24 h,
+mapa de calor de 14 d × hora (VET) y comparativas 7/30/90 d salen de
+`/indicators/history` (`state/useHistorialBrecha.ts`, dos llamadas filtradas por
+indicador y moneda); la descomposición reparte el precio P2P con la tasa oficial
+vigente y el VWAP.
+
+**El panel de medidores salió de esta lista el 2026-08-01** (ADR-0019): lo que
+llevaba sello —la escala percentil, el relleno, la marca de umbral y la nota— ya
+lo calcula el motor por revisión. Mantener el sello sobre dato real sería tan
+deshonesto como no ponerlo sobre un ejemplo.
+
+## Panel de instrumentos (RF-11, 2026-08-01)
+Cada medidor pinta lo que trae `analysis.updated` / `GET /analysis/current`
+(`state/reducers.ts` → `EstadoMercado.analisis`), y **nada más**:
+
+- **Pie**: los cortes reales de su ventana (`escala.percentiles`) o el contador
+  de muestras cuando la escala es el respaldo (`escala.ruleset`).
+- **Barra**: relleno en `position` y **una marca por regla** (`rules.map`) —
+  `p2p_ratio_oferta_demanda` alimenta tres condiciones, y antes se dibujaba una
+  sola marca fija. `position === null` ⇒ no se dibuja relleno: cero píxeles
+  inventados.
+- **Nota**: la frase de la banda del indicador, tipada como
+  `Record<Banda, Clave>` sobre el **enum generado** del contrato — si el motor
+  añade una banda, esto deja de compilar en vez de callarse.
+- **Detalle desplegable** (patrón de `SignalsFeed`: `aria-expanded` +
+  `role="region"`): qué mide, qué dice ahora + cómo se lee la escala, y una línea
+  por regla con cuánto falta. El estado de cada umbral va **también en texto**:
+  el color nunca es la única codificación.
+- **Síntesis** donde estaba el sello: regla más cercana e indicador bloqueante,
+  con precedencia deliberada —confianza baja gana a todo, porque si los avisos
+  están suprimidos hablar de proximidad engaña— y la aclaración de que no es una
+  predicción, siempre presente.
+
+`src/lib/escala.ts` es el **único punto de aritmética** del panel: convierte la
+fracción [0,1] del contrato a un ancho CSS. Banda, posición, posición de umbral,
+distancia y `met` vienen calculados; el SPA no reclasifica nada.
 
 ## Capas
 - **`lib/` (puro)**: `decimal.ts` — comparación/signo/formato es-VE **y aritmética
@@ -192,7 +223,8 @@ la descomposición reparte el precio P2P con la tasa oficial vigente y el VWAP.
 - Multi-pestaña (BroadcastChannel) y code-splitting del Histórico (v2) — el
   bundle pasó de 500 kB al entrar el rediseño.
 - Retirar los bloques `demo · sin fuente` a medida que el `indicator-engine`
-  calcule lo que representan (régimen, percentiles del ruleset, escenarios).
+  calcule lo que representan (quedan régimen de mercado y escenarios; los
+  percentiles de los medidores ya se retiraron — ADR-0019).
 - Subir el par categórico del **tema oscuro** a la banda de luminosidad y al
   piso de croma del validador (hoy pasa CVD con holgura pero queda fuera en esas
   dos, que son de estilo). Implica oscurecer los acentos en gráfico: es cambio

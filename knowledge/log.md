@@ -2,10 +2,41 @@
 type: Log
 title: Historia del knowledge bundle
 description: Registro cronológico de cambios en el contexto del proyecto (más reciente primero).
-timestamp: 2026-07-31T00:00:00Z
+timestamp: 2026-08-01T00:00:00Z
 ---
 
 # Log
+
+## 2026-08-01 — El panel de medidores deja de ser demo (RF-6, ADR-0019)
+- El «Panel de instrumentos» mostraba valores reales rodeados de literales: la
+  escala percentil, el ancho del relleno, la marca de umbral y la nota estaban
+  escritos a mano en `dict.ts` y eran **ajenos al valor mostrado**. Por eso el
+  panel entero llevaba el sello `demo · sin fuente`.
+- Ahora el motor calcula la lectura por **cada revisión** y la publica como
+  evento nuevo `analysis.updated` (no un `indicators.v2`: el `const: 1` del
+  schema habría forzado desplegar engine y gateway a la vez). El engine
+  **clasifica** en vocabulario neutro de idioma; el SPA **redacta** ES/EN con 67
+  claves nuevas × 2 idiomas.
+- La escala son percentiles REALES de la ventana de 90 días con `percentile_disc`
+  (numeric exacto, nunca float — ADR-0017), cacheados 15 min. Sin historia
+  suficiente se cae a un respaldo con los umbrales reales del ruleset, y la
+  elección **viaja en el payload**: degradar en silencio era justo el problema.
+- **Defecto encontrado con datos reales, no en revisión**: con 14 039 muestras de
+  `p2p_outliers_pct_buy` casi todas en cero, p10 = p50 = p90 = 0 y un snapshot
+  impecable (0 % de outliers) salía clasificado `very_high` — «de lo más alto de
+  los últimos 90 días». La igualdad cuenta hacia arriba, y ninguna regla de
+  desempate lo arregla sin invertir el error en series saturadas por arriba. La
+  escala de percentiles pasa a exigir cortes **estrictamente crecientes**: sin
+  dispersión entre ellos no hay banda que sostener, y el respaldo dibuja el
+  umbral real del 30 %, que es la referencia útil de ese medidor.
+- Frontera respetada: **no hay pronóstico, ni régimen, ni probabilidades**. La
+  síntesis es proximidad aritmética a reglas ya versionadas, `rules_met` se llama
+  así porque el cooldown pudo suprimir la emisión, y la UI lleva siempre la
+  aclaración de que no es una predicción.
+- Engine 71 → **170 tests**, gateway 90 → **103**, SPA 179 → **210** (88,7 % de
+  ramas). El único cambio sobre el camino de emisión de señales (`_vista_vigente`
+  ampliada) va blindado con un test que compara las señales emitidas con y sin
+  análisis.
 
 ## 2026-07-31 — La CSP no existía: nginx la descartaba entera
 - Pedido: añadir `frame-src` para el iframe de silent auth de Auth0. Al ir a

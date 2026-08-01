@@ -4,7 +4,11 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from api_gateway.application.suscripciones import GestorSuscripciones
+from api_gateway.application.suscripciones import (
+    EVENTO_A_TOPICO,
+    TOPICOS_PERMITIDOS,
+    GestorSuscripciones,
+)
 from api_gateway.domain.errores import LimiteWss, ParametroInvalido
 from api_gateway.domain.modelos import Usuario
 
@@ -99,3 +103,23 @@ def test_desuscribir_libera_cupo(gestor):
     gestor.suscribir(canal, ["signals", "indicators", "p2p.snapshot"])
     gestor.desuscribir(canal, ["signals"])
     gestor.suscribir(canal, ["rates.official"])  # no lanza
+
+
+def test_analysis_esta_en_la_whitelist_y_mapea_su_routing_key(gestor):
+    """Alta del tópico del análisis (RF-6): sin los dos lados —whitelist y
+    mapeo— el cliente se suscribiría a algo que nunca recibiría nada."""
+    canal = CanalFake()
+    gestor.conectar(usuario(), canal)
+    assert "analysis" in gestor.suscribir(canal, ["analysis"])
+    assert "analysis" in TOPICOS_PERMITIDOS
+    assert EVENTO_A_TOPICO["analysis.updated"] == "analysis"
+
+
+def test_el_limite_de_suscripciones_cubre_los_cinco_topicos():
+    """WSS_MAX_SUSCRIPCIONES por defecto es 10 ≥ 5: el alta no obliga a subirlo."""
+    gestor = GestorSuscripciones(max_conexiones=2, max_suscripciones=10)
+    canal = CanalFake()
+    gestor.conectar(usuario(), canal)
+    assert gestor.suscribir(canal, sorted(TOPICOS_PERMITIDOS)) == set(
+        TOPICOS_PERMITIDOS
+    )

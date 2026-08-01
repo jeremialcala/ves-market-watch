@@ -16,6 +16,7 @@ timestamp: 2026-07-05T00:00:00Z
 | [indicators](indicators.md) | Hypertable | Indicadores calculados (formato largo, `calc_version`) |
 | processed_events (ver [indicators](indicators.md)) | Tabla | Idempotencia del consumidor del engine |
 | [signals](signals.md) | Hypertable | Señales emitidas con evidencia JSONB (RF-4, ADR-0015) |
+| [indicator_analysis](indicator_analysis.md) | Hypertable | Lectura de los medidores por revisión, payload verbatim (RF-6, ADR-0019) |
 | [p2p_snapshots_raw](p2p_snapshots_raw.md) | Hypertable | Crudo P2P completo (JSONB, retención 90 d) |
 | [historical_market_snapshots](historical_market_snapshots.md) | Hypertable | Históricos de precio desde exports externos (detalle por banco en JSONB, sin retención) |
 

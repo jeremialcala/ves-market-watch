@@ -107,6 +107,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/analysis/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Análisis de la última revisión
+         * @description Lectura de los seis medidores del panel en la última revisión del
+         *     indicator-engine: banda dentro de la escala de percentiles reales de la
+         *     ventana (o del respaldo del ruleset, declarado en `scale.source`),
+         *     posición de dibujo, y proximidad de cada regla del ruleset versionado.
+         *
+         *     Se devuelve **tal como se publicó** en `analysis.updated`: el gateway no
+         *     reclasifica bandas ni recalcula escalas. Un análisis más viejo que la
+         *     frescura P2P no se sirve como vigente (404) — nunca se presenta dato
+         *     rancio como actual.
+         *
+         *     **No es un pronóstico**: `rule_proximity` y `summary` son aritmética
+         *     sobre el estado presente (k de n condiciones y cuál bloquea). Usa el
+         *     permiso `read:indicators`, el mismo que los indicadores que lee.
+         */
+        get: operations["getAnalysisCurrent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/market/depth": {
         parameters: {
             query?: never;
@@ -374,6 +406,196 @@ export interface components {
             data: components["schemas"]["Signal"][];
             pagination: components["schemas"]["PageMeta"];
         };
+        /**
+         * @description Fracción en [0,1] como string exacto. **Coordenada de dibujo**, no un
+         *     percentil empírico: reproducible a partir de los `cuts` del mismo payload.
+         * @example 0.3140
+         */
+        Fraction: string;
+        /** @description Un corte de la escala, con su valor real y dónde se dibuja. */
+        AnalysisScaleCut: {
+            /**
+             * @description `p10`|`p50`|`p90` con `source: percentiles`; con `source: ruleset`,
+             *     la regla versionada (`arranque_alcista@v1`) o el umbral de sistema
+             *     (`confianza_baja`).
+             */
+            key: string;
+            value: components["schemas"]["SignedDecimal"];
+            position: components["schemas"]["Fraction"];
+        };
+        /**
+         * @description La escala contra la que se leyó el medidor, con su FUENTE y sus
+         *     parámetros. Que la fuente viaje en el payload es lo que permite a la UI
+         *     decir contra qué se compara, en vez de degradar en silencio.
+         */
+        AnalysisScale: {
+            /**
+             * @description `percentiles` = percentiles reales de la ventana. `ruleset` =
+             *     respaldo con los umbrales reales del ruleset porque
+             *     `samples < min_samples`.
+             * @enum {string}
+             */
+            source: "percentiles" | "ruleset";
+            window_days: number;
+            /** @description Filas encontradas en la ventana (real, también en el respaldo). */
+            samples: number;
+            min_samples: number;
+            /**
+             * @description Cuándo se calculó la distribución. Puede ir por detrás de `as_of`
+             *     (se cachea con TTL); `null` si nunca se pudo consultar.
+             */
+            computed_at: string | null;
+            /**
+             * @description Extremos de la barra. Con `percentiles` son el min/max reales de la
+             *     ventana; con `ruleset`, el dominio declarado en la config versionada
+             *     (constante de presentación, no dato de mercado).
+             */
+            domain: {
+                min: components["schemas"]["SignedDecimal"];
+                max: components["schemas"]["SignedDecimal"];
+            };
+            /**
+             * @description Cortes ordenados por `value` ascendente. Vacío solo en el respaldo de
+             *     un indicador que no alimenta ninguna regla ni umbral de sistema.
+             */
+            cuts: components["schemas"]["AnalysisScaleCut"][];
+        };
+        /**
+         * @description Una condición del ruleset que consume ESTE indicador, con cuánto le falta
+         *     al valor para satisfacerla.
+         */
+        AnalysisRuleRef: {
+            /** @description Regla versionada `<type>@v<n>` (mismo id que `Signal.evidence.rule`). */
+            rule: string;
+            type: string;
+            /** @enum {string} */
+            direction: "alcista" | "bajista" | "neutral";
+            /** @enum {string} */
+            op: "gt" | "gte" | "lt" | "lte";
+            threshold: components["schemas"]["SignedDecimal"];
+            met: boolean;
+            /**
+             * @description Cuánto debe moverse el valor EN LA DIRECCIÓN EXIGIDA:
+             *     `threshold - value` con gt/gte, `value - threshold` con lt/lte.
+             *     `<= 0` significa satisfecha. Nunca es una predicción de cuándo pasará.
+             */
+            distance: components["schemas"]["SignedDecimal"];
+            threshold_position: components["schemas"]["Fraction"];
+        };
+        /**
+         * @description La lectura de un medidor. Un indicador sin valor vigente NO aparece en el
+         *     array: nunca se infiere.
+         */
+        AnalysisIndicator: {
+            /** @description Nombre canónico (`knowledge/metrics/`). No se traduce. */
+            indicator: string;
+            value: components["schemas"]["SignedDecimal"];
+            /** Format: date-time */
+            as_of: string;
+            /**
+             * @description Vocabulario neutro de idioma; la prosa la redacta el cliente.
+             *     Con percentiles: `very_low` <p10 · `low` [p10,p50) · `high` [p50,p90)
+             *     · `very_high` >=p90. `unscaled` con el respaldo del ruleset: sin
+             *     distribución empírica no existe alto/bajo, y emitir ahí una banda
+             *     sería inventar dato.
+             * @enum {string}
+             */
+            band: "very_low" | "low" | "high" | "very_high" | "unscaled";
+            /** @description `null` cuando no hay escala dibujable: nada que pintar. */
+            position: components["schemas"]["Fraction"] | null;
+            scale: components["schemas"]["AnalysisScale"];
+            /** @description Vacío si el indicador no alimenta ninguna condición. */
+            rules: components["schemas"]["AnalysisRuleRef"][];
+        };
+        RuleCondition: {
+            indicator: string;
+            /** @enum {string} */
+            op: "gt" | "gte" | "lt" | "lte";
+            threshold: components["schemas"]["SignedDecimal"];
+            /**
+             * @description `null` si el indicador no está vigente. Nunca se rellena con el
+             *     último conocido rancio.
+             */
+            value: components["schemas"]["SignedDecimal"] | null;
+            met: boolean;
+            distance: components["schemas"]["SignedDecimal"] | null;
+        };
+        /**
+         * @description Cuántas condiciones de una regla se cumplen y cuál bloquea. Aritmética
+         *     sobre el estado presente, NO un pronóstico ni un régimen.
+         */
+        RuleProximity: {
+            rule: string;
+            type: string;
+            /** @enum {string} */
+            direction: "alcista" | "bajista" | "neutral";
+            conditions_total: number;
+            conditions_met: number;
+            /**
+             * @description `false` si algún indicador de la regla no está vigente (mismo criterio
+             *     que la emisión: una regla con un indicador ausente no dispara) o si
+             *     `confidence: low`.
+             */
+            evaluable: boolean;
+            /**
+             * @description Indicador de la condición NO cumplida con mayor `distance`; empate por
+             *     orden alfabético. `null` si la regla se cumple entera o no es evaluable.
+             */
+            blocked_by: string | null;
+            conditions: components["schemas"]["RuleCondition"][];
+        };
+        /**
+         * @description Síntesis MECÁNICA del panel: qué regla está más cerca de cumplirse y qué
+         *     la bloquea. Sin probabilidades, sin horizontes temporales, sin régimen.
+         */
+        AnalysisSummary: {
+            rules_total: number;
+            rules_evaluable: number;
+            /**
+             * @description Entre las evaluables no cumplidas: la de mayor `conditions_met`;
+             *     empate por menor `conditions_total` y luego orden alfabético. `null`
+             *     si ninguna es evaluable o todas se cumplen.
+             */
+            closest_rule: string | null;
+            /** @description Condiciones cumplidas de `closest_rule` (0 si no hay ninguna). */
+            conditions_met: number;
+            conditions_total: number;
+            blocked_by: string | null;
+            /**
+             * @description Reglas con TODAS sus condiciones cumplidas en esta revisión. NO
+             *     implica que la señal se emitiera: el cooldown pudo suprimirla. La
+             *     emisión real vive en `/signals`.
+             */
+            rules_met: string[];
+        };
+        /**
+         * @description Lectura de los medidores del panel en una revisión (ADR-0019). Es el
+         *     `payload` del evento `analysis.updated`, servido verbatim.
+         */
+        IndicatorAnalysis: {
+            /**
+             * Format: date-time
+             * @description Instante del dato de mercado de la revisión, no la hora de emisión.
+             */
+            as_of: string;
+            currency: components["schemas"]["Currency"];
+            calc_version: number;
+            /** @description Versión de la config de análisis (ventana, cortes, dominios). */
+            analysis_version: number;
+            ruleset_version: number;
+            /**
+             * @description `low` = > 30 % de outliers en el snapshot: las señales se suprimen y
+             *     ninguna regla es evaluable.
+             * @enum {string}
+             */
+            confidence: "normal" | "low";
+            official_stale: boolean;
+            /** @description `event_id` del `p2p.snapshot` que produjo la revisión (T10). */
+            triggered_by: string;
+            indicators: components["schemas"]["AnalysisIndicator"][];
+            rule_proximity: components["schemas"]["RuleProximity"][];
+            summary: components["schemas"]["AnalysisSummary"];
+        };
         /** @description Estado agregado y por componente, sin detalles internos. */
         Health: {
             /** @enum {string} */
@@ -531,6 +753,11 @@ export interface components {
          *     (evita paginar toda la tabla y agotar la cuota).
          */
         IndicatorName: string;
+        /**
+         * @description Fiat del par sobre el que se leyó el panel. Los indicadores `p2p_*` se
+         *     persisten bajo el fiat (`VES`), no bajo la pierna oficial (ADR-0014).
+         */
+        CurrencyP2P: string;
         /**
          * @description Filtra por moneda del indicador (los `p2p_*` viven bajo `VES`; los
          *     `official_rate*` bajo su moneda BCV). Sin default: sin el filtro se
@@ -748,6 +975,40 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             422: components["responses"]["UnprocessableRange"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getAnalysisCurrent: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Fiat del par sobre el que se leyó el panel. Los indicadores `p2p_*` se
+                 *     persisten bajo el fiat (`VES`), no bajo la pierna oficial (ADR-0014).
+                 */
+                currency?: components["parameters"]["CurrencyP2P"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Análisis vigente. */
+            200: {
+                headers: {
+                    "X-RateLimit-Limit": components["headers"]["XRateLimitLimit"];
+                    "X-RateLimit-Remaining": components["headers"]["XRateLimitRemaining"];
+                    "X-RateLimit-Reset": components["headers"]["XRateLimitReset"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndicatorAnalysis"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
         };
     };

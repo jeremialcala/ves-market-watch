@@ -593,6 +593,19 @@ body {
   background: var(--coral);
 }
 
+/* Sin escala dibujable: el hueco se ve, pero vacío — no se rellena a ojo. */
+.vmw-barra--sin-escala {
+  border: var(--border-width) dashed var(--border);
+  background: transparent;
+}
+
+/* Umbral ya cumplido en teal; pendiente sigue en coral (regla de arriba).
+   El color NO codifica solo: la línea de regla del desplegable lo dice en
+   palabras, requisito extra por el defecto abierto de paleta en tema claro. */
+.vmw-barra__umbral[data-cumple="true"] {
+  background: var(--teal);
+}
+
 .vmw-medidor__cabecera {
   display: flex;
   justify-content: space-between;
@@ -600,9 +613,66 @@ body {
   gap: 10px;
 }
 
+.vmw-medidor__escala {
+  font-size: var(--fs-caption);
+  color: var(--text-dim);
+  text-align: right;
+}
+
 .vmw-medidor__valor {
   margin-top: 10px;
   font-size: 32px;
+}
+
+.vmw-medidor__boton {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--fs-meta);
+  cursor: pointer;
+}
+
+.vmw-medidor__boton:hover {
+  color: var(--text);
+}
+
+.vmw-medidor__detalle {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: var(--border-width) solid var(--border);
+  display: grid;
+  gap: 6px;
+}
+
+.vmw-medidor__detalle .vmw-eyebrow:not(:first-child) {
+  margin-top: 10px;
+}
+
+.vmw-medidor__reglas {
+  margin: 0;
+  padding-left: 18px;
+  font-size: var(--fs-meta);
+  color: var(--text-muted);
+}
+
+.vmw-medidor__reglas > li[data-cumple="true"] {
+  color: var(--text);
+}
+
+.vmw-medidor__aviso,
+.vmw-medidor__aclaracion {
+  margin-top: 10px;
+  font-size: var(--fs-micro);
+  color: var(--text-dim);
+}
+
+.vmw-medidor__aviso {
+  color: var(--coral);
 }
 
 .vmw-profundidad__fila {

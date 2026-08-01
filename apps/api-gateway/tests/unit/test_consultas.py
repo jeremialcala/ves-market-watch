@@ -5,11 +5,17 @@ from datetime import timedelta
 import pytest
 
 from api_gateway.application.consultas import (
+    ConsultarAnalisisVigente,
     ConsultarIndicadoresVigentes,
     ConsultarReferenciaP2P,
     ConsultarTasaOficialVigente,
 )
-from tests.conftest import RepositorioEnMemoria, fila_indicador, fila_tasa
+from tests.conftest import (
+    RepositorioEnMemoria,
+    fila_analisis,
+    fila_indicador,
+    fila_tasa,
+)
 
 STALE = timedelta(hours=6)
 FRESCURA = timedelta(minutes=20)
@@ -138,3 +144,35 @@ async def test_official_stale_si_no_hay_tasa_o_es_vieja(repo):
         "USD"
     )
     assert resultado["official_stale"] is True
+
+
+# -- análisis de la revisión (RF-6) ------------------------------------------
+
+
+async def test_analisis_vigente_devuelve_el_payload_tal_como_se_publico(repo):
+    """El gateway NO reclasifica bandas ni recalcula escalas: hacerlo abriría
+    una segunda fuente de verdad sobre la lectura del panel."""
+    fila = fila_analisis(hace=timedelta(minutes=1))
+    repo.analisis["VES"] = fila
+
+    resultado = await ConsultarAnalisisVigente(repo, FRESCURA).ejecutar("VES")
+
+    assert resultado is fila["payload"]
+    # Decimales como string exacto, sin round-trip por float.
+    assert resultado["indicators"][0]["position"] == "0.1966"
+
+
+async def test_un_analisis_rancio_no_se_sirve_como_vigente(repo):
+    """Mismo criterio que /rates/p2p/current (A10): nunca se presenta dato
+    rancio como actual — el panel prefiere decir que no hay lectura."""
+    repo.analisis["VES"] = fila_analisis(hace=timedelta(minutes=25))
+    assert await ConsultarAnalisisVigente(repo, FRESCURA).ejecutar("VES") is None
+
+
+async def test_sin_fila_devuelve_none(repo):
+    assert await ConsultarAnalisisVigente(repo, FRESCURA).ejecutar("VES") is None
+
+
+async def test_la_moneda_no_se_confunde(repo):
+    repo.analisis["VES"] = fila_analisis(hace=timedelta(minutes=1))
+    assert await ConsultarAnalisisVigente(repo, FRESCURA).ejecutar("COP") is None

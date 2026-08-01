@@ -7,6 +7,7 @@ import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import {
+  analisis,
   historialIndicadores,
   historialIntradia,
   indicadores,
@@ -17,6 +18,7 @@ import {
 } from "../../src/api/endpoints";
 import { ApiError } from "../../src/api/problem";
 import { config } from "../../src/config";
+import { FIXTURE_ANALISIS } from "../contract/fixtures.test";
 import { limpiarTokenDeTest, registrarTokenDeTest } from "../soporte";
 
 const BASE = `${config.apiBaseUrl}/api/v1`;
@@ -64,6 +66,46 @@ describe("convenciones del contrato", () => {
       ),
     );
     expect(await indicadores("USD")).toBeNull();
+  });
+
+  it("el análisis viaja con VES por defecto y se devuelve verbatim", async () => {
+    let moneda: string | null = null;
+    servidor.use(
+      http.get(`${BASE}/analysis/current`, ({ request }) => {
+        moneda = new URL(request.url).searchParams.get("currency");
+        return HttpResponse.json(FIXTURE_ANALISIS);
+      }),
+    );
+    const lectura = await analisis();
+    // Los p2p_* se persisten bajo el fiat del par, no bajo la pierna oficial.
+    expect(moneda).toBe("VES");
+    // Verbatim: los decimales siguen siendo el string exacto del contrato.
+    expect(lectura?.indicators[0].position).toBe("0.2996");
+    expect(lectura?.summary.closest_rule).toBe("techo_inminente@v1");
+  });
+
+  it("404 del análisis es null: se muestran valores sin explicación", async () => {
+    servidor.use(
+      http.get(`${BASE}/analysis/current`, () =>
+        HttpResponse.json(
+          { title: "Sin análisis vigente para VES.", status: 404 },
+          { status: 404, headers: { "content-type": "application/problem+json" } },
+        ),
+      ),
+    );
+    expect(await analisis()).toBeNull();
+  });
+
+  it("un 500 del análisis sí se propaga como ApiError", async () => {
+    servidor.use(
+      http.get(`${BASE}/analysis/current`, () =>
+        HttpResponse.json(
+          { title: "Error del gateway", status: 500 },
+          { status: 500, headers: { "content-type": "application/problem+json" } },
+        ),
+      ),
+    );
+    await expect(analisis()).rejects.toBeInstanceOf(ApiError);
   });
 
   it("un problem+json distinto de 404 se lanza como ApiError", async () => {

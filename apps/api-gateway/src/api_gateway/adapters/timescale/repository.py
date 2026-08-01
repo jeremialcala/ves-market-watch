@@ -226,6 +226,24 @@ class TimescaleLecturaRepository(LecturaRepository):
         )
         return [dict(f) for f in filas], int(total)
 
+    # -- análisis -----------------------------------------------------------
+
+    async def analisis_vigente(self, currency: str) -> dict | None:
+        # El payload se devuelve tal como se guardó: el codec jsonb ya
+        # registrado lo decodifica manteniendo los decimales como string, sin
+        # round-trip por float (ADR-0017).
+        fila = await self._pool.fetchrow(
+            """
+            SELECT as_of, payload
+            FROM indicator_analysis
+            WHERE currency = $1
+            ORDER BY as_of DESC
+            LIMIT 1
+            """,
+            currency,
+        )
+        return dict(fila) if fila is not None else None
+
     # -- salud --------------------------------------------------------------
 
     async def ping(self) -> bool:

@@ -3,7 +3,7 @@ type: OKF Bundle
 title: VES Market Watch — Knowledge Bundle
 description: Contexto curado del proyecto en Open Knowledge Format (OKF v0.1) para consumo por agentes y humanos.
 tags: [okf, contexto, ves, fx]
-timestamp: 2026-07-31T00:00:00Z
+timestamp: 2026-08-01T00:00:00Z
 ---
 
 # VES Market Watch — Knowledge Bundle
@@ -34,6 +34,12 @@ la fuente de verdad (los documentos AI-DLC y el código).
 - El `web-spa` viste el **sistema de diseño Higerotech** con tema claro/oscuro e
   interfaz ES/EN (2026-07-31, ADR-0018); los bloques que la plataforma todavía
   no calcula van marcados `demo · sin fuente`.
+- **El panel de medidores dejó de ser demo** (2026-08-01, ADR-0019): el motor
+  publica por revisión la [lectura de cada
+  indicador](metrics/lectura-de-indicadores.md) —banda dentro de los percentiles
+  reales de su ventana de 90 días y proximidad a las reglas del ruleset— vía
+  [analysis.updated](events/analysis-updated.md), `GET /api/v1/analysis/current`
+  y el tópico WSS `analysis`. Es descripción del presente, no pronóstico.
 - Siguiente paso natural: aprovisionar el tenant (F1 de ADR-0017), checklist
   e2e con login real, y preparar la fase 04 (Gate 2).
 - Historia de cambios: [log.md](log.md) y `../CHANGELOG.md`.

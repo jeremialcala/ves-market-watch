@@ -22,6 +22,9 @@ from api_gateway.domain.paginacion import validar_pagina, validar_rango
 router = APIRouter(prefix="/api/v1")
 
 _MONEDA = Query(default="USD", pattern=r"^[A-Z]{3}$")
+# Los indicadores P2P se persisten bajo el fiat del par (VES), no bajo la
+# pierna oficial (ADR-0014).
+_MONEDA_P2P = Query(default="VES", pattern=r"^[A-Z]{3}$")
 
 
 def _protegido(permiso: str):
@@ -120,6 +123,25 @@ async def historial_indicadores(
     return await request.app.state.consultas.historial_indicadores.ejecutar(
         desde, hasta, interval, pagina, indicator, currency
     )
+
+
+# -- analysis ----------------------------------------------------------------
+
+
+@router.get("/analysis/current")
+async def analisis_vigente(
+    request: Request,
+    # Permiso `read:indicators` REUTILIZADO a propósito: el análisis es la
+    # lectura de esos mismos indicadores. Un `read:analysis` nuevo exigiría
+    # aprovisionarlo en el tenant Auth0 y daría 403 a todo token ya emitido
+    # (decisión registrada en ADR-0019).
+    _usuario: Annotated[Usuario, _protegido("read:indicators")],
+    currency: str = _MONEDA_P2P,
+) -> dict:
+    resultado = await request.app.state.consultas.analisis.ejecutar(currency)
+    if resultado is None:
+        raise NoEncontrado(f"Sin análisis vigente para {currency}.")
+    return resultado
 
 
 # -- market ------------------------------------------------------------------

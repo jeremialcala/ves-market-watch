@@ -17,6 +17,54 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **Módulo de análisis de indicadores — el panel de instrumentos deja de ser demo
+  (2026-08-01, RF-6 / RF-11, ADR-0019).** El panel mostraba valores reales
+  rodeados de literales escritos a mano —la escala percentil, el ancho del
+  relleno, la marca de umbral y la nota— ajenos al valor que estaban rodeando.
+  Ahora el motor calcula lo que representan y el sello `demo · sin fuente` se
+  retira del panel.
+  - **Contrato nuevo `schemas/analysis.v1.json`** y evento `analysis.updated`, no
+    un `indicators.v2`: el `const: 1` del schema de indicadores habría obligado a
+    desplegar engine y gateway en el mismo instante.
+  - **Engine**: `domain/analisis.py` (puro) + `application/analizar_revision.py`,
+    config versionada `config/analisis.v1.yaml`, migración `003_analysis.sql`
+    (hypertable `indicator_analysis`, payload verbatim en JSONB, retención 90 d) y
+    cache de distribuciones con TTL. La escala son percentiles **reales** de la
+    ventana calculados con `percentile_disc` —`numeric` exacto, nunca float
+    (ADR-0017)— con respaldo por los umbrales del ruleset cuando falta historia.
+  - **Gateway**: `GET /api/v1/analysis/current` (permiso `read:indicators`
+    reutilizado, 404 si la revisión es rancia) y tópico WSS `analysis`. OpenAPI y
+    AsyncAPI a **0.5.0**.
+  - **SPA**: `GaugePanel` reescrito con pie de escala real, relleno del contrato,
+    una marca por cada regla que el medidor alimenta, detalle desplegable
+    accesible y síntesis del panel. 67 claves nuevas × 2 idiomas en registro
+    didáctico.
+  - **Frontera respetada**: no hay pronósticos, régimen ni probabilidades. La
+    síntesis es proximidad aritmética a reglas ya versionadas, `rules_met` no
+    implica emisión (el cooldown pudo suprimirla) y la UI lleva siempre la
+    aclaración de que no es una predicción.
+  - Suites: engine 71 → **170**, gateway 90 → **103**, SPA 179 → **210**
+    (88,7 % de ramas). El único cambio sobre el camino de emisión de señales
+    (`_vista_vigente` ampliada) va blindado con un test que compara las señales
+    emitidas con y sin análisis.
+
+### Changed
+
+- **La escala de percentiles exige cortes estrictamente crecientes**, no solo
+  monótonos (ADR-0019, punto 5). Encontrado en el compose con datos reales: con
+  14 039 muestras de `p2p_outliers_pct_buy` casi todas en cero, p10 = p50 = p90 = 0
+  y un snapshot impecable —0 % de outliers— salía clasificado `very_high`, «de lo
+  más alto de los últimos 90 días», porque la igualdad cuenta hacia arriba.
+  Ninguna regla de desempate lo arregla sin invertir el error en series saturadas
+  por arriba: sin dispersión entre los cortes **no hay banda que sostener**, así
+  que se cae al respaldo, que además dibuja el umbral real del 30 %.
+- `docs/02-design/api-contracts.md` a **0.5.0** (5 eventos, 9 endpoints REST,
+  5 tópicos WSS); PRD del motor a **0.4.0** con RF-6 y su nodo en el
+  `requirementDiagram`; PRD del SPA con RF-11 y la enmienda a «RF-5 ampliado».
+- `docker-compose.yml` monta `003_analysis.sql` como `902c_analysis.sql`.
+
 ### Security
 
 - **El SPA se servía SIN cabeceras de seguridad (2026-07-31)** — se pidió añadir

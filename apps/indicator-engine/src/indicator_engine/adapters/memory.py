@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
+from decimal import Decimal
+from typing import Sequence
 
 from indicator_engine.adapters.amqp.publisher import (
     construir_evento_indicadores,
     construir_evento_senal,
 )
+from indicator_engine.domain.analisis import Analisis, Distribucion
 from indicator_engine.domain.models import Indicador
 from indicator_engine.domain.reglas import Senal
 
@@ -20,6 +23,7 @@ class InMemoryIndicatorRepository:
         self.indicadores: list[Indicador] = []
         self.procesados: dict[str, str] = {}  # event_id → event_type
         self.senales: list[Senal] = []
+        self.analisis: list[tuple[Analisis, dict]] = []
 
     async def ya_procesado(self, event_id: str) -> bool:
         return event_id in self.procesados
@@ -55,11 +59,43 @@ class InMemoryIndicatorRepository:
     async def guardar_senales(self, senales: list[Senal]) -> None:
         self.senales.extend(senales)
 
+    async def guardar_analisis(self, analisis: Analisis, payload: dict) -> None:
+        # Idempotencia por la misma PK que la tabla: (as_of, moneda, triggered_by).
+        clave = (analisis.as_of, analisis.moneda, analisis.triggered_by)
+        if any(
+            (a.as_of, a.moneda, a.triggered_by) == clave for a, _ in self.analisis
+        ):
+            return
+        self.analisis.append((analisis, payload))
+
+
+class InMemoryDistribucionRepository:
+    """Doble del puerto `DistribucionRepository`, independiente del de indicadores.
+
+    `precargadas` se indexa por nombre; lo que no esté ahí simplemente no
+    aparece en el resultado — igual que un indicador sin filas en la ventana.
+    """
+
+    def __init__(self, precargadas: dict[str, Distribucion] | None = None) -> None:
+        self.precargadas: dict[str, Distribucion] = dict(precargadas or {})
+        self.llamadas: list[tuple[tuple[str, ...], str, datetime]] = []
+
+    async def distribuciones(
+        self,
+        nombres: Sequence[str],
+        moneda: str,
+        desde: datetime,
+        percentiles: Sequence[Decimal],
+    ) -> dict[str, Distribucion]:
+        self.llamadas.append((tuple(nombres), moneda, desde))
+        return {n: self.precargadas[n] for n in nombres if n in self.precargadas}
+
 
 class CollectingEventPublisher:
     def __init__(self) -> None:
         self.eventos: list[dict] = []
         self.senales: list[dict] = []
+        self.analisis: list[dict] = []
 
     async def publish_indicators_updated(
         self,
@@ -76,6 +112,10 @@ class CollectingEventPublisher:
         evento = construir_evento_senal(senal)
         self.senales.append(evento)
         logger.info("[memoria] signals.emitted %s", evento["payload"])
+
+    async def publish_analysis_updated(self, evento: dict) -> None:
+        self.analisis.append(evento)
+        logger.info("[memoria] analysis.updated %s", evento["payload"]["as_of"])
 
 
 class LoggingAlertNotifier:

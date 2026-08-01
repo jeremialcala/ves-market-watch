@@ -1,10 +1,11 @@
 /**
  * Reposición del estado por REST (ADR-0016: el push WSS es best-effort; el
  * estado consultable vive en la API). Se ejecuta al conectar/reconectar el
- * stream. ~10 requests por corrida — holgado dentro de los 120/min por sub.
+ * stream. ~11 requests por corrida — holgado dentro de los 120/min por sub.
  */
 
 import {
+  analisis,
   indicadores,
   profundidad,
   referenciaP2P,
@@ -18,8 +19,17 @@ import { marketStore } from "./marketStore";
 export const MONEDAS_BCV = ["USD", "EUR", "CNY", "TRY", "RUB"] as const;
 
 export async function resyncTodo(): Promise<void> {
-  const [tasas, buy, sell, inds, depthBuy, depthSell, senales, estadoSalud] =
-    await Promise.all([
+  const [
+    tasas,
+    buy,
+    sell,
+    inds,
+    lectura,
+    depthBuy,
+    depthSell,
+    senales,
+    estadoSalud,
+  ] = await Promise.all([
       Promise.all(
         MONEDAS_BCV.map(async (moneda) => {
           // 404 por moneda = sin datos aún: tolerado (RF-5).
@@ -33,6 +43,7 @@ export async function resyncTodo(): Promise<void> {
       referenciaP2P("buy").catch(() => null),
       referenciaP2P("sell").catch(() => null),
       indicadores("USD").catch(() => null),
+      analisis().catch(() => null),
       profundidad("buy").catch(() => null),
       profundidad("sell").catch(() => null),
       senalesRecientes().catch(() => null),
@@ -49,6 +60,7 @@ export async function resyncTodo(): Promise<void> {
     tasas: mapaTasas,
     p2p: { buy: buy ?? undefined, sell: sell ?? undefined },
     indicadores: inds,
+    analisis: lectura,
     profundidad: { buy: depthBuy ?? undefined, sell: depthSell ?? undefined },
     ...(senales !== null && { senales: senales.data }),
     salud: estadoSalud,

@@ -18,6 +18,7 @@ y consumidor. Eventos inválidos → DLQ `market.events.dlq`.
 | [p2p.snapshot](p2p-snapshot.md) | ingestor-binance | indicator-engine (pipeline) · api-gateway (push WSS) | **Implementado** (ambos lados) |
 | [indicators.updated](indicators-updated.md) | indicator-engine | api-gateway (push WSS) | **Implementado** (ambos lados, 2026-07-26) |
 | [signals.emitted](signals-emitted.md) | indicator-engine | api-gateway (push WSS + `GET /signals`) | **Implementado** (ambos lados, RF-4/ADR-0015 · consumidor 2026-07-26) |
+| [analysis.updated](analysis-updated.md) | indicator-engine | api-gateway (push WSS + `GET /analysis/current`) | **Implementado** (ambos lados, RF-6/ADR-0019 · 2026-08-01) |
 
 El consumo del api-gateway es de **cola efímera** (push WSS best-effort, ADR-0016):
 el consumidor durable con DLQ del pipeline sigue siendo el indicator-engine.

@@ -11,8 +11,10 @@ import pytest
 import yaml
 
 from indicator_engine.domain.reglas import (
+    Condicion,
     RulesetInvalido,
     cargar_ruleset,
+    evaluar_proximidad,
     evaluar_reglas,
 )
 
@@ -147,3 +149,98 @@ def test_indicador_ausente_no_dispara_su_regla():
     ruleset = cargar_ruleset(yaml.safe_load(RULESET_V1.read_text(encoding="utf-8")))
     disparadas = evaluar_reglas(ruleset, {"p2p_ratio_oferta_demanda": Decimal("3")})
     assert disparadas == []
+
+
+# -- proximidad (RF-6): la hermana de `evaluar_reglas` que describe en vez de
+#    decidir. Misma regla de honestidad: un indicador ausente no se rellena.
+
+
+def test_la_distancia_mide_el_movimiento_exigido_por_el_operador():
+    gt = Condicion(indicador="x", op="gt", umbral=Decimal("1.5"))
+    lt = Condicion(indicador="x", op="lt", umbral=Decimal("0.5"))
+    # gt: hay que SUBIR hasta el umbral.
+    assert gt.distancia(Decimal("0.3")) == Decimal("1.2")
+    # lt: hay que BAJAR hasta el umbral.
+    assert lt.distancia(Decimal("0.9")) == Decimal("0.4")
+    # Ya cumplida ⇒ distancia <= 0, nunca una promesa de cuándo pasará.
+    assert gt.distancia(Decimal("2.0")) == Decimal("-0.5")
+    assert lt.distancia(Decimal("0.1")) == Decimal("0.4") - Decimal("0.8")
+
+
+def test_la_proximidad_cuenta_k_de_n_sin_disparar_nada():
+    ruleset = cargar_ruleset(yaml.safe_load(RULESET_V1.read_text(encoding="utf-8")))
+    vista = {
+        "p2p_momentum_bid_3h_pct": Decimal("0.3"),
+        "p2p_spread_pct": Decimal("0.3"),
+        "p2p_ratio_oferta_demanda": Decimal("0.1"),
+        "p2p_drenaje_oferta_6h_pct": Decimal("10"),
+    }
+    techo = next(
+        p for p in evaluar_proximidad(ruleset, vista) if p.tipo == "techo_inminente"
+    )
+    assert (techo.cumplidas, techo.total) == (2, 3)
+    assert techo.completa is False
+    # …y la emisión real sigue diciendo que no dispara.
+    assert evaluar_reglas(ruleset, vista) == []
+
+
+def test_un_indicador_ausente_deja_valor_none_y_regla_no_evaluable():
+    ruleset = cargar_ruleset(yaml.safe_load(RULESET_V1.read_text(encoding="utf-8")))
+    proximidad = evaluar_proximidad(ruleset, {"p2p_ratio_oferta_demanda": Decimal("3")})
+    correccion = next(p for p in proximidad if p.tipo == "correccion_inminente")
+    assert correccion.evaluable is False
+    assert correccion.bloqueada_por is None
+    ausente = next(
+        c
+        for c in correccion.condiciones
+        if c.condicion.indicador == "p2p_momentum_bid_3h_pct"
+    )
+    # Nunca se rellena con el último conocido rancio.
+    assert (ausente.valor, ausente.distancia, ausente.cumple) == (None, None, False)
+
+
+def test_bloqueada_por_es_la_condicion_mas_lejana_con_desempate_alfabetico():
+    ruleset = _ruleset_min(
+        [
+            {
+                "type": "empate",
+                "direction": "neutral",
+                "when": [
+                    {"indicator": "zeta", "op": "gt", "value": "10"},
+                    {"indicator": "alfa", "op": "gt", "value": "10"},
+                ],
+            }
+        ]
+    )
+    proximidad = evaluar_proximidad(
+        ruleset, {"zeta": Decimal("5"), "alfa": Decimal("5")}
+    )
+    # Misma distancia (5) ⇒ gana el menor nombre canónico, siempre el mismo.
+    assert proximidad[0].bloqueada_por == "alfa"
+
+
+def test_la_proximidad_coincide_con_la_emision_cuando_la_regla_dispara():
+    ruleset = cargar_ruleset(yaml.safe_load(RULESET_V1.read_text(encoding="utf-8")))
+    vista = {
+        "p2p_momentum_bid_3h_pct": Decimal("2.0"),
+        "p2p_spread_pct": Decimal("0.1"),
+        "p2p_ratio_oferta_demanda": Decimal("0.1"),
+        "p2p_drenaje_oferta_6h_pct": Decimal("-50"),
+    }
+    completas = {p.regla for p in evaluar_proximidad(ruleset, vista) if p.completa}
+    disparadas = {d.regla for d in evaluar_reglas(ruleset, vista)}
+    assert completas == disparadas
+
+
+def test_confianza_baja_apaga_la_evaluabilidad_de_todas_las_reglas():
+    """Si las señales están suprimidas, hablar de proximidad engañaría."""
+    ruleset = cargar_ruleset(yaml.safe_load(RULESET_V1.read_text(encoding="utf-8")))
+    vista = {
+        "p2p_momentum_bid_3h_pct": Decimal("2.0"),
+        "p2p_spread_pct": Decimal("0.1"),
+        "p2p_ratio_oferta_demanda": Decimal("0.1"),
+        "p2p_drenaje_oferta_6h_pct": Decimal("-50"),
+    }
+    proximidad = evaluar_proximidad(ruleset, vista, evaluable=False)
+    assert all(not p.evaluable for p in proximidad)
+    assert all(p.bloqueada_por is None for p in proximidad)

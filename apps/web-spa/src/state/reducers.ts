@@ -9,6 +9,7 @@
 
 import type { CuotaRateLimit } from "../api/client";
 import type {
+  Analisis,
   Indicadores,
   Profundidad,
   ReferenciaP2P,
@@ -18,6 +19,7 @@ import type {
 } from "../api/endpoints";
 import { compararDecimales } from "../lib/decimal";
 import type {
+  PayloadAnalisis,
   PayloadIndicadores,
   PayloadSenal,
   PayloadTasaOficial,
@@ -40,6 +42,9 @@ export interface EstadoMercado {
   tasas: Record<string, TasaOficial>;
   p2p: { buy?: ReferenciaP2P; sell?: ReferenciaP2P };
   indicadores: Indicadores | null;
+  /** Lectura de los medidores de la última revisión (RF-6); `null` = sin
+   * análisis vigente, y el panel lo dice en vez de dibujar barras a ojo. */
+  analisis: Analisis | null;
   profundidad: { buy?: Profundidad; sell?: Profundidad };
   senales: Senal[];
   /** Último valor por indicador canónico (currency VES/USD, formato largo). */
@@ -58,6 +63,7 @@ export const ESTADO_INICIAL: EstadoMercado = {
   tasas: {},
   p2p: {},
   indicadores: null,
+  analisis: null,
   profundidad: {},
   senales: [],
   vigentes: {},
@@ -103,6 +109,15 @@ export function aplicarPush(
     case "signals":
       return {
         ...aplicarSenal(estado, push.data as PayloadSenal, push.occurred_at),
+        ...visto,
+      };
+    case "analysis":
+      // REEMPLAZO COMPLETO, no merge: cada revisión reevalúa los seis medidores
+      // y todas las reglas, así que un indicador que desaparece del array es uno
+      // que dejó de estar vigente — ocultar su barra es la respuesta honesta.
+      return {
+        ...estado,
+        analisis: push.data as PayloadAnalisis as Analisis,
         ...visto,
       };
     case "p2p.snapshot":
@@ -222,6 +237,7 @@ export interface SnapshotResync {
   tasas?: Record<string, TasaOficial>;
   p2p?: { buy?: ReferenciaP2P; sell?: ReferenciaP2P };
   indicadores?: Indicadores | null;
+  analisis?: Analisis | null;
   profundidad?: { buy?: Profundidad; sell?: Profundidad };
   senales?: Senal[];
   salud?: Salud | null;
@@ -239,6 +255,7 @@ export function aplicarResync(
     ...(snapshot.indicadores !== undefined && {
       indicadores: snapshot.indicadores,
     }),
+    ...(snapshot.analisis !== undefined && { analisis: snapshot.analisis }),
     ...(snapshot.profundidad !== undefined && {
       profundidad: snapshot.profundidad,
     }),

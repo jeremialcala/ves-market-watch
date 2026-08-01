@@ -8,10 +8,13 @@ El rol del servicio solo necesita INSERT/SELECT sobre `indicators` y
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
+from decimal import Decimal
+from typing import Sequence
 
 import asyncpg
 
+from indicator_engine.domain.analisis import Analisis, Distribucion
 from indicator_engine.domain.models import Indicador
 from indicator_engine.domain.reglas import Senal
 
@@ -25,6 +28,12 @@ class TimescaleIndicatorRepository:
     @classmethod
     async def connect(cls, dsn: str) -> "TimescaleIndicatorRepository":
         return cls(await asyncpg.create_pool(dsn, min_size=1, max_size=4))
+
+    @property
+    def pool(self) -> asyncpg.Pool:
+        """El pool, para montar sobre él otros adaptadores del mismo servicio
+        (p. ej. `TimescaleDistribucionRepository`) sin abrir una segunda conexión."""
+        return self._pool
 
     async def close(self) -> None:
         await self._pool.close()
@@ -153,3 +162,87 @@ class TimescaleIndicatorRepository:
                 for s in senales
             ],
         )
+
+    async def guardar_analisis(self, analisis: Analisis, payload: dict) -> None:
+        # payload verbatim: el documento ES el contrato, así el GET del gateway
+        # devuelve exactamente lo publicado y los decimales siguen siendo strings
+        # exactos sin round-trip por numeric (ADR-0017/ADR-0019).
+        # ON CONFLICT DO NOTHING: la reentrega del snapshot (at-least-once) no
+        # duplica — la PK (as_of, currency, triggered_by) es determinista.
+        await self._pool.execute(
+            """
+            INSERT INTO indicator_analysis
+                (as_of, currency, triggered_by, calc_version, analysis_version,
+                 ruleset_version, confidence, official_stale, scale_source, payload)
+            VALUES ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10::jsonb)
+            ON CONFLICT (as_of, currency, triggered_by) DO NOTHING
+            """,
+            analisis.as_of,
+            analisis.moneda,
+            analisis.triggered_by,
+            analisis.calc_version,
+            analisis.analysis_version,
+            analisis.ruleset_version,
+            analisis.confianza,
+            analisis.official_stale,
+            analisis.fuente_escala,
+            json.dumps(payload, ensure_ascii=False),
+        )
+
+
+class TimescaleDistribucionRepository:
+    """Adaptador del puerto `DistribucionRepository` sobre asyncpg.
+
+    Una sola consulta para los seis medidores: la forma multi-fracción de
+    `percentile_disc` devuelve todos los cortes en un array por indicador, así
+    que un refresco es un round trip y no seis.
+    """
+
+    def __init__(self, pool: asyncpg.Pool) -> None:
+        self._pool = pool
+
+    # percentile_disc, NUNCA percentile_cont — y es de fondo, no de estilo:
+    # PostgreSQL no tiene sobrecarga `numeric` de percentile_cont (sus firmas son
+    # double precision e interval), así que sobre `value numeric(24,8)` haría un
+    # cast implícito a float y devolvería float8. Eso metería un float justo en el
+    # número que acaba en la UI, contra ADR-0017. percentile_disc es polimórfico
+    # (anyelement → anyelement), devuelve numeric exacto Y el corte es un valor
+    # realmente observado en la serie. NO CAMBIAR SIN RELEER ADR-0017.
+    # El WHERE lo sirve entero indicators_name_currency_time_idx (001:21-22).
+    _SQL = """
+        SELECT indicator,
+               count(*)                                                    AS muestras,
+               min(value)                                                  AS minimo,
+               max(value)                                                  AS maximo,
+               percentile_disc($4::float8[]) WITHIN GROUP (ORDER BY value) AS cortes
+        FROM indicators
+        WHERE indicator = ANY($1::text[])
+          AND currency  = $2
+          AND as_of    >= $3
+        GROUP BY indicator
+    """
+
+    async def distribuciones(
+        self,
+        nombres: Sequence[str],
+        moneda: str,
+        desde: datetime,
+        percentiles: Sequence[Decimal],
+    ) -> dict[str, Distribucion]:
+        # Las fracciones son argumento de percentile_disc (qué corte pedir), no
+        # un valor de mercado: float8 aquí no toca ningún número de la UI.
+        fracciones = [float(p) for p in percentiles]
+        filas = await self._pool.fetch(
+            self._SQL, list(nombres), moneda, desde, fracciones
+        )
+        calculada_en = datetime.now(UTC)
+        return {
+            fila["indicator"]: Distribucion(
+                muestras=fila["muestras"],
+                minimo=fila["minimo"],
+                maximo=fila["maximo"],
+                cortes=tuple(fila["cortes"] or ()),
+                calculada_en=calculada_en,
+            )
+            for fila in filas
+        }

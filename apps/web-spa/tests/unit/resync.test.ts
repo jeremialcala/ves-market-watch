@@ -9,6 +9,7 @@ import { config } from "../../src/config";
 import { marketStore } from "../../src/state/marketStore";
 import { resyncTodo } from "../../src/state/resync";
 import {
+  FIXTURE_ANALISIS,
   FIXTURE_INDICADORES,
   FIXTURE_P2P_LOW,
   FIXTURE_PROFUNDIDAD,
@@ -56,6 +57,9 @@ describe("resyncTodo", () => {
       http.get(`${BASE}/indicators/current`, () =>
         HttpResponse.json(FIXTURE_INDICADORES),
       ),
+      http.get(`${BASE}/analysis/current`, () =>
+        HttpResponse.json(FIXTURE_ANALISIS),
+      ),
       http.get(`${BASE}/market/depth`, ({ request }) =>
         new URL(request.url).searchParams.get("side") === "buy"
           ? HttpResponse.json(FIXTURE_PROFUNDIDAD)
@@ -78,6 +82,7 @@ describe("resyncTodo", () => {
     expect(estado.p2p.buy?.confidence).toBe("low");
     expect(estado.p2p.sell).toBeUndefined();
     expect(estado.indicadores?.gap_pct).toBe("103.83000000");
+    expect(estado.analisis?.summary.closest_rule).toBe("techo_inminente@v1");
     expect(estado.profundidad.buy?.levels).toHaveLength(2);
     expect(estado.senales).toHaveLength(1);
     expect(estado.salud?.status).toBe("ok");
@@ -90,6 +95,7 @@ describe("resyncTodo", () => {
       ),
       http.get(`${BASE}/rates/p2p/current`, () => HttpResponse.error()),
       http.get(`${BASE}/indicators/current`, () => HttpResponse.error()),
+      http.get(`${BASE}/analysis/current`, () => HttpResponse.error()),
       http.get(`${BASE}/market/depth`, () => HttpResponse.error()),
       http.get(`${BASE}/signals`, () => HttpResponse.error()),
       http.get(`${BASE}/health`, () => HttpResponse.error()),
@@ -98,6 +104,8 @@ describe("resyncTodo", () => {
     const estado = marketStore.getState();
     expect(estado.tasas.USD).toBeDefined();
     expect(estado.indicadores).toBeNull();
+    // El análisis caído no arrastra al resto: el panel dirá que no hay lectura.
+    expect(estado.analisis).toBeNull();
     expect(estado.senales).toEqual([]); // señales no vino: se conserva el previo (vacío)
   });
 });

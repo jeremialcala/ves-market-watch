@@ -46,7 +46,7 @@ describe("StreamClient", () => {
     vi.unstubAllGlobals();
   });
 
-  it("al conectar se suscribe a los 4 tópicos y dispara el resync", async () => {
+  it("al conectar se suscribe a los 5 tópicos y dispara el resync", async () => {
     const suscripciones: string[] = [];
     let resyncs = 0;
     servidor.on("connection", (socket) => {
@@ -70,6 +70,7 @@ describe("StreamClient", () => {
       "p2p.snapshot",
       "indicators",
       "signals",
+      "analysis",
     ]);
   });
 

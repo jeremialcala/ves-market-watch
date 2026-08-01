@@ -19,7 +19,7 @@ from api_gateway.domain.modelos import Usuario
 logger = logging.getLogger(__name__)
 
 TOPICOS_PERMITIDOS = frozenset(
-    {"rates.official", "p2p.snapshot", "indicators", "signals"}
+    {"rates.official", "p2p.snapshot", "indicators", "signals", "analysis"}
 )
 
 # routing key del bus → tópico WSS expuesto al cliente.
@@ -28,6 +28,9 @@ EVENTO_A_TOPICO = {
     "p2p.snapshot": "p2p.snapshot",
     "indicators.updated": "indicators",
     "signals.emitted": "signals",
+    # Lectura mecánica de los medidores del panel (RF-6, ADR-0019). Un evento
+    # por revisión, mismo ritmo que `indicators.updated`.
+    "analysis.updated": "analysis",
 }
 
 

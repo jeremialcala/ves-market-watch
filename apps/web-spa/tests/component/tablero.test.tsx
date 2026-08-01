@@ -21,7 +21,6 @@ import {
 
 import { GapDecomposition } from "../../src/components/GapDecomposition";
 import { GapHeatmap } from "../../src/components/GapHeatmap";
-import { GaugePanel } from "../../src/components/GaugePanel";
 import { MarketRegimeCard } from "../../src/components/MarketRegimeCard";
 import { config } from "../../src/config";
 import { marketStore } from "../../src/state/marketStore";
@@ -77,42 +76,7 @@ afterAll(() => {
   limpiarTokenDeTest();
 });
 
-describe("GaugePanel", () => {
-  it("muestra el valor vigente de cada medidor y marca la escala como demo", () => {
-    marketStore.push({
-      topic: "indicators",
-      event_id: "evento-medidores",
-      occurred_at: "2026-07-30T12:00:00Z",
-      data: {
-        as_of: "2026-07-30T12:00:00Z",
-        calc_version: 1,
-        official_stale: false,
-        triggered_by: "11111111-2222-3333-4444-555555555555",
-        indicators: [
-          {
-            indicator: "p2p_ratio_oferta_demanda",
-            currency: "VES",
-            value: "0.59000000",
-          },
-          {
-            indicator: "p2p_spread_pct",
-            currency: "VES",
-            value: "0.56000000",
-          },
-        ],
-      },
-    });
-    render(<GaugePanel />);
-
-    expect(screen.getByText("0,59")).toBeTruthy();
-    expect(screen.getByText("0,56 %")).toBeTruthy();
-    // Sin valor vigente el medidor lo dice, no pinta un cero.
-    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/sin valor vigente/i).length).toBeGreaterThan(0);
-    // El percentil/umbral no lo calcula la plataforma: va sellado.
-    expect(screen.getByText("demo · sin fuente")).toBeTruthy();
-  });
-});
+// El panel de medidores tiene su propia suite: `tests/component/medidores.test.tsx`.
 
 describe("MarketRegimeCard", () => {
   it("sella el régimen como demo y deja los dos indicadores reales al lado", () => {
