@@ -71,7 +71,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   y obliga a volver a pasar el validador.
 
 ## Verificación
-- **173 tests** (unit/component/contract con MSW y WS mock) — **88,7 % de ramas**
+- **179 tests** (unit/component/contract con MSW y WS mock) — **88,7 % de ramas**
   (umbral Gate 2: 80 %). E2E en vivo (`npm run test:e2e:live`) con client M2M:
   token real → REST + WSS; skip elegante sin credenciales.
 - La parrilla intradía se eyebalizó en claro y oscuro con una previsualización

@@ -17,6 +17,34 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Security
+
+- **El SPA se servía SIN cabeceras de seguridad (2026-07-31)** — se pidió añadir
+  `frame-src` a la CSP y al verificarlo apareció algo mayor:
+  - **Ninguna respuesta llevaba CSP, `X-Content-Type-Options` ni
+    `Referrer-Policy`**, pese a estar escritas en `nginx.conf`. Causa: en nginx,
+    un `location` que declara `add_header` propio **descarta todos los
+    heredados** del `server` — y los dos locations de cache tenían el suyo. El
+    control que T12 y ADR-0017 daban por implementado no llegaba al navegador.
+  - Las cabeceras pasan a `nginx-security-headers.conf`, incluido en el `server`
+    y en cada `location` con `add_header` propio.
+  - **`frame-src` del tenant añadido**: el SDK de Auth0 re-autentica en silencio
+    con un iframe `prompt=none` (`useRefreshTokensFallback`), y sin la directiva
+    caía en `default-src 'self'`; el iframe se bloqueaba y cada recarga acababa
+    en Universal Login visible — justo lo que ese fallback existe para evitar.
+    Funcionaba en `vite dev` (sin CSP) y se rompía solo en el contenedor.
+  - Verificado en el contenedor con una sonda temporal en el mismo origen:
+    `example.com` **bloqueado** por `frame-src`, el tenant **permitido**; y el
+    script inline de la sonda bloqueado por `script-src 'self'`, que confirma
+    que la política se aplica. Sonda retirada.
+  - `tests/unit/csp.test.ts` vigila la trampa de la herencia (todo location con
+    `add_header` debe incluir el fragmento), que `frame-src` y `connect-src`
+    usen el `config.auth0Domain` del bundle, y que sigan los controles de T12.
+    Comprobado a la inversa: quitando un `include`, falla.
+  - Corregido además el encabezado de `AuthProvider.tsx`, que decía «refresh
+    rotation **sin** fallback iframe» mientras el código lo activaba.
+  - 173 → **179 tests**.
+
 ### Fixed
 
 - **La tira de estado podía pintarse un fotograma en móvil (2026-07-31)** —

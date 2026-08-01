@@ -7,6 +7,25 @@ timestamp: 2026-07-31T00:00:00Z
 
 # Log
 
+## 2026-07-31 — La CSP no existía: nginx la descartaba entera
+- Pedido: añadir `frame-src` para el iframe de silent auth de Auth0. Al ir a
+  verificarlo, la cabecera **no estaba en ninguna respuesta**. Tampoco `nosniff`
+  ni `Referrer-Policy`.
+- Causa: en nginx, un `location` con `add_header` propio **descarta todos los
+  heredados** del `server`. Los dos locations de cache tenían el suyo, así que
+  las tres cabeceras escritas arriba no llegaban al navegador. T12 y ADR-0017
+  daban ese control por implementado.
+- Arreglado con un fragmento incluido en el server y en cada location con
+  cabeceras propias. Y `frame-src` del tenant añadido: sin él el iframe
+  `prompt=none` se bloquea y cada recarga acaba en Universal Login visible —
+  funcionaba en `vite dev` (sin CSP) y se rompía solo en el contenedor.
+- Verificado dentro del contenedor con una sonda en el mismo origen:
+  `example.com` bloqueado por `frame-src`, el tenant permitido. De paso, el
+  script inline de la sonda quedó bloqueado por `script-src 'self'` — buena
+  señal de que la política se aplica de verdad.
+- Lección: **una cabecera escrita no es una cabecera enviada**. El canario nuevo
+  comprueba la config, no la intención.
+
 ## 2026-07-31 — Un reporte sobre un contenedor viejo destapó un defecto real
 - Reportaron la tira de estado visible en móvil. El contenedor del compose
   servía un bundle anterior al trabajo responsive —se comprobó buscando

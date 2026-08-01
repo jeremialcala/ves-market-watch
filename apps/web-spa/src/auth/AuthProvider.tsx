@@ -1,8 +1,11 @@
 /**
  * Auth0 con los controles de T12 (ADR-0017): tokens SOLO en memoria (nunca
- * localStorage), refresh rotation sin fallback iframe, PKCE contra Universal
- * Login. `TokenBridge` publica `getAccessTokenSilently` al puente de módulos
- * planos (REST/WSS).
+ * localStorage), refresh rotation CON fallback de iframe (`prompt=none`) y PKCE
+ * contra Universal Login. Ese iframe necesita `frame-src` del tenant en la CSP
+ * del nginx — sin él la recarga acaba en Universal Login visible.
+ *
+ * `TokenBridge` publica `getAccessTokenSilently` al puente de módulos planos
+ * (REST/WSS).
  */
 
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";

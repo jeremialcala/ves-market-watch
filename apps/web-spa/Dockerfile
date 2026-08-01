@@ -12,4 +12,6 @@ RUN npm run build
 FROM nginx:alpine
 COPY --from=build /opt/ves/apps/web-spa/dist /usr/share/nginx/html
 COPY apps/web-spa/nginx.conf /etc/nginx/conf.d/default.conf
+# Fuera de conf.d a propósito: es un fragmento para `include`, no un server.
+COPY apps/web-spa/nginx-security-headers.conf /etc/nginx/security-headers.conf
 EXPOSE 80

@@ -159,11 +159,20 @@ la descomposición reparte el precio P2P con la tasa oficial vigente y el VWAP.
   renovado; el token solo viaja en la URL del handshake WSS (mandato del
   contrato; el gateway lo redacta en sus logs).
 - nginx: CSP sin `unsafe-inline` para scripts, `frame-ancestors 'none'`
-  (clickjacking), `nosniff`, `connect-src` limitado a gateway + tenant.
+  (clickjacking), `nosniff`, `connect-src` limitado a gateway + tenant y
+  **`frame-src` del tenant** — el SDK re-autentica en silencio con un iframe
+  `prompt=none`, y sin esa directiva cae en `default-src 'self'`, se bloquea y
+  cada recarga acaba en Universal Login visible.
+- Las cabeceras viven en `nginx-security-headers.conf` y se **incluyen en cada
+  `location` que declare `add_header` propio**: nginx no las hereda si el
+  location define los suyos, y por eso el sitio estuvo sirviéndose sin ninguna
+  cabecera de seguridad pese a estar escritas en la config. Lo vigila
+  `tests/unit/csp.test.ts`, que además comprueba que el dominio de `frame-src`
+  es el `config.auth0Domain` del bundle.
 - Lockfile commiteado (SCA en CI — Gate 2); cero secretos en el bundle.
 
 ## Verificación
-- **173 tests** (unit / component / contract) con **88,7 % de ramas** (umbral
+- **179 tests** (unit / component / contract) con **88,7 % de ramas** (umbral
   Gate 2: 80 %): decimal exhaustivo (incl. la aritmética `BigInt` y el borde de
   medianoche del día operativo VET), reducers, políticas WSS, StreamClient
   contra servidor WS mockeado, endpoints contra MSW, paneles con fixtures
