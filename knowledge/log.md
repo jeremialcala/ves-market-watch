@@ -21,8 +21,16 @@ timestamp: 2026-08-01T12:00:00Z
   la misma columna poblada para unas filas y nula para otras dentro de la misma tabla,
   y un `null` ahí se lee como «sin volumen», que sería falso. Anotado como pendiente
   con el arreglo concreto: reconocer mapas anidados en `detectar_columnas`.
-- Ese arreglo obliga además a **recargar** los 28.510 + 2.951 ya insertados, porque
-  `ON CONFLICT DO NOTHING` no actualiza. Es trabajo aparte, no un parche de una línea.
+- **Arreglado el mismo día.** `detectar_columnas` mapea ahora los anidados por
+  contenido (`claves_anidadas`), y `cargar --rellenar-vacios` repara lo ya cargado. La
+  guarda que lo hace seguro vive en **SQL, no en Python**: es la base la que mira lo que
+  realmente tiene guardado y solo actualiza si no hay ningún volumen y el nuevo aporta
+  alguno. Nunca sobrescribe, así que la segunda pasada actualiza 0.
+- Resultado: **de 15 % a 100 %** de entradas de banco con volumen (128.962/128.962), sin
+  tocar `rate`, `available` ni `low_liquidity` —verificado fila a fila contra el CSV— y
+  con `InforPerBank` fuera de `extra`: el dato se movió, no se duplicó.
+- Hizo falta pasar **los dos** exports: el de agosto arranca en 2026-01-01 y no cubría
+  los 2.634 snapshots de diciembre, que salieron del de julio.
 
 ## 2026-08-01 (noche) — La serie oficial arranca en 2020, no en julio de 2026
 - Cargadas **31.078 filas / 23 monedas** en `official_rates` desde el export de los XLS

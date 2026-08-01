@@ -17,6 +17,9 @@ python -m ingestor_historico cargar "ruta/al/query_result_….csv"
 # Inspección previa sin tocar la base
 python -m ingestor_historico cargar export.csv --dry-run
 
+# Reparación: rellenar campos vacíos de filas YA cargadas (nunca sobrescribe)
+python -m ingestor_historico cargar export.csv --rellenar-vacios
+
 # Cargar el histórico de tasas oficiales del BCV en `official_rates`
 python -m ingestor_historico cargar-oficiales "ruta/al/bcv_fx_historico.csv"
 python -m ingestor_historico cargar-oficiales bcv_fx_historico.csv --dry-run

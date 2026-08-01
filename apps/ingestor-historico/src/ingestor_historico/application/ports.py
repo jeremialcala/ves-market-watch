@@ -15,11 +15,18 @@ from ingestor_historico.domain.tasas_oficiales import TasaOficialHistorica
 class ResumenPersistencia:
     insertados: int
     duplicados: int  # ya existían (misma captured_at + source_id)
+    # Filas preexistentes a las que se les RELLENÓ un campo vacío (solo con
+    # `rellenar_vacios`). Se cuenta aparte porque tocar una fila ya cargada es
+    # la excepción a la inmutabilidad de la tabla, no la operación normal.
+    actualizados: int = 0
 
 
 class RepositorioHistorico(Protocol):
     async def guardar_lote(
-        self, snapshots: Sequence[SnapshotHistorico], archivo_origen: str
+        self,
+        snapshots: Sequence[SnapshotHistorico],
+        archivo_origen: str,
+        rellenar_vacios: bool = False,
     ) -> ResumenPersistencia: ...
 
     async def leer_puntos(

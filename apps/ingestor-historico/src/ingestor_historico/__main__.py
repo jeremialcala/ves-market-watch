@@ -1,8 +1,10 @@
 """Entrypoint: `python -m ingestor_historico <comando>`.
 
-cargar <archivo.csv> [--dry-run] [--tz -04:00]
+cargar <archivo.csv> [--dry-run] [--tz -04:00] [--rellenar-vacios]
     Carga un export histórico en TimescaleDB (idempotente). Con --dry-run
-    parsea y resume sin tocar la base.
+    parsea y resume sin tocar la base. Con --rellenar-vacios, las filas ya
+    cargadas a las que les falte un campo que el export SÍ trae se completan
+    (reparación explícita; nunca sobrescribe un valor existente).
 
 cargar-oficiales <archivo.csv> [--dry-run] [--tz -04:00] [--monedas USD,EUR]
     Carga el histórico de tasas oficiales del BCV en `official_rates`
@@ -50,6 +52,8 @@ def _imprimir_resumen_carga(resumen: ResumenCarga) -> None:
     print(f"filas:        {resumen.total_filas}")
     print(f"insertadas:   {resumen.insertadas}")
     print(f"duplicadas:   {resumen.duplicadas}")
+    if resumen.actualizadas:
+        print(f"actualizadas: {resumen.actualizadas} (campos vacios rellenados)")
     for motivo, cantidad in sorted(resumen.descartadas.items()):
         print(f"descartadas:  {cantidad} ({motivo})")
     if resumen.desde and resumen.hasta:
@@ -133,7 +137,7 @@ async def _cmd_cargar(args: argparse.Namespace, settings: Settings) -> None:
 
     try:
         resumen = await CargarHistoricos(repositorio).ejecutar(
-            cabeceras, filas, Path(args.archivo).name, tz
+            cabeceras, filas, Path(args.archivo).name, tz, args.rellenar_vacios
         )
         _imprimir_resumen_carga(resumen)
         if args.dry_run:
@@ -235,6 +239,11 @@ def main() -> None:
     p_cargar.add_argument("archivo", help="ruta al export CSV")
     p_cargar.add_argument("--dry-run", action="store_true", help="parsear sin persistir")
     p_cargar.add_argument("--tz", help="zona horaria del export (default TZ_ORIGEN, -04:00)")
+    p_cargar.add_argument(
+        "--rellenar-vacios",
+        action="store_true",
+        help="rellenar campos vacios de filas YA cargadas (reparacion; nunca sobrescribe)",
+    )
 
     p_oficiales = sub.add_parser(
         "cargar-oficiales", help="cargar el histórico de tasas oficiales del BCV"

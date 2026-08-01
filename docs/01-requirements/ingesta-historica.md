@@ -61,7 +61,11 @@ que recibe**, no asumir un layout fijo.
   idempotente: PK `(captured_at, source_id)` + `ON CONFLICT DO NOTHING`; sin columna
   ID se deriva un hash determinista del contenido de la fila.
 - **RF-2** Parseo adaptativo: detección de columnas por heurística sobre nombres y una
-  fila de muestra (precio, fecha, volumen total, mapas por banco); mapas
+  fila de muestra (precio, fecha, volumen total, mapas por banco). Los mapas por banco
+  se aceptan en dos formas: **plana** (`{:Banesco 396.79 (lower liquidity)}`) y
+  **anidada** (`{:Banesco {:volume …, :averageRate …}}`), y esta última se mapea por
+  **contenido**, no por el nombre de la columna — el export publica el volumen por banco
+  en `InforPerBank`, que no contiene ninguna palabra de volumen en su nombre. Además: mapas
   `{:Banco valor (anotación)}` con conjunto de bancos dinámico; números con separador
   de miles; fechas en formato inglés del export o ISO 8601; fallback de fecha desde el
   timestamp embebido en un ObjectId. Columnas no reconocidas se conservan crudas
@@ -73,8 +77,15 @@ que recibe**, no asumir un layout fijo.
   consecutivos; filtro por rango, agrupación por día de mercado (zona configurable,
   default UTC−4) y salida JSON para consumo programático.
 - **RF-5** Resumen de carga auditable: filas totales, insertadas, duplicadas,
-  descartadas por motivo, rango de fechas y bancos detectados; `--dry-run` parsea y
-  resume sin persistir.
+  actualizadas, descartadas por motivo, rango de fechas y bancos detectados;
+  `--dry-run` parsea y resume sin persistir.
+
+  **Ampliación 2026-08-01 — `--rellenar-vacios`**: las filas YA cargadas a las que les
+  falte un campo que el export sí trae se completan. Es la **única excepción** a la
+  inmutabilidad de la tabla y está acotada por diseño: la guarda vive en SQL, solo
+  dispara si lo almacenado no tiene el campo y lo nuevo sí, y **nunca sobrescribe** un
+  valor existente — por eso es idempotente. Existe porque un defecto del mapeo dejó
+  `banks[].volume` nulo en 31.461 filas mientras el dato estaba en el archivo.
 - **RF-6** **Histórico de tasas oficiales del BCV** (2026-08-01): cargar el export
   `bcv_fx_historico.csv` a `official_rates` —la MISMA tabla que alimenta el
   `ingestor-bcv` en vivo—, de forma idempotente por su PK `(captured_at, currency)`.

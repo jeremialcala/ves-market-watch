@@ -39,6 +39,25 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Fixed
 
+- **`banks[].volume` estaba vacío en 31.461 filas del histórico, con el dato en el
+  archivo (2026-08-01).** Los exports desde julio publican el volumen por banco en
+  `InforPerBank`, un mapa **anidado** cuyo NOMBRE no contiene ninguna palabra de
+  volumen; la heurística buscaba en el nombre, así que la columna caía en `extra` y la
+  columna estructurada quedaba nula. Quedaba poblada para un export y vacía para los
+  otros dos **dentro de la misma tabla**, donde un `null` se lee como «sin volumen».
+  - `detectar_columnas` reconoce ahora los mapas anidados por su **contenido**
+    (`claves_anidadas`), no por el nombre. De paso, un export que solo trajera el mapa
+    anidado también resolvería las tasas desde él.
+  - **`cargar --rellenar-vacios`** repara lo ya cargado: única excepción a la
+    inmutabilidad de la tabla, con la guarda en SQL —solo dispara si lo almacenado no
+    tiene el campo y lo nuevo sí— y sin sobrescribir jamás un valor existente, así que
+    es idempotente.
+  - Resultado: **128.962 de 128.962 entradas de banco con volumen (de 15 % a 100 %)**,
+    0 filas sin él. `rate`, `available` y `low_liquidity` intactos, verificado fila a
+    fila contra el CSV; `InforPerBank` **salió** de `extra` — el dato se movió a la
+    columna estructurada, no se duplicó.
+  - Suite del servicio: 68 → **80 tests**.
+
 - **La atribución de la brecha no se habría disparado casi nunca (2026-08-01).**
   La guarda de hueco de captura se aplicaba también a `official_rate`, y esa
   serie se persiste **solo cuando la tasa cambia** (ADR-0008): una fila de hace

@@ -187,3 +187,113 @@ class TestParsearFila:
         with pytest.raises(FilaInvalida) as exc:
             parsear_fila(fila, mapeo, TZ_CARACAS, "fallback")
         assert exc.value.motivo == "fecha ilegible"
+
+
+# -- mapas anidados (formato del export desde julio de 2026) ------------------
+#
+# `InforPerBank` publica el volumen por banco en un submapa. Su NOMBRE no lleva
+# ninguna palabra de volumen, así que la heurística por nombre lo dejaba fuera y
+# `banks[].volume` quedaba nulo mientras el dato estaba en el archivo.
+
+ANIDADO = (
+    "{:Banesco {:volume 161309.48, :averageRate 556.12}, "
+    ":Mercantil {:volume 91118.66, :averageRate 551.32}}"
+)
+
+
+def test_reconoce_un_mapa_anidado_frente_a_uno_plano():
+    from ingestor_historico.domain.parser import es_mapa_anidado
+
+    assert es_mapa_anidado(ANIDADO)
+    assert not es_mapa_anidado("{:Banesco 556.12, :Mercantil 551.32}")
+    assert not es_mapa_anidado("")
+
+
+def test_extrae_la_clave_pedida_del_submapa():
+    from ingestor_historico.domain.parser import parse_mapa_bancos
+
+    volumenes = parse_mapa_bancos(ANIDADO, "volume")
+    assert set(volumenes) == {"Banesco", "Mercantil"}
+    assert volumenes["Banesco"].valor == Decimal("161309.48")
+
+    tasas = parse_mapa_bancos(ANIDADO, "averageRate")
+    assert tasas["Mercantil"].valor == Decimal("551.32")
+
+
+def test_un_mapa_anidado_sin_clave_no_adivina():
+    """Sin saber qué magnitud se quiere, devolver la primera sería inventar. El
+    bug original hacía algo peor: el regex plano leía `:volume` y `:averageRate`
+    como si fueran NOMBRES DE BANCO."""
+    from ingestor_historico.domain.parser import parse_mapa_bancos
+
+    assert parse_mapa_bancos(ANIDADO) == {}
+
+
+def test_una_clave_ausente_en_el_submapa_no_inventa_entrada():
+    from ingestor_historico.domain.parser import parse_mapa_bancos
+
+    assert parse_mapa_bancos(ANIDADO, "disponible") == {}
+
+
+def test_las_claves_del_submapa_se_pueden_inspeccionar():
+    from ingestor_historico.domain.parser import claves_anidadas
+
+    assert claves_anidadas(ANIDADO) == ("volume", "averageRate")
+    assert claves_anidadas("{:Banesco 556.12}") == ()
+
+
+def test_detecta_el_mapa_de_volumenes_por_CONTENIDO_no_por_nombre():
+    """El caso real: `InforPerBank` no tiene ninguna keyword de volumen en el
+    nombre. Antes acababa en `extra` y el volumen se perdía de `banks`."""
+    from ingestor_historico.domain.parser import detectar_columnas
+
+    cabeceras = ["ID", "BaseWeightedAverage", "AverageRatePerBank", "InforPerBank", "CreatedAt"]
+    muestra = {
+        "ID": "6955f14de64c795a5f456ffe",
+        "BaseWeightedAverage": "556.12",
+        "AverageRatePerBank": "{:Banesco 556.12, :Mercantil 551.32}",
+        "InforPerBank": ANIDADO,
+        "CreatedAt": "January 1, 2026, 12:00 AM",
+    }
+    mapeo = detectar_columnas(cabeceras, muestra)
+
+    assert mapeo.mapa_tasas == "AverageRatePerBank"
+    assert mapeo.clave_tasas is None          # el de tasas es plano
+    assert mapeo.mapa_volumenes == "InforPerBank"
+    assert mapeo.clave_volumenes == "volume"
+    assert "InforPerBank" not in mapeo.extra  # ya no cae en el cajón de sastre
+
+
+def test_el_volumen_anidado_llega_al_snapshot():
+    from ingestor_historico.domain.parser import detectar_columnas, parsear_fila
+
+    cabeceras = ["ID", "BaseWeightedAverage", "AverageRatePerBank", "InforPerBank", "CreatedAt"]
+    fila = {
+        "ID": "6955f14de64c795a5f456ffe",
+        "BaseWeightedAverage": "556.12",
+        "AverageRatePerBank": "{:Banesco 556.12, :Mercantil 551.32 (lower liquidity)}",
+        "InforPerBank": ANIDADO,
+        "CreatedAt": "January 1, 2026, 12:00 AM",
+    }
+    snapshot = parsear_fila(fila, detectar_columnas(cabeceras, fila), UTC, "x")
+
+    assert snapshot.bancos["Banesco"].volumen == Decimal("161309.48")
+    assert snapshot.bancos["Banesco"].tasa == Decimal("556.12")
+    # Las anotaciones del mapa PLANO se conservan: el anidado añade, no desplaza.
+    assert snapshot.bancos["Mercantil"].liquidez_baja
+
+
+def test_un_mapa_anidado_puede_servir_de_tasas_si_no_hay_uno_plano():
+    """Adaptabilidad (RF-2): si un export futuro trae solo el anidado, la tasa
+    sale de él en vez de perderse."""
+    from ingestor_historico.domain.parser import detectar_columnas
+
+    cabeceras = ["ID", "BaseWeightedAverage", "InforPerBank", "CreatedAt"]
+    muestra = {
+        "ID": "6955f14de64c795a5f456ffe",
+        "BaseWeightedAverage": "556.12",
+        "InforPerBank": ANIDADO,
+        "CreatedAt": "January 1, 2026, 12:00 AM",
+    }
+    mapeo = detectar_columnas(cabeceras, muestra)
+    assert (mapeo.mapa_volumenes, mapeo.clave_volumenes) == ("InforPerBank", "volume")

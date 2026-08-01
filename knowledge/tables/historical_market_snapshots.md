@@ -46,22 +46,28 @@ tercer export traía 28.823 filas y 25.872 ya estaban (idempotencia por
 `(captured_at, source_id)`), así que conservaron la atribución del segundo. Unión sin
 escalón: 824,08 a las 14:00 UTC → 824,23 a las 14:10.
 
-### Defecto conocido: `banks[].volume` vacío en el formato nuevo
+### `banks[].volume`: defecto encontrado y reparado (2026-08-01)
 
 Los exports desde `10_08_59` publican el volumen por banco en una columna
 **`InforPerBank` con mapa anidado** (`{:Banesco {:volume …, :averageRate …}}`). La
-heurística de `detectar_columnas` busca palabras de volumen en el NOMBRE de la columna,
-y ese nombre no tiene ninguna, así que la columna cae en `extra` y `banks[].volume`
-queda a `null`.
+heurística buscaba palabras de volumen en el NOMBRE de la columna, y ese nombre no
+tiene ninguna, así que caía en `extra` y `banks[].volume` quedaba nulo en 31.461 filas
+—mientras el dato estaba en el archivo—.
 
-| Export | Entradas de banco | con `rate` | con `available` | con `volume` |
-|---|---|---|---|---|
-| `09_16_03…` | 3.192 | 3.192 | 1.464 | **3.192** |
-| `10_08_59…` + `11_47_06…` | 113.972 + | todas | ~44 % | **0** |
+Arreglado en dos partes: `detectar_columnas` reconoce ahora los mapas anidados por su
+**contenido** (`claves_anidadas`), y `cargar --rellenar-vacios` repara lo ya cargado.
 
-**No se pierde información**: `InforPerBank` viaja verbatim en `extra`, que es
-justamente el mecanismo que ADR-0013 previó para columnas no reconocidas. Y hoy no
-afecta a nada: `leer_puntos` (la varianza) solo consume `rate`. Pero deja la misma
-columna poblada para un export y vacía para otro dentro de la misma tabla, así que
-conviene arreglar la heurística —reconocer mapas anidados— antes de que alguien
-consulte `volume` y saque conclusiones de un `null` que no significa «sin volumen».
+| | Entradas de banco | con `volume` |
+|---|---|---|
+| Antes | 128.962 | 15,0 % (solo el primer export) |
+| Después | 128.962 | **100 %** |
+
+`rate`, `available` y `low_liquidity` quedaron intactos (verificado fila a fila contra
+el CSV de origen), y `InforPerBank` **salió** de `extra`: el dato se movió a la columna
+estructurada, no se duplicó.
+
+**`--rellenar-vacios` es la única excepción a la inmutabilidad de la tabla**, y la
+guarda que lo hace seguro vive en SQL, no en Python: el `DO UPDATE` solo dispara si lo
+almacenado no trae **ningún** volumen y lo nuevo sí aporta alguno. Una fila con volumen
+ya presente no se toca aunque el export traiga otro valor. Por eso la reparación es
+idempotente: la segunda pasada actualiza 0.

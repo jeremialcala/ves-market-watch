@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from decimal import Decimal
 
 import pytest
 from conftest import FIXTURES, TZ_CARACAS
@@ -84,3 +85,77 @@ async def test_archivo_vacio_es_rechazado():
         await CargarHistoricos(InMemoryRepositorioHistorico()).ejecutar(
             ["A"], [], "vacio.csv", TZ_CARACAS
         )
+
+
+# -- reparación: rellenar campos vacíos sin sobrescribir ---------------------
+#
+# La tabla es inmutable por diseño (ADR-0013). `--rellenar-vacios` es la única
+# excepción y existe por un caso concreto: un defecto del parseo dejó
+# `banks[].volume` nulo en 31.461 filas ya cargadas.
+
+CABECERAS_ANIDADO = [
+    "ID", "BaseWeightedAverage", "AverageRatePerBank", "InforPerBank", "CreatedAt",
+]
+
+
+def _fila(volumenes: bool):
+    fila = {
+        "ID": "6955f14de64c795a5f456ffe",
+        "BaseWeightedAverage": "556.12",
+        "AverageRatePerBank": "{:Banesco 556.12}",
+        "CreatedAt": "January 1, 2026, 12:00 AM",
+    }
+    fila["InforPerBank"] = (
+        "{:Banesco {:volume 161309.48, :averageRate 556.12}}" if volumenes else "{}"
+    )
+    return fila
+
+
+async def _cargar(repositorio, fila, rellenar=False):
+    return await CargarHistoricos(repositorio).ejecutar(
+        CABECERAS_ANIDADO, [fila], "export.csv", TZ_CARACAS, rellenar
+    )
+
+
+async def test_sin_el_flag_una_fila_ya_cargada_no_se_toca():
+    repositorio = InMemoryRepositorioHistorico()
+    await _cargar(repositorio, _fila(volumenes=False))
+    resumen = await _cargar(repositorio, _fila(volumenes=True))
+
+    assert (resumen.insertadas, resumen.duplicadas, resumen.actualizadas) == (0, 1, 0)
+    guardado = next(iter(repositorio.snapshots.values()))
+    assert guardado.bancos["Banesco"].volumen is None
+
+
+async def test_con_el_flag_se_rellena_el_campo_que_faltaba():
+    repositorio = InMemoryRepositorioHistorico()
+    await _cargar(repositorio, _fila(volumenes=False))
+    resumen = await _cargar(repositorio, _fila(volumenes=True), rellenar=True)
+
+    assert (resumen.insertadas, resumen.duplicadas, resumen.actualizadas) == (0, 0, 1)
+    guardado = next(iter(repositorio.snapshots.values()))
+    assert guardado.bancos["Banesco"].volumen == Decimal("161309.48")
+
+
+async def test_el_flag_NO_sobrescribe_un_valor_que_ya_estaba():
+    """La guarda es lo que hace la reparación segura: si la fila guardada ya
+    tiene volúmenes, se deja intacta aunque el export traiga otros."""
+    repositorio = InMemoryRepositorioHistorico()
+    await _cargar(repositorio, _fila(volumenes=True))
+
+    otra = _fila(volumenes=True)
+    otra["InforPerBank"] = "{:Banesco {:volume 999999.99, :averageRate 556.12}}"
+    resumen = await _cargar(repositorio, otra, rellenar=True)
+
+    assert (resumen.duplicadas, resumen.actualizadas) == (1, 0)
+    guardado = next(iter(repositorio.snapshots.values()))
+    assert guardado.bancos["Banesco"].volumen == Decimal("161309.48")
+
+
+async def test_el_flag_es_idempotente_la_segunda_pasada_no_actualiza_nada():
+    repositorio = InMemoryRepositorioHistorico()
+    await _cargar(repositorio, _fila(volumenes=False))
+    await _cargar(repositorio, _fila(volumenes=True), rellenar=True)
+    resumen = await _cargar(repositorio, _fila(volumenes=True), rellenar=True)
+
+    assert resumen.actualizadas == 0

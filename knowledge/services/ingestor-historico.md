@@ -33,6 +33,14 @@ motor de indicadores como si fueran cambios de hoy.
 - Señales de calidad por banco preservadas: `lower liquidity` / `only N available`.
 - `stats`: media, varianza muestral, desviación, min/max y log-retornos — global, por
   banco y por día de mercado (zona configurable, default UTC−4); salida JSON.
+- **Mapas por banco en dos formas**: plana (`{:Banesco 396.79 (lower liquidity)}`) y
+  **anidada** (`{:Banesco {:volume …, :averageRate …}}`). La anidada se mapea por
+  CONTENIDO, no por el nombre de la columna: `InforPerBank` no lleva ninguna palabra de
+  volumen y es justo donde viaja el volumen por banco.
+- **`cargar --rellenar-vacios`**: reparación explícita de filas ya cargadas a las que
+  les falta un campo que el export sí trae. Única excepción a la inmutabilidad de la
+  tabla; la guarda vive en SQL y **nunca sobrescribe** un valor existente, así que es
+  idempotente.
 - Persistencia: [historical_market_snapshots](../tables/historical_market_snapshots.md).
 - **Tasas oficiales del BCV** (`cargar-oficiales`, RF-6, 2026-08-01): carga
   `bcv_fx_historico.csv` en [official_rates](../tables/official_rates.md) —la misma
@@ -42,16 +50,9 @@ motor de indicadores como si fueran cambios de hoy.
   redenominación del 2021-10-01), con `captured_at` = hora de publicación del BCV en
   zona de Venezuela. `source` distingue la procedencia; las jornadas sin hora en el XLS
   van marcadas aparte. Filtro opcional `--monedas`.
-- 68 tests (unit + integración contra TimescaleDB real).
+- 80 tests (unit + integración contra TimescaleDB real).
 
 ## Pendientes
-- **`banks[].volume` vacío en el formato de export nuevo.** El volumen por banco viene
-  en `InforPerBank`, un mapa **anidado** cuyo NOMBRE no contiene ninguna palabra de
-  volumen, así que la heurística no lo mapea y la columna cae en `extra`. No se pierde
-  el dato (viaja verbatim) y hoy nada lo consume, pero deja `volume` poblado para el
-  primer export y nulo para los otros dos dentro de la misma tabla. Arreglo: reconocer
-  mapas anidados en `detectar_columnas` — ver
-  [historical_market_snapshots](../tables/historical_market_snapshots.md).
 - Usar la serie como línea base de varianza para los umbrales de señales: la fase 2 del
   engine y el motor de reglas (ADR-0015) se entregaron **sin** consumirla — el motor no
   referencia `historical_market_snapshots`. Sigue como mejora para la recalibración HITL.
