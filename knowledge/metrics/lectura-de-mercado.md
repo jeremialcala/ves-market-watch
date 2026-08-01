@@ -34,8 +34,9 @@ contra los umbrales que la generaron. **No son elección a ojo:**
   considera que el momentum significa algo. Reutilizarlo evita que el producto
   tenga dos definiciones de «sube».
 - `0,5 pp` de brecha es la variación absoluta media a 6 h medida sobre la serie
-  real (0,56 pp; rango p25–p75 ±0,5). «Estable» significa «se movió menos que un
-  movimiento típico de 6 h».
+  real: **0,55 pp**, con el intercuartílico en **[0,21 – 0,76]** (274 ventanas,
+  remedido el 2026-08-01). El umbral cae dentro de ese rango: «estable» significa
+  «se movió menos que un movimiento típico de 6 h».
 
 ### Si un eje no resuelve, no hay régimen
 

@@ -34,9 +34,10 @@ umbrales:
   movimiento: "0.5"
 
   # Eje «dinámica de la brecha», en PUNTOS PORCENTUALES de brecha sobre la
-  # ventana. Medido sobre la serie horaria real: la variación absoluta media a
-  # 6 h es 0,56 pp y el rango p25–p75 es ±0,5. Es decir: «estable» significa
-  # «se movió menos que un movimiento típico de 6 h», no una corazonada.
+  # ventana. Medido sobre la serie horaria real (274 ventanas, 2026-08-01): la
+  # variación absoluta media a 6 h es 0,55 pp, con el intercuartílico en
+  # [0,21 - 0,76]. El umbral cae dentro de ese rango, cerca del centro: «estable»
+  # significa «se movió menos que un movimiento típico de 6 h», no una corazonada.
   brecha: "0.5"
 
   # Fracción del movimiento total (|Δparalelo| + |Δoficial|) que un lado debe

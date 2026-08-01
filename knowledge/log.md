@@ -7,6 +7,33 @@ timestamp: 2026-08-01T12:00:00Z
 
 # Log
 
+## 2026-08-01 (noche) — Barrido de coherencia tras ADR-0021
+- **La misma contradicción que enmendé en ADR-0019 pto. 9 estaba también en el
+  PRD del motor** (RF-6: «nada de régimen, probabilidades ni horizontes») y se me
+  había pasado. Enmendado igual: «régimen» ahí significa el predictivo.
+- **La lista de sellos demo de ADR-0018 dejó de ser una cola de tareas.** Decía
+  que régimen, percentiles y escenarios «son, exactamente, el trabajo pendiente
+  del indicator-engine». Los dos primeros se cerraron; los escenarios y riesgos
+  que quedan **no son deuda**: hacerlos reales exigiría pronosticar. La lista pasó
+  de cola de tareas a marca de frontera.
+- **Deuda de ADR-0019 que nadie cerró**: el README raíz seguía diciendo que el
+  motor emite solo `indicators.updated` y `signals.emitted`, y `architecture.md`
+  no listaba la tabla `indicator_analysis`. Ambos corregidos; las 8 tablas reales
+  ahora cuadran con las documentadas.
+- **Una cifra mía que la medición desmintió**: escribí que el rango p25–p75 de la
+  variación de brecha a 6 h era «±0,5». Remedido: media 0,55 pp con
+  intercuartílico **[0,21 – 0,76]** sobre 274 ventanas. El umbral sigue siendo
+  defendible —cae dentro del rango, cerca del centro— pero la redacción anterior
+  no describía la distribución. Corregida en el ADR, la métrica y el YAML.
+- Rastros caducados del bloqueo de Auth0 (ADR-0020 lo levantó) que sobrevivían en
+  ADR-0018 y en el knowledge del SPA. El PRD del motor sube a 0.5.0 por RF-7 y
+  `api-contracts.md` a 0.6.0 por el campo `reading`.
+- **Anotado, no resuelto**: la suite del `api-gateway` falló **una vez** (1 de
+  103) en la ejecución inmediatamente posterior a `docker compose up -d`, y no
+  reproduce en 7 pasadas seguidas. Parece una carrera con los contenedores
+  arrancando. Si reaparece, el sospechoso es un test que compite por un recurso
+  del compose.
+
 ## 2026-08-01 (noche) — La tarjeta de régimen deja de ser maqueta (ADR-0021)
 - La «Lectura de hoy» era **100 % literal**, incluida una barra de confianza al
   `width: "68%"` escrita a mano. Ahora el motor produce por revisión un régimen

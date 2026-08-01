@@ -117,14 +117,16 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   además, contra el texto renderizado, que **no aconseja ni predice**. E2E en vivo (`npm run test:e2e:live`) con client M2M:
   token real → REST + WSS; skip elegante sin credenciales.
 - La parrilla intradía se eyebalizó en claro y oscuro con una previsualización
-  estática del CSS real (paso «render y míralo» del skill dataviz); la vista
-  autenticada en vivo queda pendiente del HITL de Auth0.
+  estática del CSS real (paso «render y míralo» del skill dataviz). La vista
+  autenticada en vivo **ya no está bloqueada**: el login quedó operativo el
+  2026-08-01 (ADR-0020).
 - Build nginx en el compose (puerto **8080**); CORS del gateway verificado en
   vivo (origen permitido con ACAO; ajeno sin ACAO).
 
 ## Referencias
 - PRD: `../../docs/01-requirements/web-spa-dashboard.md` · ADR-0017 · ADR-0012 ·
-  ADR-0016 · Amenazas T12/T15.
+  ADR-0016 · ADR-0018 (sistema de diseño e i18n) · ADR-0019 (medidores) ·
+  ADR-0020 (login) · ADR-0021 (lectura del mercado) · Amenazas T12/T15.
 
 ## Pendiente
 - Topología de despliegue real: los túneles de Cloudflare son de desarrollo

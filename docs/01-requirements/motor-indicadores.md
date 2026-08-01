@@ -3,14 +3,15 @@
 - **Estado:** approved (Gate 0, HITL 2026-07-11) — implementado extremo a extremo en
   `apps/indicator-engine`: fase 1 (tasas oficiales, 2026-07-05), fase 2 P2P/microestructura
   (2026-07-20), motor de reglas de señales (RF-4, 2026-07-22, ADR-0015) que emite
-  `signals.emitted` (`signal.v1`) y análisis de la revisión (RF-6, 2026-08-01, ADR-0019)
-  que emite `analysis.updated` (`analysis.v1`). Pendiente solo la recalibración HITL de
-  umbrales (subir la versión del ruleset) y mejoras menores (profundidad por bandas,
-  variación intradía).
+  `signals.emitted` (`signal.v1`), análisis de la revisión (RF-6, 2026-08-01, ADR-0019)
+  que emite `analysis.updated` (`analysis.v1`) y lectura del estado de mercado (RF-7,
+  2026-08-01, ADR-0021) en el campo `reading` de ese mismo evento. Pendiente solo la
+  recalibración HITL de umbrales (subir la versión del ruleset y la de la lectura) y
+  mejoras menores (profundidad por bandas, variación intradía).
 - **Fecha:** 2026-07-11
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 01-requirements
-- **Versión:** 0.4.0
+- **Versión:** 0.5.0
 
 ## Problema y contexto
 Consolidar los eventos de las fuentes (P2P y BCV) y producir indicadores financieros de
@@ -76,9 +77,13 @@ forma reactiva: cada nuevo dato recalcula y publica los indicadores afectados.
   - Un indicador sin valor vigente **no produce lectura** y una condición cuyo indicador
     falta lleva `value: null`; jamás se rellena con el último conocido rancio.
   - El motor **clasifica** en vocabulario neutro de idioma; la prosa la redacta el cliente.
-  - **No es un pronóstico**: nada de régimen, probabilidades ni horizontes temporales. La
-    síntesis es proximidad aritmética a reglas ya versionadas, y `rules_met` no implica
-    emisión (el cooldown pudo suprimirla).
+  - **No es un pronóstico**: nada de régimen predictivo, probabilidades ni horizontes
+    temporales. La síntesis es proximidad aritmética a reglas ya versionadas, y
+    `rules_met` no implica emisión (el cooldown pudo suprimirla).
+    *(Enmienda 2026-08-01, ADR-0021: «régimen» aquí significaba —y sigue significando—
+    el predictivo. RF-7 añade clasificación **del presente** con umbrales versionados,
+    que es aritmética de la misma clase que estas bandas. Sin acotar el término, RF-6 y
+    RF-7 se contradecían.)*
   - Un fallo del análisis **no** manda el snapshot a la DLQ ni impide publicar
     indicadores y señales.
 - RF-7: **Lectura del estado de mercado.** Por cada revisión, además de la lectura de

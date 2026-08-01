@@ -23,7 +23,7 @@ ves-market-watch/
 └── apps/
     ├── ingestor-binance/     # ✔ Ingesta P2P Binance (USDT/VES) → p2p.snapshot
     ├── ingestor-bcv/         # ✔ Ingesta tasas oficiales BCV (multi-moneda, HITL)
-    ├── indicator-engine/     # ✔ fases 1+2 y señales: consume official.rate.updated y p2p.snapshot → emite indicators.updated y signals.emitted
+    ├── indicator-engine/     # ✔ fases 1+2, señales y análisis: consume official.rate.updated y p2p.snapshot → emite indicators.updated, signals.emitted y analysis.updated
     ├── ingestor-historico/   # ✔ backfill batch de históricos de precio + varianza (sin bus)
     ├── api-gateway/          # ✔ REST /api/v1 + WSS /ws/v1 (Resource Server Auth0)
     └── web-spa/              # ✔ dashboard web React (Auth0 PKCE) — ADR-0017
@@ -61,8 +61,9 @@ si el compose no está levantado.
 
 - **Implementado y verificado en vivo: los 5 servicios** — `ingestor-bcv` (multi-moneda,
   re-validación HITL), `ingestor-binance` (polling P2P educado), `indicator-engine`
-  (fases 1+2 con microestructura P2P y motor de señales RF-4/ADR-0015: brecha BCV↔P2P
-  → `indicators.updated` y `signals.emitted`), `ingestor-historico` (backfill batch
+  (fases 1+2 con microestructura P2P, motor de señales RF-4/ADR-0015 y análisis de la
+  revisión RF-6/ADR-0019 con la lectura del mercado RF-7/ADR-0021: brecha BCV↔P2P
+  → `indicators.updated`, `signals.emitted` y `analysis.updated`), `ingestor-historico` (backfill batch
   de exports históricos + varianza, ADR-0013) y `api-gateway` (REST `/api/v1` + WSS
   `/ws/v1`, Resource Server contra Auth0 — ADR-0012/ADR-0016; en dev en
   `http://localhost:8800`, `python -m api_gateway`). El pipeline completo
@@ -71,9 +72,13 @@ si el compose no está levantado.
   login Auth0 (PKCE), stream WSS con reconexión y vista de histórico; servido por
   nginx en el compose (`http://localhost:8080`). Desde el 2026-07-31 viste el
   **sistema de diseño Higerotech** con tema claro/oscuro e interfaz ES/EN
-  (ADR-0018); los bloques que la plataforma aún no calcula van marcados
-  `demo · sin fuente`. Pendiente HITL: `auth0 login` para
-  aprovisionar la app SPA del tenant (client_id) y el client M2M del e2e en vivo.
+  (ADR-0018); los bloques que la plataforma no calcula van marcados
+  `demo · sin fuente` — quedan **dos** (escenarios con probabilidades y riesgos
+  redactados) tras retirar los medidores (ADR-0019) y la lectura del mercado
+  (ADR-0021), y esos dos no son deuda: hacerlos reales exigiría pronosticar.
+  El login quedó operativo el 2026-08-01 con dominio propio de Auth0 y desarrollo
+  por túneles de Cloudflare (ADR-0020); el tenant lleva aprovisionado desde el
+  2026-07-27.
 - Gate 0 (requisitos): ver `.ai-dlc/gates/gate-0-requirements.md`
 - Gate 1 (diseño): ver `.ai-dlc/gates/gate-1-design.md`
 - Inventario de cambios por ejecución: ver `CHANGELOG.md`

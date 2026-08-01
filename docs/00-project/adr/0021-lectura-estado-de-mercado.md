@@ -101,9 +101,11 @@ todo lo que la maqueta hacía bien.
     umbral con el que `arranque_alcista@v1` considera que el momentum significa
     algo — reutilizarlo evita que el producto tenga dos definiciones de «sube».
     `brecha: 0.5` pp es la variación absoluta media a 6 h observada en la serie
-    real (0,56 pp; rango p25–p75 ±0,5): «estable» significa «se movió menos que un
-    movimiento típico de 6 h». Quedan sujetos a recalibración, en config
-    versionada, y la versión viaja en `reading.version`.
+    real: **0,55 pp**, con el intercuartílico en **[0,21 – 0,76]** (274 ventanas,
+    remedido el 2026-08-01). El umbral cae dentro de ese rango, cerca del centro:
+    «estable» significa «se movió menos que un movimiento típico de 6 h». Ambos
+    quedan sujetos a recalibración, viven en config versionada y la versión viaja
+    en `reading.version`.
 
 11. **`proximidad_umbral` en coordenadas de dibujo [0,1], no en unidades crudas.**
     Es lo único que hace comparable un porcentaje de brecha con un ratio de

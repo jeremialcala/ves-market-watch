@@ -85,6 +85,13 @@ El rediseño trae tres cosas que hay que decidir, no solo copiar:
 - (+) Los sellos convierten «lo que falta por calcular» en una lista visible:
   régimen de mercado, percentiles del ruleset y escenarios son, exactamente,
   el trabajo pendiente del `indicator-engine`.
+
+  **Actualización 2026-08-01:** la lista se vació en dos entregas —los
+  percentiles de los medidores con ADR-0019 y el régimen con ADR-0021— y quedan
+  **dos** sellos: escenarios con probabilidades y riesgos redactados. Esos dos
+  **no son trabajo pendiente del motor**, al contrario que los otros tres:
+  hacerlos reales exigiría pronosticar, que el proyecto declaró no-objetivo. La
+  lista dejó de ser una cola de tareas y pasó a marcar una frontera.
 - (−) Deuda asumida: los bloques demo hay que retirarlos o respaldarlos con
   datos reales; mientras existan, cada cambio en ellos debe conservar el sello.
 - (−) El bundle crece con las cuatro `woff2` (~175 kB, servidas con hash e
@@ -108,8 +115,11 @@ El rediseño trae tres cosas que hay que decidir, no solo copiar:
   demo, derivaciones de series (extremos exactos, parrilla VET, colores) y los
   paneles reales con sus vacíos honestos.
 - Revisión visual del rediseño completo (dashboard, análisis, claro y oscuro)
-  con un andamio temporal de datos sembrados, retirado al terminar: el e2e con
-  login real sigue bloqueado por el `client_id` del tenant (F1 de ADR-0017).
+  con un andamio temporal de datos sembrados, retirado al terminar. ~~El e2e con
+  login real sigue bloqueado por el `client_id` del tenant (F1 de ADR-0017).~~
+  **Desbloqueado el 2026-08-01 (ADR-0020)**: el `client_id` llevaba aprovisionado
+  desde el 2026-07-27 —esta línea heredó una afirmación desfasada— y el login
+  quedó operativo al arreglar la CSP y adoptar el dominio propio.
 - **Paleta pasada por el validador del skill dataviz** (no a ojo) en las dos
   superficies: oscuro `#2D3134` y claro `#FFFFFF`. Resultado y defecto abierto
   en la tabla del `design.md` del servicio.
