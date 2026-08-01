@@ -115,8 +115,11 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@timescaledb:5432/ves_market
       AMQP_URL: amqp://guest:guest@rabbitmq/
       HTTP_HOST: 0.0.0.0
-      # SPA en dev (vite, 5173) y build nginx del compose (8080) — ADR-0017.
-      ALLOWED_ORIGINS: http://localhost:5173,http://localhost:8080
+      # SPA en dev (vite, 5173), build nginx del compose (8080) y el host del
+      # túnel Cloudflare (HTTPS real, que es lo que hace al cliente «verificable»
+      # para Auth0 y mata la pantalla de consentimiento). Parametrizado para no
+      # tener que editar el compose por entorno.
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:8080,https://criterio-dev.higerotech.com}
     ports:
       # 8800 en el host: el 8000 suele estar ocupado por otro proyecto local.
       - "8800:8000" # REST /api/v1 + WSS /ws/v1 (health público: /api/v1/health)
@@ -131,6 +134,15 @@ services:
     build:
       context: .
       dockerfile: apps/web-spa/Dockerfile
+      # Un solo input para el bundle Y para la CSP del nginx (ver el Dockerfile).
+      # Con los defaults puestos, `docker compose up --build` sin variables se
+      # comporta igual que siempre; cambiar de tenant o de dominio es exportar
+      # estas variables, no editar tres archivos a mano.
+      args:
+        VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN:-auth.higerotech.com}
+        VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID:-8CpfA64FlGTmuyF8w07rDFlrZHEeuRER}
+        VITE_AUTH0_AUDIENCE: ${VITE_AUTH0_AUDIENCE:-https://api.vesmarketwatch/}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8800}
     # Dashboard estático (nginx). El browser del host llama al gateway por
     # localhost:8800 (CORS allowlist) — el contenedor solo sirve archivos.
     ports:

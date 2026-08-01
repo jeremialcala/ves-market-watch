@@ -49,7 +49,7 @@ class Settings:
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> "Settings":
         env = dict(os.environ if env is None else env)
-        issuer = env.get("AUTH0_ISSUER", "https://dev-higerotech.us.auth0.com/")
+        issuer = env.get("AUTH0_ISSUER", "https://auth.higerotech.com/")
         return cls(
             auth0_issuer=issuer,
             auth0_audience=env.get("AUTH0_AUDIENCE", "https://api.vesmarketwatch/"),

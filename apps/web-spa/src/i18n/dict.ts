@@ -417,7 +417,12 @@ export const ES = {
     "{etiqueta}: apertura {apertura}, último {ultimo}, variación {delta} ({pct})",
 
   // -- auth ------------------------------------------------------------------
+  // Los cuatro estados del guard de sesión (`auth/RequireAuth.tsx`). Son
+  // distintos a propósito: «verificando» es la comprobación silenciosa contra
+  // la cookie SSO, «redirigiendo» es la salida hacia Universal Login. Decir lo
+  // segundo mientras pasa lo primero era mentirle al usuario.
   "auth.verificando": "Verificando sesión…",
+  "auth.redirigiendo": "Redirigiendo al inicio de sesión…",
   "auth.entrar": "Entrar",
   "auth.error": "No se pudo iniciar sesión",
 } as const;
@@ -789,6 +794,7 @@ export const EN: Record<Clave, string> = {
   "intradia.descripcionPanel":
     "{etiqueta}: open {apertura}, last {ultimo}, change {delta} ({pct})",
   "auth.verificando": "Checking session…",
+  "auth.redirigiendo": "Redirecting to sign in…",
   "auth.entrar": "Sign in",
   "auth.error": "Could not sign in",
 };

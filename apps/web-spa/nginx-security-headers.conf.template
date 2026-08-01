@@ -1,0 +1,36 @@
+# Cabeceras de seguridad del SPA (T12, ADR-0017). Fuente ÚNICA: este archivo se
+# `include`e en el server y en CADA location que declare su propio `add_header`.
+#
+# Por qué el include y no dejarlas solo en el server: en nginx, un `location`
+# con `add_header` propio DESCARTA todos los heredados. Los dos locations de
+# cache tenían el suyo, así que durante un tiempo el sitio se sirvió entero sin
+# CSP, sin nosniff y sin Referrer-Policy pese a estar escritas arriba. La regla
+# la vigila `tests/unit/csp.test.ts`.
+#
+# PLANTILLA: las ${VITE_*} las sustituye `envsubst` durante el build de la imagen
+# (ver Dockerfile), con los MISMOS `ARG` que hornean el bundle. Ésa es la razón
+# de hacerlo en build y no en el arranque: el dominio del bundle y el de la CSP
+# salen de un único input, así que no pueden divergir. Si divergieran, el
+# navegador bloquearía justo lo que el SDK necesita — con la cabecera escrita y
+# aparentemente correcta, que es el modo de fallo más caro de diagnosticar.
+add_header X-Content-Type-Options "nosniff" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+# connect-src: la API (HTTP y WSS) y el tenant (token endpoint).
+# frame-src: el tenant, y NO por comodidad — el SDK re-autentica en silencio con
+#   un iframe `prompt=none` contra la cookie SSO (`useRefreshTokensFallback`).
+#   Sin esta directiva cae en `default-src 'self'`, el iframe se bloquea y cada
+#   recarga acaba en Universal Login visible: justo lo que ese fallback existe
+#   para evitar.
+# worker-src: `blob:` es OBLIGATORIO. Con `useRefreshTokens` + caché en memoria,
+#   auth0-spa-js hace el canje del código en un Web Worker que crea desde un
+#   blob (así el refresh token nunca toca el hilo principal). Sin esta directiva
+#   cae en `default-src 'self'`, el worker CONSTRUYE pero muere al cargar —
+#   silenciosamente, sin excepción ni petición de red— y el login se queda
+#   colgado para siempre en «Verificando sesión…» con el ?code= en la URL.
+#   Es exactamente lo que pasó al arreglar el envío de la CSP (commit 798b83b):
+#   la política empezó a aplicarse de verdad y se llevó el login por delante.
+#   No abre nada remoto: un blob solo puede contener código del propio origen, y
+#   `script-src 'self'` sigue intacto.
+# frame-ancestors: nadie nos mete a nosotros en un iframe (clickjacking).
+add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ${VITE_API_BASE_URL} ${VITE_WS_BASE_URL} https://${VITE_AUTH0_DOMAIN}; worker-src 'self' blob:; frame-src https://${VITE_AUTH0_DOMAIN}; frame-ancestors 'none'; base-uri 'self'" always;

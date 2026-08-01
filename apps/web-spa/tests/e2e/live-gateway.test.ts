@@ -10,7 +10,7 @@
 
 import { describe, expect, it } from "vitest";
 
-const DOMINIO = process.env.VITE_AUTH0_DOMAIN ?? "dev-higerotech.us.auth0.com";
+const DOMINIO = process.env.VITE_AUTH0_DOMAIN ?? "auth.higerotech.com";
 const AUDIENCE = process.env.VITE_AUTH0_AUDIENCE ?? "https://api.vesmarketwatch/";
 const BASE = process.env.VITE_API_BASE_URL ?? "http://localhost:8800";
 
