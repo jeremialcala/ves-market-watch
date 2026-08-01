@@ -120,13 +120,30 @@ export function GapDecomposition() {
 function BloqueLado({ lado }: { lado: LadoHistoria }) {
   const { t, idioma } = useI18n();
 
+  // Cada ventana aporta su MEDIA; la más ancha aporta además su MÁXIMO.
+  //
+  // La media va siempre porque es la cifra que cita la prosa del motor
+  // («7,70 puntos por debajo de su promedio de 90 días»): si no estuviera a la
+  // vista, esa frase sería incomprobable — y peor, restar el máximo daría otro
+  // número y la tarjeta parecería contradecirse.
   const filas = [
     { etiqueta: t("descomposicion.hoy"), valor: lado.current, hoy: true },
-    ...lado.references.map((referencia) => ({
-      etiqueta: etiquetaReferencia(referencia, t),
-      valor: valorDe(referencia),
-      hoy: false,
-    })),
+    ...lado.references.flatMap((referencia) => [
+      {
+        etiqueta: etiquetaMedia(referencia, t),
+        valor: referencia.mean,
+        hoy: false,
+      },
+      ...(esVentanaAncha(referencia)
+        ? [
+            {
+              etiqueta: etiquetaMaximo(referencia, t),
+              valor: referencia.max,
+              hoy: false,
+            },
+          ]
+        : []),
+    ]),
   ];
 
   // La barra más larga es la referencia visual; sin ella no hay proporción que
@@ -184,36 +201,40 @@ function BloqueLado({ lado }: { lado: LadoHistoria }) {
 }
 
 /**
- * La ventana más ancha lleva el máximo; las demás, la media.
+ * El máximo se muestra solo en la ventana más ancha.
  *
- * No es capricho: comparar contra «el máximo de 90 días» dice cuán lejos se está
- * del peor momento conocido, y contra la media de 7 dice si hoy es un día raro.
- * Son preguntas distintas y cada ventana responde la suya.
+ * Responde otra pregunta que la media: cuán lejos se está del peor momento
+ * conocido. En las ventanas cortas aporta poco y multiplicaría las filas.
  */
-function valorDe(referencia: Referencia): string | null {
-  return esVentanaAncha(referencia) ? referencia.max : referencia.mean;
-}
-
 function esVentanaAncha(referencia: Referencia): boolean {
   return referencia.days_configured >= 90;
 }
 
-/** La etiqueta declara el TRAMO REAL cuando la serie no llega a la ventana. */
-function etiquetaReferencia(
+/** Las etiquetas declaran el TRAMO REAL cuando la serie no llega a la ventana. */
+function etiquetaMedia(
   referencia: Referencia,
   t: (clave: Clave, params?: Record<string, string>) => string,
 ): string {
-  const completa = referencia.days_covered >= referencia.days_configured;
   const dias = String(referencia.days_configured);
   const cubiertos = String(referencia.days_covered);
-  if (esVentanaAncha(referencia)) {
-    return completa
-      ? t("descomposicion.maximo", { dias })
-      : t("descomposicion.maximoParcial", { dias, cubiertos });
-  }
-  return completa
+  return completa(referencia)
     ? t("descomposicion.media", { dias })
     : t("descomposicion.mediaParcial", { dias, cubiertos });
+}
+
+function etiquetaMaximo(
+  referencia: Referencia,
+  t: (clave: Clave, params?: Record<string, string>) => string,
+): string {
+  const dias = String(referencia.days_configured);
+  const cubiertos = String(referencia.days_covered);
+  return completa(referencia)
+    ? t("descomposicion.maximo", { dias })
+    : t("descomposicion.maximoParcial", { dias, cubiertos });
+}
+
+function completa(referencia: Referencia): boolean {
+  return referencia.days_covered >= referencia.days_configured;
 }
 
 /**

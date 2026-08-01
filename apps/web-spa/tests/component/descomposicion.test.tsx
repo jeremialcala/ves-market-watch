@@ -116,6 +116,7 @@ describe("Descomposición de la brecha", () => {
 
     // Compra: 12 días de serie. La etiqueta lo dice en vez de llamarlo «30».
     expect(screen.getByText("Promedio 12 d (de 30)")).toBeTruthy();
+    expect(screen.getByText("Promedio 12 d (de 90)")).toBeTruthy();
     expect(screen.getByText("Máximo 12 d (de 90)")).toBeTruthy();
     // Venta: 242 días. Sus ventanas SÍ son las que dicen.
     expect(screen.getByText("Promedio 30 días")).toBeTruthy();
@@ -135,12 +136,43 @@ describe("Descomposición de la brecha", () => {
     expect(screen.getByText(/La serie de este lado empieza hace 12 días/)).toBeTruthy();
   });
 
-  it("la ventana ancha compara contra el MÁXIMO, no contra la media", () => {
+  it("la ventana ancha muestra media Y máximo: responden preguntas distintas", () => {
     conHistoria([LADOS[1]]);
     render(<GapDecomposition />);
-    // 44,06 es el máximo de 90 d; su media (20,37) no debe salir en esa fila.
+    expect(screen.getByText("Promedio 90 días")).toBeTruthy();
+    expect(screen.getByText("20,37 %")).toBeTruthy();
+    expect(screen.getByText("Máximo 90 días")).toBeTruthy();
     expect(screen.getByText("44,06 %")).toBeTruthy();
-    expect(screen.queryByText("20,37 %")).toBeNull();
+  });
+
+  it("COHERENCIA: la cifra que cita la prosa está en la tarjeta", () => {
+    /*
+     * El defecto que motivó este test: la prosa decía «7,70 puntos por debajo de
+     * su promedio de 90 días» y la fila de 90 días mostraba el MÁXIMO (44,06).
+     * La media citada (20,37) no aparecía por ningún lado, así que la afirmación
+     * era incomprobable — y restar 44,06 − 12,67 daba 31,4, no 7,70, con lo que
+     * la tarjeta parecía contradecirse a sí misma.
+     *
+     * La regla que fija este test: si el motor afirma una distancia contra una
+     * referencia, esa referencia tiene que estar a la vista.
+     */
+    conHistoria([LADOS[1]], [
+      {
+        code: "brecha_vs_historia",
+        data: { lado: "sell", referencia: "media", dias: "90", posicion: "por_debajo", delta_pp: "7.65" },
+      },
+    ]);
+    render(<GapDecomposition />);
+
+    const hoy = "12.72";
+    const media90 = LADOS[1].references[2].mean; // 20.37
+    const delta = Number(media90) - Number(hoy);
+    expect(delta).toBeCloseTo(7.65, 1); // la aritmética del claim cuadra…
+
+    // …y las DOS cifras que la sostienen están en pantalla.
+    expect(screen.getByText("12,72 %")).toBeTruthy();
+    expect(screen.getByText("20,37 %")).toBeTruthy();
+    expect(screen.getByText(/7,65 puntos por debajo de su promedio de 90 días/)).toBeTruthy();
   });
 
   it("redacta la interpretación desde los claims del motor", () => {

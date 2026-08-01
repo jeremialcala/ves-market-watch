@@ -234,6 +234,16 @@ class TimescaleDistribucionRepository:
     # Una consulta para todos los indicadores Y todas las ventanas: el join
     # sobre el array de ventanas convierte N×M round trips en uno.
     #
+    # LA MEDIA SE PROMEDIA POR HORA, NO POR MUESTRA, y no es un refinamiento:
+    # el histórico derivado tiene una fila cada 10 min y el motor una cada ~30 s,
+    # así que un `avg()` plano pondera 6× el tramo reciente. Medido sobre la
+    # brecha de venta a 90 días: media plana 20,37 % contra 25,79 % ponderada por
+    # tiempo — 5,4 puntos de sesgo hacia el tramo más muestreado. La hora es el
+    # bucket adecuado porque ambas series tienen al menos una muestra en cada una.
+    #
+    # Los EXTREMOS siguen siendo por muestra: son valores realmente observados y
+    # promediarlos por hora escondería justo el pico que interesa.
+    #
     # `avg`/`max`/`min` sobre `numeric` devuelven `numeric` exacto — nada de
     # float en un número que acaba en la UI (ADR-0017).
     #
@@ -242,21 +252,36 @@ class TimescaleDistribucionRepository:
     # serie empiece hace 12, no que falte una tarde. Se acota a la ventana para
     # que una serie más larga no declare cobertura de más.
     _SQL_AGREGADOS = """
-        SELECT v.dias                                   AS ventana_dias,
-               i.indicator,
-               avg(i.value)                             AS media,
-               max(i.value)                             AS maximo,
-               min(i.value)                             AS minimo,
-               count(*)                                 AS muestras,
-               LEAST(v.dias,
-                     ($4::timestamptz)::date - min(i.as_of)::date) AS dias_cubiertos
-        FROM unnest($3::int[]) AS v(dias)
-        JOIN indicators i
-          ON i.indicator = ANY($1::text[])
-         AND i.currency  = $2
-         AND i.as_of    >= $4::timestamptz - make_interval(days => v.dias)
-         AND i.as_of    <= $4::timestamptz
-        GROUP BY v.dias, i.indicator
+        WITH por_hora AS (
+            SELECT v.dias                      AS ventana_dias,
+                   i.indicator,
+                   time_bucket('1 hour', i.as_of) AS hora,
+                   avg(i.value)                AS media_hora,
+                   max(i.value)                AS maximo_hora,
+                   min(i.value)                AS minimo_hora,
+                   count(*)                    AS muestras_hora,
+                   min(i.as_of)                AS primera
+            FROM unnest($3::int[]) AS v(dias)
+            JOIN indicators i
+              ON i.indicator = ANY($1::text[])
+             AND i.currency  = $2
+             AND i.as_of    >= $4::timestamptz - make_interval(days => v.dias)
+             AND i.as_of    <= $4::timestamptz
+            GROUP BY v.dias, i.indicator, time_bucket('1 hour', i.as_of)
+        )
+        SELECT ventana_dias,
+               indicator,
+               avg(media_hora)                 AS media,
+               max(maximo_hora)                AS maximo,
+               min(minimo_hora)                AS minimo,
+               -- ::bigint NO es cosmético: sum() sobre bigint devuelve NUMERIC
+               -- en PostgreSQL, y ese Decimal reventaba el json.dumps del
+               -- payload al persistir el análisis.
+               sum(muestras_hora)::bigint      AS muestras,
+               LEAST(ventana_dias,
+                     ($4::timestamptz)::date - min(primera)::date) AS dias_cubiertos
+        FROM por_hora
+        GROUP BY ventana_dias, indicator
     """
 
     async def agregados(
@@ -278,8 +303,8 @@ class TimescaleDistribucionRepository:
                 media=_a_ocho(fila["media"]),
                 maximo=_a_ocho(fila["maximo"]),
                 minimo=_a_ocho(fila["minimo"]),
-                muestras=fila["muestras"],
-                dias_cubiertos=max(0, fila["dias_cubiertos"]),
+                muestras=int(fila["muestras"]),
+                dias_cubiertos=max(0, int(fila["dias_cubiertos"])),
             )
         return resultado
 
