@@ -71,7 +71,6 @@ in-memory, profundidad como proyección interim).
 - ADR-0012 (auth OIDC) · ADR-0016 (implementación) · Amenazas T3, T4, T9, T11, T12.
 
 ## Pendiente
-- Registrar en el tenant Auth0 la app SPA (el front-end ya existe: `apps/web-spa`,
-  ADR-0017 — falta su `client_id`) y un client M2M de prueba para verificar en vivo
-  el flujo autenticado con token real (HITL).
 - MFA del tenant cuando haya usuarios reales.
+- Validar `Origin` en el handshake WSS (hoy queda fuera de CORS por diseño del
+  navegador; hardening futuro de T15).

@@ -125,7 +125,6 @@ JWKS_URI=https://auth.higerotech.com/.well-known/jwks.json
   `rabbitmqctl list_queues`/`list_bindings`) — el resto de servicios sin tocar.
 
 ## Pendiente
-- `<TODO: aprovisionar en el tenant Auth0 la app SPA (cliente público, Auth Code + PKCE) que
-  consume este gateway — el front-end ya existe (`apps/web-spa`, ADR-0017), falta su client_id;
-  client M2M de prueba para el e2e autenticado en vivo (HITL); MFA del tenant se decide cuando
-  haya usuarios reales>`
+- MFA del tenant cuando haya usuarios reales.
+  *(La app SPA y el client M2M quedaron aprovisionados el 2026-07-27; este TODO
+  sobrevivió a su propio cierre — encontrado al revisar pendientes el 2026-08-01.)*

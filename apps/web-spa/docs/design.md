@@ -249,7 +249,6 @@ guardar nada en el navegador.
 - Topología de **despliegue real** (producción/staging): los túneles de
   Cloudflare son solución de desarrollo, no de despliegue (ADR-0020 lo deja
   explícitamente abierto).
-- Multi-pestaña: cada pestaña abre su propia conexión WSS.
 - Multi-pestaña (BroadcastChannel) y code-splitting del Histórico (v2) — el
   bundle pasó de 500 kB al entrar el rediseño.
 - Retirar los bloques `demo · sin fuente` a medida que el `indicator-engine`
