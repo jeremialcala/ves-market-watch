@@ -15,6 +15,7 @@ from typing import Sequence
 import asyncpg
 
 from indicator_engine.domain.analisis import Analisis, Distribucion
+from indicator_engine.domain.comparativas import Agregado
 from indicator_engine.domain.models import Indicador
 from indicator_engine.domain.reglas import Senal
 
@@ -190,6 +191,14 @@ class TimescaleIndicatorRepository:
         )
 
 
+_OCHO_DECIMALES = Decimal("0.00000001")
+
+
+def _a_ocho(valor: Decimal | None) -> Decimal | None:
+    """Misma escala que `indicators.value` (numeric(24,8))."""
+    return None if valor is None else valor.quantize(_OCHO_DECIMALES)
+
+
 class TimescaleDistribucionRepository:
     """Adaptador del puerto `DistribucionRepository` sobre asyncpg.
 
@@ -221,6 +230,58 @@ class TimescaleDistribucionRepository:
           AND as_of    >= $3
         GROUP BY indicator
     """
+
+    # Una consulta para todos los indicadores Y todas las ventanas: el join
+    # sobre el array de ventanas convierte N×M round trips en uno.
+    #
+    # `avg`/`max`/`min` sobre `numeric` devuelven `numeric` exacto — nada de
+    # float en un número que acaba en la UI (ADR-0017).
+    #
+    # `dias_cubiertos` mide HASTA DÓNDE LLEGA la serie dentro de la ventana, no
+    # cuántos días tienen dato: lo que invalida una media de 30 días es que la
+    # serie empiece hace 12, no que falte una tarde. Se acota a la ventana para
+    # que una serie más larga no declare cobertura de más.
+    _SQL_AGREGADOS = """
+        SELECT v.dias                                   AS ventana_dias,
+               i.indicator,
+               avg(i.value)                             AS media,
+               max(i.value)                             AS maximo,
+               min(i.value)                             AS minimo,
+               count(*)                                 AS muestras,
+               LEAST(v.dias,
+                     ($4::timestamptz)::date - min(i.as_of)::date) AS dias_cubiertos
+        FROM unnest($3::int[]) AS v(dias)
+        JOIN indicators i
+          ON i.indicator = ANY($1::text[])
+         AND i.currency  = $2
+         AND i.as_of    >= $4::timestamptz - make_interval(days => v.dias)
+         AND i.as_of    <= $4::timestamptz
+        GROUP BY v.dias, i.indicator
+    """
+
+    async def agregados(
+        self,
+        nombres: Sequence[str],
+        moneda: str,
+        ventanas_dias: Sequence[int],
+        ahora: datetime,
+    ) -> dict[str, dict[int, Agregado]]:
+        filas = await self._pool.fetch(
+            self._SQL_AGREGADOS, list(nombres), moneda, list(ventanas_dias), ahora
+        )
+        resultado: dict[str, dict[int, Agregado]] = {}
+        for fila in filas:
+            resultado.setdefault(fila["indicator"], {})[fila["ventana_dias"]] = Agregado(
+                ventana_dias=fila["ventana_dias"],
+                # `avg()` sobre numeric devuelve ~16 decimales; el resto del
+                # contrato va a 8 y una media con 16 solo aparenta precisión.
+                media=_a_ocho(fila["media"]),
+                maximo=_a_ocho(fila["maximo"]),
+                minimo=_a_ocho(fila["minimo"]),
+                muestras=fila["muestras"],
+                dias_cubiertos=max(0, fila["dias_cubiertos"]),
+            )
+        return resultado
 
     async def distribuciones(
         self,

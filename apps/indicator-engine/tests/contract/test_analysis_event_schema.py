@@ -373,3 +373,178 @@ def test_variantes_invalidas_son_rechazadas(mutacion):
     evento = _evento()
     mutacion(evento)
     assert not _validador().is_valid(evento)
+
+
+# -- gap_history: la brecha contra su historia (RF-7) ------------------------
+
+
+def _con_historia(agregados_por_lado):
+    """Evento con `gap_history` armado desde el dominio, no a mano."""
+    from indicator_engine.domain.comparativas import cargar_config_comparativas
+    from indicator_engine.domain.lectura import construir_historia
+
+    cfg = cargar_config_comparativas(
+        yaml.safe_load(CONFIG_LECTURA.read_text(encoding="utf-8"))["comparativas"]
+    )
+    evento = _evento(con_lectura=True, vista=VISTA_LECTURA)
+    lectura = _lectura_con_historia(agregados_por_lado, cfg)
+    from indicator_engine.adapters.amqp.publisher import construir_evento_analisis
+
+    analisis = _analisis_base()
+    return construir_evento_analisis(analisis, lectura=lectura)
+
+
+def _analisis_base():
+    config, ruleset = _config(), _ruleset()
+    return construir_analisis(
+        config=config,
+        ruleset=ruleset,
+        vista=VISTA_LECTURA,
+        as_of_por_indicador={n: AS_OF for n in VISTA_LECTURA},
+        distribuciones={n: _distribucion(4187) for n in VISTA_LECTURA},
+        proximidad=evaluar_proximidad(ruleset, VISTA_LECTURA, evaluable=True),
+        as_of=AS_OF,
+        moneda="VES",
+        calc_version=1,
+        triggered_by=TRIGGERED_BY,
+        confianza_baja=False,
+        official_stale=False,
+    )
+
+
+def _lectura_con_historia(agregados_por_lado, cfg):
+    from indicator_engine.domain.lectura import construir_historia, construir_lectura
+
+    analisis = _analisis_base()
+    historia = [
+        h
+        for lado, ags in agregados_por_lado.items()
+        if (h := construir_historia(lado, Decimal("13.38"), ags, cfg)) is not None
+    ]
+    return construir_lectura(
+        config=_config_lectura(),
+        indicadores=analisis.indicadores,
+        sintesis=analisis.sintesis,
+        variaciones=Variaciones(
+            brecha_pp=Decimal("-1.03"), paralelo=Decimal("-8.40"), oficial=Decimal("0")
+        ),
+        confianza_baja=False,
+        official_stale=False,
+        historia=historia,
+        config_comparativas=cfg,
+    )
+
+
+def _ag(dias, media="15.00", cubiertos=None):
+    from indicator_engine.domain.comparativas import Agregado
+
+    return Agregado(
+        ventana_dias=dias,
+        media=Decimal(media),
+        maximo=Decimal("20.00"),
+        minimo=Decimal("10.00"),
+        muestras=500,
+        dias_cubiertos=dias if cubiertos is None else cubiertos,
+    )
+
+
+COMPLETA = {7: _ag(7), 30: _ag(30), 90: _ag(90)}
+PARCIAL = {7: _ag(7), 30: _ag(30, cubiertos=12), 90: _ag(90, cubiertos=12)}
+
+
+def test_el_evento_con_gap_history_cumple_el_schema():
+    _validador().validate(_con_historia({"buy": COMPLETA, "sell": COMPLETA}))
+
+
+def test_gap_history_es_ADITIVO_el_evento_sin_el_tambien_vale():
+    """Es lo que permite desplegar el gateway por delante del motor — y lo que
+    NO se cumplió al añadir los claims nuevos, que llevan enum cerrado: el
+    gateway descartó cada `analysis.updated` hasta que se amplió el enum."""
+    evento = _evento(con_lectura=True, vista=VISTA_LECTURA)
+    _validador().validate(evento)
+    assert "gap_history" not in evento["payload"]
+
+
+def test_publica_TODAS_las_ventanas_con_su_cobertura_real():
+    payload = _con_historia({"buy": PARCIAL})["payload"]
+    referencias = payload["gap_history"]["sides"][0]["references"]
+
+    assert [r["days_configured"] for r in referencias] == [7, 30, 90]
+    # La ventana incompleta se publica IGUAL, declarando su alcance: es lo que
+    # permite al cliente rotular «12 d (de 30)» en vez de mentir.
+    assert [r["days_covered"] for r in referencias] == [7, 12, 12]
+
+
+def test_los_dos_lados_viajan_por_separado():
+    lados = _con_historia({"buy": COMPLETA, "sell": COMPLETA})["payload"]["gap_history"]["sides"]
+    assert sorted(l["side"] for l in lados) == ["buy", "sell"]
+
+
+def test_las_cifras_de_la_historia_van_en_punto_fijo():
+    payload = _con_historia({"buy": COMPLETA})["payload"]
+    for lado in payload["gap_history"]["sides"]:
+        for valor in [lado["current"]] + [
+            r[k] for r in lado["references"] for k in ("mean", "max", "min")
+        ]:
+            if valor is not None:
+                assert re.fullmatch(r"-?[0-9]+(\.[0-9]+)?", valor), valor
+
+
+def test_con_ventanas_parciales_se_compara_contra_la_COMPLETA_mas_ancha():
+    """El caso real del lado compra: 12 días de serie. Las ventanas de 30 y 90
+    se publican con su cobertura, pero la prosa se apoya en la de 7, que sí está
+    completa. Citar la de 90 sería exactamente la mentira que esto corrige."""
+    payload = _con_historia({"buy": PARCIAL})["payload"]
+    comparativas = [
+        c for c in payload["reading"]["claims"] if c["code"] == "brecha_vs_historia"
+    ]
+    assert len(comparativas) == 1
+    assert comparativas[0]["data"]["dias"] == "7"
+
+
+def test_sin_NINGUNA_ventana_completa_el_claim_lo_declara():
+    """Serie recién estrenada: no hay contra qué comparar, y decirlo es la única
+    respuesta honesta."""
+    recien = {7: _ag(7, cubiertos=1), 30: _ag(30, cubiertos=1), 90: _ag(90, cubiertos=1)}
+    payload = _con_historia({"buy": recien})["payload"]
+    codigos = [c["code"] for c in payload["reading"]["claims"]]
+
+    assert "historia_parcial" in codigos
+    assert "brecha_vs_historia" not in codigos
+
+
+@pytest.mark.parametrize(
+    "mutacion",
+    [
+        pytest.param(
+            lambda e: e["payload"]["gap_history"]["sides"][0].__setitem__("side", "ambos"),
+            id="lado-fuera-de-enum",
+        ),
+        pytest.param(
+            lambda e: e["payload"]["gap_history"]["sides"][0]["references"][0].pop(
+                "days_covered"
+            ),
+            id="sin-cobertura-declarada",
+        ),
+        pytest.param(
+            lambda e: e["payload"]["gap_history"]["sides"][0]["references"][0].__setitem__(
+                "days_covered", -1
+            ),
+            id="cobertura-negativa",
+        ),
+        pytest.param(
+            lambda e: e["payload"]["gap_history"]["sides"][0]["references"][0].__setitem__(
+                "mean", 15.0
+            ),
+            id="media-como-float",
+        ),
+        pytest.param(
+            lambda e: e["payload"]["gap_history"].__setitem__("prosa", "sube"),
+            id="prosa-en-la-historia",
+        ),
+    ],
+)
+def test_variantes_invalidas_de_gap_history_son_rechazadas(mutacion):
+    evento = _con_historia({"buy": COMPLETA})
+    mutacion(evento)
+    assert not _validador().is_valid(evento)

@@ -25,11 +25,15 @@ from indicator_engine.application.ports import (
     IndicatorRepository,
 )
 from indicator_engine.domain.analisis import ConfigAnalisis, construir_analisis
+from indicator_engine.domain.comparativas import ConfigComparativas
 from indicator_engine.domain.lectura import (
     INDICADOR_BRECHA_BUY,
+    LADO_POR_INDICADOR,
     ConfigLectura,
+    HistoriaLado,
     Lectura,
     Variaciones,
+    construir_historia,
     construir_lectura,
 )
 from indicator_engine.domain.models import (
@@ -58,6 +62,9 @@ class AnalizarRevision:
         # Config de la lectura del mercado (RF-7). None ⇒ se publica el análisis
         # igual, sin `reading`: el panel de medidores no depende de esto.
         config_lectura: ConfigLectura | None = None,
+        # Comparativa de la brecha contra su historia (RF-7). None ⇒ la lectura
+        # se publica sin ella; el resto del análisis no depende de esto.
+        config_comparativas: ConfigComparativas | None = None,
     ) -> None:
         self._config = config
         self._ruleset = ruleset
@@ -65,6 +72,7 @@ class AnalizarRevision:
         self._repository = repository
         self._publisher = publisher
         self._config_lectura = config_lectura
+        self._config_comparativas = config_comparativas
 
     def nombres_requeridos(self) -> set[str]:
         """Indicadores que la vista vigente debe traer: los seis del panel más
@@ -148,6 +156,7 @@ class AnalizarRevision:
         if self._config_lectura is None:
             return None
         variaciones = await self._medir_variaciones(vista, as_of, moneda)
+        historia = await self._medir_historia(vista, as_of, moneda)
         return construir_lectura(
             config=self._config_lectura,
             indicadores=analisis.indicadores,
@@ -155,7 +164,58 @@ class AnalizarRevision:
             variaciones=variaciones,
             confianza_baja=confianza_baja,
             official_stale=official_stale,
+            historia=historia,
+            config_comparativas=self._config_comparativas,
         )
+
+    async def _medir_historia(
+        self, vista: Mapping[str, Decimal], as_of: datetime, moneda: str
+    ) -> list[HistoriaLado]:
+        """La brecha de cada lado contra su propia historia.
+
+        Los dos lados se piden en la MISMA consulta —el puerto acepta varios
+        nombres— para que añadir el segundo no duplique el coste.
+
+        El valor de hoy sale de la vista vigente, no del histórico: es el mismo
+        número que el resto del análisis publica, así que la tarjeta no puede
+        pintar un «hoy» que contradiga a su propio titular.
+        """
+        if self._config_comparativas is None:
+            return []
+        agregados = await self._distribuciones.agregados(
+            list(LADO_POR_INDICADOR),
+            moneda,
+            self._config_comparativas.ventanas_dias,
+            as_of,
+        )
+        historia: list[HistoriaLado] = []
+        for indicador, lado in LADO_POR_INDICADOR.items():
+            actual = await self._valor_de_hoy(indicador, moneda, vista)
+            construida = construir_historia(
+                lado, actual, agregados.get(indicador), self._config_comparativas
+            )
+            if construida is not None:
+                historia.append(construida)
+        return historia
+
+    async def _valor_de_hoy(
+        self, indicador: str, moneda: str, vista: Mapping[str, Decimal]
+    ) -> Decimal | None:
+        """La vista primero; el histórico solo si el indicador no está en ella.
+
+        La brecha de COMPRA sí está en la vista y de ahí tiene que salir: es la
+        cifra que el resto del análisis publica, y si la tarjeta la tomara de
+        otro sitio podría contradecir a su propio titular.
+
+        La de VENTA no es medidor del panel ni la consume el ruleset, así que no
+        entra en la vista vigente. Se lee del histórico —el motor la acaba de
+        escribir en esta misma revisión— en vez de ampliar la vista, que
+        cambiaría el payload del análisis para todos sin que nadie lo pida.
+        """
+        if (valor := vista.get(indicador)) is not None:
+            return valor
+        ultimo = await self._repository.ultimo_indicador(indicador, moneda)
+        return ultimo.valor if ultimo is not None else None
 
     async def _medir_variaciones(
         self, vista: Mapping[str, Decimal], as_of: datetime, moneda: str

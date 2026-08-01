@@ -577,9 +577,13 @@ export interface components {
              * @description `atribucion` solo aparece si la brecha se movió **y** la oficial no
              *     está rancia: con una tasa vencida, decir quién movió la brecha sería
              *     afirmar de más.
+             *
+             *     `historia_parcial` aparece **en lugar de** `brecha_vs_historia`
+             *     cuando ninguna ventana alcanza su cobertura: es lo que impide leer
+             *     una media de 12 días como si fuera de 90.
              * @enum {string}
              */
-            code: "confianza_baja" | "oficial_rancia" | "brecha" | "atribucion" | "medidor_en_banda" | "regla_cerca";
+            code: "confianza_baja" | "oficial_rancia" | "brecha" | "atribucion" | "medidor_en_banda" | "regla_cerca" | "brecha_vs_historia" | "brecha_extremo" | "historia_parcial";
             /**
              * @description Cifras y cualificadores, como string exacto. Claves según el código:
              *     `brecha` → {direccion, delta_pp, horas} · `atribucion` →
@@ -646,6 +650,46 @@ export interface components {
             rule_proximity: components["schemas"]["RuleProximity"][];
             summary: components["schemas"]["AnalysisSummary"];
             reading?: components["schemas"]["MarketReading"];
+            gap_history?: components["schemas"]["GapHistory"];
+        };
+        /**
+         * @description Una ventana de comparación. `days_covered` es el mecanismo de honestidad:
+         *     cuando es menor que `days_configured`, la serie NO alcanza la ventana
+         *     pedida y la UI debe rotular el tramo real («Promedio 12 d de 30») en vez
+         *     de la etiqueta nominal. Mismo criterio que `scale.samples`/`min_samples`
+         *     en los medidores.
+         */
+        GapHistoryReference: {
+            /** @description La ventana que se pidió. */
+            days_configured: number;
+            /** @description Hasta dónde llega la serie DENTRO de esa ventana. */
+            days_covered: number;
+            samples: number;
+            mean: components["schemas"]["SignedDecimal"] | null;
+            max: components["schemas"]["SignedDecimal"] | null;
+            min: components["schemas"]["SignedDecimal"] | null;
+        };
+        GapHistorySide: {
+            /** @enum {string} */
+            side: "buy" | "sell";
+            /** @description La brecha de hoy, la MISMA cifra que publica el resto del análisis. */
+            current: components["schemas"]["SignedDecimal"] | null;
+            /** @description Una por ventana configurada, en orden creciente. Se publican todas, completas o no. */
+            references: components["schemas"]["GapHistoryReference"][];
+        };
+        /**
+         * @description La brecha de cada lado contra su propia historia (RF-7, ADR-0021).
+         *     Aditivo y opcional. Viaja en el mismo documento que el análisis por la
+         *     misma razón que `reading`: la tarjeta cita a la vez el valor de hoy y sus
+         *     referencias, así que tienen que ser atómicamente coherentes.
+         *
+         *     El lado **venta** tiene historia real desde 2025-12 (derivada de un export
+         *     externo, ver ADR-0013 RF-7); el de **compra**, solo desde que el motor
+         *     arrancó. Por eso `days_covered` no es decorativo.
+         */
+        GapHistory: {
+            /** @description Un elemento por lado con datos; un lado sin serie no aparece. */
+            sides: components["schemas"]["GapHistorySide"][];
         };
         /** @description Estado agregado y por componente, sin detalles internos. */
         Health: {

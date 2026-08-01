@@ -25,6 +25,16 @@ from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Mapping, Sequence
 
+from indicator_engine.domain.comparativas import (
+    POS_EN_LINEA,
+    REF_MAXIMO,
+    REF_MEDIA,
+    Agregado,
+    ConfigComparativas,
+    clasificar_posicion,
+    es_extremo,
+    ventana_mas_ancha_completa,
+)
 from indicator_engine.domain.analisis import (
     BANDA_MUY_ALTA,
     BANDA_MUY_BAJA,
@@ -50,6 +60,9 @@ CLAIM_MEDIDOR_EN_BANDA = "medidor_en_banda"
 CLAIM_REGLA_CERCA = "regla_cerca"
 CLAIM_CONFIANZA_BAJA = "confianza_baja"
 CLAIM_OFICIAL_RANCIA = "oficial_rancia"
+CLAIM_BRECHA_VS_HISTORIA = "brecha_vs_historia"  # + .datos["posicion"]
+CLAIM_BRECHA_EXTREMO = "brecha_extremo"
+CLAIM_HISTORIA_PARCIAL = "historia_parcial"
 
 RESP_PARALELO = "paralelo"
 RESP_OFICIAL = "oficial"
@@ -57,7 +70,11 @@ RESP_AMBOS = "ambos"
 
 # El medidor cuya banda se comenta: es el que responde «¿me conviene hoy?».
 INDICADOR_BRECHA_BUY = "p2p_brecha_pct_buy"
+INDICADOR_BRECHA_SELL = "p2p_brecha_pct_sell"
 INDICADOR_MOMENTUM = "p2p_momentum_bid_3h_pct"
+
+# Los dos lados de la brecha, con el código de lado que viaja en los claims.
+LADO_POR_INDICADOR = {INDICADOR_BRECHA_BUY: "buy", INDICADOR_BRECHA_SELL: "sell"}
 
 _CERO = Decimal(0)
 
@@ -111,6 +128,19 @@ class Afirmacion:
 
 
 @dataclass(frozen=True, slots=True)
+class HistoriaLado:
+    """La brecha de un lado contra su propia historia, ventana a ventana.
+
+    Es lo que la tarjeta pinta. Cada `Agregado` lleva su `dias_cubiertos`, así
+    que el cliente puede rotular «Promedio 12 d (de 30)» en vez de mentir.
+    """
+
+    lado: str
+    actual: Decimal | None
+    agregados: tuple[Agregado, ...] = ()  # ordenados por ventana creciente
+
+
+@dataclass(frozen=True, slots=True)
 class Lectura:
     regimen: str | None
     eje_movimiento: str | None
@@ -119,6 +149,9 @@ class Lectura:
     medidores_cerca: int
     ventana_horas: int
     lectura_version: int
+    # Vacío si el motor no pudo medir la historia: la comparativa se omite
+    # entera antes que publicarse a medias.
+    historia: tuple[HistoriaLado, ...] = ()
 
 
 # --------------------------------------------------------------------------- #
@@ -269,6 +302,89 @@ def medidores_cerca_de_umbral(
 # --------------------------------------------------------------------------- #
 
 
+def construir_historia(
+    lado: str,
+    actual: Decimal | None,
+    agregados: Mapping[int, Agregado] | None,
+    config_comparativas: ConfigComparativas,
+) -> HistoriaLado | None:
+    """La historia de un lado, o `None` si no hay nada que comparar.
+
+    Se publican TODAS las ventanas configuradas, completas o no, cada una con su
+    `dias_cubiertos`. Filtrar aquí las incompletas escondería justo el dato que
+    hace honesta la etiqueta del cliente.
+    """
+    if not agregados:
+        return None
+    ordenados = tuple(
+        agregados[dias] for dias in config_comparativas.ventanas_dias if dias in agregados
+    )
+    if not ordenados:
+        return None
+    return HistoriaLado(lado=lado, actual=actual, agregados=ordenados)
+
+
+def afirmaciones_de_historia(
+    historia: HistoriaLado, config: ConfigComparativas
+) -> list[Afirmacion]:
+    """Las afirmaciones de UN lado, en su orden de lectura.
+
+    Se emite **una comparativa por lado**, contra la ventana completa más ancha:
+    contra 90 días dice más que contra 7. Publicar las tres daría seis frases en
+    la tarjeta y ninguna se leería. Los números de las otras ventanas viajan
+    igual en `historia` — esto es para la prosa, no para la tabla.
+
+    `historia_parcial` va PRIMERO cuando ninguna ventana llega a su cobertura:
+    es lo que impide que el resto se lea como si fuera de 90 días.
+    """
+    afirmaciones: list[Afirmacion] = []
+    referencia = ventana_mas_ancha_completa(historia.agregados, config)
+
+    if referencia is None:
+        mas_ancha = max(historia.agregados, key=lambda a: a.ventana_dias)
+        return [
+            Afirmacion(
+                CLAIM_HISTORIA_PARCIAL,
+                {
+                    "lado": historia.lado,
+                    "ventana": str(mas_ancha.ventana_dias),
+                    "dias": str(mas_ancha.dias_cubiertos),
+                },
+            )
+        ]
+
+    posicion = clasificar_posicion(historia.actual, referencia.media, config)
+    if posicion is not None and historia.actual is not None:
+        afirmaciones.append(
+            Afirmacion(
+                CLAIM_BRECHA_VS_HISTORIA,
+                {
+                    "lado": historia.lado,
+                    "referencia": REF_MEDIA,
+                    "dias": str(referencia.ventana_dias),
+                    "posicion": posicion,
+                    "delta_pp": _fmt(abs(historia.actual - referencia.media)),
+                },
+            )
+        )
+
+    # Ser el extremo del tramo es más informativo que estar «en línea», así que
+    # se dice aunque ya haya salido la comparativa.
+    extremo = es_extremo(historia.actual, referencia)
+    if extremo is not None:
+        afirmaciones.append(
+            Afirmacion(
+                CLAIM_BRECHA_EXTREMO,
+                {
+                    "lado": historia.lado,
+                    "tipo": extremo,
+                    "dias": str(referencia.ventana_dias),
+                },
+            )
+        )
+    return afirmaciones
+
+
 def construir_lectura(
     *,
     config: ConfigLectura,
@@ -277,6 +393,8 @@ def construir_lectura(
     variaciones: Variaciones,
     confianza_baja: bool,
     official_stale: bool,
+    historia: Sequence[HistoriaLado] = (),
+    config_comparativas: ConfigComparativas | None = None,
 ) -> Lectura:
     """Ensambla el régimen y las afirmaciones, EN ORDEN de lectura.
 
@@ -327,6 +445,13 @@ def construir_lectura(
                 )
             )
 
+    # La brecha contra su propia historia. Va después de la atribución —que
+    # explica el movimiento de las últimas horas— porque amplía el marco
+    # temporal: primero qué pasó hoy, luego cómo es eso comparado con lo normal.
+    if config_comparativas is not None:
+        for lado in historia:
+            afirmaciones.extend(afirmaciones_de_historia(lado, config_comparativas))
+
     # Banda del lado buy: la única afirmación que orienta, y solo si hay escala
     # empírica que la sostenga. Con el respaldo del ruleset la banda es
     # `unscaled` y decir «su tercio más barato» sería inventarlo.
@@ -368,6 +493,7 @@ def construir_lectura(
         medidores_cerca=medidores_cerca_de_umbral(indicadores, config),
         ventana_horas=config.ventana_horas,
         lectura_version=config.version,
+        historia=tuple(historia),
     )
 
 

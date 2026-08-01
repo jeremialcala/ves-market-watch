@@ -28,6 +28,10 @@ from indicator_engine.application.process_official_rate import ProcesarTasaOfici
 from indicator_engine.application.process_p2p_snapshot import ProcesarSnapshotP2P
 from indicator_engine.config import Settings
 from indicator_engine.domain.analisis import ConfigAnalisis, cargar_config_analisis
+from indicator_engine.domain.comparativas import (
+    ConfigComparativas,
+    cargar_config_comparativas,
+)
 from indicator_engine.domain.lectura import ConfigLectura, cargar_config_lectura
 from indicator_engine.domain.reglas import Ruleset, cargar_ruleset
 
@@ -72,6 +76,31 @@ def _cargar_config_analisis(path_str: str) -> ConfigAnalisis | None:
     return config
 
 
+def _cargar_config_comparativas(path_str: str) -> ConfigComparativas | None:
+    """Carga el bloque `comparativas` de la config de lectura (RF-7).
+
+    Ausente ⇒ la lectura se publica sin la comparativa historica: es aditiva y el
+    resto del analisis no depende de ella. Presente pero mal formada ⇒ el motor
+    NO arranca, mismo criterio que el resto de configs versionadas: una ventana
+    mal declarada produciria comparativas plausibles y falsas.
+    """
+    path = Path(path_str)
+    if not path.exists():
+        return None
+    bloque = (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("comparativas")
+    if bloque is None:
+        logger.warning("config de lectura sin bloque `comparativas`; sin historia")
+        return None
+    config = cargar_config_comparativas(bloque)
+    logger.info(
+        "comparativas cargadas: ventanas %s d, cobertura minima %s, desvio %s",
+        list(config.ventanas_dias),
+        config.cobertura_minima,
+        config.umbral_desvio,
+    )
+    return config
+
+
 def _cargar_config_lectura(path_str: str) -> ConfigLectura | None:
     """Carga la config de la lectura del mercado (RF-7). Sin archivo, el analisis
     se publica igual pero sin `reading`: el panel de medidores no depende de
@@ -98,6 +127,7 @@ async def run(settings: Settings, drain: bool) -> None:
     ruleset = _cargar_ruleset(settings.signals_ruleset_path)
     config_analisis = _cargar_config_analisis(settings.analysis_config_path)
     config_lectura = _cargar_config_lectura(settings.reading_config_path)
+    config_comparativas = _cargar_config_comparativas(settings.reading_config_path)
 
     analisis: AnalizarRevision | None = None
     if config_analisis is not None and ruleset is not None:
@@ -112,6 +142,7 @@ async def run(settings: Settings, drain: bool) -> None:
             repository=repository,
             publisher=publisher,
             config_lectura=config_lectura,
+            config_comparativas=config_comparativas,
         )
     elif config_analisis is not None:
         # El análisis mide proximidad a las reglas y publica `ruleset_version`:

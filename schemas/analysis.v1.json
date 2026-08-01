@@ -5,81 +5,202 @@
   "description": "Lectura mecánica de los indicadores del panel en CADA revisión (cada lote emitido ante un p2p.snapshot). El engine CLASIFICA en vocabulario neutro de idioma —igual que `type`/`direction` de las señales— y publica la escala usada con su FUENTE y sus parámetros; la prosa ES/EN la redacta el cliente. No contiene pronósticos: `rule_proximity` es proximidad aritmética a las reglas del ruleset versionado (schemas/signal.v1.json, ADR-0015), no una predicción.",
   "$comment": "Contrato definido y emitido en ADR-0019. El productor valida la forma emitida en apps/indicator-engine/tests/contract/test_analysis_event_schema.py; el consumidor (api-gateway) valida cada mensaje contra este archivo antes del push WSS.",
   "type": "object",
-  "required": ["event_id", "event_type", "schema_version", "occurred_at", "producer", "payload"],
+  "required": [
+    "event_id",
+    "event_type",
+    "schema_version",
+    "occurred_at",
+    "producer",
+    "payload"
+  ],
   "additionalProperties": false,
   "properties": {
-    "event_id": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" },
-    "event_type": { "const": "analysis.updated" },
-    "schema_version": { "const": 1 },
-    "occurred_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}" },
-    "producer": { "type": "string", "minLength": 1 },
-
+    "event_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "event_type": {
+      "const": "analysis.updated"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "occurred_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+    },
+    "producer": {
+      "type": "string",
+      "minLength": 1
+    },
     "payload": {
       "type": "object",
-      "required": ["as_of", "currency", "calc_version", "analysis_version", "ruleset_version",
-                   "confidence", "official_stale", "triggered_by",
-                   "indicators", "rule_proximity", "summary"],
+      "required": [
+        "as_of",
+        "currency",
+        "calc_version",
+        "analysis_version",
+        "ruleset_version",
+        "confidence",
+        "official_stale",
+        "triggered_by",
+        "indicators",
+        "rule_proximity",
+        "summary"
+      ],
       "additionalProperties": false,
       "properties": {
         "as_of": {
-          "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}",
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}",
           "description": "Instante del dato de mercado de la revisión (captured_at del snapshot), no la hora de emisión."
         },
-        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
-        "calc_version": { "type": "integer", "minimum": 1,
-          "description": "Versión de la fórmula de los indicadores leídos (RF-3)." },
-        "analysis_version": { "type": "integer", "minimum": 1,
-          "description": "Versión de config/analisis.v*.yaml (cortes, ventana, mínimo de muestras, dominios de respaldo)." },
-        "ruleset_version": { "type": "integer", "minimum": 1,
-          "description": "Versión del ruleset de señales evaluado (config/senales.v*.yaml)." },
-        "confidence": { "enum": ["normal", "low"],
-          "description": "`low` = > 30 % de outliers en el snapshot: las señales se suprimen y `rule_proximity[].evaluable` es false en todas las reglas." },
-        "official_stale": { "type": "boolean" },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "calc_version": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Versión de la fórmula de los indicadores leídos (RF-3)."
+        },
+        "analysis_version": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Versión de config/analisis.v*.yaml (cortes, ventana, mínimo de muestras, dominios de respaldo)."
+        },
+        "ruleset_version": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Versión del ruleset de señales evaluado (config/senales.v*.yaml)."
+        },
+        "confidence": {
+          "enum": [
+            "normal",
+            "low"
+          ],
+          "description": "`low` = > 30 % de outliers en el snapshot: las señales se suprimen y `rule_proximity[].evaluable` es false en todas las reglas."
+        },
+        "official_stale": {
+          "type": "boolean"
+        },
         "triggered_by": {
-          "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
           "description": "event_id del p2p.snapshot que produjo la revisión (cadena de trazabilidad, T10)."
         },
-
         "indicators": {
           "type": "array",
           "description": "Una entrada por indicador del panel con valor VIGENTE (del lote o del último conocido aún fresco). Un indicador sin valor vigente NO aparece: nunca se infiere.",
           "items": {
             "type": "object",
-            "required": ["indicator", "value", "as_of", "band", "position", "scale", "rules"],
+            "required": [
+              "indicator",
+              "value",
+              "as_of",
+              "band",
+              "position",
+              "scale",
+              "rules"
+            ],
             "additionalProperties": false,
             "properties": {
-              "indicator": { "type": "string", "minLength": 1,
-                "description": "Nombre canónico (knowledge/metrics/). No se traduce." },
-              "value": { "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?$" },
-              "as_of": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}" },
+              "indicator": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Nombre canónico (knowledge/metrics/). No se traduce."
+              },
+              "value": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+              },
+              "as_of": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+              },
               "band": {
-                "enum": ["very_low", "low", "high", "very_high", "unscaled"],
+                "enum": [
+                  "very_low",
+                  "low",
+                  "high",
+                  "very_high",
+                  "unscaled"
+                ],
                 "description": "Vocabulario neutro de idioma. percentiles: very_low <p10 · low [p10,p50) · high [p50,p90) · very_high >=p90. `unscaled` cuando la escala viene del respaldo del ruleset (no hay distribución empírica que sostenga una banda)."
               },
               "position": {
-                "oneOf": [{ "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$" }, { "type": "null" }],
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9]+(\\.[0-9]+)?$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
                 "description": "COORDENADA DE DIBUJO en [0,1] del valor sobre la escala publicada (interpolación lineal entre `scale.cuts` y `scale.domain`, acotada). NO es el percentil empírico del valor: es reproducible a partir de este mismo payload. `null` cuando no hay escala dibujable."
               },
               "scale": {
                 "type": "object",
-                "required": ["source", "window_days", "samples", "min_samples", "computed_at", "domain", "cuts"],
+                "required": [
+                  "source",
+                  "window_days",
+                  "samples",
+                  "min_samples",
+                  "computed_at",
+                  "domain",
+                  "cuts"
+                ],
                 "additionalProperties": false,
                 "properties": {
-                  "source": { "enum": ["percentiles", "ruleset"],
-                    "description": "`percentiles` = percentiles REALES de la hypertable `indicators` en la ventana. `ruleset` = respaldo con los umbrales reales de senales.v*.yaml porque samples < min_samples." },
-                  "window_days": { "type": "integer", "minimum": 1 },
-                  "samples": { "type": "integer", "minimum": 0,
-                    "description": "Filas encontradas en la ventana (real, también en el respaldo)." },
-                  "min_samples": { "type": "integer", "minimum": 1 },
+                  "source": {
+                    "enum": [
+                      "percentiles",
+                      "ruleset"
+                    ],
+                    "description": "`percentiles` = percentiles REALES de la hypertable `indicators` en la ventana. `ruleset` = respaldo con los umbrales reales de senales.v*.yaml porque samples < min_samples."
+                  },
+                  "window_days": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "samples": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Filas encontradas en la ventana (real, también en el respaldo)."
+                  },
+                  "min_samples": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
                   "computed_at": {
-                    "oneOf": [{ "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}" }, { "type": "null" }],
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
                     "description": "Instante en que se calculó la distribución (puede ser anterior al as_of: se cachea con TTL). `null` si nunca se pudo consultar."
                   },
                   "domain": {
-                    "type": "object", "required": ["min", "max"], "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "min",
+                      "max"
+                    ],
+                    "additionalProperties": false,
                     "properties": {
-                      "min": { "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?$" },
-                      "max": { "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?$" }
+                      "min": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                      },
+                      "max": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                      }
                     },
                     "description": "Extremos de la escala dibujada. Con source=percentiles son el min/max REALES de la ventana; con source=ruleset son el dominio declarado en config/analisis.v*.yaml (constante de presentación, no dato de mercado)."
                   },
@@ -88,13 +209,26 @@
                     "description": "Cortes ordenados por `value` ascendente. Vacío solo en el respaldo de un indicador que no alimenta ninguna regla ni umbral de sistema.",
                     "items": {
                       "type": "object",
-                      "required": ["key", "value", "position"],
+                      "required": [
+                        "key",
+                        "value",
+                        "position"
+                      ],
                       "additionalProperties": false,
                       "properties": {
-                        "key": { "type": "string", "minLength": 1,
-                          "description": "`p10`|`p50`|`p90` con source=percentiles; con source=ruleset, la regla versionada (`arranque_alcista@v1`) o el umbral de sistema (`confianza_baja`)." },
-                        "value": { "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?$" },
-                        "position": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$" }
+                        "key": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "`p10`|`p50`|`p90` con source=percentiles; con source=ruleset, la regla versionada (`arranque_alcista@v1`) o el umbral de sistema (`confianza_baja`)."
+                        },
+                        "value": {
+                          "type": "string",
+                          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        "position": {
+                          "type": "string",
+                          "pattern": "^[0-9]+(\\.[0-9]+)?$"
+                        }
                       }
                     }
                   }
@@ -105,136 +239,460 @@
                 "description": "Condiciones del ruleset que consumen ESTE indicador, con su umbral, su operador y cuánto le falta al valor para satisfacerlas. Vacío si no alimenta ninguna.",
                 "items": {
                   "type": "object",
-                  "required": ["rule", "type", "direction", "op", "threshold", "met", "distance", "threshold_position"],
+                  "required": [
+                    "rule",
+                    "type",
+                    "direction",
+                    "op",
+                    "threshold",
+                    "met",
+                    "distance",
+                    "threshold_position"
+                  ],
                   "additionalProperties": false,
                   "properties": {
-                    "rule": { "type": "string", "minLength": 1,
-                      "description": "Regla versionada `<type>@v<version>` (mismo identificador que signal.v1 evidence.rule)." },
-                    "type": { "type": "string", "minLength": 1 },
-                    "direction": { "enum": ["alcista", "bajista", "neutral"] },
-                    "op": { "enum": ["gt", "gte", "lt", "lte"] },
-                    "threshold": { "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?$" },
-                    "met": { "type": "boolean" },
+                    "rule": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Regla versionada `<type>@v<version>` (mismo identificador que signal.v1 evidence.rule)."
+                    },
+                    "type": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "direction": {
+                      "enum": [
+                        "alcista",
+                        "bajista",
+                        "neutral"
+                      ]
+                    },
+                    "op": {
+                      "enum": [
+                        "gt",
+                        "gte",
+                        "lt",
+                        "lte"
+                      ]
+                    },
+                    "threshold": {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                    },
+                    "met": {
+                      "type": "boolean"
+                    },
                     "distance": {
-                      "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
                       "description": "Cuánto debe moverse el valor EN LA DIRECCIÓN EXIGIDA para satisfacer la condición: `threshold - value` con gt/gte y `value - threshold` con lt/lte. <= 0 significa satisfecha (met=true). Nunca es una predicción de cuándo ocurrirá."
                     },
-                    "threshold_position": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$",
-                      "description": "Coordenada de dibujo del umbral sobre la misma escala, acotada a [0,1]." }
+                    "threshold_position": {
+                      "type": "string",
+                      "pattern": "^[0-9]+(\\.[0-9]+)?$",
+                      "description": "Coordenada de dibujo del umbral sobre la misma escala, acotada a [0,1]."
+                    }
                   }
                 }
               }
             }
           }
         },
-
         "rule_proximity": {
           "type": "array",
           "description": "Una entrada por regla del ruleset: cuántas condiciones se cumplen y cuál bloquea. Es aritmética sobre el estado presente, NO un pronóstico ni un régimen.",
           "items": {
             "type": "object",
-            "required": ["rule", "type", "direction", "conditions_total", "conditions_met", "evaluable", "blocked_by", "conditions"],
+            "required": [
+              "rule",
+              "type",
+              "direction",
+              "conditions_total",
+              "conditions_met",
+              "evaluable",
+              "blocked_by",
+              "conditions"
+            ],
             "additionalProperties": false,
             "properties": {
-              "rule": { "type": "string", "minLength": 1 },
-              "type": { "type": "string", "minLength": 1 },
-              "direction": { "enum": ["alcista", "bajista", "neutral"] },
-              "conditions_total": { "type": "integer", "minimum": 1 },
-              "conditions_met": { "type": "integer", "minimum": 0 },
-              "evaluable": { "type": "boolean",
-                "description": "false si algún indicador de la regla no está vigente (igual criterio que evaluar_reglas: una regla con un indicador ausente NO dispara) o si confidence=low." },
+              "rule": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "direction": {
+                "enum": [
+                  "alcista",
+                  "bajista",
+                  "neutral"
+                ]
+              },
+              "conditions_total": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "conditions_met": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "evaluable": {
+                "type": "boolean",
+                "description": "false si algún indicador de la regla no está vigente (igual criterio que evaluar_reglas: una regla con un indicador ausente NO dispara) o si confidence=low."
+              },
               "blocked_by": {
-                "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }],
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
                 "description": "Indicador de la condición NO cumplida con mayor `distance`; empate resuelto por orden alfabético del nombre canónico. `null` si la regla se cumple entera o no es evaluable."
               },
               "conditions": {
-                "type": "array", "minItems": 1,
+                "type": "array",
+                "minItems": 1,
                 "items": {
                   "type": "object",
-                  "required": ["indicator", "op", "threshold", "value", "met", "distance"],
+                  "required": [
+                    "indicator",
+                    "op",
+                    "threshold",
+                    "value",
+                    "met",
+                    "distance"
+                  ],
                   "additionalProperties": false,
                   "properties": {
-                    "indicator": { "type": "string", "minLength": 1 },
-                    "op": { "enum": ["gt", "gte", "lt", "lte"] },
-                    "threshold": { "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?$" },
+                    "indicator": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "op": {
+                      "enum": [
+                        "gt",
+                        "gte",
+                        "lt",
+                        "lte"
+                      ]
+                    },
+                    "threshold": {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                    },
                     "value": {
-                      "oneOf": [{ "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?$" }, { "type": "null" }],
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
                       "description": "`null` si el indicador no está vigente. Nunca se rellena con el último conocido rancio."
                     },
-                    "met": { "type": "boolean" },
-                    "distance": { "oneOf": [{ "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?$" }, { "type": "null" }] }
+                    "met": {
+                      "type": "boolean"
+                    },
+                    "distance": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
                   }
                 }
               }
             }
           }
         },
-
         "reading": {
           "type": "object",
           "description": "Lectura del estado de mercado (RF-7, ADR-0021). OPCIONAL y aditiva: un productor sin config de lectura publica el mismo evento sin este campo. Describe el PRESENTE — el régimen es la celda de una matriz de dos ejes clasificados por umbrales de config versionada, no una anticipación de lo que viene. No contiene consejo: ninguna afirmación dice qué hacer (no-objetivo del PRD: «recomendaciones financieras personalizadas»).",
-          "required": ["version", "window_hours", "regime", "axis_movement", "axis_gap", "gauges_near_threshold", "claims"],
+          "required": [
+            "version",
+            "window_hours",
+            "regime",
+            "axis_movement",
+            "axis_gap",
+            "gauges_near_threshold",
+            "claims"
+          ],
           "additionalProperties": false,
           "properties": {
-            "version": { "type": "integer", "minimum": 1,
-              "description": "Versión de config/lectura.v*.yaml (umbrales de los ejes, ventana, dominancia y proximidad)." },
-            "window_hours": { "type": "integer", "minimum": 1,
-              "description": "Ventana sobre la que se midió la variación de la brecha y de sus dos piernas." },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Versión de config/lectura.v*.yaml (umbrales de los ejes, ventana, dominancia y proximidad)."
+            },
+            "window_hours": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Ventana sobre la que se midió la variación de la brecha y de sus dos piernas."
+            },
             "regime": {
-              "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }],
+              "oneOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "description": "`<axis_movement>_<axis_gap>`, p. ej. `lateral_comprimiendo`. `null` si CUALQUIERA de los dos ejes no resolvió: media clasificación no se publica, porque «lateral» a secas daría a entender que la brecha está quieta cuando no se sabe."
             },
             "axis_movement": {
-              "oneOf": [{ "enum": ["subiendo", "lateral", "bajando"] }, { "type": "null" }],
+              "oneOf": [
+                {
+                  "enum": [
+                    "subiendo",
+                    "lateral",
+                    "bajando"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "description": "Cómo se mueve el paralelo, desde `p2p_momentum_bid_3h_pct`. `null` sin momentum vigente."
             },
             "axis_gap": {
-              "oneOf": [{ "enum": ["ampliando", "estable", "comprimiendo"] }, { "type": "null" }],
+              "oneOf": [
+                {
+                  "enum": [
+                    "ampliando",
+                    "estable",
+                    "comprimiendo"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "description": "Qué hace la brecha sobre la ventana. `null` si hubo hueco de captura y la variación no es comparable."
             },
-            "gauges_near_threshold": { "type": "integer", "minimum": 0,
-              "description": "Medidores con algún umbral SIN cruzar a menos de `proximidad_umbral` en coordenadas de dibujo. Normalizado a propósito: en unidades crudas no se podría comparar un porcentaje de brecha con un ratio." },
+            "gauges_near_threshold": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Medidores con algún umbral SIN cruzar a menos de `proximidad_umbral` en coordenadas de dibujo. Normalizado a propósito: en unidades crudas no se podría comparar un porcentaje de brecha con un ratio."
+            },
             "claims": {
               "type": "array",
               "description": "Afirmaciones EN ORDEN de lectura, en vocabulario neutro de idioma; la prosa ES/EN la redacta el cliente. Lo que invalida al resto va primero: confianza baja, luego oficial rancia.",
               "items": {
                 "type": "object",
-                "required": ["code", "data"],
+                "required": [
+                  "code",
+                  "data"
+                ],
                 "additionalProperties": false,
                 "properties": {
                   "code": {
-                    "enum": ["confianza_baja", "oficial_rancia", "brecha", "atribucion", "medidor_en_banda", "regla_cerca"],
-                    "description": "`atribucion` solo aparece si la brecha se movió Y la oficial no está rancia: con una tasa vencida, decir quién movió la brecha sería afirmar de más."
+                    "enum": [
+                      "confianza_baja",
+                      "oficial_rancia",
+                      "brecha",
+                      "atribucion",
+                      "medidor_en_banda",
+                      "regla_cerca",
+                      "brecha_vs_historia",
+                      "brecha_extremo",
+                      "historia_parcial"
+                    ],
+                    "description": "`atribucion` solo aparece si la brecha se movió Y la oficial no está rancia: con una tasa vencida, decir quién movió la brecha sería afirmar de más. `historia_parcial` aparece EN LUGAR de `brecha_vs_historia` cuando ninguna ventana alcanza su cobertura: es lo que impide leer una media de 12 días como si fuera de 90."
                   },
                   "data": {
                     "type": "object",
-                    "additionalProperties": { "type": "string" },
-                    "description": "Cifras y cualificadores del claim, como string exacto. Claves según el código: `brecha` lleva {direccion, delta_pp, horas}; `atribucion` lleva {responsable, paralelo, oficial}; `medidor_en_banda` lleva {indicador, banda, dias}; `regla_cerca` lleva {regla, cumplidas, totales}."
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "Cifras y cualificadores del claim, como string exacto. Claves según el código: `brecha` lleva {direccion, delta_pp, horas}; `atribucion` lleva {responsable, paralelo, oficial}; `medidor_en_banda` lleva {indicador, banda, dias}; `regla_cerca` lleva {regla, cumplidas, totales}; `brecha_vs_historia` lleva {lado, referencia, dias, posicion, delta_pp}; `brecha_extremo` lleva {lado, tipo, dias}; `historia_parcial` lleva {lado, ventana, dias}."
                   }
                 }
               }
             }
           }
         },
-
         "summary": {
           "type": "object",
-          "required": ["rules_total", "rules_evaluable", "closest_rule", "conditions_met", "conditions_total", "blocked_by", "rules_met"],
+          "required": [
+            "rules_total",
+            "rules_evaluable",
+            "closest_rule",
+            "conditions_met",
+            "conditions_total",
+            "blocked_by",
+            "rules_met"
+          ],
           "additionalProperties": false,
           "description": "Síntesis MECÁNICA del panel: qué regla del ruleset está más cerca de cumplirse y qué la bloquea. Sin probabilidades, sin horizontes temporales, sin régimen.",
           "properties": {
-            "rules_total": { "type": "integer", "minimum": 0 },
-            "rules_evaluable": { "type": "integer", "minimum": 0 },
+            "rules_total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "rules_evaluable": {
+              "type": "integer",
+              "minimum": 0
+            },
             "closest_rule": {
-              "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }],
+              "oneOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "description": "Entre las reglas evaluables no cumplidas: la de mayor `conditions_met`; empate por menor `conditions_total` y luego orden alfabético de `rule`. `null` si ninguna es evaluable o todas se cumplen."
             },
-            "conditions_met": { "type": "integer", "minimum": 0 },
-            "conditions_total": { "type": "integer", "minimum": 0 },
-            "blocked_by": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+            "conditions_met": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "conditions_total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "blocked_by": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "rules_met": {
-              "type": "array", "items": { "type": "string", "minLength": 1 },
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
               "description": "Reglas con TODAS sus condiciones cumplidas en esta revisión. NO implica que se haya emitido la señal: el cooldown (RF-4) pudo suprimirla. La emisión real vive en signals.emitted."
+            }
+          }
+        },
+        "gap_history": {
+          "type": "object",
+          "description": "La brecha de cada lado contra su propia historia (RF-7, ADR-0021). OPCIONAL y aditivo. Viaja en ESTE evento y no en uno propio por la misma razón que `reading`: la tarjeta cita a la vez el valor de hoy y sus referencias, así que tienen que ser atómicamente coherentes. La honestidad está en `days_covered`: una ventana de 30 días con 12 de serie se publica IGUAL, declarando su alcance real, para que el cliente rotule el tramo verdadero en vez de mentir.",
+          "required": [
+            "sides"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "sides": {
+              "type": "array",
+              "description": "Un elemento por lado con datos; un lado sin serie no aparece.",
+              "items": {
+                "type": "object",
+                "required": [
+                  "side",
+                  "current",
+                  "references"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "side": {
+                    "enum": [
+                      "buy",
+                      "sell"
+                    ]
+                  },
+                  "current": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "La brecha de hoy, la MISMA cifra que publica el resto del análisis."
+                  },
+                  "references": {
+                    "type": "array",
+                    "description": "Una por ventana configurada, en orden creciente. Se publican todas, completas o no.",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "days_configured",
+                        "days_covered",
+                        "samples",
+                        "mean",
+                        "max",
+                        "min"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "days_configured": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "description": "La ventana que se pidió."
+                        },
+                        "days_covered": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Hasta dónde llega la serie DENTRO de esa ventana. Menor que `days_configured` ⇒ la ventana no está completa y la UI debe rotular el tramo real. Mismo mecanismo que `scale.samples`/`min_samples`."
+                        },
+                        "samples": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "mean": {
+                          "oneOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "max": {
+                          "oneOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "min": {
+                          "oneOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }

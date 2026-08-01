@@ -51,3 +51,22 @@ umbrales:
   # porcentaje de brecha y otra en un ratio de oferta/demanda. Normalizado, 0,1
   # es «a una décima del ancho de su propia escala».
   proximidad_umbral: "0.1"
+
+# Comparativa de la brecha contra su propia historia (RF-7). Las ventanas se
+# publican en el payload junto con los DÍAS REALMENTE CUBIERTOS, que es lo que
+# impide que una media de 12 días se rotule «30 días».
+comparativas:
+  # De menor a mayor: el cliente las pinta en este orden y «la más ancha
+  # completa» se resuelve recorriendo, no buscando.
+  ventanas_dias: [7, 30, 90]
+
+  # Fracción de la ventana que la serie debe alcanzar para considerarla
+  # completa. 0,9 tolera el hueco de captura de un día suelto sin dar por buena
+  # una ventana a la que le falta un tercio.
+  cobertura_minima: "0.9"
+
+  # Umbral simétrico, en puntos porcentuales, para decir que hoy está «en línea»
+  # con su referencia. Mismo valor que el eje de brecha: si medio punto no basta
+  # para llamar «movimiento» a un cambio de 6 h, tampoco para llamar «desvío» a
+  # una diferencia contra la media.
+  umbral_desvio: "0.5"

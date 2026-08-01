@@ -24,6 +24,7 @@ from typing import Callable, Sequence
 
 from indicator_engine.application.ports import DistribucionRepository
 from indicator_engine.domain.analisis import Distribucion
+from indicator_engine.domain.comparativas import Agregado
 
 logger = logging.getLogger("indicator_engine")
 
@@ -50,6 +51,9 @@ class DistribucionesConTTL:
         self._timeout_s = timeout_s
         self._reloj = reloj
         self._cache: dict[tuple, tuple[datetime, dict[str, Distribucion]]] = {}
+        self._cache_agregados: dict[
+            tuple, tuple[datetime, dict[str, dict[int, Agregado]]]
+        ] = {}
 
     async def distribuciones(
         self,
@@ -91,3 +95,49 @@ class DistribucionesConTTL:
 
         self._cache[clave] = (ahora, frescas)
         return frescas
+
+    async def agregados(
+        self,
+        nombres: Sequence[str],
+        moneda: str,
+        ventanas_dias: Sequence[int],
+        ahora: datetime,
+    ) -> dict[str, dict[int, Agregado]]:
+        """Mismo TTL y misma degradación que las distribuciones.
+
+        `ahora` queda fuera de la clave por lo mismo que `desde`: cambia en cada
+        revisión y anularía el cache. La consecuencia —la ventana se desliza a
+        saltos de TTL— es idéntica y ya está asumida.
+
+        Si falla sin entrada previa se devuelve `{}`: la comparativa se omite
+        entera en vez de publicarse a medias, que es lo que haría creer al
+        cliente que una ventana está completa cuando no se pudo medir.
+        """
+        clave = ("agregados", moneda, tuple(sorted(nombres)), tuple(ventanas_dias))
+        entrada = self._cache_agregados.get(clave)
+        momento = self._reloj()
+        if entrada is not None and momento - entrada[0] < self._ttl:
+            return entrada[1]
+
+        try:
+            async with asyncio.timeout(self._timeout_s):
+                frescos = await self._inner.agregados(
+                    nombres, moneda, ventanas_dias, ahora
+                )
+        except Exception:
+            if entrada is not None:
+                logger.warning(
+                    "agregados: consulta fallida, se sirve la entrada de %s (vencida)",
+                    entrada[0].isoformat(),
+                    exc_info=True,
+                )
+                return entrada[1]
+            logger.warning(
+                "agregados: consulta fallida y sin cache previa; la comparativa "
+                "histórica se omite en esta revisión",
+                exc_info=True,
+            )
+            return {}
+
+        self._cache_agregados[clave] = (momento, frescos)
+        return frescos

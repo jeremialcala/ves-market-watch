@@ -245,3 +245,145 @@ async def test_sin_config_de_lectura_el_analisis_se_publica_sin_ella():
         )
         is None
     )
+
+
+# -- comparativa contra la historia (RF-7) -----------------------------------
+
+
+class DistribucionesFalsas:
+    """Solo `agregados`: es lo único que la comparativa toca."""
+
+    def __init__(self, por_indicador):
+        self._por_indicador = por_indicador
+        self.llamadas: list[tuple[tuple[str, ...], tuple[int, ...]]] = []
+
+    async def agregados(self, nombres, moneda, ventanas_dias, ahora):
+        self.llamadas.append((tuple(nombres), tuple(ventanas_dias)))
+        return {n: self._por_indicador[n] for n in nombres if n in self._por_indicador}
+
+
+def _agregado(dias: int, media: str, cubiertos: int):
+    from indicator_engine.domain.comparativas import Agregado
+
+    return Agregado(
+        ventana_dias=dias,
+        media=Decimal(media),
+        maximo=Decimal("30"),
+        minimo=Decimal("5"),
+        muestras=100,
+        dias_cubiertos=cubiertos,
+    )
+
+
+def _analizador_con_comparativas(distribuciones):
+    from indicator_engine.domain.comparativas import cargar_config_comparativas
+
+    return AnalizarRevision(
+        config=cargar_config_analisis(_yaml("analisis.v1.yaml")),
+        ruleset=cargar_ruleset(_yaml("senales.v1.yaml")),
+        distribuciones=distribuciones,
+        repository=RepoFalso(SERIE_COMPLETA),
+        publisher=None,
+        config_lectura=cargar_config_lectura(_yaml("lectura.v1.yaml")),
+        config_comparativas=cargar_config_comparativas(
+            _yaml("lectura.v1.yaml")["comparativas"]
+        ),
+    )
+
+
+async def test_los_dos_lados_se_piden_en_UNA_sola_consulta():
+    """Añadir el segundo lado no puede duplicar el coste: el puerto acepta
+    varios nombres justamente para eso."""
+    distribuciones = DistribucionesFalsas({})
+    analizador = _analizador_con_comparativas(distribuciones)
+    await analizador._medir_historia({}, AS_OF, MONEDA)
+
+    assert len(distribuciones.llamadas) == 1
+    nombres, ventanas = distribuciones.llamadas[0]
+    assert set(nombres) == {"p2p_brecha_pct_buy", "p2p_brecha_pct_sell"}
+    assert ventanas == (7, 30, 90)
+
+
+async def test_el_valor_de_hoy_sale_de_la_VISTA_no_del_historico():
+    """Es el mismo número que publica el resto del análisis: si saliera del
+    agregado, la tarjeta podría contradecir a su propio titular."""
+    distribuciones = DistribucionesFalsas(
+        {"p2p_brecha_pct_buy": {7: _agregado(7, "15.00", 7)}}
+    )
+    analizador = _analizador_con_comparativas(distribuciones)
+    historia = await analizador._medir_historia(
+        {"p2p_brecha_pct_buy": Decimal("13.38")}, AS_OF, MONEDA
+    )
+
+    assert len(historia) == 1
+    assert historia[0].lado == "buy"
+    assert historia[0].actual == Decimal("13.38")
+
+
+async def test_un_lado_sin_agregados_no_aparece_en_la_historia():
+    distribuciones = DistribucionesFalsas(
+        {"p2p_brecha_pct_sell": {7: _agregado(7, "15.00", 7)}}
+    )
+    analizador = _analizador_con_comparativas(distribuciones)
+    historia = await analizador._medir_historia({}, AS_OF, MONEDA)
+    assert [h.lado for h in historia] == ["sell"]
+
+
+async def test_sin_config_de_comparativas_no_se_consulta_nada():
+    """Aditivo: el resto del análisis no depende de esto."""
+    distribuciones = DistribucionesFalsas({"p2p_brecha_pct_buy": {7: _agregado(7, "15", 7)}})
+    analizador = AnalizarRevision(
+        config=cargar_config_analisis(_yaml("analisis.v1.yaml")),
+        ruleset=cargar_ruleset(_yaml("senales.v1.yaml")),
+        distribuciones=distribuciones,
+        repository=RepoFalso(SERIE_COMPLETA),
+        publisher=None,
+        config_lectura=cargar_config_lectura(_yaml("lectura.v1.yaml")),
+    )
+    assert await analizador._medir_historia({}, AS_OF, MONEDA) == []
+    assert distribuciones.llamadas == []
+
+
+async def test_la_brecha_de_COMPRA_sale_de_la_vista():
+    """Es la cifra que el resto del análisis publica: si la tarjeta la tomara de
+    otro sitio podría contradecir a su propio titular."""
+    distribuciones = DistribucionesFalsas(
+        {"p2p_brecha_pct_buy": {7: _agregado(7, "15.00", 7)}}
+    )
+    analizador = _analizador_con_comparativas(distribuciones)
+    historia = await analizador._medir_historia(
+        {INDICADOR_BRECHA_BUY: Decimal("13.38")}, AS_OF, MONEDA
+    )
+    assert historia[0].actual == Decimal("13.38")
+
+
+async def test_la_brecha_de_VENTA_se_lee_del_historico_porque_no_esta_en_la_vista():
+    """No es medidor del panel ni la consume el ruleset, así que no entra en la
+    vista vigente. Ampliar la vista cambiaría el payload del análisis para todos
+    sin que nadie lo pida."""
+    from indicator_engine.domain.lectura import INDICADOR_BRECHA_SELL
+
+    series = {
+        **SERIE_COMPLETA,
+        (INDICADOR_BRECHA_SELL, MONEDA): [(hace(1), "12.67")],
+    }
+    distribuciones = DistribucionesFalsas(
+        {"p2p_brecha_pct_sell": {7: _agregado(7, "15.00", 7)}}
+    )
+    from indicator_engine.domain.comparativas import cargar_config_comparativas
+
+    analizador = AnalizarRevision(
+        config=cargar_config_analisis(_yaml("analisis.v1.yaml")),
+        ruleset=cargar_ruleset(_yaml("senales.v1.yaml")),
+        distribuciones=distribuciones,
+        repository=RepoFalso(series),
+        publisher=None,
+        config_lectura=cargar_config_lectura(_yaml("lectura.v1.yaml")),
+        config_comparativas=cargar_config_comparativas(
+            _yaml("lectura.v1.yaml")["comparativas"]
+        ),
+    )
+    historia = await analizador._medir_historia({}, AS_OF, MONEDA)
+
+    assert [h.lado for h in historia] == ["sell"]
+    assert historia[0].actual == Decimal("12.67")

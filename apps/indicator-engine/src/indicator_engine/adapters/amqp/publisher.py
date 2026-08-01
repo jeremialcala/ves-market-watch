@@ -175,6 +175,42 @@ def _lectura_mercado_a_dict(lectura: Lectura) -> dict:
     }
 
 
+def _dec_o_nulo(valor) -> str | None:
+    """`null` es legítimo: una ventana sin filas no tiene media que publicar."""
+    return None if valor is None else _dec(valor)
+
+
+def _historia_a_dict(lectura: Lectura) -> dict | None:
+    """`gap_history`: la brecha de cada lado contra su propia historia.
+
+    Se publican TODAS las ventanas configuradas con su `days_covered`, completas
+    o no. Filtrar aquí las incompletas escondería el dato que permite al cliente
+    rotular el tramo real en vez de mentir con la etiqueta.
+    """
+    if not lectura.historia:
+        return None
+    return {
+        "sides": [
+            {
+                "side": lado.lado,
+                "current": _dec_o_nulo(lado.actual),
+                "references": [
+                    {
+                        "days_configured": ag.ventana_dias,
+                        "days_covered": ag.dias_cubiertos,
+                        "samples": ag.muestras,
+                        "mean": _dec_o_nulo(ag.media),
+                        "max": _dec_o_nulo(ag.maximo),
+                        "min": _dec_o_nulo(ag.minimo),
+                    }
+                    for ag in lado.agregados
+                ],
+            }
+            for lado in lectura.historia
+        ]
+    }
+
+
 def construir_evento_analisis(
     analisis: Analisis, lectura: Lectura | None = None
 ) -> dict:
@@ -214,6 +250,9 @@ def construir_evento_analisis(
     }
     if lectura is not None:
         evento["payload"]["reading"] = _lectura_mercado_a_dict(lectura)
+        historia = _historia_a_dict(lectura)
+        if historia is not None:
+            evento["payload"]["gap_history"] = historia
     return evento
 
 

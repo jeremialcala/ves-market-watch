@@ -12,6 +12,7 @@ from indicator_engine.adapters.amqp.publisher import (
     construir_evento_senal,
 )
 from indicator_engine.domain.analisis import Analisis, Distribucion
+from indicator_engine.domain.comparativas import Agregado
 from indicator_engine.domain.models import Indicador
 from indicator_engine.domain.reglas import Senal
 
@@ -76,8 +77,15 @@ class InMemoryDistribucionRepository:
     aparece en el resultado — igual que un indicador sin filas en la ventana.
     """
 
-    def __init__(self, precargadas: dict[str, Distribucion] | None = None) -> None:
+    def __init__(
+        self,
+        precargadas: dict[str, Distribucion] | None = None,
+        agregados_precargados: dict[str, dict[int, Agregado]] | None = None,
+    ) -> None:
         self.precargadas: dict[str, Distribucion] = dict(precargadas or {})
+        self.agregados_precargados: dict[str, dict[int, Agregado]] = dict(
+            agregados_precargados or {}
+        )
         self.llamadas: list[tuple[tuple[str, ...], str, datetime]] = []
 
     async def distribuciones(
@@ -89,6 +97,19 @@ class InMemoryDistribucionRepository:
     ) -> dict[str, Distribucion]:
         self.llamadas.append((tuple(nombres), moneda, desde))
         return {n: self.precargadas[n] for n in nombres if n in self.precargadas}
+
+    async def agregados(
+        self,
+        nombres: Sequence[str],
+        moneda: str,
+        ventanas_dias: Sequence[int],
+        ahora: datetime,
+    ) -> dict[str, dict[int, Agregado]]:
+        return {
+            n: self.agregados_precargados[n]
+            for n in nombres
+            if n in self.agregados_precargados
+        }
 
 
 class CollectingEventPublisher:

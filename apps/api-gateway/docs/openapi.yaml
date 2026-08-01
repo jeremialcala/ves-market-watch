@@ -16,7 +16,7 @@ openapi: 3.1.0
 
 info:
   title: VES Market Watch API
-  version: 0.6.0
+  version: 0.7.0
   description: |
     API de solo lectura sobre datos públicos del mercado cambiario venezolano:
     tasa oficial BCV, referencia P2P de Binance, indicadores derivados y señales.
@@ -1097,11 +1097,16 @@ components:
       properties:
         code:
           type: string
-          enum: [confianza_baja, oficial_rancia, brecha, atribucion, medidor_en_banda, regla_cerca]
+          enum: [confianza_baja, oficial_rancia, brecha, atribucion, medidor_en_banda,
+                 regla_cerca, brecha_vs_historia, brecha_extremo, historia_parcial]
           description: |
             `atribucion` solo aparece si la brecha se movió **y** la oficial no
             está rancia: con una tasa vencida, decir quién movió la brecha sería
             afirmar de más.
+
+            `historia_parcial` aparece **en lugar de** `brecha_vs_historia`
+            cuando ninguna ventana alcanza su cobertura: es lo que impide leer
+            una media de 12 días como si fuera de 90.
         data:
           type: object
           additionalProperties:
@@ -1200,7 +1205,71 @@ components:
         summary: { $ref: '#/components/schemas/AnalysisSummary' }
         reading:
           $ref: '#/components/schemas/MarketReading'
+        gap_history:
+          $ref: '#/components/schemas/GapHistory'
       required: [as_of, currency, calc_version, analysis_version, ruleset_version, confidence, official_stale, triggered_by, indicators, rule_proximity, summary]
+
+    GapHistoryReference:
+      type: object
+      additionalProperties: false
+      description: |
+        Una ventana de comparación. `days_covered` es el mecanismo de honestidad:
+        cuando es menor que `days_configured`, la serie NO alcanza la ventana
+        pedida y la UI debe rotular el tramo real («Promedio 12 d de 30») en vez
+        de la etiqueta nominal. Mismo criterio que `scale.samples`/`min_samples`
+        en los medidores.
+      properties:
+        days_configured:
+          type: integer
+          minimum: 1
+          description: La ventana que se pidió.
+        days_covered:
+          type: integer
+          minimum: 0
+          description: Hasta dónde llega la serie DENTRO de esa ventana.
+        samples: { type: integer, minimum: 0 }
+        mean:
+          oneOf: [{ $ref: '#/components/schemas/SignedDecimal' }, { type: 'null' }]
+        max:
+          oneOf: [{ $ref: '#/components/schemas/SignedDecimal' }, { type: 'null' }]
+        min:
+          oneOf: [{ $ref: '#/components/schemas/SignedDecimal' }, { type: 'null' }]
+      required: [days_configured, days_covered, samples, mean, max, min]
+
+    GapHistorySide:
+      type: object
+      additionalProperties: false
+      properties:
+        side:
+          type: string
+          enum: [buy, sell]
+        current:
+          oneOf: [{ $ref: '#/components/schemas/SignedDecimal' }, { type: 'null' }]
+          description: La brecha de hoy, la MISMA cifra que publica el resto del análisis.
+        references:
+          type: array
+          description: Una por ventana configurada, en orden creciente. Se publican todas, completas o no.
+          items: { $ref: '#/components/schemas/GapHistoryReference' }
+      required: [side, current, references]
+
+    GapHistory:
+      type: object
+      additionalProperties: false
+      description: |
+        La brecha de cada lado contra su propia historia (RF-7, ADR-0021).
+        Aditivo y opcional. Viaja en el mismo documento que el análisis por la
+        misma razón que `reading`: la tarjeta cita a la vez el valor de hoy y sus
+        referencias, así que tienen que ser atómicamente coherentes.
+
+        El lado **venta** tiene historia real desde 2025-12 (derivada de un export
+        externo, ver ADR-0013 RF-7); el de **compra**, solo desde que el motor
+        arrancó. Por eso `days_covered` no es decorativo.
+      properties:
+        sides:
+          type: array
+          description: Un elemento por lado con datos; un lado sin serie no aparece.
+          items: { $ref: '#/components/schemas/GapHistorySide' }
+      required: [sides]
 
     Health:
       type: object

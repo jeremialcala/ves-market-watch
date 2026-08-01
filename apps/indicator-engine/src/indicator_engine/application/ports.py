@@ -8,6 +8,7 @@ from decimal import Decimal
 from typing import Protocol, Sequence
 
 from indicator_engine.domain.analisis import Analisis, Distribucion
+from indicator_engine.domain.comparativas import Agregado
 from indicator_engine.domain.models import AnuncioP2P, Indicador
 from indicator_engine.domain.reglas import Senal
 
@@ -95,6 +96,22 @@ class DistribucionRepository(Protocol):
         Un indicador sin filas en la ventana NO aparece en el dict (no se
         fabrica una distribución vacía). Un fallo devuelve `{}`, que degrada al
         respaldo del ruleset de forma visible en el payload.
+        """
+        ...
+
+    async def agregados(
+        self,
+        nombres: Sequence[str],
+        moneda: str,
+        ventanas_dias: Sequence[int],
+        ahora: datetime,
+    ) -> dict[str, dict[int, Agregado]]:
+        """Media, extremos y ALCANCE REAL de cada serie en cada ventana.
+
+        Vive en este puerto y no en `IndicatorRepository` por lo mismo que las
+        distribuciones: es una consulta agregada y cara, con la misma política de
+        cache. Un indicador sin filas no aparece; un fallo devuelve `{}` y la
+        comparativa se omite en vez de publicarse a medias.
         """
         ...
 
