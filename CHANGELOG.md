@@ -39,6 +39,22 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Fixed
 
+- **Tres tarjetas del dashboard llevaban días en blanco por una carrera al montar
+  (2026-08-01).** La sparkline de 24 h, las comparativas de la brecha y el mapa de calor
+  se alimentan de `useHistorialBrecha`, un efecto de MONTAJE. React ejecuta los efectos
+  **de hijo a padre**, así que ese efecto disparaba antes que el del `TokenBridge` que lo
+  envuelve: `obtenerToken()` encontraba el proveedor sin registrar y **lanzaba**. El
+  `.catch(() => null)` del hook se lo tragaba y, con `deps: []`, no se reintentaba nunca.
+  - **Sin un solo error en consola y sin una sola petición en el log del gateway**: 874
+    líneas de log con 72 `market/depth` y cero `indicators/history`. Lo que delató la
+    causa fue que la app decía «No se pudo cargar» y no «sin serie» — dos mensajes
+    distintos a propósito, y esa distinción es la que separó «falló» de «no hay datos».
+  - Arreglado en el puente: `obtenerToken` **espera** al registro (con tope de 10 s) en
+    vez de fallar. Cubre toda la clase, no solo estas tres tarjetas: cualquier petición
+    lanzada al montar caía en lo mismo.
+  - Verificado en vivo: de 0 a 12 peticiones a `/indicators/history`, todas 200, y las
+    tres tarjetas con dato.
+
 - **`banks[].volume` estaba vacío en 31.461 filas del histórico, con el dato en el
   archivo (2026-08-01).** Los exports desde julio publican el volumen por banco en
   `InforPerBank`, un mapa **anidado** cuyo NOMBRE no contiene ninguna palabra de

@@ -7,6 +7,29 @@ timestamp: 2026-08-01T12:00:00Z
 
 # Log
 
+## 2026-08-01 (noche) — Tres tarjetas en blanco por el ORDEN de los efectos de React
+- La sparkline de 24 h, las comparativas de la brecha y el mapa de calor llevaban días
+  vacíos. Causa: React ejecuta los efectos **de hijo a padre**, así que el efecto de
+  montaje de `useHistorialBrecha` disparaba ANTES que el del `TokenBridge` que lo
+  envuelve; `obtenerToken()` encontraba el proveedor sin registrar y lanzaba. El
+  `.catch(() => null)` lo silenciaba y `deps: []` impedía cualquier reintento.
+- **Diagnóstico sin un solo error visible.** El log del gateway tenía 72 `market/depth`
+  y **cero** `indicators/history`: la petición ni salía. Lo que cerró el caso fue que la
+  app pintaba «No se pudo cargar la serie» y no «sin serie horaria» — dos cadenas
+  distintas a propósito, y esa distinción separó «falló» de «no hay datos». Sin ella,
+  habría buscado el fallo en la base.
+- Arreglado en el puente y no en el hook: `obtenerToken` espera al registro (tope 10 s)
+  en vez de fallar. Cubre la clase entera — cualquier petición lanzada al montar caía
+  en lo mismo.
+- **Al arreglarlo aparece el problema de fondo**: «Promedio 30 días» y «Máximo 90 días»
+  se calculan sobre los 12 días que hay en `indicators` (la serie arranca el 2026-07-20)
+  y se ETIQUETAN como 30 y 90. Los números son reales; las ventanas, no.
+- **Y el backfill obvio no sirve, medido**: la brecha calculada desde
+  `historical_market_snapshots` está 1,08 pp POR DEBAJO de la que publica el motor
+  (279 horas de solape, rango 0,36–3,28). `base_weighted_avg` es media ponderada del top
+  of book; el motor usa la mediana del lado buy. Empalmarlas metería un escalón como el
+  que evitamos en las tasas del BCV.
+
 ## 2026-08-01 (noche) — Histórico P2P al día, y un defecto que estaba escondido
 - Cargado el export del 2026-08-01: 28.823 filas, de las que **solo 2.951 eran nuevas**.
   La tabla queda en 32.525 filas (2025-12-02 → 2026-08-01), 243 días **sin huecos > 2
