@@ -17,6 +17,34 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Fixed
+
+- **Paleta de datos del `web-spa`: los acentos de marca dejan de codificar dato
+  (2026-07-31)** — cierra la regresión de accesibilidad que dejó el rediseño:
+  - **Par categórico validado por tema**: claro `#10846e` ↔ `#cf4946`
+    (**ΔE 8,1** deutan, sobre el objetivo de 8) y oscuro `#8ad6cc` ↔ `#f97171`
+    (ΔE 13,2). Venía de **ΔE 5,9** en claro — bajo el piso de 6, donde ni el
+    rótulo visible lo excusa: un lector protanope no distinguía compra de venta.
+    El claro se movió **4,1 OKLab** respecto de la marca, lo mínimo para cruzar.
+  - **«Sin lado» pasa a tinta neutra**: no es una tercera categoría, es la
+    ausencia de lado. El salvia de marca leía gris igualmente (croma 0,046) y
+    encima competía con el teal.
+  - **El mapa de calor pasa a rampa secuencial de un tono** por tema
+    (`--calor-1` … `--calor-5`). La anterior estaba escrita a fuego con los
+    valores del tema oscuro: no era monótona en luminosidad —así no se lee una
+    magnitud— y en claro su extremo bajo quedaba a **1,67:1** sobre blanco, es
+    decir, invisible. La leyenda ahora habla de intensidad, no de luminosidad,
+    porque en claro sube oscureciendo y en oscuro aclarando.
+  - Todo medido con el validador del skill dataviz, no a ojo; y el canario
+    `tests/unit/paleta.test.ts` **fija los valores medidos**: si alguien cambia
+    un slot, el test falla y pide volver a pasar el validador. Lo que se rompió
+    esta vez fue exactamente eso — el color cambió y la palabra «validada» se
+    quedó en los documentos sin que nada fallara.
+  - 162 → **169 tests**.
+  - Queda abierto, como asunto de diseño: subir el par del tema oscuro a la
+    banda de luminosidad y al piso de croma (hoy pasa CVD con holgura pero queda
+    fuera en esas dos, que son de estilo de paleta, no de lectura).
+
 ### Added
 
 - **Shell responsive del rediseño (2026-07-31)** — el diseño declara la tira de

@@ -36,49 +36,39 @@ del proyecto de diseño `Rediseño dashboard Higerotech`.
   del sistema (el diseño importado resuelve todo con estilos en línea porque es
   un archivo de la herramienta; aquí se traduce a clases).
 
-## Paleta de series tras el rediseño — DEFECTO ABIERTO
-Hasta el 2026-07-30 las series usaban una paleta **validada** con el validador
-del skill dataviz (azul `#2a78d6` compra / naranja `#eb6834` venta). El rediseño
-las mapeó a los acentos de marca, y al re-pasar el validador (2026-07-31) el
-resultado es:
+## Paleta de datos (resuelta 2026-07-31)
+Los acentos de marca visten el **cromo**; las marcas de **dato** llevan slots
+propios, validados con el validador del skill dataviz. Mezclarlos fue el error
+del rediseño: en tema claro el par compra/venta daba ΔE 5,9 bajo protanopia,
+por debajo del piso de 6 donde ni el rótulo visible lo excusa.
 
-| Comprobación | Oscuro (`--dark-3` #2D3134) | Claro (`--dark-3` #FFFFFF) |
-|---|---|---|
-| Separación CVD, par compra/venta | ΔE **13,2** ✔ | ΔE **5,9** ✘ (protan) |
-| Separación CVD, trío con salvia | ΔE **9,2** ✔ | ΔE **5,2** ✘ |
-| Banda de luminosidad | ✘ (los tres, demasiado claros) | ✔ |
-| Piso de croma | ✘ (teal 0,077 y salvia 0,034 leen gris) | ✘ |
-| Contraste vs. superficie | ✔ (≥ 3:1) | ✔ (≥ 3:1) |
+**Categórico** (compra ↔ venta), medido contra la superficie de tarjeta:
 
-En **oscuro** el par que de verdad codifica lado (compra ↔ venta) supera el
-objetivo de ΔE ≥ 8 con holgura; los dos fallos son de estilo de paleta, no de
-lectura. En **claro** el par cae **por debajo del piso de 6**: ahí la regla dice
-que ya no basta con la codificación secundaria que la UI sí tiene (cada lado va
-rotulado y con su cifra en tinta). **Un lector protanope no distingue compra de
-venta en tema claro.**
+| Tema | Compra | Venta | CVD peor caso | Resto |
+|---|---|---|---|---|
+| claro (`#FFFFFF`) | `#10846e` | `#cf4946` | **ΔE 8,1** (deutan) ✔ | banda, croma y contraste ✔ |
+| oscuro (`#2D3134`) | `#8ad6cc` | `#f97171` | **ΔE 13,2** (deutan) ✔ | contraste ✔; banda y croma quedan fuera |
 
-No se repinta aquí porque elegir pasos nuevos de las rampas de marca es decisión
-de diseño, no de implementación. Queda en «Pendiente» con el remedio concreto.
+El claro se movió lo mínimo: 4,1 de desvío OKLab respecto de los acentos de
+marca — imperceptible al lado, suficiente para cruzar el umbral. El oscuro se
+deja en los acentos: separa de sobra y es el aspecto aprobado; sus avisos de
+banda y croma son de estilo de paleta, no de lectura.
 
-## Shell responsive (2026-07-31)
-El diseño declara la tira de estado dentro de `isWide`: **en compacto no
-existe**, y su información se reparte en vez de perderse. La escalera, medida en
-el navegador (las media queries no corren en jsdom):
+**«Sin lado» no es una tercera categoría**, es la AUSENCIA de lado (tasa
+oficial, microestructura): va en tinta neutra. Un tercer tono competía con el
+par y el salvia de marca leía gris igualmente (croma 0,046).
 
-| Ancho | Barra | Tira de estado | Vista actual |
-|---|---|---|---|
-| ≥ 1080 px | ancha, 1 fila | completa (estado · suscripciones · último evento · cuota · calc) | — |
-| 760–1079 px | ancha, 2 filas | se repliegan suscripciones y cuota | — |
-| 480–759 px | compacta | ausente → punto + antigüedad en la barra; detalle completo en la línea meta del menú | visible |
-| < 480 px | compacta | ídem | retirada |
-| < 360 px | compacta, título con elipsis | ídem | retirada |
+**Rampa del mapa de calor**: magnitud ⇒ **secuencial de un solo tono**, con
+luminosidad monótona y el extremo cercano a la superficie por encima de 2:1.
+Antes era salvia → teal → coral con los valores del tema oscuro escritos a
+fuego: no monótona (así no se lee una magnitud) y en claro su extremo bajo
+quedaba a 1,67:1 sobre blanco, o sea invisible. Ahora cinco pasos por tema
+(`--calor-1` … `--calor-5`), y la leyenda habla de intensidad porque en claro
+sube oscureciendo y en oscuro aclarando.
 
-Lo que **nunca** se repliega es el estado del stream: en ancho va como `Tag`, en
-compacto como punto + antigüedad, y en ambos casos es región viva (`role=status`,
-`aria-live="polite"`) con el estado en texto accesible — el color del punto no
-codifica solo. La etiqueta de vista lleva `flex: none` a propósito: sin él, flex
-la estruja a 0 px mucho antes de su punto de corte y el texto queda partido a
-media palabra; o entra entera, o se retira.
+El canario `tests/unit/paleta.test.ts` fija estos valores: si alguien cambia un
+slot, el test falla y pide volver a pasar el validador. Lo que se rompió esta
+vez fue precisamente que el color cambió y la palabra «validada» se quedó.
 
 ## Bloques sin fuente de datos (regla RF-5 aplicada al rediseño)
 El diseño pide secciones que la plataforma **no calcula**: régimen de mercado,
@@ -144,7 +134,7 @@ la descomposición reparte el precio P2P con la tasa oficial vigente y el VWAP.
 - Lockfile commiteado (SCA en CI — Gate 2); cero secretos en el bundle.
 
 ## Verificación
-- **162 tests** (unit / component / contract) con **88,9 % de ramas** (umbral
+- **169 tests** (unit / component / contract) con **88,9 % de ramas** (umbral
   Gate 2: 80 %): decimal exhaustivo (incl. la aritmética `BigInt` y el borde de
   medianoche del día operativo VET), reducers, políticas WSS, StreamClient
   contra servidor WS mockeado, endpoints contra MSW, paneles con fixtures
@@ -165,7 +155,7 @@ la descomposición reparte el precio P2P con la tasa oficial vigente y el VWAP.
   bundle pasó de 500 kB al entrar el rediseño.
 - Retirar los bloques `demo · sin fuente` a medida que el `indicator-engine`
   calcule lo que representan (régimen, percentiles del ruleset, escenarios).
-- **Paleta de series en tema claro** (defecto abierto, ver arriba): elegir pasos
-  de las rampas de marca que pasen la separación CVD (objetivo ΔE ≥ 8), o vestir
-  las series con textura además del color. Reservar los acentos actuales para el
-  cromo de la interfaz, donde no codifican dato.
+- Subir el par categórico del **tema oscuro** a la banda de luminosidad y al
+  piso de croma del validador (hoy pasa CVD con holgura pero queda fuera en esas
+  dos, que son de estilo). Implica oscurecer los acentos en gráfico: es cambio
+  de aspecto, decisión de diseño.

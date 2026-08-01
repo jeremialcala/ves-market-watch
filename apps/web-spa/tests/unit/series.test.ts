@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   areaPolilinea,
   colorCalor,
+  PASOS_CALOR,
   extremos,
   parrillaCalor,
   porcentajeDeMaximo,
@@ -96,14 +97,22 @@ describe("parrillaCalor", () => {
 });
 
 describe("colorCalor", () => {
-  it("recorre salvia, teal y coral según el valor dentro del rango", () => {
-    expect(colorCalor("12", 12, 20)).toContain("158 188 182"); // salvia
-    expect(colorCalor("16", 12, 20)).toContain("138 214 204"); // teal
-    expect(colorCalor("20", 12, 20)).toContain("249 113 113"); // coral
+  // La rampa es secuencial de un tono y vive en CSS (una por tema): aquí se
+  // comprueba el reparto en escalones, no el color — el color lo valida el
+  // validador del skill dataviz, no un test de igualdad de cadenas.
+  it("reparte el rango en los escalones de la rampa, de menor a mayor", () => {
+    expect(colorCalor("12", 12, 20)).toBe("var(--calor-1)");
+    expect(colorCalor("16", 12, 20)).toBe("var(--calor-3)");
+    expect(colorCalor("20", 12, 20)).toBe(`var(--calor-${PASOS_CALOR})`);
+  });
+
+  it("acota fuera de rango en vez de salirse de la rampa", () => {
+    expect(colorCalor("5", 12, 20)).toBe("var(--calor-1)");
+    expect(colorCalor("99", 12, 20)).toBe(`var(--calor-${PASOS_CALOR})`);
   });
 
   it("un rango degenerado no revienta", () => {
-    expect(colorCalor("12", 12, 12)).toContain("rgb(");
+    expect(colorCalor("12", 12, 12)).toMatch(/^var\(--calor-\d\)$/);
   });
 });
 

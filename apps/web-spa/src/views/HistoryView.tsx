@@ -121,7 +121,7 @@ function Grafico({
         <Line
           type="monotone"
           dataKey="valor"
-          stroke="var(--teal)"
+          stroke="var(--series-buy)"
           strokeWidth={2.4}
           dot={false}
           activeDot={{ r: 4 }}

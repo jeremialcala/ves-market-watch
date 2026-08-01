@@ -50,7 +50,11 @@ export function GapDecomposition() {
   const maximo90 = extremos(diario)?.max ?? null;
 
   const filas: { etiqueta: Clave; valor: string | null; color: string }[] = [
-    { etiqueta: "descomposicion.hoy", valor: gapPct ?? null, color: "var(--teal)" },
+    {
+      etiqueta: "descomposicion.hoy",
+      valor: gapPct ?? null,
+      color: "var(--series-buy)",
+    },
     { etiqueta: "descomposicion.promedio7", valor: media7, color: "var(--teal-dim)" },
     {
       etiqueta: "descomposicion.promedio30",
@@ -60,7 +64,7 @@ export function GapDecomposition() {
     {
       etiqueta: "descomposicion.maximo90",
       valor: maximo90,
-      color: "var(--coral)",
+      color: "var(--series-sell)",
     },
   ];
   const referencia = filas

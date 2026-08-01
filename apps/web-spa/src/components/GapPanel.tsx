@@ -106,7 +106,7 @@ export function GapPanel() {
               <polyline
                 points={linea}
                 fill="none"
-                stroke="var(--teal)"
+                stroke="var(--series-buy)"
                 strokeWidth="2.2"
                 strokeLinejoin="round"
                 strokeLinecap="round"

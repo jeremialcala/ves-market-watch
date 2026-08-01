@@ -7,6 +7,26 @@ timestamp: 2026-07-31T00:00:00Z
 
 # Log
 
+## 2026-07-31 — La paleta de datos deja de ser la paleta de marca
+- Arreglado el defecto que dejó el rediseño: en tema claro el par compra/venta
+  daba ΔE 5,9 bajo protanopia. Ahora `#10846e` ↔ `#cf4946` (ΔE 8,1), a solo 4,1
+  OKLab de los acentos de marca — lo mínimo para cruzar el piso.
+- La regla que queda: **el acento de marca viste el cromo; el dato lleva slot
+  propio**. Mezclarlos fue el origen del problema.
+- «Sin lado» pasa a tinta neutra: es la ausencia de lado, no una tercera
+  categoría (y el salvia leía gris igual, croma 0,046).
+- El mapa de calor iba con los valores del tema oscuro escritos a fuego: no era
+  monótono en luminosidad y en claro quedaba a 1,67:1 sobre blanco, invisible.
+  Ahora rampa secuencial de un tono por tema, y la leyenda habla de INTENSIDAD
+  porque en claro sube oscureciendo y en oscuro aclarando.
+- Dos tropiezos propios que vale anotar: (1) mi filtro de búsqueda comparaba el
+  estado de contraste con `true` cuando el validador devuelve la cadena
+  `"pass"` — descartaba todo y me hizo creer que no existía solución; (2) el
+  paso de tono de 2° saltaba justo el candidato bueno. El validador tenía razón
+  desde el principio; el que fallaba era mi arnés.
+- Canario nuevo (`tests/unit/paleta.test.ts`) que fija los valores medidos: la
+  frase «validada» ya no puede caducar en silencio.
+
 ## 2026-07-31 — El shell se reparte en vez de encogerse
 - La tira de estado se pintaba en todos los anchos y el diseño la declara dentro
   de `isWide`: por eso se partía en dos filas en pantallas medianas. Ahora en

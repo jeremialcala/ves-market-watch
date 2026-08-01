@@ -137,25 +137,26 @@ export function parrillaCalor(
   return filas;
 }
 
+/** Escalones de la rampa del mapa de calor (`--calor-1` … `--calor-5`). */
+export const PASOS_CALOR = 5;
+
 /**
- * Color de una celda entre `min` y `max`: salvia (convergido) → teal → coral
- * (brecha amplia). Es la rampa del diseño; la escala se escribe siempre al pie
- * porque un mapa de calor sin leyenda no se puede leer.
+ * Paso de la rampa que corresponde a `valor` dentro de [min, max].
+ *
+ * La rampa es **secuencial de un solo tono** con luminosidad monótona: el mapa
+ * codifica MAGNITUD, y para eso el skill dataviz manda un tono light→dark, no
+ * un recorrido de tres colores. La versión anterior iba salvia → teal → coral
+ * con los valores del tema oscuro escritos a fuego: no era monótona en
+ * luminosidad (así no se lee una magnitud) y en tema claro su extremo bajo
+ * quedaba a 1,67:1 sobre blanco, es decir, invisible.
+ *
+ * Devuelve una variable CSS, no un color: así cada tema usa su rampa validada.
  */
-export function colorCalor(
-  valor: string,
-  min: number,
-  max: number,
-): string {
+export function colorCalor(valor: string, min: number, max: number): string {
   const span = max - min || 1;
   const t = Math.max(0, Math.min(1, (toChartNumber(valor) - min) / span));
-  if (t < 0.4) {
-    return `rgb(158 188 182 / ${((0.14 + t * 0.5) * 100).toFixed(0)}%)`;
-  }
-  if (t < 0.7) {
-    return `rgb(138 214 204 / ${((0.25 + t * 0.55) * 100).toFixed(0)}%)`;
-  }
-  return `rgb(249 113 113 / ${((0.3 + t * 0.55) * 100).toFixed(0)}%)`;
+  const paso = Math.min(PASOS_CALOR, Math.floor(t * PASOS_CALOR) + 1);
+  return `var(--calor-${paso})`;
 }
 
 /** Ancho relativo (0–100 %) de `valor` dentro de [0, max], para las barras. */

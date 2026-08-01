@@ -78,7 +78,7 @@ Estado observado en el repo (conteo de funciones `test_`):
 | `indicator-engine` | Fases 1, 2 y señales implementadas (RF-4/RF-5, ADR-0015) | **77** (unit, contract, integration, e2e) | Confirmar cobertura de ramas ≥ 80 %; recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) |
 | `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) | **39** (unit + integración contra TimescaleDB real) | Confirmar cobertura de ramas ≥ 80 % |
 | `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **90** (unit incl. CORS y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura ≥ 80 % |
-| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **162** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo y shell responsive) — **88,9 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
+| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **169** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, shell responsive y canario de paleta) — **88,9 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
 
 > El plan cubre tanto la **consolidación** de lo existente como la **especificación** de los casos
 > que deben acompañar el código pendiente, para que se escriban junto con la implementación (no
@@ -313,12 +313,13 @@ cierre de la columna «Verificación fase 04-testing».
 - **Secret store concreto:** definido para fase 05; los tests de rotación (T6) se afinan entonces.
 - **Pipeline CI aún no presente en el repo:** los gates T6/T8 y la matriz de la sección 11 son
   requisito a materializar como parte de Gate 2.
-- **Paleta de series del `web-spa` en tema claro (2026-07-31):** tras el rediseño
-  (ADR-0018) la separación CVD del par compra/venta cae a **ΔE 5,9** (protan),
-  por debajo del piso de 6 del validador de dataviz; en oscuro pasa con ΔE 13,2.
-  Es un defecto de accesibilidad abierto, con remedio anotado en el `design.md`
-  del servicio. La verificación de paleta debe correr **con el validador**, no a
-  ojo, cada vez que cambien los colores de serie.
+- ~~Paleta de series del `web-spa` en tema claro~~ **Resuelto (2026-07-31):**
+  las marcas de dato tienen slots propios validados (claro ΔE 8,1 · oscuro
+  ΔE 13,2) y el mapa de calor pasa a rampa secuencial de un tono por tema. La
+  verificación corre **con el validador**, no a ojo, y `tests/unit/paleta.test.ts`
+  fija los valores medidos para que un cambio de color no pase en silencio.
+  Sigue abierto, como asunto de diseño: subir el par del tema oscuro a la banda
+  de luminosidad y al piso de croma (hoy pasa CVD pero queda fuera en esas dos).
 
 ---
 

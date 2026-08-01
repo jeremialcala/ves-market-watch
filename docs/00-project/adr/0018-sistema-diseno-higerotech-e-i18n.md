@@ -92,12 +92,14 @@ El rediseño trae tres cosas que hay que decidir, no solo copiar:
   pendiente (ya estaba anotado en el design del SPA).
 - (−) `lib/decimal` gana un parámetro de idioma: cualquier formateo nuevo tiene
   que pasarlo, o el número saldrá con separadores españoles en inglés.
-- (−) **Regresión de accesibilidad medida, no supuesta**: mapear las series a los
-  acentos de marca rompe la separación CVD en **tema claro** — el par compra/venta
-  da ΔE 5,9 (protan), bajo el piso de 6 del validador de dataviz, así que ni
-  siquiera el rótulo visible lo excusa. En oscuro el mismo par pasa con ΔE 13,2.
-  Se documenta como defecto abierto en el `design.md` del servicio: elegir pasos
-  nuevos de las rampas de marca es decisión de diseño, no de implementación.
+- (−) **Regresión de accesibilidad medida, no supuesta** — *saldada el
+  2026-07-31*: mapear las series a los acentos de marca rompió la separación CVD
+  en tema claro (ΔE 5,9 protan, bajo el piso de 6). La lección quedó: **los
+  acentos de marca visten el cromo, las marcas de dato llevan slots propios**.
+  Desde entonces el dato tiene sus tokens (`--series-*`, `--calor-*`) validados
+  por tema, y un canario de test fija los valores medidos. Sigue abierto, como
+  asunto de diseño, subir el par del tema oscuro a la banda de luminosidad y al
+  piso de croma.
 
 ## Verificación
 - **156 tests** vitest (100 → 156) con **88,6 % de ramas** (umbral Gate 2: 80 %):

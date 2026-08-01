@@ -99,7 +99,7 @@ export const ES = {
   // -- mapa de calor ---------------------------------------------------------
   "calor.titulo": "Mapa de calor de la brecha",
   "calor.bajada": "últimos 14 días · bucket 1 h · VET",
-  "calor.leyenda": "salvia = mercado convergido · coral = brecha amplia",
+  "calor.leyenda": "más tenue = brecha menor · más intenso = brecha mayor",
   "calor.celda": "{dia} {hora}:00 — {valor}",
   "calor.sinDato": "{dia} {hora}:00 — sin dato",
 
@@ -363,7 +363,7 @@ export const EN: Record<Clave, string> = {
 
   "calor.titulo": "Gap heatmap",
   "calor.bajada": "last 14 days · hourly bucket · VET",
-  "calor.leyenda": "sage = converged market · coral = wide gap",
+  "calor.leyenda": "fainter = narrower gap · stronger = wider gap",
   "calor.celda": "{dia} {hora}:00 — {valor}",
   "calor.sinDato": "{dia} {hora}:00 — no data",
 

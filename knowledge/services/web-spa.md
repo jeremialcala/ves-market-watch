@@ -59,15 +59,19 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   variantes y lleva el estado en texto accesible: el color del punto no codifica
   solo. Escalera medida en navegador de 1280 a 320 px, sin desbordes ni solapes.
 
-## Pendiente de accesibilidad (2026-07-31)
-- Al mapear las series a los acentos de marca, la **separación CVD en tema claro
-  cae a ΔE 5,9** en el par compra/venta (protan) — por debajo del piso de 6, así
-  que el rótulo visible ya no lo excusa. En oscuro el mismo par da ΔE 13,2 y pasa.
-  Medido con el validador del skill dataviz; detalle y remedio en el `design.md`
-  del servicio.
+## Paleta de datos (2026-07-31)
+- Los acentos de marca visten el cromo; las marcas de dato tienen **slots
+  propios validados**: claro `#10846e` ↔ `#cf4946` (ΔE 8,1 deutan), oscuro
+  `#8ad6cc` ↔ `#f97171` (ΔE 13,2). El claro se movió 4,1 OKLab respecto de la
+  marca — lo mínimo para cruzar el piso de 6 donde el rótulo ya no excusa.
+- «Sin lado» es tinta neutra, no un tercer tono: es la ausencia de lado.
+- El mapa de calor pasa a **rampa secuencial de un tono** por tema: la anterior
+  no era monótona en luminosidad y en claro era invisible (1,67:1 sobre blanco).
+- `tests/unit/paleta.test.ts` fija los valores medidos: cambiarlos rompe el test
+  y obliga a volver a pasar el validador.
 
 ## Verificación
-- **162 tests** (unit/component/contract con MSW y WS mock) — **88,9 % de ramas**
+- **169 tests** (unit/component/contract con MSW y WS mock) — **88,9 % de ramas**
   (umbral Gate 2: 80 %). E2E en vivo (`npm run test:e2e:live`) con client M2M:
   token real → REST + WSS; skip elegante sin credenciales.
 - La parrilla intradía se eyebalizó en claro y oscuro con una previsualización

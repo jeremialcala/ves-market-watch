@@ -14,15 +14,54 @@
 
 @import url("./ds/styles.css");
 
+/* -- colores de DATO (no de interfaz) --------------------------------------
+ * Los acentos de marca visten el cromo; las marcas de dato llevan slots
+ * propios, validados con el validador del skill dataviz (`--mode light|dark`
+ * contra la superficie de tarjeta). Mezclarlos fue el error del rediseño: en
+ * tema claro el par compra/venta daba ΔE 5,9 bajo protanopia — por debajo del
+ * piso de 6, donde ni el rótulo visible lo excusa.
+ *
+ * Categórico (compra ↔ venta), medido:
+ *   claro  #10846e ↔ #cf4946 → ΔE 8,1 (deutan) · croma, banda y contraste ok
+ *   oscuro #8ad6cc ↔ #f97171 → ΔE 13,2 (deutan) · contraste ok
+ * El oscuro se deja en los acentos de marca: separa de sobra y es el aspecto
+ * aprobado. Sus avisos de banda y croma quedan anotados en el design.md.
+ *
+ * «Sin lado» NO es una tercera categoría: es la AUSENCIA de lado (tasa oficial,
+ * microestructura). Por eso va en tinta neutra en vez de un tercer tono — el
+ * salvia de marca leía gris igualmente (croma 0,046) y encima competía con el
+ * teal. Cada panel que lo usa lleva etiqueta y valor visibles.
+ */
 :root {
-  /* Puente con el vocabulario de gráficos que ya usaban los componentes. */
-  --series-buy: var(--teal);
-  --series-sell: var(--coral);
-  --series-aqua: var(--sage);
+  --series-buy: #8ad6cc;
+  --series-sell: #f97171;
+  --series-aqua: var(--text-muted);
+
+  /* Rampa secuencial del mapa de calor: UN tono, luminosidad monótona
+     (magnitud ⇒ secuencial, dice el skill). Índice 1 = brecha menor. */
+  --calor-1: #b54a49;
+  --calor-2: #d06260;
+  --calor-3: #ec7b77;
+  --calor-4: #fe9b96;
+  --calor-5: #fec3bf;
+
+  /* Dirección de señal: es ESTADO, no serie — siempre con su texto al lado. */
   --dir-alcista: var(--teal);
   --dir-bajista: var(--coral);
   --dir-neutral: var(--text-dim);
   --grid-chart: var(--border);
+}
+
+[data-theme="light"] {
+  --series-buy: #10846e;
+  --series-sell: #cf4946;
+  --series-aqua: var(--text-muted);
+
+  --calor-1: #fe8b86;
+  --calor-2: #db6c69;
+  --calor-3: #b84d4c;
+  --calor-4: #972e30;
+  --calor-5: #760715;
 }
 
 @keyframes vmw-pulso {
@@ -653,9 +692,11 @@ body {
   border-radius: var(--radius-pill);
   background: linear-gradient(
     90deg,
-    var(--sage-tint-strong),
-    var(--teal),
-    var(--coral)
+    var(--calor-1),
+    var(--calor-2),
+    var(--calor-3),
+    var(--calor-4),
+    var(--calor-5)
   );
 }
 
