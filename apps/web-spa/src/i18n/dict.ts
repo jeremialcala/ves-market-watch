@@ -301,6 +301,33 @@ export const ES = {
   "descomposicion.promedio7": "Promedio 7 días",
   "descomposicion.promedio30": "Promedio 30 días",
   "descomposicion.maximo90": "Máximo 90 días",
+  // Lado del mercado en la comparativa.
+  "descomposicion.ladoCompra": "Compra",
+  "descomposicion.ladoVenta": "Venta",
+  // Etiqueta de una ventana. Cuando la serie no la alcanza se rotula el tramo
+  // REAL: es lo que impide llamar «30 días» a una media de 12.
+  "descomposicion.media": "Promedio {dias} días",
+  "descomposicion.mediaParcial": "Promedio {cubiertos} d (de {dias})",
+  "descomposicion.maximo": "Máximo {dias} días",
+  "descomposicion.maximoParcial": "Máximo {cubiertos} d (de {dias})",
+  "descomposicion.sinHistoria": "Sin historia todavía para comparar.",
+  "descomposicion.tramoParcial":
+    "La serie de este lado empieza hace {cubiertos} días, así que las ventanas más largas se rotulan con su tramo real.",
+
+  // Interpretación (claims del motor). El SPA solo redacta.
+  "brechaHist.porEncima":
+    "La brecha de {lado} está {delta} puntos por encima de su promedio de {dias} días.",
+  "brechaHist.porDebajo":
+    "La brecha de {lado} está {delta} puntos por debajo de su promedio de {dias} días.",
+  "brechaHist.enLinea":
+    "La brecha de {lado} está donde suele estar en los últimos {dias} días.",
+  "brechaHist.maximo":
+    "Es el valor más alto de {lado} en {dias} días.",
+  "brechaHist.minimo":
+    "Es el valor más bajo de {lado} en {dias} días.",
+  "brechaHist.parcial":
+    "De {lado} solo hay {dias} días de historia, todavía no bastan para comparar contra {ventana}.",
+
 
   // -- mapa de calor ---------------------------------------------------------
   "calor.titulo": "Mapa de calor de la brecha",
@@ -738,6 +765,30 @@ export const EN: Record<Clave, string> = {
   "descomposicion.promedio7": "7-day average",
   "descomposicion.promedio30": "30-day average",
   "descomposicion.maximo90": "90-day maximum",
+  // Market side in the comparison.
+  "descomposicion.ladoCompra": "Buy",
+  "descomposicion.ladoVenta": "Sell",
+  "descomposicion.media": "{dias}-day average",
+  "descomposicion.mediaParcial": "{cubiertos}-day average (of {dias})",
+  "descomposicion.maximo": "{dias}-day maximum",
+  "descomposicion.maximoParcial": "{cubiertos}-day maximum (of {dias})",
+  "descomposicion.sinHistoria": "No history to compare against yet.",
+  "descomposicion.tramoParcial":
+    "This side's series starts {cubiertos} days ago, so longer windows are labelled with their real span.",
+
+  "brechaHist.porEncima":
+    "The {lado} gap is {delta} points above its {dias}-day average.",
+  "brechaHist.porDebajo":
+    "The {lado} gap is {delta} points below its {dias}-day average.",
+  "brechaHist.enLinea":
+    "The {lado} gap is where it usually sits over the last {dias} days.",
+  "brechaHist.maximo":
+    "It is the highest {lado} value in {dias} days.",
+  "brechaHist.minimo":
+    "It is the lowest {lado} value in {dias} days.",
+  "brechaHist.parcial":
+    "There are only {dias} days of {lado} history, not enough yet to compare against {ventana}.",
+
 
   "calor.titulo": "Gap heatmap",
   "calor.bajada": "last 14 days · hourly bucket · VET",

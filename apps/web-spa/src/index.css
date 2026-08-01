@@ -988,3 +988,94 @@ body {
 .vmw-regimen__chip[data-tono="coral"] .vmw-regimen__chipPunto {
   background: var(--coral);
 }
+
+/* --- Descomposición de la brecha (RF-12, ADR-0021) ---------------------- */
+
+.vmw-descomp__cifras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  justify-content: space-between;
+  font-size: var(--fs-meta);
+  color: var(--text-muted);
+}
+
+.vmw-descomp__barra {
+  display: flex;
+  height: 52px;
+  margin-top: 14px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.vmw-descomp__pierna,
+.vmw-descomp__hueco {
+  display: flex;
+  align-items: center;
+  font-size: var(--fs-meta);
+  /* Sin `min-width: 0` el texto de una pierna estrecha desborda la barra y se
+     come a la otra. */
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.vmw-descomp__pierna {
+  background: var(--teal-tint-strong);
+  color: var(--teal);
+  padding-left: 16px;
+}
+
+.vmw-descomp__hueco {
+  background: var(--coral-tint-strong);
+  color: var(--coral);
+  justify-content: center;
+}
+
+.vmw-descomp__interpretacion {
+  margin-top: 12px;
+  color: var(--text);
+}
+
+/* Los dos lados se apilan en móvil y conviven en columnas cuando cabe. */
+.vmw-descomp__lados {
+  display: grid;
+  gap: 22px;
+  margin-top: 18px;
+}
+
+@media (min-width: 620px) {
+  .vmw-descomp__lados {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.vmw-descomp__lado {
+  font-size: var(--fs-body-xs);
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.vmw-descomp__filas {
+  display: grid;
+  gap: 14px;
+}
+
+.vmw-descomp__fila {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--fs-body-xs);
+}
+
+.vmw-descomp__valor {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.vmw-descomp__parcial {
+  margin-top: 12px;
+  font-size: var(--fs-meta);
+}

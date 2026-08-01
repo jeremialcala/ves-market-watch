@@ -19,7 +19,6 @@ import {
   it,
 } from "vitest";
 
-import { GapDecomposition } from "../../src/components/GapDecomposition";
 import { GapHeatmap } from "../../src/components/GapHeatmap";
 import { MarketRegimeCard } from "../../src/components/MarketRegimeCard";
 import { config } from "../../src/config";
@@ -139,53 +138,8 @@ describe("GapHeatmap", () => {
   });
 });
 
-describe("GapDecomposition", () => {
-  it("reparte el precio P2P entre pierna oficial y brecha, y compara con la historia", async () => {
-    marketStore.resync({
-      indicadores: FIXTURE_INDICADORES,
-      tasas: {
-        USD: {
-          currency: "USD",
-          rate: "417.03",
-          value_date: "2026-07-30",
-          captured_at: new Date().toISOString(),
-          stale: false,
-        },
-      },
-      p2p: {
-        buy: {
-          side: "buy",
-          best_price: "850.00",
-          median: "850.00",
-          vwap: "834.06",
-          volume: "1000",
-          as_of: new Date().toISOString(),
-          confidence: "normal",
-        },
-      },
-    });
-    conHistorial(serieHoraria(48));
-    render(<GapDecomposition />);
-
-    // 417,03 / 834,06 = 50 % exacto para la pierna oficial.
-    const barras = document.querySelectorAll<HTMLElement>(
-      ".vmw-tarjeta div[style*='width: 50']",
-    );
-    expect(barras.length).toBeGreaterThan(0);
-    expect(screen.getByText("pierna oficial")).toBeTruthy();
-
-    await waitFor(() =>
-      expect(screen.getByText("Promedio 7 días")).toBeTruthy(),
-    );
-    expect(screen.getByText("Máximo 90 días")).toBeTruthy();
-  });
-
-  it("sin tasa oficial ni VWAP no reparte nada y lo explica", () => {
-    conHistorial([]);
-    render(<GapDecomposition />);
-    expect(screen.getByText(/hacen falta la tasa oficial/i)).toBeTruthy();
-  });
-});
+// La descomposición de la brecha tiene su propia suite:
+// `tests/component/descomposicion.test.tsx`.
 
 describe("AnalysisView", () => {
   it("sella escenarios y riesgos, y calcula la presión de liquidez real", () => {

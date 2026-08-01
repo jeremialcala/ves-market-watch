@@ -221,6 +221,31 @@ export const FIXTURE_ANALISIS = {
       },
     ],
   },
+  // La brecha de cada lado contra su propia historia (RF-7). El caso REAL
+  // medido en vivo: compra con 12 días de serie —así que sus ventanas de 30 y
+  // 90 declaran su alcance— y venta con 242, completas.
+  gap_history: {
+    sides: [
+      {
+        side: "buy",
+        current: "13.45",
+        references: [
+          { days_configured: 7, days_covered: 7, samples: 8794, mean: "15.13", max: "17.73", min: "13.07" },
+          { days_configured: 30, days_covered: 12, samples: 14711, mean: "16.22", max: "18.93", min: "13.07" },
+          { days_configured: 90, days_covered: 12, samples: 14711, mean: "16.22", max: "18.93", min: "13.07" },
+        ],
+      },
+      {
+        side: "sell",
+        current: "12.72",
+        references: [
+          { days_configured: 7, days_covered: 7, samples: 8798, mean: "13.93", max: "16.98", min: "12.31" },
+          { days_configured: 30, days_covered: 30, samples: 17209, mean: "15.00", max: "21.13", min: "12.31" },
+          { days_configured: 90, days_covered: 90, samples: 25658, mean: "20.37", max: "44.06", min: "12.31" },
+        ],
+      },
+    ],
+  },
 } satisfies Schemas["IndicatorAnalysis"] satisfies PayloadAnalisis;
 
 /**
@@ -353,6 +378,15 @@ describe("fixtures del contrato", () => {
     expect(FIXTURE_INDICADORES_NULOS.gap_abs).toBeNull();
     expect(FIXTURE_PROFUNDIDAD.levels.length).toBeGreaterThan(0);
     expect(FIXTURE_P2P_LOW.confidence).toBe("low");
+  });
+
+  it("la historia de la brecha declara el alcance REAL de cada ventana", () => {
+    const [compra, venta] = FIXTURE_ANALISIS.gap_history.sides;
+    // Es lo que separa «Promedio 30 días» de «Promedio 12 d (de 30)».
+    expect(compra.references.map((r) => r.days_covered)).toEqual([7, 12, 12]);
+    expect(venta.references.map((r) => r.days_covered)).toEqual([7, 30, 90]);
+    // Todas las ventanas se publican, completas o no.
+    expect(compra.references.map((r) => r.days_configured)).toEqual([7, 30, 90]);
   });
 
   it("el análisis publica la escala usada y una posición dibujable o null", () => {

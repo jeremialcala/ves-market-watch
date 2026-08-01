@@ -174,8 +174,30 @@ export interface PayloadAnalisis {
         | "brecha"
         | "atribucion"
         | "medidor_en_banda"
-        | "regla_cerca";
+        | "regla_cerca"
+        | "brecha_vs_historia"
+        | "brecha_extremo"
+        | "historia_parcial";
       data: Record<string, string>;
+    }[];
+  };
+  /** La brecha de cada lado contra su propia historia (RF-7). OPCIONAL y
+   *  aditivo, igual que `reading`. */
+  gap_history?: {
+    sides: {
+      side: "buy" | "sell";
+      current: string | null;
+      references: {
+        days_configured: number;
+        /** Hasta dónde llega la serie DENTRO de la ventana. Menor que
+         *  `days_configured` ⇒ la ventana NO está completa y la UI debe rotular
+         *  el tramo real en vez de la etiqueta nominal. */
+        days_covered: number;
+        samples: number;
+        mean: string | null;
+        max: string | null;
+        min: string | null;
+      }[];
     }[];
   };
 }
