@@ -25,6 +25,14 @@
 - `domain/reglas.py` gana la función hermana `evaluar_proximidad` —k de n condiciones y
   cuál bloquea— **sin tocar `evaluar_reglas`**: una decide qué se emite, la otra solo
   describe.
+- **Dominio de la lectura** (`domain/lectura.py`, RF-7/ADR-0021): puro y sin IO.
+  `ConfigLectura` (cargada estricta del YAML versionado), `Variaciones` (lo que mide la
+  aplicación), `Afirmacion` y `Lectura`. `clasificar_movimiento`/`clasificar_brecha`
+  parten cada eje en tres tramos simétricos; `componer_regimen` devuelve `None` si
+  **cualquiera** de los dos no resolvió —media clasificación no se publica—; `atribuir`
+  reparte el movimiento de la brecha sobre `Δbrecha = Δparalelo − Δoficial`;
+  `construir_lectura` ensambla las afirmaciones **en orden de lectura**, con lo que
+  invalida al resto primero. No redacta: emite códigos y cifras.
 - **Aplicación** (`src/indicator_engine/application/`):
   - `contracts.py` — `ValidadorDeContratos`: todo evento consumido se valida contra
     `schemas/<evento>.v1.json` (raíz del repo) antes de tocar lógica (A05/A08);
@@ -48,7 +56,13 @@
     para que el caso de uso no engorde: pide las distribuciones (cacheadas), llama al
     dominio y publica/persiste **el mismo documento**. Va después de las señales (para
     que `summary.rules_met` describa la misma evaluación) y antes de `marcar_procesado`,
-    envuelto en `try/except`: un fallo del análisis no manda el snapshot a la DLQ.
+    envuelto en `try/except`: un fallo del análisis no manda el snapshot a la DLQ. Mide
+    además las variaciones de la ventana con `indicador_asof` —sin SQL nuevo— y añade la
+    lectura del mercado al mismo documento. **La guarda de hueco de captura NO se aplica
+    a `official_rate`**: esa serie se persiste solo al cambiar (ADR-0008), así que una
+    fila vieja es meseta, no hueco, y `Δ = 0` es la evidencia que la atribución necesita;
+    lo que sí invalida esa serie lo cubre `official_stale`. Sin `config_lectura` el
+    análisis se publica igual, sin `reading`.
   - `domain/reglas.py` — ruleset + evaluación pura (AND de condiciones; operadores
     `gt/gte/lt/lte`); `cargar_ruleset` estricto (YAML inválido ⇒ el motor no arranca).
   - Puertos: `EventPublisher` (`publish_indicators_updated`, `publish_signal_emitted`,
@@ -78,9 +92,10 @@
     degrada al respaldo, **visible en el payload**. La ventana `desde` queda fuera de la
     clave de cache a propósito: si no, el TTL no serviría de nada.
   - `memory.py` — adaptadores para unit tests.
-  - Config: `config/senales.v1.yaml` (ruleset RF-4) y `config/analisis.v1.yaml`
-    (ventana, cortes, mínimo de muestras y dominios de respaldo, RF-6), ambas versionadas
-    en repo y cargadas al arrancar. Ventana y mínimo van en el YAML porque son parte de
+  - Config: `config/senales.v1.yaml` (ruleset RF-4), `config/analisis.v1.yaml`
+    (ventana, cortes, mínimo de muestras y dominios de respaldo, RF-6) y
+    `config/lectura.v1.yaml` (umbrales de los dos ejes, ventana, dominancia y proximidad,
+    RF-7), las tres versionadas en repo y cargadas al arrancar. Ventana y mínimo van en el YAML porque son parte de
     la definición publicada (viajan en el payload); TTL y timeout van en env por ser
     operativos.
 
@@ -102,6 +117,10 @@
   Sin dispersión que sostenga una banda se emite `unscaled` en vez de inventarla.
 - **El análisis no puede tumbar el pipeline** ✔ — su fallo se registra y se sigue;
   indicadores y señales quedan publicados y el evento, procesado.
+- **La lectura describe el presente** ✔ (RF-7) — régimen mecánico de dos ejes con
+  umbrales versionados, reproducible a mano desde el payload. Ni pronóstico, ni
+  probabilidad, ni consejo. Sin un eje, `regime: null`; con la oficial rancia no hay
+  atribución.
 
 ## Pendiente
 - Profundidad por bandas de precio (0,5 %): **hoy la proyecta el api-gateway** desde el

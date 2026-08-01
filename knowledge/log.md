@@ -7,6 +7,37 @@ timestamp: 2026-08-01T12:00:00Z
 
 # Log
 
+## 2026-08-01 (noche) — La tarjeta de régimen deja de ser maqueta (ADR-0021)
+- La «Lectura de hoy» era **100 % literal**, incluida una barra de confianza al
+  `width: "68%"` escrita a mano. Ahora el motor produce por revisión un régimen
+  descriptivo (dos ejes mecánicos con umbrales versionados) y afirmaciones
+  ordenadas con sus cifras, en el campo aditivo `reading` de `analysis.updated`.
+- **La decisión de diseño fue la frontera, no el algoritmo.** La maqueta mezclaba
+  cuatro registros y dos chocaban con límites que el propio repo se había puesto:
+  «no se reabre cuando el paralelo despierte» es predicción (ADR-0019 pto. 9) y
+  «hoy no hay nada que ejecutar» es consejo (no-objetivo del PRD). Se implementan
+  hechos + atribución + condicional; los otros dos no.
+- **ADR-0019 pto. 9 quedó enmendado**: decía «ni detección de régimen» y esto
+  detecta uno. Se acota el término a régimen *predictivo* —que sigue excluido—
+  frente a clasificación *del presente*. Sin la enmienda el repo se contradecía.
+- **Un fallo real encontrado por un test que escribí con la expectativa
+  equivocada**: la guarda de hueco de captura se aplicaba también a
+  `official_rate`, y esa serie se persiste **solo cuando la tasa cambia**
+  (ADR-0008). Una fila de hace tres días no es un hueco, es una meseta — y
+  `Δoficial = 0` es justo la evidencia que la atribución necesita. Con la guarda
+  puesta, la atribución no se habría disparado casi nunca: la capacidad
+  principal de la feature estaba apagada. Medido en vivo tras el arreglo:
+  `Δbrecha −1,168 pp`, `Δparalelo −8,749 VES`, `Δoficial 0` ⇒ atribución
+  `paralelo`.
+- **Import circular latente eliminado de paso**: `adapters/amqp/__init__.py`
+  reexportaba `consumer`, lo que cerraba el ciclo
+  `analizar_revision → publisher → __init__ → consumer → process_p2p_snapshot →
+  analizar_revision`. Solo se disparaba si `analizar_revision` era el primero de
+  la cadena en importarse. Nadie usaba el agregador: todo el repo importa de los
+  submódulos.
+- El SPA pasa de **3 sellos demo a 2**. Los que quedan (escenarios con
+  probabilidades, riesgos redactados) se quedan a propósito.
+
 ## 2026-08-01 (noche) — Medida la consulta de percentiles: sobra margen
 - El plan de RF-6 dejaba obligatorio medir con `EXPLAIN ANALYZE` la consulta de
   distribuciones con la tabla en régimen, porque temía un `GroupAggregate` sobre

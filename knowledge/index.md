@@ -40,6 +40,13 @@ la fuente de verdad (los documentos AI-DLC y el código).
   reales de su ventana de 90 días y proximidad a las reglas del ruleset— vía
   [analysis.updated](events/analysis-updated.md), `GET /api/v1/analysis/current`
   y el tópico WSS `analysis`. Es descripción del presente, no pronóstico.
+- **La tarjeta de régimen dejó de ser maqueta** (2026-08-01, ADR-0021): el motor
+  publica además la [lectura del mercado como un todo](metrics/lectura-de-mercado.md)
+  en el campo `reading` del mismo evento — régimen de dos ejes con umbrales
+  versionados y la **atribución** de qué lado movió la brecha, sobre la identidad
+  exacta `Δbrecha = Δparalelo − Δoficial`. Describe el presente en lenguaje llano;
+  no aconseja ni pronostica, y hay tests que lo defienden. El SPA baja de 3 sellos
+  demo a 2.
 - **Login sin fricción, verificado en vivo** (2026-08-01, ADR-0020): dominio
   propio `auth.higerotech.com` + desarrollo por túneles de Cloudflare. Entrar es
   un redirect silencioso sin clics y la sesión sobrevive al F5, con los tokens

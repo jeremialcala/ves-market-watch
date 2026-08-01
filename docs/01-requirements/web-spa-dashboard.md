@@ -42,6 +42,12 @@ login y el estado de salud son visibles sin sesión.
 > ser un bloque demo y pasa a explicarse en ES/EN con dato servido — **RF-11**,
 > más la enmienda correspondiente a «RF-5 ampliado».
 
+> Enmienda 2026-08-01 (ADR-0021): el motor ya produce la lectura del mercado
+> como un todo (RF-7 del PRD del motor), así que la tarjeta «Lectura de hoy»
+> deja de ser maqueta — **RF-12**, con su enmienda a «RF-5 ampliado». Quedan
+> **dos** sellos demo: escenarios con probabilidades y riesgos redactados, que
+> siguen sin fuente porque hacerlos reales exigiría pronosticar.
+
 ## Requisitos funcionales
 - **RF-1 — Login y sesión**: Auth Code + PKCE contra Universal Login (ADR-0012);
   tokens solo en memoria; renovación silenciosa por refresh rotation; logout.
@@ -109,6 +115,26 @@ login y el estado de salud son visibles sin sesión.
     sin lectura en esta revisión, sin valor vigente, escala en respaldo,
     confianza baja y tasa oficial rancia.
 
+- **RF-12 — Lectura del mercado (ES/EN)** (2026-08-01, ADR-0021): la tarjeta de
+  cabecera debe decir **qué está haciendo el mercado ahora**, en lenguaje llano y
+  en los dos idiomas, a partir del campo `reading` que sirve el gateway.
+
+  - El titular es el **régimen** que publica el motor, no una cadena de ejemplo.
+    Sin régimen resoluble se dice, en vez de inventar medio titular.
+  - La prosa es **una frase por afirmación, en el orden que manda el motor**. El
+    SPA no reordena ni decide qué contar: si lo hiciera, habría dos fuentes de
+    verdad sobre la lectura.
+  - **Describe, no aconseja ni predice.** Nada imperativo («deberías», «hoy no hay
+    nada que ejecutar») ni predictivo («va a subir», «se espera»). Lo que orienta
+    va en **condicional** («si tienes que comprar, hoy…»). La aclaración de que no
+    es consejo ni pronóstico es **obligatoria** y no se retira por limpieza visual.
+  - Los **chips** salen del análisis: frescura, reglas disparadas, medidores cerca
+    de su umbral y confianza con su valor real. No hay barra de confianza: el
+    contrato la da binaria (`normal|low`) y una barra continua fingiría precisión.
+  - Estados degradados explícitos: sin lectura, sin régimen, confianza baja
+    (encabeza y desplaza al régimen), oficial rancia (sin atribución) y escala en
+    respaldo (sin la frase de banda).
+
 - **RF-5 ampliado — bloques sin fuente**: todo bloque que el diseño pida y la
   plataforma no calcule debe distinguirse del dato servido **a simple vista**
   (sello `demo · sin fuente` + explicación en la sección). Un ejemplo que se lee
@@ -120,6 +146,14 @@ login y el estado de salud son visibles sin sesión.
   del panel: mantenerlo sobre dato real sería tan deshonesto como no ponerlo
   sobre un ejemplo. El sello sigue en el régimen de mercado y en la vista de
   análisis, que continúan sin fuente.
+
+  **Enmienda 2026-08-01 (ADR-0021): la tarjeta de régimen deja de ser bloque
+  demo.** El titular, la prosa y los chips salen ahora de `reading`, así que el
+  sello se retira también de ahí: quedan **dos**, ambos en la vista de análisis.
+  Los **escenarios con probabilidades** (62/24/14 %) y los **riesgos redactados**
+  conservan el suyo, y no por falta de tiempo: hacerlos reales exigiría
+  pronosticar, que es lo que el proyecto declaró no-objetivo. Que el sello no baje
+  de dos es la señal de que la frontera sigue en pie.
 
 ## Requisitos no funcionales
 - Cobertura de ramas ≥ 80 % (criterio Gate 2, suite vitest sin infraestructura).

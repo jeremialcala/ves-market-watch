@@ -4,7 +4,7 @@
 - **Fecha:** 2026-07-11
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 00-project
-- **Versión:** 0.2.0
+- **Versión:** 0.3.0
 
 | Término | Definición | Contexto acotado (Bounded Context) |
 |---|---|---|
@@ -22,6 +22,9 @@
 | Variación Intradía | Cambio de un indicador dentro del día operativo (VET) | Indicadores |
 | Tendencia de Liquidez | Evolución del volumen agregado y profundidad a lo largo del tiempo | Indicadores |
 | Señal | Evento derivado de reglas sobre indicadores (p. ej. brecha supera umbral) que apoya decisiones de compra/venta | Indicadores |
+| Lectura de Mercado | Interpretación en lenguaje llano del estado del mercado en una revisión: régimen, afirmaciones ordenadas con sus cifras y la atribución de quién movió la brecha. Describe el presente; no aconseja ni pronostica (ADR-0021) | Indicadores |
+| Régimen de Mercado | Celda de una matriz de dos ejes —movimiento del paralelo × dinámica de la brecha— clasificados por umbrales de config versionada (p. ej. «lateral en compresión»). Si un eje no resuelve, no hay régimen (ADR-0021) | Indicadores |
+| Atribución (de la brecha) | Qué lado explica un movimiento de la brecha, sobre la identidad exacta Δbrecha = Δparalelo − Δoficial. Con el BCV sin publicar en la ventana, Δoficial = 0 es evidencia positiva, no dato faltante | Indicadores |
 | Indicador | Métrica calculada y versionada a partir de snapshots y tasa oficial | Indicadores |
 | Evento de Mercado | Mensaje publicado en el bus cuando llega nueva información de una fuente | Plataforma (mensajería) |
 | Consumidor / Usuario | Persona autenticada vía Auth0 (OIDC) que consume la API REST o el WSS a través de un front-end/SPA | Acceso (API/WSS) |

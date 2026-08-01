@@ -156,6 +156,28 @@ export interface PayloadAnalisis {
     blocked_by: string | null;
     rules_met: string[];
   };
+  /** Lectura del estado de mercado (RF-7). OPCIONAL: un motor sin config de
+   *  lectura publica el mismo evento sin este campo. */
+  reading?: {
+    version: number;
+    window_hours: number;
+    /** `<movimiento>_<brecha>`; `null` si algún eje no resolvió. */
+    regime: string | null;
+    axis_movement: "subiendo" | "lateral" | "bajando" | null;
+    axis_gap: "ampliando" | "estable" | "comprimiendo" | null;
+    gauges_near_threshold: number;
+    /** En ORDEN de lectura: lo que invalida al resto va primero. */
+    claims: {
+      code:
+        | "confianza_baja"
+        | "oficial_rancia"
+        | "brecha"
+        | "atribucion"
+        | "medidor_en_banda"
+        | "regla_cerca";
+      data: Record<string, string>;
+    }[];
+  };
 }
 
 // Cierres del contrato.

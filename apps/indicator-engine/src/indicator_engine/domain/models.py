@@ -11,6 +11,11 @@ OFFICIAL_RATE = "official_rate"
 OFFICIAL_RATE_CHANGE_ABS = "official_rate_change_abs"
 OFFICIAL_RATE_CHANGE_PCT = "official_rate_change_pct"
 
+# La pierna oficial del par USDT/VES: la brecha se calcula contra el USD del BCV
+# (ADR-0014), así que `official_rate` se persiste bajo `USD`, no bajo `VES`.
+# Vive aquí y no en un caso de uso porque ya lo necesitan dos.
+MONEDA_OFICIAL_REFERENCIA = "USD"
+
 # Fase 2 — indicadores P2P por lado (sufijo `_buy`/`_sell` vía `nombre_por_lado`).
 # Definiciones canónicas en knowledge/metrics/.
 P2P_MEDIANA = "p2p_mediana"

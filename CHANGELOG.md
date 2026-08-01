@@ -39,6 +39,20 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Fixed
 
+- **La atribución de la brecha no se habría disparado casi nunca (2026-08-01).**
+  La guarda de hueco de captura se aplicaba también a `official_rate`, y esa
+  serie se persiste **solo cuando la tasa cambia** (ADR-0008): una fila de hace
+  tres días no es un hueco, es una meseta, y `Δoficial = 0` es exactamente la
+  evidencia que la atribución necesita. Con la guarda puesta, la capacidad
+  principal de la feature estaba apagada. Encontrado por un test escrito con la
+  expectativa equivocada. Medido en vivo tras el arreglo: `Δbrecha −1,168 pp`,
+  `Δparalelo −8,749 VES`, `Δoficial 0` ⇒ atribución `paralelo`.
+- **Import circular latente en el engine (2026-08-01).**
+  `adapters/amqp/__init__.py` reexportaba `consumer`, cerrando el ciclo
+  `analizar_revision → publisher → __init__ → consumer → process_p2p_snapshot →
+  analizar_revision`. Solo se disparaba si `analizar_revision` era el primero de
+  la cadena en importarse, así que vivió latente hasta que un test lo importó
+  directo. Nadie usaba el agregador: todo el repo importa de los submódulos.
 - **El fallo de login era un estado terminal.** Cuando `handleRedirectCallback`
   lanzaba, el `onRedirectCallback` que limpia la URL no llegaba a correr, así que
   el `?code=&state=` se quedaba puesto y **cada recarga volvia a fallar igual**:
@@ -74,6 +88,46 @@ Convención de mantenimiento (inventario por ejecución):
   inyectaba por tener `useRefreshTokens`, y quien lo descartaba era el tenant.
 
 ### Added
+
+- **Lectura del estado de mercado — la tarjeta de régimen deja de ser maqueta
+  (2026-08-01, RF-7 / RF-12, ADR-0021).** «Lectura de hoy» era literal de arriba
+  abajo, incluida una barra de confianza al `width: "68%"` escrita a mano. Ahora
+  el motor produce por revisión una lectura interpretativa del mercado **como un
+  todo**, en lenguaje llano.
+  - **La decisión de diseño fue la frontera, no el algoritmo.** La maqueta
+    mezclaba cuatro registros y dos chocaban con límites que el propio repo se
+    había puesto: «no se reabre cuando el paralelo despierte» es **predicción**
+    (ADR-0019 pto. 9) y «hoy no hay nada que ejecutar» es **consejo** (no-objetivo
+    del PRD). Se implementan hechos + atribución causal + condicional
+    orientativo; los otros dos no, y no por falta de tiempo.
+  - **Régimen** = celda de una matriz de dos ejes mecánicos (movimiento del
+    paralelo × dinámica de la brecha), con umbrales en config versionada
+    (`config/lectura.v1.yaml`) y **medidos**, no elegidos a ojo: el de movimiento
+    es el mismo `0,5` con el que `arranque_alcista@v1` ya decidía que el momentum
+    significa algo; el de brecha es la variación absoluta media a 6 h observada
+    en la serie real. Si un eje no resuelve, `regime: null` — media clasificación
+    no se publica.
+  - **Atribución causal** sobre una identidad exacta,
+    `Δbrecha_abs = Δparalelo − Δoficial`, con los tres términos leídos por
+    `indicador_asof`: sin SQL nuevo. Responde a lo que el panel no respondía —no
+    solo «la brecha se cerró», sino **qué lado la cerró**.
+  - **Campo `reading` ADITIVO en `analysis.v1.json`**, no un evento nuevo: la
+    lectura cita las cifras del propio análisis, así que en dos eventos separados
+    el SPA podría pintar una lectura que contradice sus propios medidores.
+  - **Silencios deliberados**, todos con test: sin atribución con la oficial
+    rancia (la brecha se calculó contra una tasa vencida), sin frase de banda en
+    bandas intermedias o con escala en respaldo, sin proximidad a reglas con
+    confianza baja.
+  - **SPA de 3 sellos demo a 2.** Fuera la barra de confianza: `confidence` es
+    binario y una barra continua fingía precisión; la maqueta además decía
+    «Confianza media», que no existe en el contrato. `lectura.test.tsx` comprueba
+    contra el texto renderizado que no hay nada imperativo ni predictivo.
+  - **ADR-0019 pto. 9 enmendado**: decía «ni detección de régimen». Se acota el
+    término a régimen *predictivo* —que sigue excluido— frente a clasificación
+    *del presente*. Sin la enmienda, el repositorio se contradecía a sí mismo.
+  - Glosario a **0.3.0** (Lectura de Mercado, Régimen de Mercado, Atribución).
+    Engine **244 tests** con `domain/lectura.py` al 100 %; SPA **230 tests**,
+    88,2 % de ramas.
 
 - **Módulo de análisis de indicadores — el panel de instrumentos deja de ser demo
   (2026-08-01, RF-6 / RF-11, ADR-0019).** El panel mostraba valores reales

@@ -72,9 +72,61 @@ export const ES = {
   "brecha.minMax": "mín {min} · máx {max}",
   "brecha.sinSerie": "Sin serie de las últimas 24 h.",
 
-  // -- régimen (demo) --------------------------------------------------------
-  "regimen.titulo": "Régimen de mercado",
+  // -- lectura del mercado ---------------------------------------------------
+  // Mismo registro que los medidores (ADR-0019/0021): describe el PRESENTE,
+  // nunca el futuro, y NUNCA dice qué hacer. Lo único que orienta va en
+  // condicional («si tienes que convertir…»), que informa sin ordenar.
+  "regimen.titulo": "Lectura de hoy",
   "regimen.confianza": "Confianza",
+  "regimen.sinLectura":
+    "Sin lectura del mercado en esta revisión: se muestran los indicadores, no su interpretación.",
+  "regimen.sinRegimen":
+    "Todavía no se puede nombrar el estado del mercado: falta alguno de los dos datos que lo definen.",
+  "regimen.aclaracion":
+    "Describe cómo está el mercado ahora, con los datos de esta lectura. No es una predicción ni una recomendación.",
+
+  // Los nueve regímenes: <movimiento>_<brecha>. El titular de la tarjeta.
+  "regimen.subiendo_ampliando": "Al alza, con la brecha abriéndose",
+  "regimen.subiendo_estable": "Al alza, con la brecha quieta",
+  "regimen.subiendo_comprimiendo": "Al alza, con la brecha cerrándose",
+  "regimen.lateral_ampliando": "Lateral, con la brecha abriéndose",
+  "regimen.lateral_estable": "Lateral y sin cambios",
+  "regimen.lateral_comprimiendo": "Lateral en compresión",
+  "regimen.bajando_ampliando": "A la baja, con la brecha abriéndose",
+  "regimen.bajando_estable": "A la baja, con la brecha quieta",
+  "regimen.bajando_comprimiendo": "A la baja, con la brecha cerrándose",
+
+  // Afirmaciones. Una frase por código; el motor manda el orden.
+  "regimen.claim.brecha.ampliando":
+    "La distancia entre el precio de la calle y el oficial se ha abierto {delta} puntos en las últimas {horas} horas.",
+  "regimen.claim.brecha.comprimiendo":
+    "La distancia entre el precio de la calle y el oficial se ha cerrado {delta} puntos en las últimas {horas} horas.",
+  "regimen.claim.brecha.estable":
+    "La distancia entre el precio de la calle y el oficial apenas se ha movido en las últimas {horas} horas.",
+  "regimen.claim.atribucion.paralelo":
+    "El movimiento vino del precio de la calle: la tasa oficial no cambió en ese rato.",
+  "regimen.claim.atribucion.oficial":
+    "El movimiento vino de la tasa oficial, no del precio de la calle.",
+  "regimen.claim.atribucion.ambos":
+    "Se movieron los dos lados a la vez: la tasa oficial y el precio de la calle.",
+  "regimen.claim.banda.very_low":
+    "Si tienes que comprar, hoy la calle está de lo más barata frente al oficial en {dias} días.",
+  "regimen.claim.banda.very_high":
+    "Si tienes que comprar, hoy la calle está de lo más cara frente al oficial en {dias} días.",
+  "regimen.claim.reglaCerca":
+    "El aviso más cerca de activarse es {regla}: cumple {cumplidas} de {totales} condiciones.",
+  "regimen.claim.confianzaBaja":
+    "Demasiados anuncios con precio raro en esta lectura: los avisos están desactivados y el resto se mira con reservas.",
+  "regimen.claim.oficialRancia":
+    "La tasa oficial lleva más de 6 horas sin actualizarse, así que no se puede decir qué lado movió la distancia.",
+
+  // Chips de contexto.
+  "regimen.chip.frescos": "Datos frescos · {cuando}",
+  "regimen.chip.reglas": "{n} reglas disparadas",
+  "regimen.chip.cerca": "{n} medidores cerca de su umbral",
+  "regimen.chip.cercaUno": "1 medidor cerca de su umbral",
+  "regimen.chip.confianzaNormal": "Confianza normal · {outliers} de precios raros",
+  "regimen.chip.confianzaBaja": "Confianza baja · {outliers} de precios raros",
 
   // -- medidores -------------------------------------------------------------
   // Registro DIDÁCTICO, no de mesa de operaciones: quien lee esto compra o vende
@@ -484,8 +536,54 @@ export const EN: Record<Clave, string> = {
   "brecha.minMax": "min {min} · max {max}",
   "brecha.sinSerie": "No series for the last 24 h.",
 
-  "regimen.titulo": "Market regime",
+  "regimen.titulo": "Today's reading",
   "regimen.confianza": "Confidence",
+  "regimen.sinLectura":
+    "No market reading in this revision: the indicators are shown without their interpretation.",
+  "regimen.sinRegimen":
+    "The state of the market cannot be named yet: one of the two figures that define it is missing.",
+  "regimen.aclaracion":
+    "Describes how the market stands right now, with the data in this reading. It is not a prediction nor a recommendation.",
+
+  "regimen.subiendo_ampliando": "Rising, with the gap widening",
+  "regimen.subiendo_estable": "Rising, with the gap holding",
+  "regimen.subiendo_comprimiendo": "Rising, with the gap closing",
+  "regimen.lateral_ampliando": "Sideways, with the gap widening",
+  "regimen.lateral_estable": "Sideways and unchanged",
+  "regimen.lateral_comprimiendo": "Compressing sideways",
+  "regimen.bajando_ampliando": "Falling, with the gap widening",
+  "regimen.bajando_estable": "Falling, with the gap holding",
+  "regimen.bajando_comprimiendo": "Falling, with the gap closing",
+
+  "regimen.claim.brecha.ampliando":
+    "The distance between the street price and the official rate has widened {delta} points over the last {horas} hours.",
+  "regimen.claim.brecha.comprimiendo":
+    "The distance between the street price and the official rate has closed {delta} points over the last {horas} hours.",
+  "regimen.claim.brecha.estable":
+    "The distance between the street price and the official rate has barely moved over the last {horas} hours.",
+  "regimen.claim.atribucion.paralelo":
+    "The move came from the street price: the official rate did not change in that time.",
+  "regimen.claim.atribucion.oficial":
+    "The move came from the official rate, not from the street price.",
+  "regimen.claim.atribucion.ambos":
+    "Both sides moved at once: the official rate and the street price.",
+  "regimen.claim.banda.very_low":
+    "If you have to buy, the street is today among the cheapest against the official rate in {dias} days.",
+  "regimen.claim.banda.very_high":
+    "If you have to buy, the street is today among the dearest against the official rate in {dias} days.",
+  "regimen.claim.reglaCerca":
+    "The alert closest to firing is {regla}: {cumplidas} of {totales} conditions met.",
+  "regimen.claim.confianzaBaja":
+    "Too many listings with odd prices in this reading: alerts are switched off and the rest is to be taken with care.",
+  "regimen.claim.oficialRancia":
+    "The official rate has not been updated in over 6 hours, so which side moved the distance cannot be told.",
+
+  "regimen.chip.frescos": "Fresh data · {cuando}",
+  "regimen.chip.reglas": "{n} rules fired",
+  "regimen.chip.cerca": "{n} gauges near their threshold",
+  "regimen.chip.cercaUno": "1 gauge near its threshold",
+  "regimen.chip.confianzaNormal": "Normal confidence · {outliers} odd prices",
+  "regimen.chip.confianzaBaja": "Low confidence · {outliers} odd prices",
 
   // Traducción, no reescritura: mismos marcadores y misma afirmación que ES, o
   // `tests/unit/i18n.test.tsx` falla.

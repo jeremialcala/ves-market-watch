@@ -115,6 +115,13 @@ llevaba sello —la escala percentil, el relleno, la marca de umbral y la nota�
 lo calcula el motor por revisión. Mantener el sello sobre dato real sería tan
 deshonesto como no ponerlo sobre un ejemplo.
 
+**El régimen de mercado salió el mismo día** (ADR-0021): titular, prosa y chips
+salen ahora del campo `reading` del análisis. **Quedan dos sellos**, los dos en la
+vista de Análisis: escenarios con probabilidades y riesgos redactados. Se quedan
+a propósito — hacerlos reales exigiría pronosticar, que es no-objetivo declarado
+del proyecto. Que la cuenta no baje de dos es la señal de que la frontera sigue
+en pie.
+
 ## Panel de instrumentos (RF-11, 2026-08-01)
 Cada medidor pinta lo que trae `analysis.updated` / `GET /analysis/current`
 (`state/reducers.ts` → `EstadoMercado.analisis`), y **nada más**:
@@ -140,6 +147,28 @@ Cada medidor pinta lo que trae `analysis.updated` / `GET /analysis/current`
 `src/lib/escala.ts` es el **único punto de aritmética** del panel: convierte la
 fracción [0,1] del contrato a un ancho CSS. Banda, posición, posición de umbral,
 distancia y `met` vienen calculados; el SPA no reclasifica nada.
+
+## Lectura del mercado (RF-12, 2026-08-01)
+`MarketRegimeCard` consume `analisis.reading` y **nada más**:
+
+- **Titular**: el código de régimen traducido (`regimen.<codigo>`). Sin régimen
+  resoluble se dice; no se compone medio titular.
+- **Prosa**: una frase por claim, **en el orden que manda el motor**. `fraseDe`
+  es un `switch` sobre el código que interpola las cifras del claim; el SPA no
+  reordena ni decide qué contar. El orden es semántico: lo que invalida al resto
+  va primero (confianza baja, luego oficial rancia).
+- **Chips**: frescura, reglas disparadas, medidores cerca de su umbral y
+  confianza con su valor real. **No hay barra de confianza**: el contrato la da
+  binaria (`normal|low`) y una barra continua fingiría una precisión que no
+  existe — la maqueta la tenía al 68 % escrito a mano, y encima rotulada
+  «Confianza media», valor que no existe en el contrato.
+- **Aclaración** siempre presente, igual que en la síntesis del panel.
+
+El registro está **acotado por test**, no solo por convención:
+`tests/component/lectura.test.tsx` comprueba contra el texto renderizado que no
+aparece nada imperativo («deberías», «nada que ejecutar») ni predictivo («va a
+subir», «se espera», «probabilidad»), y que lo que orienta va en condicional.
+Esa suite es la que defiende la frontera cuando alguien reescriba una frase.
 
 ## Capas
 - **`lib/` (puro)**: `decimal.ts` — comparación/signo/formato es-VE **y aritmética
@@ -251,9 +280,10 @@ guardar nada en el navegador.
   explícitamente abierto).
 - Multi-pestaña (BroadcastChannel) y code-splitting del Histórico (v2) — el
   bundle pasó de 500 kB al entrar el rediseño.
-- Retirar los bloques `demo · sin fuente` a medida que el `indicator-engine`
-  calcule lo que representan (quedan régimen de mercado y escenarios; los
-  percentiles de los medidores ya se retiraron — ADR-0019).
+- Los dos `demo · sin fuente` que quedan (escenarios con probabilidades y
+  riesgos redactados) **no son deuda pendiente**: hacerlos reales exigiría
+  pronosticar. Los medidores se retiraron con ADR-0019 y el régimen con
+  ADR-0021.
 - Subir el par categórico del **tema oscuro** a la banda de luminosidad y al
   piso de croma del validador (hoy pasa CVD con holgura pero queda fuera en esas
   dos, que son de estilo). Implica oscurecer los acentos en gráfico: es cambio

@@ -940,3 +940,51 @@ body {
   gap: 1rem;
   padding: 2rem;
 }
+
+/* -- lectura del mercado --------------------------------------------------- */
+
+/* El punto ya no codifica un estado: la lectura la lleva el texto. Es cromo. */
+.vmw-regimen__punto {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--teal);
+  box-shadow: var(--glow-dot);
+  flex: none;
+}
+
+.vmw-regimen__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.vmw-regimen__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--overlay-soft);
+  color: var(--text-muted);
+  font-size: var(--fs-micro);
+  white-space: nowrap;
+}
+
+.vmw-regimen__chipPunto {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--sage);
+  flex: none;
+}
+
+/* El color NO es la única codificación: el propio texto del chip dice qué pasa
+   («Confianza baja…», «1 medidor cerca…»). */
+.vmw-regimen__chip[data-tono="coral"] {
+  color: var(--coral);
+}
+.vmw-regimen__chip[data-tono="coral"] .vmw-regimen__chipPunto {
+  background: var(--coral);
+}

@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 import aio_pika
 
 from indicator_engine.domain.analisis import Analisis, Escala, LecturaIndicador
+from indicator_engine.domain.lectura import Lectura
 from indicator_engine.domain.models import Indicador
 from indicator_engine.domain.reglas import ProximidadRegla, Senal
 
@@ -158,10 +159,32 @@ def _proximidad_a_dict(proximidad: ProximidadRegla) -> dict:
     }
 
 
-def construir_evento_analisis(analisis: Analisis) -> dict:
-    """Sobre + payload del evento `analysis.updated` (schemas/analysis.v1.json)."""
-    sintesis = analisis.sintesis
+def _lectura_mercado_a_dict(lectura: Lectura) -> dict:
+    """Ojo con el nombre: `_lectura_a_dict` es la de un MEDIDOR
+    (`LecturaIndicador`); ésta es la del MERCADO. Son cosas distintas."""
     return {
+        "version": lectura.lectura_version,
+        "window_hours": lectura.ventana_horas,
+        "regime": lectura.regimen,
+        "axis_movement": lectura.eje_movimiento,
+        "axis_gap": lectura.eje_brecha,
+        "gauges_near_threshold": lectura.medidores_cerca,
+        "claims": [
+            {"code": a.codigo, "data": dict(a.datos)} for a in lectura.afirmaciones
+        ],
+    }
+
+
+def construir_evento_analisis(
+    analisis: Analisis, lectura: Lectura | None = None
+) -> dict:
+    """Sobre + payload del evento `analysis.updated` (schemas/analysis.v1.json).
+
+    `reading` es aditivo y opcional: sin config de lectura el motor publica el
+    mismo evento sin ese campo, y el panel de medidores no se entera.
+    """
+    sintesis = analisis.sintesis
+    evento = {
         "event_id": str(uuid.uuid4()),
         "event_type": ROUTING_KEY_ANALISIS,
         "schema_version": SCHEMA_VERSION,
@@ -189,6 +212,9 @@ def construir_evento_analisis(analisis: Analisis) -> dict:
             },
         },
     }
+    if lectura is not None:
+        evento["payload"]["reading"] = _lectura_mercado_a_dict(lectura)
+    return evento
 
 
 class AmqpEventPublisher:

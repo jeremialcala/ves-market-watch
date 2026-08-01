@@ -44,10 +44,12 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   (`data-theme` reasigna los MISMOS tokens) e interfaz **ES/EN** con diccionario
   tipado — una traducción olvidada no compila.
 - Cuarta vista **Análisis**; la evidencia de las señales se despliega en línea.
-- Lo que el diseño pide y la plataforma no calcula (régimen, escenarios,
-  riesgos) lleva sello **`demo · sin fuente`**: la lista de sellos es el trabajo
-  pendiente del motor. Lo derivable sí se deriva de `/indicators/history`
-  (sparkline 24 h, mapa de calor 14 d × hora VET, comparativas 7/30/90 d).
+- Lo que el diseño pide y la plataforma no calcula lleva sello **`demo · sin
+  fuente`**. Quedan **dos** (escenarios con probabilidades y riesgos redactados,
+  ambos en Análisis) tras retirar los medidores (ADR-0019) y el régimen
+  (ADR-0021); esos dos no son deuda, exigirían pronosticar. Lo derivable sí se
+  deriva de `/indicators/history` (sparkline 24 h, mapa de calor 14 d × hora VET,
+  comparativas 7/30/90 d).
 
 ## Panel de instrumentos con lectura real (2026-08-01, ADR-0019)
 - **El sello demo se retira del panel.** Los seis medidores dibujan lo que el
@@ -66,6 +68,26 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
 - Estados degradados explícitos: sin análisis, medidor sin lectura en la
   revisión, sin valor vigente, escala en respaldo (`unscaled`, con el contador de
   muestras), confianza baja y tasa oficial rancia. Ninguno inventa una barra.
+
+## Lectura del mercado con dato real (2026-08-01, ADR-0021)
+- **Segundo sello demo retirado.** La tarjeta «Lectura de hoy» era maqueta
+  entera, hasta la barra de confianza del 68 % escrita a mano. Ahora el titular
+  es el régimen que publica el motor (`reading.regime`) y la prosa es **una frase
+  por afirmación, en el orden que manda el motor**: el SPA no reordena ni decide
+  qué contar.
+- **Fuera la barra de confianza**: `confidence` es binario (`normal|low`) y una
+  barra continua fingía una precisión que no existe. En su lugar, chips con el
+  valor real — la maqueta además decía «Confianza media», que no existe en el
+  contrato.
+- Registro acotado y **verificado por test**: `lectura.test.tsx` comprueba contra
+  el texto renderizado que no hay nada imperativo ni predictivo, y que la
+  aclaración está presente. Lo que orienta va en condicional.
+- Estados degradados: sin lectura, sin régimen resoluble, confianza baja
+  (encabeza y desplaza al régimen), oficial rancia (sin atribución) y escala en
+  respaldo (sin frase de banda).
+- **Quedan dos sellos**, ambos en la vista de análisis: escenarios con
+  probabilidades y riesgos redactados. Se quedan porque hacerlos reales exigiría
+  pronosticar, que es no-objetivo declarado.
 
 ## Shell responsive (2026-07-31)
 - La tira de estado vive solo en la barra ancha (así lo declara el diseño): en
@@ -88,9 +110,11 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   y obliga a volver a pasar el validador.
 
 ## Verificación
-- **210 tests** (unit/component/contract con MSW y WS mock) — **88,7 % de ramas**
+- **230 tests** (unit/component/contract con MSW y WS mock) — **88,2 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
-  lectura real en ambos idiomas, incluida la **ausencia del sello demo**. E2E en vivo (`npm run test:e2e:live`) con client M2M:
+  lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
+  régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba
+  además, contra el texto renderizado, que **no aconseja ni predice**. E2E en vivo (`npm run test:e2e:live`) con client M2M:
   token real → REST + WSS; skip elegante sin credenciales.
 - La parrilla intradía se eyebalizó en claro y oscuro con una previsualización
   estática del CSS real (paso «render y míralo» del skill dataviz); la vista

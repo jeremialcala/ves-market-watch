@@ -1,7 +1,7 @@
 ---
 type: AMQP Event
 title: analysis.updated
-description: Lectura mecánica de los seis medidores del panel en cada revisión — banda dentro de su propia historia y proximidad a las reglas del ruleset. Implementado (RF-6).
+description: Lectura mecánica de los seis medidores del panel en cada revisión —banda dentro de su propia historia y proximidad a las reglas del ruleset— más la lectura del mercado como un todo. Implementado (RF-6 y RF-7).
 resource: ../../schemas/analysis.v1.json
 tags: [análisis, indicadores, implementado]
 timestamp: 2026-08-01T00:00:00Z
@@ -18,7 +18,7 @@ por `GET /api/v1/analysis/current` desde la tabla
 
 Payload: `{as_of, currency, calc_version, analysis_version, ruleset_version,
 confidence, official_stale, triggered_by, indicators[], rule_proximity[],
-summary}` (contrato `schemas/analysis.v1.json`). El `occurred_at` del sobre es
+summary, reading?}` (contrato `schemas/analysis.v1.json`). El `occurred_at` del sobre es
 la hora de emisión; `as_of` es el instante del dato de mercado de la revisión.
 
 **Qué es**: por cada medidor con valor vigente, en qué **banda** cae dentro de
@@ -45,5 +45,39 @@ cuyo indicador no está vigente lleva `value: null` — jamás el último conoci
 rancio. `position: null` significa que no hay escala dibujable: cero píxeles
 inventados.
 
+## `reading` — la lectura del mercado (RF-7, ADR-0021, desde 2026-08-01)
+
+Campo **opcional y aditivo**: un productor sin config de lectura publica el mismo
+evento sin él, y por eso el gateway puede desplegarse por delante del motor pese
+al `additionalProperties: false`.
+
+Va **dentro** de este evento, no en uno propio, por una razón concreta: la
+lectura cita las cifras del propio análisis (bandas, distancias, regla más
+cercana), así que tiene que ser atómicamente coherente con él. En dos eventos
+separados el cliente podría pintar una lectura que contradice sus propios
+medidores.
+
+`{version, window_hours, regime, axis_movement, axis_gap, gauges_near_threshold,
+claims[]}`.
+
+| Campo | Valores | Nota |
+|---|---|---|
+| `regime` | `<axis_movement>_<axis_gap>` \| `null` | `null` si CUALQUIER eje no resolvió: media clasificación no se publica |
+| `axis_movement` | `subiendo` \| `lateral` \| `bajando` \| `null` | Desde `p2p_momentum_bid_3h_pct`, umbral ±0,5 % |
+| `axis_gap` | `ampliando` \| `estable` \| `comprimiendo` \| `null` | Δ brecha sobre `window_hours`, umbral ±0,5 pp |
+| `gauges_near_threshold` | entero ≥ 0 | Distancia medida en coordenadas de dibujo [0,1]: en unidades crudas no se podría comparar un % de brecha con un ratio |
+| `claims[].code` | `confianza_baja` · `oficial_rancia` · `brecha` · `atribucion` · `medidor_en_banda` · `regla_cerca` | Lista **ORDENADA**: lo que invalida al resto va primero |
+| `claims[].data` | `{clave: string}` | Cifras como string exacto, en punto fijo |
+
+**Los silencios también son contrato**: `atribucion` no aparece si la oficial
+está rancia (la brecha se calculó contra una tasa vencida), `medidor_en_banda` no
+aparece con banda intermedia ni con escala en respaldo, y `regla_cerca` no
+aparece con confianza baja.
+
+**Qué NO es**: régimen predictivo. Clasifica el presente con umbrales de config
+versionada; ADR-0019 pto. 9 quedó enmendado para acotar el término. Ninguna
+afirmación dice qué hacer.
+
 Definición de la lectura y sus reglas: [lectura de
-indicadores](../metrics/lectura-de-indicadores.md).
+indicadores](../metrics/lectura-de-indicadores.md) (por medidor) y [lectura de
+mercado](../metrics/lectura-de-mercado.md) (el mercado como un todo).

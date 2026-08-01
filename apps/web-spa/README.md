@@ -23,9 +23,11 @@ Viste el **sistema de diseño Higerotech** con tema claro/oscuro e interfaz ES/E
 - **Histórico** con gráficos (tasa oficial por fecha-valor; indicador canónico
   por bucket 5m/1h/1d), rango ≤ 90 días validado en cliente y paginación
   transparente con progreso y cancelación.
-- **Análisis**: escenarios y riesgos del mercado. Los bloques que la plataforma
-  todavía no calcula van marcados **`demo · sin fuente`** — la regla de
-  honestidad del dato también aplica al diseño (ADR-0018).
+- **Análisis**: escenarios y riesgos del mercado. Son los **dos** bloques que
+  siguen marcados **`demo · sin fuente`** — la regla de honestidad del dato
+  también aplica al diseño (ADR-0018)—, y siguen porque hacerlos reales exigiría
+  pronosticar. Los medidores dejaron de estarlo con ADR-0019 y la lectura del
+  mercado con ADR-0021.
 - **Idioma y tema**: selector ES/EN y claro/oscuro en la barra; ambos se
   recuerdan (preferencias de UI; los tokens siguen solo en memoria).
 - **Intradía** (RF-7): parrilla con TODOS los indicadores del día operativo VET

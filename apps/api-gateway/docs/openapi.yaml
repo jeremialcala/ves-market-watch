@@ -16,7 +16,7 @@ openapi: 3.1.0
 
 info:
   title: VES Market Watch API
-  version: 0.5.0
+  version: 0.6.0
   description: |
     API de solo lectura sobre datos públicos del mercado cambiario venezolano:
     tasa oficial BCV, referencia P2P de Binance, indicadores derivados y señales.
@@ -1088,6 +1088,77 @@ components:
             emisión real vive en `/signals`.
       required: [rules_total, rules_evaluable, closest_rule, conditions_met, conditions_total, blocked_by, rules_met]
 
+    ReadingClaim:
+      type: object
+      additionalProperties: false
+      description: |
+        Una afirmación de la lectura, en vocabulario neutro de idioma. La prosa
+        ES/EN la redacta el cliente.
+      properties:
+        code:
+          type: string
+          enum: [confianza_baja, oficial_rancia, brecha, atribucion, medidor_en_banda, regla_cerca]
+          description: |
+            `atribucion` solo aparece si la brecha se movió **y** la oficial no
+            está rancia: con una tasa vencida, decir quién movió la brecha sería
+            afirmar de más.
+        data:
+          type: object
+          additionalProperties:
+            type: string
+          description: |
+            Cifras y cualificadores, como string exacto. Claves según el código:
+            `brecha` → {direccion, delta_pp, horas} · `atribucion` →
+            {responsable, paralelo, oficial} · `medidor_en_banda` →
+            {indicador, banda, dias} · `regla_cerca` → {regla, cumplidas, totales}.
+      required: [code, data]
+
+    MarketReading:
+      type: object
+      additionalProperties: false
+      description: |
+        Lectura del estado de mercado (ADR-0021). Describe el **presente**: el
+        régimen es la celda de una matriz de dos ejes clasificados por umbrales
+        de config versionada, no una anticipación de lo que viene. **No contiene
+        consejo**: ninguna afirmación dice qué hacer.
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          description: Versión de la config de lectura (umbrales, ventana, dominancia).
+        window_hours:
+          type: integer
+          minimum: 1
+        regime:
+          oneOf:
+            - { type: string }
+            - { type: 'null' }
+          description: |
+            `<axis_movement>_<axis_gap>`, p. ej. `lateral_comprimiendo`. `null` si
+            cualquiera de los dos ejes no resolvió — media clasificación no se
+            publica, porque «lateral» a secas daría a entender que la brecha está
+            quieta cuando no se sabe.
+        axis_movement:
+          oneOf:
+            - { type: string, enum: [subiendo, lateral, bajando] }
+            - { type: 'null' }
+        axis_gap:
+          oneOf:
+            - { type: string, enum: [ampliando, estable, comprimiendo] }
+            - { type: 'null' }
+        gauges_near_threshold:
+          type: integer
+          minimum: 0
+          description: |
+            Medidores con algún umbral sin cruzar a tiro de piedra, medido en
+            coordenadas de dibujo — normalizar es lo único que hace comparable un
+            porcentaje de brecha con un ratio.
+        claims:
+          type: array
+          items: { $ref: '#/components/schemas/ReadingClaim' }
+          description: En ORDEN de lectura; lo que invalida al resto va primero.
+      required: [version, window_hours, regime, axis_movement, axis_gap, gauges_near_threshold, claims]
+
     IndicatorAnalysis:
       type: object
       additionalProperties: false
@@ -1127,6 +1198,8 @@ components:
           type: array
           items: { $ref: '#/components/schemas/RuleProximity' }
         summary: { $ref: '#/components/schemas/AnalysisSummary' }
+        reading:
+          $ref: '#/components/schemas/MarketReading'
       required: [as_of, currency, calc_version, analysis_version, ruleset_version, confidence, official_stale, triggered_by, indicators, rule_proximity, summary]
 
     Health:

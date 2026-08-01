@@ -100,6 +100,16 @@ calcula (RF-5), y esta entrega no cruza esa línea: la respeta.
    pudo suprimir la emisión, y afirmar que se emitió sería falso: la emisión
    real vive en `signals.emitted`.
 
+   **Enmienda (2026-08-01, ADR-0021): «detección de régimen» se acota a
+   *predictiva*.** Este punto se escribió contra el sentido habitual del término
+   —anticipar el siguiente estado del mercado, con probabilidades y horizontes— y
+   ese sigue excluido, igual que los pronósticos. Lo que ADR-0021 añade es
+   clasificación **del presente**: dos ejes mecánicos con umbrales en config
+   versionada, reproducibles a mano desde el payload, de la misma clase
+   aritmética que las bandas que este ADR introdujo. Sin acotar el término, el
+   repositorio se contradecía a sí mismo. El resto del punto 9 queda intacto:
+   siguen excluidos pronósticos, probabilidades, horizontes y consejo.
+
 ## Alternativas consideradas
 
 - **Ampliar `indicators.updated` con los campos de análisis**: descartado por el

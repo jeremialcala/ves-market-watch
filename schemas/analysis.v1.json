@@ -170,6 +170,53 @@
           }
         },
 
+        "reading": {
+          "type": "object",
+          "description": "Lectura del estado de mercado (RF-7, ADR-0021). OPCIONAL y aditiva: un productor sin config de lectura publica el mismo evento sin este campo. Describe el PRESENTE — el régimen es la celda de una matriz de dos ejes clasificados por umbrales de config versionada, no una anticipación de lo que viene. No contiene consejo: ninguna afirmación dice qué hacer (no-objetivo del PRD: «recomendaciones financieras personalizadas»).",
+          "required": ["version", "window_hours", "regime", "axis_movement", "axis_gap", "gauges_near_threshold", "claims"],
+          "additionalProperties": false,
+          "properties": {
+            "version": { "type": "integer", "minimum": 1,
+              "description": "Versión de config/lectura.v*.yaml (umbrales de los ejes, ventana, dominancia y proximidad)." },
+            "window_hours": { "type": "integer", "minimum": 1,
+              "description": "Ventana sobre la que se midió la variación de la brecha y de sus dos piernas." },
+            "regime": {
+              "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }],
+              "description": "`<axis_movement>_<axis_gap>`, p. ej. `lateral_comprimiendo`. `null` si CUALQUIERA de los dos ejes no resolvió: media clasificación no se publica, porque «lateral» a secas daría a entender que la brecha está quieta cuando no se sabe."
+            },
+            "axis_movement": {
+              "oneOf": [{ "enum": ["subiendo", "lateral", "bajando"] }, { "type": "null" }],
+              "description": "Cómo se mueve el paralelo, desde `p2p_momentum_bid_3h_pct`. `null` sin momentum vigente."
+            },
+            "axis_gap": {
+              "oneOf": [{ "enum": ["ampliando", "estable", "comprimiendo"] }, { "type": "null" }],
+              "description": "Qué hace la brecha sobre la ventana. `null` si hubo hueco de captura y la variación no es comparable."
+            },
+            "gauges_near_threshold": { "type": "integer", "minimum": 0,
+              "description": "Medidores con algún umbral SIN cruzar a menos de `proximidad_umbral` en coordenadas de dibujo. Normalizado a propósito: en unidades crudas no se podría comparar un porcentaje de brecha con un ratio." },
+            "claims": {
+              "type": "array",
+              "description": "Afirmaciones EN ORDEN de lectura, en vocabulario neutro de idioma; la prosa ES/EN la redacta el cliente. Lo que invalida al resto va primero: confianza baja, luego oficial rancia.",
+              "items": {
+                "type": "object",
+                "required": ["code", "data"],
+                "additionalProperties": false,
+                "properties": {
+                  "code": {
+                    "enum": ["confianza_baja", "oficial_rancia", "brecha", "atribucion", "medidor_en_banda", "regla_cerca"],
+                    "description": "`atribucion` solo aparece si la brecha se movió Y la oficial no está rancia: con una tasa vencida, decir quién movió la brecha sería afirmar de más."
+                  },
+                  "data": {
+                    "type": "object",
+                    "additionalProperties": { "type": "string" },
+                    "description": "Cifras y cualificadores del claim, como string exacto. Claves según el código: `brecha` lleva {direccion, delta_pp, horas}; `atribucion` lleva {responsable, paralelo, oficial}; `medidor_en_banda` lleva {indicador, banda, dias}; `regla_cerca` lleva {regla, cumplidas, totales}."
+                  }
+                }
+              }
+            }
+          }
+        },
+
         "summary": {
           "type": "object",
           "required": ["rules_total", "rules_evaluable", "closest_rule", "conditions_met", "conditions_total", "blocked_by", "rules_met"],

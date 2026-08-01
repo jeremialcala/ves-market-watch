@@ -49,6 +49,7 @@ from indicator_engine.domain.calculos import (
     calcular_variacion,
 )
 from indicator_engine.domain.models import (
+    MONEDA_OFICIAL_REFERENCIA,
     OFFICIAL_RATE,
     P2P_BRECHA_ABS,
     P2P_BRECHA_PCT,
@@ -69,9 +70,9 @@ from indicator_engine.domain.reglas import Ruleset, Senal, evaluar_reglas
 
 logger = logging.getLogger("indicator_engine")
 
-# La brecha se calcula contra la tasa oficial de esta moneda (par USDT/VES →
-# el proxy oficial es el USD del BCV).
-MONEDA_OFICIAL_REFERENCIA = "USD"
+# `MONEDA_OFICIAL_REFERENCIA` vive en `domain/models.py`: la brecha se calcula
+# contra la tasa oficial de esa moneda (par USDT/VES → el proxy oficial es el USD
+# del BCV), y desde RF-7 la necesita también el análisis de la revisión.
 
 
 @dataclass(frozen=True, slots=True)

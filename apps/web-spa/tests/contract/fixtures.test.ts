@@ -192,6 +192,35 @@ export const FIXTURE_ANALISIS = {
     blocked_by: "p2p_momentum_bid_3h_pct",
     rules_met: [],
   },
+  // La lectura del mercado (RF-7). El caso de la maqueta: lateral, la brecha
+  // comprimiéndose, y el BCV sin publicar en la ventana — por eso la atribución
+  // es al paralelo y es un hecho, no una inferencia.
+  reading: {
+    version: 1,
+    window_hours: 6,
+    regime: "lateral_comprimiendo",
+    axis_movement: "lateral",
+    axis_gap: "comprimiendo",
+    gauges_near_threshold: 1,
+    claims: [
+      {
+        code: "brecha",
+        data: { direccion: "comprimiendo", delta_pp: "0.90", horas: "6" },
+      },
+      {
+        code: "atribucion",
+        data: { responsable: "paralelo", paralelo: "-8.40", oficial: "0" },
+      },
+      {
+        code: "medidor_en_banda",
+        data: { indicador: "p2p_brecha_pct_buy", banda: "very_low", dias: "90" },
+      },
+      {
+        code: "regla_cerca",
+        data: { regla: "techo_inminente@v1", cumplidas: "1", totales: "3" },
+      },
+    ],
+  },
 } satisfies Schemas["IndicatorAnalysis"] satisfies PayloadAnalisis;
 
 /**

@@ -75,10 +75,10 @@ Estado observado en el repo (conteo de funciones `test_`):
 |---|---|---|---|
 | `ingestor-bcv` | Implementado | **54** (unit, integration, contract, e2e) | Confirmar cobertura de ramas ≥ 80 %; añadir marcador `security` para escenarios T1 (HTML alterado + tasa fuera de rango) |
 | `ingestor-binance` | Implementado | **48** (unit, integration, contract, e2e) | Igual que arriba; escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local |
-| `indicator-engine` | Fases 1, 2, señales (RF-4/RF-5, ADR-0015) y análisis de la revisión (RF-6, ADR-0019) | **170** (unit, contract, integration, e2e) | Confirmar cobertura de ramas ≥ 80 %; recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`); medir con `EXPLAIN ANALYZE` la consulta de percentiles con la tabla en régimen |
+| `indicator-engine` | Fases 1, 2, señales (RF-4/RF-5, ADR-0015), análisis de la revisión (RF-6, ADR-0019) y lectura del estado de mercado (RF-7, ADR-0021) | **244** (unit, contract, integration, e2e) | Confirmar cobertura de ramas ≥ 80 %; recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) y de los dos ejes del régimen (`config/lectura.v1.yaml`); contrastar en vivo la atribución `oficial`/`ambos` un día hábil (el sábado el BCV no publica y `official_stale` la suprime por diseño) |
 | `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) | **39** (unit + integración contra TimescaleDB real) | Confirmar cobertura de ramas ≥ 80 % |
 | `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **103** (unit incl. CORS y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura ≥ 80 % |
-| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **219** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores con lectura real en ES/EN, shell responsive y canarios de paleta, punto de corte y cabeceras CSP) — **88,7 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
+| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **230** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores y lectura del mercado con dato real en ES/EN, shell responsive y canarios de paleta, punto de corte y cabeceras CSP) — **88,2 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
 
 > El plan cubre tanto la **consolidación** de lo existente como la **especificación** de los casos
 > que deben acompañar el código pendiente, para que se escriban junto con la implementación (no
@@ -134,7 +134,7 @@ Notación: `[U]` unit · `[I]` integration · `[C]` contract · `[E]` e2e · `[S
 - `[I]` Consumidor AMQP real; `[E]` flujo `official.rate.updated` → `indicators.updated`.
 
 **Fase 2 y señales (implementadas y verificadas e2e, 2026-07-22 — RF-4/RF-5, ADR-0015) —
-casos cubiertos por la suite actual (170 tests):**
+casos cubiertos por la suite actual (244 tests):**
 - `[U]` Precio de referencia P2P: **mediana y VWAP** del top-N filtrado por lado — cubierto
   (`unit/test_referencia_p2p.py`).
 - `[U]` **Brecha BCV↔P2P** (abs y %), spreads compra/venta, volúmenes agregados, profundidad por
@@ -191,6 +191,31 @@ casos cubiertos por la suite actual (170 tests):**
   revisiones de BUY y SELL del mismo instante conviviendo — `integration/test_analysis_repository.py`.
 - `[E]` Flujo `p2p.snapshot` → `analysis.updated` al bus y a la tabla, con la escala de
   percentiles reales ejercitada — `e2e/test_flujo_snapshot_a_analisis.py`.
+
+### Lectura del estado de mercado (RF-7, ADR-0021)
+
+- `[U]` Los tres tramos de cada eje con el **valor exacto en el umbral** (el umbral no se
+  cruza a sí mismo), y `None` cuando no hay dato — no «lateral»/«estable», que afirmarían
+  quietud sin saberlo — `unit/test_lectura.py`.
+- `[U]` Régimen `null` con **cualquiera** de los dos ejes sin resolver; los ejes que sí
+  resolvieron se publican igual — `unit/test_lectura.py`.
+- `[U]` Atribución con `Δoficial = 0` (BCV sin publicar en la ventana), con el BCV
+  publicando, en el punto exacto de dominancia, y `None` cuando nada se movió —
+  `unit/test_lectura.py`.
+- `[U]` **Los silencios**: sin atribución con la oficial rancia, sin frase de banda en
+  bandas intermedias o con escala en respaldo, sin proximidad a reglas con confianza
+  baja — `unit/test_lectura.py`.
+- `[U]` 12 mutaciones de config que **abortan el arranque**, incluida
+  `dominancia_minima < 0.5`, que haría que los dos lados «dominaran» a la vez —
+  `unit/test_lectura.py`.
+- `[U]` **La guarda de hueco de captura NO se aplica a `official_rate`**, con su propio
+  test nominal: esa serie se persiste solo al cambiar, así que una fila vieja es meseta y
+  `Δ = 0` es la evidencia que la atribución necesita. Con la guarda puesta, la atribución
+  no se disparaba casi nunca — `unit/test_analizar_revision_lectura.py`.
+- `[C]` El evento **con** `reading` valida contra el schema y el evento **sin** `reading`
+  también: la aditividad es lo que permite desplegar el gateway por delante del motor.
+  Seis variantes rechazadas, entre ellas un claim predictivo fuera del enum y prosa
+  colada en el evento — `contract/test_analysis_event_schema.py`.
 
 > **Arranque en frío: comportamiento correcto, no un bug.** En un compose recién
 > levantado `indicators` está vacía, `samples < 200` y **los seis medidores salen en
@@ -311,6 +336,7 @@ cierre de la columna «Verificación fase 04-testing».
 | Vista de análisis con sus números reales | web-spa-dashboard (RF-8) | U/C | web-spa |
 | Idioma ES/EN completo y separadores por locale | web-spa-dashboard (RF-9) | U | web-spa |
 | Tema claro/oscuro explícito y recordado | web-spa-dashboard (RF-10) | U | web-spa |
+| Lectura del mercado sin consejo ni pronóstico, en ES/EN | web-spa-dashboard (RF-12) | U/C | web-spa |
 | Sello `demo · sin fuente` en todo bloque sin dato servido | web-spa-dashboard (RF-5 ampliado) | U/S | web-spa |
 
 ## 9. Pruebas no funcionales

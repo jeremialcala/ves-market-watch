@@ -11,6 +11,7 @@ vigente.
 from __future__ import annotations
 
 import json
+import re
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -25,11 +26,17 @@ from indicator_engine.domain.analisis import (
     cargar_config_analisis,
     construir_analisis,
 )
+from indicator_engine.domain.lectura import (
+    Variaciones,
+    cargar_config_lectura,
+    construir_lectura,
+)
 from indicator_engine.domain.reglas import cargar_ruleset, evaluar_proximidad
 
 SCHEMA = Path(__file__).parents[4] / "schemas" / "analysis.v1.json"
 CONFIG = Path(__file__).parents[2] / "config" / "analisis.v1.yaml"
 RULESET = Path(__file__).parents[2] / "config" / "senales.v1.yaml"
+CONFIG_LECTURA = Path(__file__).parents[2] / "config" / "lectura.v1.yaml"
 
 AS_OF = datetime(2026, 7, 31, 20, 54, tzinfo=UTC)
 TRIGGERED_BY = "3b8d5a10-19c7-4e2f-bb64-0c9a71e5d833"
@@ -59,11 +66,20 @@ def _distribucion(muestras: int) -> Distribucion:
     )
 
 
+def _config_lectura():
+    return cargar_config_lectura(
+        yaml.safe_load(CONFIG_LECTURA.read_text(encoding="utf-8"))
+    )
+
+
 def _evento(
     *,
     con_percentiles: bool = True,
     confianza_baja: bool = False,
     vista: dict[str, Decimal] | None = None,
+    con_lectura: bool = False,
+    official_stale: bool = False,
+    variaciones: Variaciones | None = None,
 ) -> dict:
     config, ruleset = _config(), _ruleset()
     vista = vista if vista is not None else {
@@ -88,9 +104,24 @@ def _evento(
         calc_version=1,
         triggered_by=TRIGGERED_BY,
         confianza_baja=confianza_baja,
-        official_stale=False,
+        official_stale=official_stale,
     )
-    return construir_evento_analisis(analisis)
+    if not con_lectura:
+        return construir_evento_analisis(analisis)
+    lectura = construir_lectura(
+        config=_config_lectura(),
+        indicadores=analisis.indicadores,
+        sintesis=analisis.sintesis,
+        variaciones=variaciones
+        or Variaciones(
+            brecha_pp=Decimal("-1.03"),
+            paralelo=Decimal("-8.40"),
+            oficial=Decimal("0"),
+        ),
+        confianza_baja=confianza_baja,
+        official_stale=official_stale,
+    )
+    return construir_evento_analisis(analisis, lectura=lectura)
 
 
 def test_el_evento_del_productor_cumple_el_schema():
@@ -173,6 +204,128 @@ def test_con_confianza_baja_se_emite_marcado_y_sin_reglas_evaluables():
     assert payload["indicators"], "los medidores siguen publicando su lectura"
     assert payload["summary"]["rules_evaluable"] == 0
     assert payload["summary"]["closest_rule"] is None
+
+
+# -- lectura del estado de mercado (RF-7, ADR-0021) --------------------------
+
+# La vista por defecto no trae momentum —los medidores del panel se publican
+# con lo que haya— y sin él no hay eje de movimiento. Esta sí lo trae, y pone la
+# brecha por debajo de su p10 (10,55) para que la banda sea `very_low`: es la
+# combinación que hace resolver los dos ejes y sostiene la frase orientativa.
+VISTA_LECTURA = {
+    "p2p_brecha_pct_buy": Decimal("9.10"),
+    "p2p_spread_pct": Decimal("0.56"),
+    "p2p_ratio_oferta_demanda": Decimal("0.59"),
+    "p2p_drenaje_oferta_6h_pct": Decimal("29.86"),
+    "p2p_outliers_pct_buy": Decimal("0.50"),
+    "p2p_momentum_bid_3h_pct": Decimal("0.30"),  # |0,30| < 0,5 ⇒ lateral
+}
+
+
+def test_el_evento_con_lectura_cumple_el_schema():
+    _validador().validate(_evento(con_lectura=True, vista=VISTA_LECTURA))
+
+
+def test_la_lectura_es_aditiva_un_productor_sin_config_publica_igual():
+    """Es la razón por la que `reading` es opcional: el gateway puede ir por
+    delante del motor sin que `additionalProperties: false` rompa nada."""
+    _validador().validate(_evento(con_lectura=False))
+    assert "reading" not in _evento(con_lectura=False)["payload"]
+
+
+def test_la_lectura_publica_el_regimen_sus_ejes_y_sus_afirmaciones():
+    reading = _evento(con_lectura=True, vista=VISTA_LECTURA)["payload"]["reading"]
+    assert reading["regime"] == "lateral_comprimiendo"
+    assert (reading["axis_movement"], reading["axis_gap"]) == (
+        "lateral",
+        "comprimiendo",
+    )
+    assert (reading["version"], reading["window_hours"]) == (1, 6)
+    assert [c["code"] for c in reading["claims"]] == [
+        "brecha",
+        "atribucion",
+        "medidor_en_banda",
+        "regla_cerca",
+    ]
+
+
+def test_las_cifras_de_los_claims_viajan_como_string_exacto():
+    """Todo `data` es string (el schema lo exige), y las claves NUMÉRICAS además
+    van en punto fijo: `str(Decimal)` puede dar notación científica."""
+    numericas = {"delta_pp", "paralelo", "oficial", "horas", "dias", "cumplidas",
+                 "totales"}
+    reading = _evento(con_lectura=True, vista=VISTA_LECTURA)["payload"]["reading"]
+    vistas: set[str] = set()
+    for claim in reading["claims"]:
+        for clave, valor in claim["data"].items():
+            assert isinstance(valor, str), (claim["code"], clave)
+            if clave in numericas:
+                vistas.add(clave)
+                assert re.fullmatch(r"-?[0-9]+(\.[0-9]+)?", valor), (clave, valor)
+    assert vistas, "el ejemplo debe traer cifras que comprobar"
+
+
+def test_con_la_oficial_rancia_el_evento_no_lleva_atribucion():
+    """El silencio también es contrato: con una tasa vencida, decir quién movió
+    la brecha sería afirmar de más."""
+    reading = _evento(
+        con_lectura=True, vista=VISTA_LECTURA, official_stale=True
+    )["payload"]["reading"]
+    codigos = [c["code"] for c in reading["claims"]]
+    assert "oficial_rancia" in codigos
+    assert "atribucion" not in codigos
+
+
+def test_sin_brecha_medible_el_regimen_viaja_como_null_y_valida():
+    evento = _evento(
+        con_lectura=True,
+        vista=VISTA_LECTURA,
+        variaciones=Variaciones(brecha_pp=None, paralelo=None, oficial=None),
+    )
+    _validador().validate(evento)
+    reading = evento["payload"]["reading"]
+    assert reading["regime"] is None
+    assert reading["axis_gap"] is None
+    # El eje que SÍ resolvió se publica: se omite la clasificación, no el dato.
+    assert reading["axis_movement"] is not None
+
+
+@pytest.mark.parametrize(
+    "mutacion",
+    [
+        pytest.param(
+            lambda e: e["payload"]["reading"].pop("claims"), id="lectura-sin-claims"
+        ),
+        pytest.param(
+            lambda e: e["payload"]["reading"].__setitem__("axis_gap", "cerrandose"),
+            id="eje-fuera-de-enum",
+        ),
+        pytest.param(
+            lambda e: e["payload"]["reading"]["claims"][0].__setitem__(
+                "code", "va_a_subir"
+            ),
+            id="claim-predictivo-fuera-de-enum",
+        ),
+        pytest.param(
+            lambda e: e["payload"]["reading"]["claims"][0]["data"].__setitem__(
+                "delta_pp", 1.03
+            ),
+            id="cifra-como-numero-en-vez-de-string",
+        ),
+        pytest.param(
+            lambda e: e["payload"]["reading"].__setitem__("gauges_near_threshold", -1),
+            id="conteo-negativo",
+        ),
+        pytest.param(
+            lambda e: e["payload"]["reading"].__setitem__("prosa", "Lateral en…"),
+            id="prosa-en-el-evento",
+        ),
+    ],
+)
+def test_variantes_invalidas_de_la_lectura_son_rechazadas(mutacion):
+    evento = _evento(con_lectura=True, vista=VISTA_LECTURA)
+    mutacion(evento)
+    assert not _validador().is_valid(evento)
 
 
 @pytest.mark.parametrize(

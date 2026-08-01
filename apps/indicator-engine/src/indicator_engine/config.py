@@ -16,6 +16,7 @@ _APP_DIR = Path(__file__).resolve().parents[2]
 SCHEMAS_POR_DEFECTO = _RAIZ_REPO / "schemas"
 RULESET_POR_DEFECTO = _APP_DIR / "config" / "senales.v1.yaml"
 ANALISIS_POR_DEFECTO = _APP_DIR / "config" / "analisis.v1.yaml"
+LECTURA_POR_DEFECTO = _APP_DIR / "config" / "lectura.v1.yaml"
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,6 +44,9 @@ class Settings:
     analysis_config_path: str
     analysis_cache_ttl_min: int
     analysis_query_timeout_s: float
+    # Config de la lectura del mercado (RF-7); sin archivo, el analisis se
+    # publica igual pero sin `reading`.
+    reading_config_path: str
 
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> "Settings":
@@ -70,4 +74,7 @@ class Settings:
             ),
             analysis_cache_ttl_min=int(env.get("ANALYSIS_CACHE_TTL_MIN", "15")),
             analysis_query_timeout_s=float(env.get("ANALYSIS_QUERY_TIMEOUT_S", "5.0")),
+            reading_config_path=env.get(
+                "READING_CONFIG_PATH", str(LECTURA_POR_DEFECTO)
+            ),
         )

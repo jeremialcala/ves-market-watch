@@ -1,0 +1,52 @@
+# Config de la lectura del estado de mercado (RF-7) — CONFIG VERSIONADA EN REPO.
+#
+# Mismo patrón que `senales.v1.yaml` y `analisis.v1.yaml`: se carga al arrancar,
+# no se edita en runtime (ASVS V14, A02/A08). Cambiar un umbral es un commit
+# auditable; subir `version` corta una definición nueva, y esa versión viaja en
+# el payload como `reading.version`.
+#
+# Qué define: los umbrales que clasifican los DOS EJES del régimen y las dos
+# constantes que deciden a quién se atribuye un movimiento y qué cuenta como
+# «cerca de un umbral».
+#
+# Lo que NO define: nada predictivo. El régimen describe el presente. Ver
+# ADR-0021 y el no-objetivo del PRD del motor («recomendaciones financieras
+# personalizadas»).
+
+version: 1
+
+# Ventana sobre la que se mide la variación de la brecha y de sus dos piernas.
+# 6 h es la misma ventana que ya usa el drenaje de oferta, así que el motor no
+# estrena una noción temporal nueva.
+ventana_horas: 6
+
+# Si el punto histórico más cercano es más viejo que ventana + holgura, hubo
+# hueco de captura y la variación NO es comparable: se omite y el eje queda sin
+# resolver. Mismo criterio que las ventanas móviles del motor.
+holgura_horas: 1
+
+umbrales:
+  # Eje «movimiento del paralelo», en % de variación del bid a 3 h.
+  # 0,5 no es un número elegido a ojo: es EXACTAMENTE el umbral con el que
+  # `arranque_alcista` (senales.v1.yaml) considera que el momentum significa
+  # algo. Reutilizarlo evita que el producto tenga dos definiciones de «sube».
+  # Medido sobre 14.168 muestras de 90 d: p10 −0,66 · p50 −0,04 · p90 +0,60.
+  movimiento: "0.5"
+
+  # Eje «dinámica de la brecha», en PUNTOS PORCENTUALES de brecha sobre la
+  # ventana. Medido sobre la serie horaria real: la variación absoluta media a
+  # 6 h es 0,56 pp y el rango p25–p75 es ±0,5. Es decir: «estable» significa
+  # «se movió menos que un movimiento típico de 6 h», no una corazonada.
+  brecha: "0.5"
+
+  # Fracción del movimiento total (|Δparalelo| + |Δoficial|) que un lado debe
+  # aportar para llevarse la atribución en solitario; por debajo, `ambos`.
+  # Con el BCV sin publicar en la ventana, Δoficial es exactamente 0 y el peso
+  # del paralelo es 1: la atribución es un hecho, no un juicio.
+  dominancia_minima: "0.8"
+
+  # Distancia máxima a un umbral para contarlo como «cerca», en COORDENADAS DE
+  # DIBUJO [0,1]. En unidades crudas no se podría: 0,1 significa una cosa en un
+  # porcentaje de brecha y otra en un ratio de oferta/demanda. Normalizado, 0,1
+  # es «a una décima del ancho de su propia escala».
+  proximidad_umbral: "0.1"

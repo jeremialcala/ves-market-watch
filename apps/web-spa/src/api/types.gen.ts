@@ -569,6 +569,56 @@ export interface components {
             rules_met: string[];
         };
         /**
+         * @description Una afirmación de la lectura, en vocabulario neutro de idioma. La prosa
+         *     ES/EN la redacta el cliente.
+         */
+        ReadingClaim: {
+            /**
+             * @description `atribucion` solo aparece si la brecha se movió **y** la oficial no
+             *     está rancia: con una tasa vencida, decir quién movió la brecha sería
+             *     afirmar de más.
+             * @enum {string}
+             */
+            code: "confianza_baja" | "oficial_rancia" | "brecha" | "atribucion" | "medidor_en_banda" | "regla_cerca";
+            /**
+             * @description Cifras y cualificadores, como string exacto. Claves según el código:
+             *     `brecha` → {direccion, delta_pp, horas} · `atribucion` →
+             *     {responsable, paralelo, oficial} · `medidor_en_banda` →
+             *     {indicador, banda, dias} · `regla_cerca` → {regla, cumplidas, totales}.
+             */
+            data: {
+                [key: string]: string;
+            };
+        };
+        /**
+         * @description Lectura del estado de mercado (ADR-0021). Describe el **presente**: el
+         *     régimen es la celda de una matriz de dos ejes clasificados por umbrales
+         *     de config versionada, no una anticipación de lo que viene. **No contiene
+         *     consejo**: ninguna afirmación dice qué hacer.
+         */
+        MarketReading: {
+            /** @description Versión de la config de lectura (umbrales, ventana, dominancia). */
+            version: number;
+            window_hours: number;
+            /**
+             * @description `<axis_movement>_<axis_gap>`, p. ej. `lateral_comprimiendo`. `null` si
+             *     cualquiera de los dos ejes no resolvió — media clasificación no se
+             *     publica, porque «lateral» a secas daría a entender que la brecha está
+             *     quieta cuando no se sabe.
+             */
+            regime: string | null;
+            axis_movement: ("subiendo" | "lateral" | "bajando") | null;
+            axis_gap: ("ampliando" | "estable" | "comprimiendo") | null;
+            /**
+             * @description Medidores con algún umbral sin cruzar a tiro de piedra, medido en
+             *     coordenadas de dibujo — normalizar es lo único que hace comparable un
+             *     porcentaje de brecha con un ratio.
+             */
+            gauges_near_threshold: number;
+            /** @description En ORDEN de lectura; lo que invalida al resto va primero. */
+            claims: components["schemas"]["ReadingClaim"][];
+        };
+        /**
          * @description Lectura de los medidores del panel en una revisión (ADR-0019). Es el
          *     `payload` del evento `analysis.updated`, servido verbatim.
          */
@@ -595,6 +645,7 @@ export interface components {
             indicators: components["schemas"]["AnalysisIndicator"][];
             rule_proximity: components["schemas"]["RuleProximity"][];
             summary: components["schemas"]["AnalysisSummary"];
+            reading?: components["schemas"]["MarketReading"];
         };
         /** @description Estado agregado y por componente, sin detalles internos. */
         Health: {

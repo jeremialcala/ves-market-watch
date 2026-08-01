@@ -78,8 +78,10 @@ afterAll(() => {
 
 // El panel de medidores tiene su propia suite: `tests/component/medidores.test.tsx`.
 
+// La lectura del mercado tiene su propia suite: `tests/component/lectura.test.tsx`.
+
 describe("MarketRegimeCard", () => {
-  it("sella el régimen como demo y deja los dos indicadores reales al lado", () => {
+  it("sin lectura lo dice, y deja los dos indicadores reales al lado", () => {
     marketStore.push({
       topic: "indicators",
       event_id: "evento-regimen",
@@ -99,7 +101,9 @@ describe("MarketRegimeCard", () => {
       },
     });
     render(<MarketRegimeCard />);
-    expect(screen.getByText("demo · sin fuente")).toBeTruthy();
+    // El régimen dejó de ser demo: sin lectura se dice, no se sella un ejemplo.
+    expect(screen.queryByText("demo · sin fuente")).toBeNull();
+    expect(screen.getByText(/sin lectura del mercado/i)).toBeTruthy();
     expect(screen.getByText("0,50 %")).toBeTruthy();
   });
 });

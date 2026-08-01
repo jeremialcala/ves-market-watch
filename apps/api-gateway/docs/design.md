@@ -101,7 +101,9 @@ JWKS_URI=https://auth.higerotech.com/.well-known/jwks.json
 
 ## Contratos
 - **REST:** `docs/openapi.yaml` (OpenAPI 3.1, validada con `openapi-spec-validator`).
-  9 endpoints `/api/v1` (v0.5.0 suma `/analysis/current`), seguridad OAuth2 con los 5
+  9 endpoints `/api/v1` (v0.5.0 suma `/analysis/current`; v0.6.0 suma el objeto
+  **`reading`** opcional a `IndicatorAnalysis` — la lectura del mercado de ADR-0021,
+  aditiva para que el gateway pueda ir por delante del motor), seguridad OAuth2 con los 5
   scopes — el análisis **reutiliza `read:indicators`** (ADR-0019: un permiso nuevo
   exigiría aprovisionarlo en el tenant y daría 403 a todo token ya emitido); ajustes al
   implementarse:

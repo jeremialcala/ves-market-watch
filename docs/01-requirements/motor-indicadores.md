@@ -81,6 +81,28 @@ forma reactiva: cada nuevo dato recalcula y publica los indicadores afectados.
     emisión (el cooldown pudo suprimirla).
   - Un fallo del análisis **no** manda el snapshot a la DLQ ni impide publicar
     indicadores y señales.
+- RF-7: **Lectura del estado de mercado.** Por cada revisión, además de la lectura de
+  cada medidor (RF-6), producir una lectura del mercado **como un todo**, comprensible
+  por quien administra su presupuesto mensual: el **régimen** —celda de una matriz de dos
+  ejes, movimiento del paralelo × dinámica de la brecha, clasificados por umbrales de
+  config versionada— y una lista **ordenada** de afirmaciones con sus cifras, que incluye
+  la **atribución** de qué lado movió la brecha (`reading` en `analysis.updated`).
+
+  Reglas que lo acotan, todas verificables:
+  - **Describe el presente, no lo anticipa.** Ni pronósticos, ni probabilidades, ni
+    horizontes temporales. El régimen es una clasificación reproducible a mano desde el
+    payload, no un modelo.
+  - **No aconseja.** Ninguna afirmación dice qué hacer; lo que orienta va en condicional.
+    Es el no-objetivo «recomendaciones financieras personalizadas» aplicado.
+  - **Si un eje no resuelve, no hay régimen.** Los ejes que sí resolvieron se publican:
+    se omite la clasificación, no el dato. Media clasificación engañaría.
+  - La **atribución se calla** cuando la oficial está rancia: la brecha se calculó contra
+    una tasa vencida, así que decir quién la movió sería afirmar de más.
+  - Solo se comentan las bandas **extremas**: en las intermedias, o con escala en
+    respaldo, la frase orientativa sería falsa aunque suene bien.
+  - El motor **clasifica** en códigos neutros de idioma; la prosa ES/EN la redacta el
+    cliente, sin decidir nada sobre el orden.
+  - La aclaración de que no es consejo ni pronóstico es **obligatoria** en la UI.
 
 ```mermaid
 requirementDiagram
@@ -120,6 +142,12 @@ requirementDiagram
       risk: high
       verifymethod: test
     }
+    requirement RF7 {
+      id: "RF-7"
+      text: "Lectura del estado de mercado: regimen descriptivo y atribucion"
+      risk: high
+      verifymethod: test
+    }
     requirement SEC1 {
       id: "ASVS-V5.1"
       text: "Validacion de esquema de eventos consumidos"
@@ -144,6 +172,12 @@ requirementDiagram
     element SuiteAnalisis {
       type: "prueba"
     }
+    element LecturaYaml {
+      type: "config versionada"
+    }
+    element SuiteLectura {
+      type: "prueba"
+    }
     Engine - satisfies -> RF1
     Engine - satisfies -> RF2
     Engine - satisfies -> RF3
@@ -159,9 +193,13 @@ requirementDiagram
     AnalisisYaml - satisfies -> RF6
     Engine - satisfies -> RF6
     SuiteAnalisis - verifies -> RF6
+    LecturaYaml - satisfies -> RF7
+    Engine - satisfies -> RF7
+    SuiteLectura - verifies -> RF7
+    RF7 - derives -> RF6
 ```
 
-*Eje trazabilidad — fase 01 / Gate 0, actualizado a la implementación: RF-1/2/3/5 y la validación de esquema (ASVS V5.1) satisfechos y verificados por la suite. RF-4 (señales, `ReglasYaml`) quedó satisfecho por el motor de reglas versionado (RF-4/ADR-0015, 2026-07-22) y verificado por `SuiteSenales` (reglas, cooldown, contrato del productor, e2e en vivo). RF-6 (análisis de la revisión, ADR-0019, 2026-08-01) lo satisfacen el engine y `AnalisisYaml` —la config versionada que declara ventana, cortes, mínimo de muestras y dominios de respaldo— y lo verifica `SuiteAnalisis` (bandas, degradación de escala, desempates deterministas, cache con reloj inyectado, contrato del productor y e2e en vivo). RF-5 se completa: el engine publica `indicators.updated`, `signals.emitted` y `analysis.updated`.*
+*Eje trazabilidad — fase 01 / Gate 0, actualizado a la implementación: RF-1/2/3/5 y la validación de esquema (ASVS V5.1) satisfechos y verificados por la suite. RF-4 (señales, `ReglasYaml`) quedó satisfecho por el motor de reglas versionado (RF-4/ADR-0015, 2026-07-22) y verificado por `SuiteSenales` (reglas, cooldown, contrato del productor, e2e en vivo). RF-6 (análisis de la revisión, ADR-0019, 2026-08-01) lo satisfacen el engine y `AnalisisYaml` —la config versionada que declara ventana, cortes, mínimo de muestras y dominios de respaldo— y lo verifica `SuiteAnalisis` (bandas, degradación de escala, desempates deterministas, cache con reloj inyectado, contrato del productor y e2e en vivo). RF-5 se completa: el engine publica `indicators.updated`, `signals.emitted` y `analysis.updated`. RF-7 (lectura del estado de mercado, ADR-0021, 2026-08-01) lo satisfacen el engine y `LecturaYaml` —los umbrales de los dos ejes, la ventana y las constantes de dominancia y proximidad— y lo verifica `SuiteLectura` (tramos de cada eje, régimen nulo con un eje sin resolver, atribución sobre la identidad exacta, los silencios por oficial rancia / escala en respaldo / confianza baja, config inválida abortando el arranque, y la asimetría de la guarda de hueco entre series continuas y `official_rate`). RF-7 deriva de RF-6: cita sus cifras y viaja en su mismo evento para que no puedan contradecirse.*
 
 ## Requisitos de seguridad (mapeados a OWASP ASVS)
 | Req | ASVS | Nivel | OWASP Top 10 |
