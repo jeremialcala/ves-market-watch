@@ -90,6 +90,8 @@ gitGraph
     commit id: "7ac255a"
     commit id: "f7280f1"
     commit id: "f074aab"
+    commit id: "47d1286"
+    commit id: "798b83b"
 ```
 
 ### Estado actual de las ramas
@@ -97,7 +99,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `f074aab` | 2026-07-31 | 56 |
+| `develop` | `798b83b` | 2026-07-31 | 58 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -113,6 +115,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `798b83b` | commit | — | Jeremi Alcala | 2026-07-31 | security(web-spa): la CSP no se enviaba; frame-src del tenant anadido |
+| `47d1286` | commit | — | Jeremi Alcala | 2026-07-31 | docs(repo-history): regenerar |
 | `f074aab` | commit | — | Jeremi Alcala | 2026-07-31 | fix(web-spa): la tira de estado no se pinta ni un fotograma en movil |
 | `f7280f1` | commit | — | Jeremi Alcala | 2026-07-31 | docs(repo-history): regenerar tras el arreglo de la paleta |
 | `7ac255a` | commit | — | Jeremi Alcala | 2026-07-31 | fix(web-spa): la paleta de datos deja de ser la paleta de marca |
