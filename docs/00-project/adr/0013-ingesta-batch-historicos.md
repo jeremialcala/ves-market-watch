@@ -68,5 +68,18 @@ variabilidad y si el histórico entra por el mismo camino que los datos en vivo.
 - (−) La serie histórica y la serie en vivo viven en tablas distintas
   (`historical_market_snapshots` vs. `p2p_snapshots_raw`): quien las combine (engine
   fase 2) deberá unificarlas explícitamente, decisión consciente y documentada.
+
+  **Enmienda 2026-08-01: para las tasas oficiales se decidió lo contrario, y a
+  propósito.** El histórico del BCV (RF-6) carga en `official_rates`, la MISMA tabla
+  que el `ingestor-bcv` en vivo, en vez de una tabla espejo. La razón es que aquí
+  ambas series son *el mismo dato de la misma fuente* —el BCV— por dos caminos de
+  captura distintos, mientras que el histórico de mercado venía de un sistema externo
+  con otra definición de precio. Separarlas habría obligado a que
+  `/rates/official/history` uniera dos tablas para responder lo mismo.
+
+  Lo que sí se conserva es la distinción: `source` marca la procedencia y ninguna
+  consulta la filtra, así que aislar las filas históricas sigue siendo una cláusula
+  `WHERE`. Y el orden por `captured_at` garantiza que el backfill rellene hacia atrás
+  sin reescribir hacia delante.
 - (−) Heurística de columnas puede equivocarse ante exports ambiguos → mitigación:
   log del mapeo detectado + `--dry-run`.

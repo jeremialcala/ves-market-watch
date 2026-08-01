@@ -8,6 +8,7 @@ from typing import Protocol, Sequence
 
 from ingestor_historico.domain.estadisticas import PuntoSerie
 from ingestor_historico.domain.models import SnapshotHistorico
+from ingestor_historico.domain.tasas_oficiales import TasaOficialHistorica
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,3 +25,13 @@ class RepositorioHistorico(Protocol):
     async def leer_puntos(
         self, desde: datetime | None, hasta: datetime | None
     ) -> list[PuntoSerie]: ...
+
+
+class RepositorioTasasOficiales(Protocol):
+    """Puerto aparte del de snapshots: son tablas distintas y casos de uso
+    distintos. Fundirlos obligaría al adaptador en memoria del `--dry-run` a
+    fingir métodos que ese comando nunca llama."""
+
+    async def guardar_tasas(
+        self, tasas: Sequence[TasaOficialHistorica]
+    ) -> ResumenPersistencia: ...

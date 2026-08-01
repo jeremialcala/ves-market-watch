@@ -76,7 +76,7 @@ Estado observado en el repo (conteo de funciones `test_`):
 | `ingestor-bcv` | Implementado | **54** (unit, integration, contract, e2e) | Confirmar cobertura de ramas ≥ 80 %; añadir marcador `security` para escenarios T1 (HTML alterado + tasa fuera de rango) |
 | `ingestor-binance` | Implementado | **48** (unit, integration, contract, e2e) | Igual que arriba; escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local |
 | `indicator-engine` | Fases 1, 2, señales (RF-4/RF-5, ADR-0015), análisis de la revisión (RF-6, ADR-0019) y lectura del estado de mercado (RF-7, ADR-0021) | **244** (unit, contract, integration, e2e) | Confirmar cobertura de ramas ≥ 80 %; recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) y de los dos ejes del régimen (`config/lectura.v1.yaml`); contrastar en vivo la atribución `oficial`/`ambos` un día hábil (el sábado el BCV no publica y `official_stale` la suprime por diseño) |
-| `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) | **39** (unit + integración contra TimescaleDB real) | Confirmar cobertura de ramas ≥ 80 % |
+| `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) — más el histórico de tasas oficiales del BCV (RF-6, 2026-08-01) | **68** (unit + integración contra TimescaleDB real) | Confirmar cobertura de ramas ≥ 80 %; integración del cargador de oficiales contra TimescaleDB real (hoy cubierto en unit + verificado sobre la carga real de 31.078 filas) |
 | `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **103** (unit incl. CORS y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura ≥ 80 % |
 | `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **230** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores y lectura del mercado con dato real en ES/EN, shell responsive y canarios de paleta, punto de corte y cabeceras CSP) — **88,2 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
 
@@ -337,6 +337,7 @@ cierre de la columna «Verificación fase 04-testing».
 | Idioma ES/EN completo y separadores por locale | web-spa-dashboard (RF-9) | U | web-spa |
 | Tema claro/oscuro explícito y recordado | web-spa-dashboard (RF-10) | U | web-spa |
 | Lectura del mercado sin consejo ni pronóstico, en ES/EN | web-spa-dashboard (RF-12) | U/C | web-spa |
+| Histórico de tasas oficiales: columna ASK, escala BsD y procedencia visible | ingesta-historica (RF-6) | U | ingestor-historico |
 | Sello `demo · sin fuente` en todo bloque sin dato servido | web-spa-dashboard (RF-5 ampliado) | U/S | web-spa |
 
 ## 9. Pruebas no funcionales

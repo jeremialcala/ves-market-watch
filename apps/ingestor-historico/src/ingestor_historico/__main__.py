@@ -4,6 +4,10 @@ cargar <archivo.csv> [--dry-run] [--tz -04:00]
     Carga un export histórico en TimescaleDB (idempotente). Con --dry-run
     parsea y resume sin tocar la base.
 
+cargar-oficiales <archivo.csv> [--dry-run] [--tz -04:00] [--monedas USD,EUR]
+    Carga el histórico de tasas oficiales del BCV en `official_rates`
+    (idempotente). Sin --monedas carga todas las del export.
+
 stats [--desde ISO] [--hasta ISO] [--por-dia] [--json]
     Varianza histórica del precio (global y por banco) sobre lo cargado.
 """
@@ -18,10 +22,17 @@ from datetime import datetime
 from pathlib import Path
 
 from ingestor_historico.adapters.csv_reader import leer_csv
-from ingestor_historico.adapters.memory import InMemoryRepositorioHistorico
+from ingestor_historico.adapters.memory import (
+    InMemoryRepositorioHistorico,
+    InMemoryRepositorioTasasOficiales,
+)
 from ingestor_historico.application.cargar_historicos import (
     CargarHistoricos,
     ResumenCarga,
+)
+from ingestor_historico.application.cargar_tasas_oficiales import (
+    CargarTasasOficiales,
+    ResumenCargaOficiales,
 )
 from ingestor_historico.config import Settings, parse_tz
 from ingestor_historico.domain.estadisticas import (
@@ -45,6 +56,26 @@ def _imprimir_resumen_carga(resumen: ResumenCarga) -> None:
         # Salida ASCII: la consola de Windows puede ser cp1252.
         print(f"rango:        {resumen.desde.isoformat()} -> {resumen.hasta.isoformat()}")
     print(f"bancos:       {', '.join(resumen.bancos) or '-'}")
+
+
+def _imprimir_resumen_oficiales(resumen: ResumenCargaOficiales) -> None:
+    print(f"archivo:      {resumen.archivo}")
+    print(f"filas:        {resumen.total_filas}")
+    print(f"insertadas:   {resumen.insertadas}")
+    print(f"duplicadas:   {resumen.duplicadas}")
+    for motivo, cantidad in sorted(resumen.descartadas.items()):
+        print(f"descartadas:  {cantidad} ({motivo})")
+    if resumen.sin_hora:
+        # No es un detalle menor: esas filas llevan la FECHA real y una hora
+        # que no se sabe. Van marcadas en `source` para que se puedan aislar.
+        print(
+            f"sin hora:     {resumen.sin_hora} "
+            f"(fecha real, hora desconocida -> source='BCV-historico-sin-hora')"
+        )
+    if resumen.desde and resumen.hasta:
+        # Salida ASCII: la consola de Windows puede ser cp1252.
+        print(f"fecha valor:  {resumen.desde.isoformat()} -> {resumen.hasta.isoformat()}")
+    print(f"monedas:      {len(resumen.monedas)} ({', '.join(resumen.monedas) or '-'})")
 
 
 def _formato_resumen(nombre: str, serie: ResumenSerie) -> str:
@@ -112,6 +143,42 @@ async def _cmd_cargar(args: argparse.Namespace, settings: Settings) -> None:
             await cerrar()
 
 
+async def _cmd_cargar_oficiales(
+    args: argparse.Namespace, settings: Settings
+) -> None:
+    tz = parse_tz(args.tz or settings.tz_origen)
+    cabeceras, filas = leer_csv(args.archivo)
+    monedas = (
+        frozenset(m.strip().upper() for m in args.monedas.split(",") if m.strip())
+        if args.monedas
+        else None
+    )
+
+    if args.dry_run:
+        repositorio = InMemoryRepositorioTasasOficiales()
+        cerrar = None
+    else:
+        from ingestor_historico.adapters.timescale.tasas_oficiales import (
+            TimescaleRepositorioTasasOficiales,
+        )
+
+        repositorio = await TimescaleRepositorioTasasOficiales.connect(
+            settings.database_url
+        )
+        cerrar = repositorio.close
+
+    try:
+        resumen = await CargarTasasOficiales(repositorio).ejecutar(
+            cabeceras, filas, Path(args.archivo).name, tz, monedas
+        )
+        _imprimir_resumen_oficiales(resumen)
+        if args.dry_run:
+            print("(dry-run: nada se persistio)")
+    finally:
+        if cerrar:
+            await cerrar()
+
+
 async def _cmd_stats(args: argparse.Namespace, settings: Settings) -> None:
     from ingestor_historico.adapters.timescale.repository import (
         TimescaleRepositorioHistorico,
@@ -169,6 +236,16 @@ def main() -> None:
     p_cargar.add_argument("--dry-run", action="store_true", help="parsear sin persistir")
     p_cargar.add_argument("--tz", help="zona horaria del export (default TZ_ORIGEN, -04:00)")
 
+    p_oficiales = sub.add_parser(
+        "cargar-oficiales", help="cargar el histórico de tasas oficiales del BCV"
+    )
+    p_oficiales.add_argument("archivo", help="ruta al export CSV (bcv_fx_historico.csv)")
+    p_oficiales.add_argument("--dry-run", action="store_true", help="parsear sin persistir")
+    p_oficiales.add_argument("--tz", help="zona del export (default TZ_ORIGEN, -04:00)")
+    p_oficiales.add_argument(
+        "--monedas", help="lista separada por comas (default: todas las del export)"
+    )
+
     p_stats = sub.add_parser("stats", help="varianza histórica de lo cargado")
     p_stats.add_argument("--desde", help="ISO 8601 (con offset), inclusive")
     p_stats.add_argument("--hasta", help="ISO 8601 (con offset), inclusive")
@@ -183,7 +260,12 @@ def main() -> None:
     )
 
     settings = Settings.from_env()
-    comando = _cmd_cargar if args.comando == "cargar" else _cmd_stats
+    comandos = {
+        "cargar": _cmd_cargar,
+        "cargar-oficiales": _cmd_cargar_oficiales,
+        "stats": _cmd_stats,
+    }
+    comando = comandos[args.comando]
     try:
         asyncio.run(comando(args, settings))
     except KeyboardInterrupt:

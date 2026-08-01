@@ -1,7 +1,8 @@
 # ingestor-historico
 
 Carga batch de **históricos de precio del mercado USDT/VES** desde exports CSV de
-sistemas previos, y cálculo de la **varianza histórica** (global, por banco, por día).
+sistemas previos, del **histórico de tasas oficiales del BCV**, y cálculo de la
+**varianza histórica** (global, por banco, por día).
 PRD: `docs/01-requirements/ingesta-historica.md` · Decisión de diseño: ADR-0013.
 
 A diferencia de los demás ingestores, es un proceso **batch por demanda** (CLI, sin
@@ -15,6 +16,11 @@ python -m ingestor_historico cargar "ruta/al/query_result_….csv"
 
 # Inspección previa sin tocar la base
 python -m ingestor_historico cargar export.csv --dry-run
+
+# Cargar el histórico de tasas oficiales del BCV en `official_rates`
+python -m ingestor_historico cargar-oficiales "ruta/al/bcv_fx_historico.csv"
+python -m ingestor_historico cargar-oficiales bcv_fx_historico.csv --dry-run
+python -m ingestor_historico cargar-oficiales bcv_fx_historico.csv --monedas USD,EUR
 
 # Varianza histórica de lo cargado
 python -m ingestor_historico stats                 # serie completa

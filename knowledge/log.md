@@ -7,6 +7,33 @@ timestamp: 2026-08-01T12:00:00Z
 
 # Log
 
+## 2026-08-01 (noche) — La serie oficial arranca en 2020, no en julio de 2026
+- Cargadas **31.078 filas / 23 monedas** en `official_rates` desde el export de los XLS
+  del BCV, con un comando nuevo del `ingestor-historico` (`cargar-oficiales`, RF-6).
+- **La decisión de riesgo era de qué columna sacar el valor**, y se resolvió midiendo:
+  el export trae BID y ASK, y lo que el scraper guarda hoy coincide a ocho decimales
+  con el ASK. La verificación posterior lo confirma: 75 pares solapados, 75 coinciden,
+  0 difieren. Con la BID el error habría sido invisible —números plausibles— y habría
+  metido un escalón falso justo en la unión con la serie viva.
+- **La redenominación de 2021 (÷ 1.000.000) se absorbe** usando la columna en escala
+  BsD. Con la cruda, la serie daría en octubre de 2021 un salto de seis órdenes de
+  magnitud que nunca ocurrió.
+- **Un «salto del 87 %» que resultó ser un hueco.** Al buscar escalones falsos, el
+  mayor factor diario de USD salía en 2021-04-06. No era un escalón: es que faltan los
+  92 días anteriores. El dataset de origen tiene **dos trimestres truncados**
+  (`2021-01-04 → 2021-04-04` y `2023-07-05 → 2023-10-01`), porque dos XLS del BCV
+  vienen con 9 y 2 días en vez de un trimestre. Declarado en la doc para que nadie lo
+  lea como «el BCV dejó de publicar».
+- **44 filas con la hora inventada, y marcadas como tales.** Dos jornadas
+  (2020-04-14 y 2026-06-25) no traen hora de publicación en el XLS. Descartarlas habría
+  dejado huecos falsos; se usa la fecha real a las 00:00 y la fila lo declara en
+  `source`, no solo el resumen de la carga: quien consulte la tabla dentro de un año
+  tiene que poder aislarlas.
+- ADR-0013 **enmendado**: decía que histórico y vivo viven en tablas distintas. Para las
+  tasas oficiales se hizo al revés a propósito — son el mismo dato de la misma fuente
+  por dos caminos de captura, y separarlas obligaría a unir dos tablas para responder
+  lo mismo.
+
 ## 2026-08-01 (noche) — Barrido de coherencia tras ADR-0021
 - **La misma contradicción que enmendé en ADR-0019 pto. 9 estaba también en el
   PRD del motor** (RF-6: «nada de régimen, probabilidades ni horizontes») y se me

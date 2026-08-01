@@ -89,6 +89,42 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Histórico de tasas oficiales del BCV: la serie arranca en 2020, no en julio de
+  2026 (2026-08-01, RF-6 de ADR-0013).** `ingestor-historico` gana el comando
+  `cargar-oficiales`, que carga el export de los XLS publicados por el propio BCV en
+  `official_rates`. **31.078 filas, 23 monedas, `value_date` 2020-03-30 → 2026-08-03.**
+  - **La columna se eligió midiendo, no leyendo el nombre.** El export trae BID y ASK;
+    el valor que el scraper guarda hoy coincide **a ocho decimales** con el ASK. La
+    verificación tras la carga es la prueba: en las **75** combinaciones (moneda,
+    `value_date`) donde histórico y serie viva se solapan, **75 coinciden y 0 difieren**.
+    Con la BID habría un escalón falso justo en la unión, contaminando toda brecha
+    calculada a caballo de la frontera.
+  - **La redenominación de 2021 queda absorbida.** Venezuela dividió el bolívar entre
+    1.000.000 el 2021-10-01; se carga la columna en escala BsD, la única comparable en
+    todo el periodo. Verificado: la serie pasa de 4,1386 (2021-09-29) a 4,1818
+    (2021-10-04), sin salto de seis órdenes de magnitud.
+  - **El histórico no puede pisar la serie viva.** `captured_at` es la hora de
+    publicación del BCV —anterior a nuestra captura del mismo `value_date`— y las
+    consultas resuelven por `captured_at` más reciente. Comprobado tras cargar.
+  - **La procedencia viaja en el dato**, no solo en el resumen de la carga: `source`
+    distingue `BCV` de `BCV-historico`, y las **44** filas (dos jornadas) cuya hora de
+    publicación no consta en el XLS de origen llevan `BCV-historico-sin-hora` — la
+    fecha es real, la hora es el arranque del día. Descartarlas habría dejado dos
+    huecos que se leerían como «el BCV no publicó».
+  - **Dos huecos de un trimestre, heredados del origen y declarados**:
+    `2021-01-04 → 2021-04-04` y `2023-07-05 → 2023-10-01`. Dos XLS trimestrales del BCV
+    vienen truncados (uno trae 9 días, otro 2). No es pérdida de la carga: esos días no
+    existen en la fuente.
+  - Sin publicación al bus (ADR-0013): reemitir seis años de `official.rate.updated`
+    dispararía el motor como si fueran cambios de hoy. Solo `official_rates`; **no** se
+    sembró `indicators.official_rate`, donde un `calc_version` mentiría sobre qué
+    fórmula generó esas filas.
+  - ADR-0013 queda **enmendado**: sus consecuencias decían que histórico y vivo viven
+    en tablas distintas. Para las tasas oficiales se decidió lo contrario y a propósito
+    —son el mismo dato de la misma fuente por dos caminos de captura—, y separarlas
+    habría obligado a `/rates/official/history` a unir dos tablas para lo mismo.
+  - Suite del servicio: 39 → **68 tests**.
+
 - **Lectura del estado de mercado — la tarjeta de régimen deja de ser maqueta
   (2026-08-01, RF-7 / RF-12, ADR-0021).** «Lectura de hoy» era literal de arriba
   abajo, incluida una barra de confianza al `width: "68%"` escrita a mano. Ahora

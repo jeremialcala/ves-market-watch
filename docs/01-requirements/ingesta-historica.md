@@ -5,7 +5,7 @@
 - **Fecha:** 2026-07-11
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 01-requirements
-- **Versión:** 0.2.0
+- **Versión:** 0.3.0
 
 ## Problema y contexto
 Antes de que existiera la plataforma, un sistema previo capturó cada ~10 minutos el
@@ -75,6 +75,27 @@ que recibe**, no asumir un layout fijo.
 - **RF-5** Resumen de carga auditable: filas totales, insertadas, duplicadas,
   descartadas por motivo, rango de fechas y bancos detectados; `--dry-run` parsea y
   resume sin persistir.
+- **RF-6** **Histórico de tasas oficiales del BCV** (2026-08-01): cargar el export
+  `bcv_fx_historico.csv` a `official_rates` —la MISMA tabla que alimenta el
+  `ingestor-bcv` en vivo—, de forma idempotente por su PK `(captured_at, currency)`.
+
+  Reglas que lo acotan, todas verificables:
+  - El valor sale de la columna **ASK**, no de la BID: es la que coincide a ocho
+    decimales con lo que el scraper guarda hoy. La BID metería un escalón falso en la
+    unión entre histórico y serie viva.
+  - Se usa la escala **BsD**, no la cruda: Venezuela redenominó el bolívar el
+    2021-10-01 dividiendo entre 1.000.000, y solo la columna normalizada es comparable
+    a lo largo de todo el periodo.
+  - `captured_at` es la **hora de publicación del BCV**, no la de la carga, y las
+    fechas naive del export se interpretan en hora de Venezuela (`TZ_ORIGEN`).
+  - La procedencia viaja en `source`: las filas históricas **no se confunden** con las
+    capturadas, y las jornadas cuya hora de publicación no consta en el XLS de origen
+    se marcan aparte — la fecha es real, la hora no se sabe.
+  - El histórico **no puede pisar la serie viva**: donde ambas cubren el mismo
+    `value_date`, la consulta resuelve por `captured_at` más reciente, y la publicación
+    del BCV es anterior a nuestra captura.
+  - Sin publicación al bus, igual que RF-1 (ADR-0013): reemitir seis años de
+    `official.rate.updated` dispararía el motor como si fueran cambios de hoy.
 
 ## Requisitos de seguridad (mapeados a OWASP ASVS)
 | Riesgo | Control | ASVS |
