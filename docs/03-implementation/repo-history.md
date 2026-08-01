@@ -84,6 +84,8 @@ gitGraph
     commit id: "3622623"
     commit id: "8f30547"
     commit id: "22a7c7a"
+    commit id: "5ed6042"
+    commit id: "c852844"
 ```
 
 ### Estado actual de las ramas
@@ -91,7 +93,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `22a7c7a` | 2026-07-31 | 50 |
+| `develop` | `c852844` | 2026-07-31 | 52 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -107,6 +109,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `c852844` | commit | — | Jeremi Alcala | 2026-07-31 | feat(web-spa): shell responsive — la tira de estado se reparte, no se encoge |
+| `5ed6042` | commit | — | Jeremi Alcala | 2026-07-31 | docs(repo-history): regenerar tras el rediseno y los barridos |
 | `22a7c7a` | commit | — | Jeremi Alcala | 2026-07-31 | docs: barridos de coherencia (gates, charter, PRDs, plan de pruebas, knowledge) |
 | `8f30547` | commit | — | Jeremi Alcala | 2026-07-31 | feat(web-spa): rediseno Higerotech, i18n ES/EN y sello de bloque sin fuente (ADR-0018) |
 | `3622623` | commit | — | Jeremi Alcala | 2026-07-31 | fix(api-gateway): reconectar y alertar el consumidor AMQP del push WSS |
