@@ -3,7 +3,7 @@ type: OKF Bundle
 title: VES Market Watch — Knowledge Bundle
 description: Contexto curado del proyecto en Open Knowledge Format (OKF v0.1) para consumo por agentes y humanos.
 tags: [okf, contexto, ves, fx]
-timestamp: 2026-07-26T00:00:00Z
+timestamp: 2026-07-31T00:00:00Z
 ---
 
 # VES Market Watch — Knowledge Bundle
@@ -29,6 +29,11 @@ la fuente de verdad (los documentos AI-DLC y el código).
   ADR-0017): dashboard React autenticado vía Auth0 con stream WSS + histórico;
   CORS por allowlist en el gateway. Pendiente HITL: `auth0 login` para
   aprovisionar la app SPA (client_id) y el client M2M del e2e en vivo.
+- El push WSS del gateway ya **se auto-recupera** ante caídas del bus, con alerta
+  por transición y `/health` honesto (2026-07-30).
+- El `web-spa` viste el **sistema de diseño Higerotech** con tema claro/oscuro e
+  interfaz ES/EN (2026-07-31, ADR-0018); los bloques que la plataforma todavía
+  no calcula van marcados `demo · sin fuente`.
 - Siguiente paso natural: aprovisionar el tenant (F1 de ADR-0017), checklist
   e2e con login real, y preparar la fase 04 (Gate 2).
 - Historia de cambios: [log.md](log.md) y `../CHANGELOG.md`.
@@ -37,16 +42,16 @@ la fuente de verdad (los documentos AI-DLC y el código).
 
 | Sección | Contenido |
 |---|---|
-| [services/](services/index.md) | Los 5 servicios de la plataforma y su estado |
+| [services/](services/index.md) | Las 6 apps (5 servicios + `web-spa`) y su estado |
 | [events/](events/index.md) | Eventos AMQP del bus `market.events` |
 | [tables/](tables/index.md) | Tablas TimescaleDB (implementadas y planificadas) |
 | [metrics/](metrics/index.md) | Indicadores financieros que produce la plataforma |
 
 ## Fuentes de verdad (fuera del bundle)
 
-- Requisitos: `../docs/01-requirements/` (5 PRDs con escenarios de abuso y ASVS).
+- Requisitos: `../docs/01-requirements/` (6 PRDs con escenarios de abuso y ASVS).
 - Diseño: `../docs/02-design/` (arquitectura, threat model STRIDE/DREAD, contratos API).
-- Decisiones: `../docs/00-project/adr/` (ADR-0001…0015; una decisión = una ADR).
+- Decisiones: `../docs/00-project/adr/` (ADR-0001…0018; una decisión = una ADR).
 - Gates: `../.ai-dlc/gates/`.
 
 ## Convenciones del bundle

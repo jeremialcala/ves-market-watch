@@ -2,10 +2,91 @@
 type: Log
 title: Historia del knowledge bundle
 description: Registro cronológico de cambios en el contexto del proyecto (más reciente primero).
-timestamp: 2026-07-29T00:00:00Z
+timestamp: 2026-07-31T00:00:00Z
 ---
 
 # Log
+
+## 2026-07-31 — Barrido tras el rediseño: la paleta ya no estaba validada
+- El rediseño mapeó las series a los acentos de marca y los docs seguían
+  diciendo «paleta validada con el skill dataviz». Se volvió a **correr el
+  validador** en vez de dar por buena la frase: en oscuro el par compra/venta da
+  ΔE 13,2 y pasa; en **claro cae a ΔE 5,9** (protan), por debajo del piso de 6
+  donde ni el rótulo visible lo excusa. Defecto de accesibilidad abierto, con
+  remedio anotado — no se repinta porque elegir pasos de las rampas de marca es
+  decisión de diseño.
+- Lección que vale para el próximo cambio de color: **la parte de color es
+  computable, así que se computa**. La frase «validada» caduca en cuanto alguien
+  toca un token de serie.
+- El PRD del `web-spa` no conocía tres capacidades que ya estaban en pantalla:
+  vista de análisis, idioma y tema. Añadidos como RF-8/RF-9/RF-10, y RF-5
+  ampliado con la regla del sello `demo · sin fuente`.
+- Anotado también un hueco que no es del rediseño: la CSP declara solo
+  `default-src 'self'`, y la re-autenticación silenciosa de Auth0 va por iframe
+  (`frame-src`). Nunca se ejercitó porque el login real sigue pendiente de HITL.
+
+## 2026-07-31 — El dashboard se viste de Higerotech (ADR-0018)
+- Rediseño completo importado del proyecto de diseño de Claude Design vía MCP:
+  tokens, fuentes autoalojadas (Inter + Space Grotesk, OFL) y componentes del
+  sistema copiados AL REPO — la CSP sigue sin abrirse a ningún CDN.
+- El tema es explícito (oscuro por marca, no `prefers-color-scheme`) y el claro
+  reasigna los MISMOS tokens con `data-theme`: ningún componente lo sabe.
+- i18n ES/EN con diccionario tipado: `EN` es `Record<Clave, string>` sobre las
+  claves de `ES`, así que una traducción olvidada no compila. No se traduce el
+  vocabulario del contrato (nombres de indicadores y reglas de señal).
+- La decisión de fondo fue qué hacer con lo que el diseño pide y la plataforma
+  no calcula (régimen, percentiles de backtest, escenarios, riesgos). El dueño
+  del producto eligió implementarlo marcado: **sello `demo · sin fuente`** en
+  cada bloque. Lo derivable se derivó de verdad — sparkline 24 h, mapa de calor
+  14 d × hora VET y comparativas 7/30/90 d salen de `/indicators/history`.
+- Los sellos son la lista de pendientes del motor, ahora visible en pantalla.
+- 100 → **156 tests** (88,6 % ramas). El e2e con login real sigue bloqueado por
+  el `client_id` del tenant, así que la revisión visual se hizo con un andamio
+  temporal de datos sembrados, retirado al terminar.
+
+## 2026-07-30 — Barrido de coherencia: los docs de estado vuelven a ser legibles
+- Tres olas de trabajo (gateway, SPA, intradía) dejaron los documentos de estado
+  detrás del repo. Contrastado contra código y suites reales, no contra memoria.
+- **Conteos**: gateway 83/78 → **90**, web-spa 65 → **100** (85,7 % ramas). El resto
+  (bcv 54, binance 48, historico 39, engine 77) ya coincidía.
+- **Los gates eran lo que más mentía**: Gate 1 decía «gateway aún sin código» (lleva
+  implementado desde el 26), «WSS: esqueleto hasta AsyncAPI» (publicada ese mismo
+  día), `ADR-0001…0015` y `T1–T14`. Gate 0 seguía en 5 PRDs.
+- Patrón recurrente: **un pendiente se cierra en un doc y sobrevive en otros**. El
+  residual «nombrar apps consumidoras» lo cerró la enmienda del charter del 27 y
+  seguía vivo en el propio charter y en Gate 0; el SPA figuraba «fuera de este repo»
+  en el plan de pruebas mientras el threat model ya lo daba implementado.
+- Otro patrón: **pendientes que describen un mundo viejo** — «cuando exista el
+  api-gateway» (existe; no lee esa tabla), «se crea junto con el front-end» (existe;
+  falta su client_id), «engine fase 2 usará la serie histórica» (se entregó sin ella).
+  Se conservan como pendientes, pero diciendo dónde vive hoy la cosa.
+- El `design.md` y el README del `web-spa` no conocían su propia tercera vista
+  (Intradía, RF-7): al añadir la vista se actualizó el knowledge, no los docs de la app.
+- `repo-history.md` iba 6 commits atrasado: regenerado con `scripts/gitgraph_branches.py`
+  (es doc generado, no editar a mano) y gitGraph validado.
+
+## 2026-07-30 — El push WSS del gateway ya sobrevive a una caída del bus
+- Era lo único roto en vivo: una interrupción de RabbitMQ dejaba el push muerto
+  **hasta reiniciar el contenedor**, y en silencio. `start()` conectaba una sola
+  vez y, si el broker no estaba, no reintentaba jamás.
+- Peor: `/health` **mentía**. `conectado()` miraba `connection.is_closed`, que en
+  una `RobustConnection` solo es cierto tras un `close()` explícito → `broker: ok`
+  con el push muerto. Ahora la señal es «hay consumo», y solo vuelve a `ok`
+  cuando la restauración de cola/bindings/consumidor terminó: aio-pika marca
+  `connected` **antes** de restaurar, y esa restauración puede fallar y recaer.
+- Se añade `AlertNotifier` al gateway (mismo puerto que el `indicator-engine`):
+  una alerta al caer y otra al restablecerse, una por episodio.
+- Trampa de aio-pika que costó el hallazgo: cada `connect_robust` fallido deja
+  una tarea de reconexión propia dentro del objeto, reintentando para siempre y
+  **sobreviviendo a la cancelación** (colgaba pytest). Sin el objeto en la mano no
+  hay a quién cerrarle → se instancia `RobustConnection` y se conecta por separado.
+- La cola efímera NO la nombra el servidor: con `declare_queue("")` aio-pika
+  genera `amq_<hex>` en cliente — por eso el re-declare al reconectar funciona
+  (un nombre `amq.*` del servidor sería prefijo reservado y daría ACCESS_REFUSED).
+- Verificado en vivo con `rabbitmqctl close_connection` (quirúrgico, sin tocar
+  los otros servicios): restablecido en 28 ms, 4 bindings y consumidor de vuelta.
+  5 tests nuevos; el conteo del servicio pasa a 90 (lo documentado, 78, ya venía
+  desactualizado: la suite real eran 85).
 
 ## 2026-07-29 — Intradía: la variación vs. apertura VET, por fin calculada
 - Nueva vista **Intradía** del `web-spa` (RF-7): parrilla de small multiples con

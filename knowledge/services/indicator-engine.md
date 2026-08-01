@@ -44,6 +44,9 @@ Python 3.12, hexagonal, mismas convenciones que [ingestor-bcv](ingestor-bcv.md).
 - Contratos: `../../schemas/` · ADR-0014 (microestructura P2P) · ADR-0015 (motor de reglas) · Amenazas T2, T5, T10.
 
 ## Pendiente
-- Profundidad por bandas de precio y variación intradía vs. apertura VET.
+- Profundidad por bandas de precio: la proyecta el api-gateway desde el crudo P2P
+  (interim, ADR-0016); materializar `p2p_top_of_book` aquí sigue pendiente.
+- Variación intradía vs. apertura VET: se deriva en el `web-spa` (RF-7, 2026-07-29);
+  persistirla como indicador del motor sigue pendiente.
 - Recalibración HITL de los umbrales del ruleset con más historia (subir la versión del
   ruleset, sin redeploy).

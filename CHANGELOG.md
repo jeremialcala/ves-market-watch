@@ -19,6 +19,139 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Rediseño del dashboard con el sistema de diseño Higerotech (2026-07-31,
+  ADR-0018)** — importado del proyecto de diseño `Rediseño dashboard Higerotech`
+  (`VES Market Watch.dc.html`) vía MCP de Claude Design:
+  - **Sistema de diseño en el repo, no enlazado**: tokens (color, tipografía,
+    espaciado, efectos, tema claro) en `src/ds/tokens/`, componentes `Button`,
+    `Tag`, `Pill`, `Stat`, `Icon` y `Container` portados a TSX tipado, y las
+    cuatro **`woff2` autoalojadas** (Inter + Space Grotesk, OFL 1.1, idénticas
+    byte a byte a las del sistema). La CSP sigue en `default-src 'self'`: ningún
+    CDN de fuentes. El tema claro **reasigna los mismos tokens** con
+    `data-theme="light"` — el mecanismo que define el propio sistema.
+  - **Shell nuevo**: tira de estado (WSS, suscripciones, antigüedad del último
+    push, `calc_version`, cuota REST), barra con logo, pestañas, selector de
+    idioma, alternador de tema y salir, **variante compacta < 760 px** con menú
+    desplegable, y pie de marca. Todo lo que muestra sale del store: sin evento
+    todavía lo dice, no inventa un «hace 34 s».
+  - **i18n ES/EN real** (no un control decorativo): diccionario tipado donde
+    `EN` es `Record<Clave, string>` sobre las claves de `ES` — **olvidar una
+    traducción no compila**. Los nombres canónicos de indicadores y señales NO
+    se traducen (son del contrato) y los decimales se formatean desde el string
+    exacto con los separadores del idioma, sin pasar por float.
+  - **Secciones nuevas alimentadas con dato real** de `/indicators/history`
+    (dos llamadas filtradas por indicador y moneda): sparkline de 24 h en el
+    titular de la brecha, **mapa de calor de 14 días × hora en VET** (las horas
+    sin bucket quedan vacías, no se interpolan) y comparativas contra los
+    promedios de 7/30 días y el máximo de 90 — media exacta con `BigInt`.
+    La descomposición reparte el precio P2P entre pierna oficial y brecha con la
+    tasa vigente y el VWAP.
+  - **Vista «Análisis»** como cuarta pestaña, y la **evidencia de cada señal
+    ahora se despliega en línea** (antes, modal): misma trazabilidad de T10
+    —regla versionada, insumos exactos, evento disparador— sin sacar al usuario
+    de la cronología.
+  - **Sello `demo · sin fuente`** en todo bloque que el diseño pide y la
+    plataforma no calcula (régimen de mercado, percentiles de backtest de los
+    medidores, escenarios y riesgos), con la explicación en la bajada de cada
+    sección. Es RF-5 aplicado al diseño: el problema no es mostrar un ejemplo,
+    es que se lea igual que un número servido por el gateway. La lista de sellos
+    es, exactamente, el trabajo pendiente del `indicator-engine`.
+  - **156 tests** (100 → 156) con **88,6 % de ramas**: diccionario completo y
+    con los mismos marcadores en ambos idiomas, componentes del sistema por
+    variante/tono, shell ancho y compacto, sellos de demo, derivaciones de
+    series (extremos exactos, parrilla VET, rampa de color) y los paneles reales
+    con sus vacíos honestos. `DepthChart` deja Recharts por barras del sistema.
+  - Revisión visual del rediseño completo (dashboard y análisis, claro y oscuro)
+    con un andamio temporal de datos sembrados, **retirado al terminar**; el e2e
+    con login real sigue bloqueado por el `client_id` del tenant (F1 de ADR-0017).
+  - **Defecto abierto que deja el rediseño**: al mapear las series a los acentos
+    de marca, la separación CVD en **tema claro** cae a **ΔE 5,9** en el par
+    compra/venta (protan) — bajo el piso de 6 del validador de dataviz, donde el
+    rótulo visible ya no lo excusa; en oscuro pasa con ΔE 13,2. Medido con el
+    validador, no a ojo. No se repinta aquí porque elegir pasos nuevos de las
+    rampas de marca es decisión de diseño; queda con remedio anotado en el
+    `design.md` del SPA, en el plan de pruebas y en ADR-0018.
+
+### Changed
+
+- **Barrido de coherencia documental (2026-07-30)** — los documentos de estado
+  habían quedado detrás del repo en tres olas de trabajo (gateway, SPA, intradía).
+  Contrastado contra el código y las suites reales; corregido lo que mentía:
+  - **Conteos de tests contra la realidad** (`pytest --collect-only` y `npm test`):
+    api-gateway **83 → 90** (§4 del plan; el resto de docs decían 78) y web-spa
+    **65 → 100** con **86,5 % → 85,7 % de ramas** (plan y `design.md` del SPA).
+    bcv 54, binance 48, historico 39 y engine 77 ya coincidían.
+  - **Gate 1**: decía `ADR-0001…0015`, «gateway aún sin código» (implementado desde
+    el 2026-07-26), «WSS: esqueleto hasta AsyncAPI» (publicada el mismo día) y
+    `T1–T14`. Ahora `ADR-0001…0017`, AsyncAPI 3.0 como evidencia, T15 incorporada
+    con su DREAD pendiente de ratificación HITL, y el threat model con sus 9
+    componentes (entró `web-spa`). Adenda que deja constancia, sin tocar el veredicto.
+  - **Gate 0**: 5 → **6 PRDs** (entró `web-spa-dashboard.md`) y el residual «nombrar
+    los consumidores» partido en dos: la **app** consumidora quedó resuelta por
+    ADR-0017; identificar a los **usuarios** del piloto sigue abierto.
+  - **Charter**: el residual de apps consumidoras seguía listado en «Estado» pese a
+    que la propia enmienda del 27 lo cerraba; el `<TODO: identificar>` de la tabla de
+    stakeholders ahora distingue usuarios (abierto) de app consumidora (`web-spa`).
+  - **PRD `api-streaming`**: figuraba «pendiente de implementación» y con el
+    front-end/SPA como no-objetivo «proyecto aparte» — ambas cosas superadas.
+  - **Plan de pruebas**: §7 se quedaba en T12 y daba el SPA «fuera de este repo»
+    justo donde el threat model lo marca implementado; añadidas las filas T13–T15,
+    corregido el criterio de salida de Gate 2 (T1–T15), añadida la cobertura de
+    resiliencia del bus en §5.4 y **cinco filas del `web-spa`** en la matriz de
+    trazabilidad (no tenía ninguna, con PRD propio desde el 27).
+  - **Pendientes que describían un mundo viejo**: «app SPA se crea junto con el
+    front-end» (existe desde el 27 — falta su `client_id`), «exponer el histórico
+    cuando exista el api-gateway» (existe; simplemente no lee esa tabla), «engine
+    fase 2 usará la serie como línea base» (la fase 2 se entregó sin consumirla),
+    y los del motor: profundidad la proyecta hoy el gateway e intradía se deriva
+    en el cliente — persistir ambas en el motor sigue pendiente.
+  - **`design.md` y README del `web-spa`** no conocían la vista **Intradía** (RF-7,
+    2026-07-29): faltaban la tercera vista, `lib/intradia.ts` y la aritmética `BigInt`.
+  - **`knowledge/index.md`**: «5 PRDs», `ADR-0001…0015` y «los 5 servicios» en el mapa
+    del bundle; **README raíz**: el compose ya no es «solo RabbitMQ + TimescaleDB».
+  - **`repo-history.md` regenerado** con su script (`scripts/gitgraph_branches.py`):
+    iba 6 commits atrasado — la bitácora terminaba el 2026-07-26 y `develop` figuraba
+    en `38abe5e` (41 commits) cuando va por `4578db2` (47). gitGraph validado.
+
+### Fixed
+
+- **El push WSS del `api-gateway` sobrevive a una caída del bus (2026-07-30)** —
+  era lo único roto en vivo: cualquier interrupción de RabbitMQ dejaba el push
+  muerto **hasta reiniciar el contenedor**, y en silencio. Tres defectos reales,
+  los tres verificados y corregidos:
+  - **Arranque sin bus = muerte permanente.** `start()` conectaba una sola vez;
+    si el broker no estaba, se logueaba un warning y no se volvía a intentar
+    nunca. Ahora un supervisor reintenta con backoff exponencial + jitter (1 s →
+    30 s) hasta engancharse, sin reinicio y sin bloquear el arranque del REST.
+  - **`/health` mentía durante toda la caída.** `conectado()` miraba
+    `connection.is_closed`, que en una `RobustConnection` **solo** es cierto tras
+    un `close()` explícito: con el bus caído, `/health` seguía reportando
+    `broker: ok`. Ahora responde «hay consumo» (no «hay socket»), y solo vuelve a
+    `ok` cuando la restauración de cola, bindings y consumidor terminó bien —
+    aio-pika marca `connected` **antes** de restaurar, y esa restauración puede
+    fallar y volver a caer.
+  - **Cero alertas.** Se añade el puerto `AlertNotifier` al gateway (el mismo del
+    `indicator-engine`) con adaptador de log (`adapters/alertas.py`, CRITICAL):
+    una alerta al caer y otra al restablecerse, **una por episodio** — reintentar
+    cada pocos segundos no debe volverse una tormenta de alertas.
+  - De paso, **fuga de tareas**: cada intento fallido de `connect_robust` dejaba
+    dentro de la `RobustConnection` una tarea de reconexión propia reintentando
+    para siempre —y que sobrevive a la cancelación—, así que cada reintento del
+    supervisor habría sumado un zombi. La conexión ahora se instancia y se conecta
+    por separado para poder cerrarla cuando el intento falla (lo detectó la suite:
+    colgaba el runner de pytest).
+  - **5 tests nuevos** (85 → 90 en el servicio; el conteo documentado, 78, ya
+    venía desactualizado): unit sin infraestructura (arranque sin bus, alerta
+    única, recuperación del supervisor, `close()` limpio, app completa con
+    `/health` degraded) e integration contra RabbitMQ real (caída → alerta →
+    reconexión → el push se reanuda de verdad).
+  - **Verificado en vivo** con `rabbitmqctl close_connection` sobre la conexión
+    del gateway (sin tocar los demás servicios): alerta de caída inmediata,
+    **restablecido en 28 ms**, y la cola efímera con sus 4 bindings y su
+    consumidor de vuelta según `rabbitmqctl list_queues`/`list_bindings`.
+
+### Added
+
 - **`web-spa` — el front-end entra al monorepo (2026-07-27, ADR-0017 *accepted*;
   enmienda HITL del charter: dejaba de ser «proyecto aparte»)**. Dashboard web
   React + Vite + TypeScript con `@auth0/auth0-react`, primera app consumidora de

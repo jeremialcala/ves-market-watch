@@ -1,7 +1,7 @@
 # PRD — Dashboard web (front-end/SPA `apps/web-spa`)
 
 - **Estado:** accepted — en implementación (fase 03)
-- **Fecha:** 2026-07-27
+- **Fecha:** 2026-07-31
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 01-requirements
 - **Versión:** Unreleased (se sincroniza al próximo corte)
@@ -21,6 +21,12 @@ lo **referencia** y no lo duplica.
 Personas autenticadas vía Auth0 (roles `viewer`/`operator`, ambos con los 5
 permisos de lectura/streaming hoy). Sin usuarios anónimos: solo la pantalla de
 login y el estado de salud son visibles sin sesión.
+
+> Enmienda 2026-07-31 (ADR-0018): el dashboard adopta el sistema de diseño
+> Higerotech y suma tres capacidades que este PRD no contemplaba — vista de
+> análisis, idioma ES/EN y tema claro/oscuro (RF-8 a RF-10). Se añade además la
+> regla de presentación de bloques sin fuente de datos, que es RF-5 aplicada al
+> diseño.
 
 ## Requisitos funcionales
 - **RF-1 — Login y sesión**: Auth Code + PKCE contra Universal Login (ADR-0012);
@@ -54,6 +60,23 @@ login y el estado de salud son visibles sin sesión.
   calcula sobre el string decimal exacto (sin float); si la apertura es cero, el
   porcentaje se muestra «—», nunca ∞ ni NaN. Un indicador nuevo del motor aparece
   sin cambios en el front. Refresco manual y automático cada 5 min.
+
+- **RF-8 — Vista de análisis** (2026-07-31, ADR-0018): lectura del mercado con
+  escenarios y riesgos. Los números que la plataforma sirve (presión de liquidez,
+  merchants, spread) son reales; la prosa, las probabilidades y los umbrales de
+  ejemplo van **marcados como sin fuente** (ver RF-5 ampliado).
+- **RF-9 — Idioma ES/EN**: toda cadena de interfaz se muestra en el idioma
+  elegido, que se recuerda entre sesiones. NO se traducen los nombres canónicos
+  de indicadores ni de reglas de señal: son vocabulario del contrato. Los
+  decimales se formatean con los separadores del idioma (es-VE `1.234,56` ·
+  en-US `1,234.56`) desde el string exacto, nunca desde float.
+- **RF-10 — Tema claro/oscuro**: el tema es explícito (oscuro por marca, no
+  `prefers-color-scheme`), se cambia desde la barra y se recuerda. Ambos temas
+  se pintan con los mismos tokens del sistema de diseño.
+- **RF-5 ampliado — bloques sin fuente**: todo bloque que el diseño pida y la
+  plataforma no calcule debe distinguirse del dato servido **a simple vista**
+  (sello `demo · sin fuente` + explicación en la sección). Un ejemplo que se lee
+  igual que un dato del gateway es una violación de RF-5, no un detalle estético.
 
 ## Requisitos no funcionales
 - Cobertura de ramas ≥ 80 % (criterio Gate 2, suite vitest sin infraestructura).

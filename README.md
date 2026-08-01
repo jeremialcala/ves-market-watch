@@ -13,7 +13,8 @@ ves-market-watch/
 │   └── templates/            # prd, adr, threat-model
 ├── knowledge/                # Contexto del proyecto en Open Knowledge Format (ADR-0010)
 ├── schemas/                  # Contratos de eventos del bus (JSON Schema 2020-12)
-├── docker-compose.yml        # Infra compartida dev/test: RabbitMQ + TimescaleDB
+├── docker-compose.yml        # Infra dev/test (RabbitMQ + TimescaleDB) y las apps: los 3 servicios
+│                             # con daemon, api-gateway (8800) y web-spa por nginx (8080)
 ├── docs/
 │   ├── 00-project/           # Charter, glosario, clasificación de datos, ADRs
 │   ├── 01-requirements/      # PRDs por funcionalidad (Gate 0)
@@ -37,6 +38,8 @@ ves-market-watch/
   Server y valida access tokens (ADR-0012, supersede ADR-0003).
 - Front-end: React + Vite + TypeScript con @auth0/auth0-react; tokens en memoria +
   refresh rotation, CORS por allowlist en el gateway (ADR-0017).
+- Sistema de diseño Higerotech en el `web-spa` (tokens y fuentes autoalojadas),
+  tema claro/oscuro e interfaz ES/EN (ADR-0018).
 
 ## Desarrollo
 
@@ -66,7 +69,10 @@ si el compose no está levantado.
   fuente → bus → indicadores/señales → REST/WSS está operativo.
 - **Front-end `web-spa` implementado** (2026-07-27, ADR-0017): dashboard React con
   login Auth0 (PKCE), stream WSS con reconexión y vista de histórico; servido por
-  nginx en el compose (`http://localhost:8080`). Pendiente HITL: `auth0 login` para
+  nginx en el compose (`http://localhost:8080`). Desde el 2026-07-31 viste el
+  **sistema de diseño Higerotech** con tema claro/oscuro e interfaz ES/EN
+  (ADR-0018); los bloques que la plataforma aún no calcula van marcados
+  `demo · sin fuente`. Pendiente HITL: `auth0 login` para
   aprovisionar la app SPA del tenant (client_id) y el client M2M del e2e en vivo.
 - Gate 0 (requisitos): ver `.ai-dlc/gates/gate-0-requirements.md`
 - Gate 1 (diseño): ver `.ai-dlc/gates/gate-1-design.md`

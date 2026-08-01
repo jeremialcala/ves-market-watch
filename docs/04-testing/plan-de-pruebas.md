@@ -2,8 +2,8 @@
 
 - **Fase AI-DLC:** 04-testing
 - **Estado:** draft — para revisión y aprobación (Gate 2)
-- **Alcance:** plataforma completa (5 servicios + RabbitMQ + TimescaleDB + contratos del bus y de API)
-- **Fecha:** 2026-07-26
+- **Alcance:** plataforma completa (5 servicios + `web-spa` + RabbitMQ + TimescaleDB + contratos del bus y de API)
+- **Fecha:** 2026-07-31
 - **Decisores:** Jeremi Alcalá
 - **Versión:** 0.4.0
 - **Fuentes de verdad:** PRDs en `docs/01-requirements/`, diseño en `docs/02-design/`
@@ -14,14 +14,14 @@
 
 Verificar que la plataforma mide correctamente la brecha entre la tasa oficial **VES/USD (BCV)**
 y el mercado P2P **VES/USDT (Binance)**, que los contratos entre servicios se respetan, y que
-los controles de seguridad priorizados en el threat model (T1–T12) se comportan según diseño.
+los controles de seguridad priorizados en el threat model (T1–T15) se comportan según diseño.
 El plan sirve como criterio de cierre del **Gate 2** y como guía viva para completar lo pendiente
 (los 5 servicios ya tienen código y suite; queda el e2e autenticado en vivo con token real —
 client M2M, HITL — la suite `security` transversal y el pipeline CI).
 
 ## 2. Estrategia de pruebas
 
-Se mantiene la **pirámide AI-DLC** ya adoptada por los cuatro servicios con código, con cinco niveles.
+Se mantiene la **pirámide AI-DLC** ya adoptada por los cinco servicios con código, con cinco niveles.
 Cada nivel tiene un marcador `pytest` y un requisito de infraestructura explícito para poder
 ejecutar la suite con o sin `docker compose`.
 
@@ -54,7 +54,9 @@ tests). Se mide con `pytest --cov --cov-branch` por app y se reporta en el pipel
 ## 3. Entornos y datos de prueba
 
 - **Infra compartida dev/test:** `docker-compose.yml` de la raíz levanta RabbitMQ (5672/15672)
-  y TimescaleDB (5433). Es la misma infra para `integration` y `e2e`.
+  y TimescaleDB (5433) —la misma infra para `integration` y `e2e`— y además las apps
+  (los 3 servicios con daemon, `api-gateway` en 8800 y `web-spa` en 8080), que no hacen
+  falta para correr las suites.
 - **Datos reales congelados:** los fixtures son respuestas reales capturadas en spikes
   (p. ej. `apps/ingestor-binance/tests/fixtures/adv_search_*.json`, spike 2026-07-05; bundle TLS
   del BCV en `apps/ingestor-bcv/certs/`). Se usan para pruebas deterministas sin golpear las
@@ -75,8 +77,8 @@ Estado observado en el repo (conteo de funciones `test_`):
 | `ingestor-binance` | Implementado | **48** (unit, integration, contract, e2e) | Igual que arriba; escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local |
 | `indicator-engine` | Fases 1, 2 y señales implementadas (RF-4/RF-5, ADR-0015) | **77** (unit, contract, integration, e2e) | Confirmar cobertura de ramas ≥ 80 %; recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) |
 | `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) | **39** (unit + integración contra TimescaleDB real) | Confirmar cobertura de ramas ≥ 80 % |
-| `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **83** (unit incl. CORS, contract vs. OpenAPI, integration incl. pool read-only, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura ≥ 80 % |
-| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **65** vitest (unit, component, contract `satisfies` + check de frescura de tipos) — **86,5 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
+| `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **90** (unit incl. CORS y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura ≥ 80 % |
+| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **156** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n y sellos de demo) — **88,6 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
 
 > El plan cubre tanto la **consolidación** de lo existente como la **especificación** de los casos
 > que deben acompañar el código pendiente, para que se escriban junto con la implementación (no
@@ -85,6 +87,12 @@ Estado observado en el repo (conteo de funciones `test_`):
 ## 5. Casos de prueba por servicio
 
 Notación: `[U]` unit · `[I]` integration · `[C]` contract · `[E]` e2e · `[S]` security.
+
+> Esta sección detalla los cuatro servicios del **flujo reactivo**. `ingestor-historico`
+> (batch por demanda, sin bus) y `web-spa` (pirámide vitest propia) no tienen subsección
+> de casos: su cobertura vive en la tabla de §4, en la matriz de §8 y en la sección
+> «Tests» del README de cada app (ninguna de las dos tiene `tests/README.md`, a
+> diferencia de los cuatro servicios del flujo).
 
 ### 5.1 ingestor-bcv
 - `[U]` Parser extrae todas las monedas publicadas y la fecha-valor común; descubrimiento dinámico
@@ -153,7 +161,7 @@ casos cubiertos por la suite actual (77 tests):**
 - `[E]` Flujo `p2p.snapshot` (+ `official.rate.updated`) → `indicators.updated` + `signals.emitted`
   — verificado e2e (2026-07-22).
 
-### 5.4 api-gateway (implementado 2026-07-26 — 78 tests; ✔ = cubierto por la suite)
+### 5.4 api-gateway (implementado 2026-07-26 — 90 tests; ✔ = cubierto por la suite)
 - `[U]` ✔ Validación estricta de inputs (fechas, `interval`, `side`, tópicos); políticas de
   **scopes/permisos**; validación del **access token de Auth0** (RS256 vía JWKS; `iss`/`aud`/`exp`)
   con par RSA/JWKS local de test (`tests/soporte_auth.py`). El gateway **no emite** tokens (ADR-0012).
@@ -176,6 +184,12 @@ casos cubiertos por la suite actual (77 tests):**
   (403 con el permiso requerido en el detalle) (escenario negativo 7).
 - `[C]` ✔ Respuestas REST validadas contra **OpenAPI 3.1** (`contract/test_rest_contract.py`);
   eventos push validados contra los schemas canónicos (la AsyncAPI los referencia); errores RFC 7807.
+- `[U/I]` ✔ **Resiliencia del bus** (2026-07-30) — arranque sin broker (el REST sirve y el
+  supervisor reintenta con backoff), alerta única por episodio al caer y al restablecerse,
+  `/health` reporta `broker: down` mientras no hay consumo real, y tras la reconexión la cola
+  efímera, sus bindings y el consumidor se restauran y el push se reanuda
+  (`unit/test_consumidor_reconexion.py`, `integration/test_consumidor_amqp.py`; verificado en
+  vivo con `rabbitmqctl close_connection`).
 - `[E]` ✔ parcial — REST autenticado + evento del bus → push WSS (`e2e/test_flujo_completo.py`,
   token de test). El flujo con **login real** (Auth Code + PKCE → access token de Auth0) queda
   pendiente del client de prueba (HITL).
@@ -199,7 +213,7 @@ los tramos ya están verificados por partes: bus → indicadores/señales (e2e d
 2026-07-22) y bus → REST/WSS del gateway (e2e del gateway, 2026-07-26). Falta encadenarlos
 desde las fuentes vivas en una sola suite raíz.
 
-## 7. Seguridad — trazabilidad a amenazas (T1–T12)
+## 7. Seguridad — trazabilidad a amenazas (T1–T15)
 
 Cada amenaza priorizada del threat model tiene su verificación. Esta tabla es la fuente para el
 cierre de la columna «Verificación fase 04-testing».
@@ -217,7 +231,10 @@ cierre de la columna «Verificación fase 04-testing».
 | T9 | SQL injection en histórico | Queries parametrizadas + validación; **SAST** + tests de inyección | api-gateway `[S]` |
 | T10 | Señales sin trazabilidad | Auditoría end-to-end de una señal; reproducibilidad por `calc_version` | engine `[U/S]`; e2e plataforma |
 | T11 | ID token / token de otra audiencia como bearer | Rechazo por `aud`/`iss` inválidos y firma JWKS → 401 | api-gateway `[U/S]` |
-| T12 | Robo de token en el navegador (XSS) | Token en memoria, vida corta y rotación (revisión en el SPA, fuera de este repo) | SPA (fuera de alcance) |
+| T12 | Robo de token en el navegador (XSS) | Token solo en memoria (`cacheLocation: memory`), vida corta y refresh rotation; CSP del nginx sin `unsafe-inline` | web-spa `[U/S]` (ADR-0017; antes «fuera de este repo») |
+| T13 | Señal emitida sin insumos frescos / con estado stale | Frescura entre lados y `official_stale` propagado a la evidencia | indicator-engine `[U/S]` |
+| T14 | Export CSV malicioso envenena el histórico | Parseo adaptativo con rechazo sin columna de precio, descarte contado y carga idempotente | ingestor-historico `[U/S]`, `[I]` |
+| T15 | Origen web no autorizado consume la API desde el browser | CORS por allowlist (origen permitido con ACAO, ajeno sin ACAO, errores problem+json con ACAO) | api-gateway `[U/S]` |
 
 > **T6 y T8 no son tests de `pytest`** sino **gates del pipeline CI** (secrets scanning y SCA);
 > se listan aquí para que su verificación quede trazada en el mismo plan.
@@ -240,6 +257,15 @@ cierre de la columna «Verificación fase 04-testing».
 | Rate limit + lockout + límites WSS | api-streaming (esc. neg. 2–4) | I/S | api-gateway |
 | Validación de inputs / inyección | api-streaming (esc. neg. 5) | S | api-gateway |
 | Aislamiento entre consumidores | api-streaming (esc. neg. 6) | S | api-gateway |
+| Login PKCE + token solo en memoria + renovación silenciosa | web-spa-dashboard (RF-1) | U/S | web-spa |
+| Dashboard en vivo con push WSS y resync REST por (re)conexión | web-spa-dashboard (RF-2, RF-3) | U/C | web-spa |
+| Histórico ≤ 90 días con paginación transparente | web-spa-dashboard (RF-4) | U/C | web-spa |
+| Honestidad del dato (404 «sin datos», null «—», decimal exacto) | web-spa-dashboard (RF-5) | U | web-spa |
+| Variación intradía vs. apertura del día operativo VET | web-spa-dashboard (RF-7) | U | web-spa |
+| Vista de análisis con sus números reales | web-spa-dashboard (RF-8) | U/C | web-spa |
+| Idioma ES/EN completo y separadores por locale | web-spa-dashboard (RF-9) | U | web-spa |
+| Tema claro/oscuro explícito y recordado | web-spa-dashboard (RF-10) | U | web-spa |
+| Sello `demo · sin fuente` en todo bloque sin dato servido | web-spa-dashboard (RF-5 ampliado) | U/S | web-spa |
 
 ## 9. Pruebas no funcionales
 
@@ -261,7 +287,7 @@ cierre de la columna «Verificación fase 04-testing».
 **Salida (cierre de Gate 2):**
 1. Cobertura de ramas **≥ 80 %** por servicio con código.
 2. Todos los casos de las secciones 5–7 aplicables al alcance entregado, en verde.
-3. Cada amenaza T1–T12 con su verificación satisfecha (tests o gate de CI).
+3. Cada amenaza T1–T15 con su verificación satisfecha (tests o gate de CI).
 4. Contract tests en verde en **productor y consumidor** para cada evento con schema.
 5. Gates de CI: **secrets scanning** (T6) y **SCA** (T8) sin hallazgos por encima del umbral.
 6. Sin tests marcados `xfail`/`skip` salvo los de infraestructura documentados.
@@ -282,11 +308,17 @@ cierre de la columna «Verificación fase 04-testing».
   contract tests del productor en verde (`contract/test_signal_event_schema.py`).
 - **Umbrales de señales (HITL):** los valores iniciales están fijados en `config/senales.v1.yaml`;
   su recalibración requiere decisión humana con datos de producción.
-- ~~`api-gateway` sin código~~ **Resuelto:** implementado 2026-07-26 con 78 tests (§5.4);
+- ~~`api-gateway` sin código~~ **Resuelto:** implementado 2026-07-26 con 90 tests (§5.4);
   queda el e2e autenticado en vivo (client M2M de prueba — HITL).
 - **Secret store concreto:** definido para fase 05; los tests de rotación (T6) se afinan entonces.
 - **Pipeline CI aún no presente en el repo:** los gates T6/T8 y la matriz de la sección 11 son
   requisito a materializar como parte de Gate 2.
+- **Paleta de series del `web-spa` en tema claro (2026-07-31):** tras el rediseño
+  (ADR-0018) la separación CVD del par compra/venta cae a **ΔE 5,9** (protan),
+  por debajo del piso de 6 del validador de dataviz; en oscuro pasa con ΔE 13,2.
+  Es un defecto de accesibilidad abierto, con remedio anotado en el `design.md`
+  del servicio. La verificación de paleta debe correr **con el validador**, no a
+  ojo, cada vez que cambien los colores de serie.
 
 ---
 

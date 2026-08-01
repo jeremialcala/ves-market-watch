@@ -68,7 +68,12 @@
   móviles omitidas ante huecos de captura.
 
 ## Pendiente
-- Profundidad por bandas de precio (0,5 %) y variación intradía vs. apertura VET.
+- Profundidad por bandas de precio (0,5 %): **hoy la proyecta el api-gateway** desde el
+  último crudo P2P (interim de ADR-0016); materializarla aquí (`p2p_top_of_book`) sigue
+  pendiente.
+- Variación intradía vs. apertura VET: **hoy se deriva en el cliente**
+  (`web-spa/src/lib/intradia.ts`, RF-7) sobre `/indicators/history`; persistirla como
+  indicador del motor —con su `calc_version`— sigue pendiente.
 - Coalescing ante backlog de snapshots (hoy se procesan todos en orden; el volumen
   actual — 2 snapshots/min — no lo requiere).
 - Recalibración HITL de los umbrales del ruleset (`config/senales.v*.yaml`) con más

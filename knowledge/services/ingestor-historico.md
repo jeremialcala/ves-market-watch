@@ -33,6 +33,8 @@ al bus** (ADR-0013): el histórico se consulta, no se reproduce como eventos.
 - 39 tests (unit + integración contra TimescaleDB real).
 
 ## Pendientes
-- Engine fase 2: usar la serie como línea base de varianza para umbrales de señales.
+- Usar la serie como línea base de varianza para los umbrales de señales: la fase 2 del
+  engine y el motor de reglas (ADR-0015) se entregaron **sin** consumirla — el motor no
+  referencia `historical_market_snapshots`. Sigue como mejora para la recalibración HITL.
   (El PRD fue **aprobado HITL el 2026-07-11** — Gate 0 incremental cerrado para esta
   funcionalidad.)

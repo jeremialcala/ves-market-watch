@@ -1,7 +1,8 @@
 # PRD — API REST y Streaming WSS
 
 - **Estado:** approved (Gate 0, HITL 2026-07-11; cubre la versión actualizada por
-  ADR-0012) — pendiente de implementación (`api-gateway`, fase 03)
+  ADR-0012) — **implementado** en `apps/api-gateway` (2026-07-26, ADR-0016); pendiente
+  solo el e2e con login real (client M2M del tenant — HITL)
 - **Fecha:** 2026-07-11
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 01-requirements
@@ -16,8 +17,10 @@ indicadores en tiempo real (WSS), con autenticación y límites de uso.
   histórico; canal WSS con suscripción por tópicos; authN/Z vía **OIDC con Auth0**
   (Authorization Code con PKCE) — el gateway es Resource Server y valida access tokens
   (ADR-0012).
-- No-objetivos: construir IdP/login propios (delegado a Auth0); front-end/SPA consumidor
-  (proyecto aparte); facturación por uso.
+- No-objetivos: construir IdP/login propios (delegado a Auth0); facturación por uso.
+  *(El front-end/SPA consumidor era no-objetivo por estar fuera del repo; la enmienda del
+  charter de 2026-07-27 —ADR-0017— lo incorporó como `apps/web-spa`, con PRD propio
+  `web-spa-dashboard.md`. Este PRD sigue cubriendo solo el lado servidor.)*
 
 ## Usuarios y escenarios
 Usuarios: **personas** autenticadas vía Auth0 (OIDC), que acceden a través de un

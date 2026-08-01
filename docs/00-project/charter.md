@@ -1,7 +1,9 @@
 # Project Charter — VES Market Watch
 
-- **Estado:** approved (Gate 0, HITL 2026-07-11) — residuales en seguimiento: ratificación
-  del marco legal y nombrar apps consumidoras concretas
+- **Estado:** approved (Gate 0, HITL 2026-07-11) — residual en seguimiento: ratificación
+  del marco legal cambiario (HITL). El de «nombrar apps consumidoras» quedó cerrado por
+  la enmienda 2026-07-27 (ADR-0017: `apps/web-spa`); falta identificar a los **usuarios**
+  del piloto
 - **Fecha:** 2026-07-27
 - **Decisores:** Jeremi Alcalá
 - **Sponsor / Owner:** Jeremi Alcalá
@@ -81,7 +83,7 @@ mindmap
 | Rol | Nombre | Responsabilidad |
 | --- | --- | --- |
 | Product Owner / Dev | Jeremi Alcalá | Visión, decisiones de diseño, aprobación de gates |
-| Usuarios consumidores | `<TODO: identificar>` | Consumo de API/WSS; se autentican vía Auth0 (OIDC) |
+| Usuarios consumidores | `<TODO: identificar>` (personas del piloto; la **app** consumidora ya existe: `apps/web-spa`, ADR-0017) | Consumo de API/WSS; se autentican vía Auth0 (OIDC) |
 
 ## Restricciones y supuestos
 
