@@ -7,6 +7,26 @@ timestamp: 2026-08-01T12:00:00Z
 
 # Log
 
+## 2026-08-01 (noche) — Medida la consulta de percentiles: sobra margen
+- El plan de RF-6 dejaba obligatorio medir con `EXPLAIN ANALYZE` la consulta de
+  distribuciones con la tabla en régimen, porque temía un `GroupAggregate` sobre
+  un sort de ~1,5 M filas cada 15 min.
+- Medido sembrando **1.036.800 filas** (90 días a la densidad real de captura,
+  256 MB) en `ves_market_test`: **747 ms**, ~7× por debajo del timeout de 5 s.
+- **La suposición del plan era incorrecta**: no hay nodo `Sort`. El índice
+  `(indicator, currency, as_of DESC)` sirve un `Merge Append` ya ordenado por
+  indicador; lo único que ordena es el agregado de conjunto ordenado, por dentro.
+  Subir `work_mem` para que no desborde a temporales gana solo ~15 %
+  (798 → 679 ms), así que no compensa tocarlo.
+- **El continuous aggregate se descarta por ahora**, con número encima de la
+  mesa en vez de intuición. Reabrir si cambia la densidad o la ventana.
+- **Hallazgo lateral que sí hay que atender**: `indicators` **no tiene política
+  de retención** — sí la tienen `p2p_snapshots_raw` e `indicator_analysis`. No
+  afecta a la consulta (la ventana de 90 días excluye chunks sola), pero la tabla
+  crece sin límite: ~2,2 GB/año al ritmo actual. Y es el estado del motor, así
+  que cualquier retención debe respetar lo que necesitan `ultimo_indicador` e
+  `indicador_asof` — horas, no días.
+
 ## 2026-08-01 (tarde) — El login estaba roto y nadie lo sabía (ADR-0020)
 - Pedido: «que entrar sea más directo y que la sesión persista». Al medirlo en
   vivo aparecieron **tres problemas distintos**, y ninguno era el que parecía.

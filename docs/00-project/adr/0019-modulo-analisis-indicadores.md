@@ -110,6 +110,9 @@ calcula (RF-5), y esta entrega no cruza esa línea: la respeta.
 - **Continuous aggregate desde el principio**: descartado como prematuro. La
   consulta con cache de 15 min cumple hoy; si el coste aprieta, el CAGG diario
   ya está anotado como evolución (`knowledge/tables/index.md`).
+  *Confirmado con medición el 2026-08-01: en régimen a 90 días (1.036.800 filas)
+  la consulta tarda 747 ms, ~7× por debajo del timeout. La decisión de no
+  adelantar el CAGG era correcta.*
 - **Publicar el análisis solo bajo demanda (calcularlo en el GET)**: descartado
   — haría el endpoint caro e impredecible y dejaría el push WSS sin contenido.
 - **Un `read:analysis` propio**: descartado por el HITL del tenant (ver 7).

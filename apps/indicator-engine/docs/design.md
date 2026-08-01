@@ -114,9 +114,20 @@
   actual — 2 snapshots/min — no lo requiere).
 - Recalibración HITL de los umbrales del ruleset (`config/senales.v*.yaml`) con más
   historia — subiendo la versión del ruleset, sin redeploy.
-- Continuous aggregate diario de percentiles por indicador si la consulta de
-  distribuciones supera su timeout con la tabla en régimen (~1,5 M filas ordenadas por
-  refresco). Es evolución, no bloqueo: el respaldo del ruleset cubre el fallo de forma
-  visible.
+- ~~Continuous aggregate diario de percentiles~~ — **medido el 2026-08-01 y
+  descartado por ahora**: en régimen a 90 días (1.036.800 filas sembradas a la
+  densidad real, 256 MB) la consulta tarda **747 ms** con caché caliente, ~7×
+  por debajo del timeout de 5 s. Detalle que corrige la suposición del plan: **no
+  hay nodo `Sort`** — el índice `(indicator, currency, as_of DESC)` sirve un
+  `Merge Append` ya ordenado por indicador, y el único ordenamiento es el interno
+  del agregado de conjunto ordenado. Subir `work_mem` para evitar su desborde a
+  temporales gana solo ~15 % (798 ms → 679 ms), así que tampoco compensa tocarlo.
+  Reabrir si cambia la densidad de captura o la ventana.
+- **`indicators` no tiene política de retención** (sí la tienen `p2p_snapshots_raw`
+  e `indicator_analysis`). No afecta al rendimiento de la consulta —la ventana de
+  90 días excluye chunks por sí sola— pero la tabla crece sin límite: ~2,2 GB/año
+  al ritmo actual. Decidir retención o compresión antes de que sea un problema
+  operativo; ojo, es el estado del motor, así que la ventana no puede bajar de lo
+  que necesitan `ultimo_indicador` e `indicador_asof` (horas, no días).
 - `add_compression_policy` sobre `indicator_analysis` a los 7 días si el volumen
   (~260 k filas / 1-2 GB en 90 d) aprieta.
