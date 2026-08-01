@@ -5,6 +5,8 @@ import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useCompacto } from "../../src/lib/useCompacto";
+
 import { Footer } from "../../src/components/shell/Footer";
 import { NavBar } from "../../src/components/shell/NavBar";
 import { StatusStrip } from "../../src/components/shell/StatusStrip";
@@ -67,6 +69,20 @@ describe("StatusStrip", () => {
     fijarCompacto(true);
     const { container } = render(<StatusStrip />);
     expect(container.querySelector(".vmw-tira")).toBeNull();
+  });
+
+  // El ancho se mide en el estado inicial, no en el efecto: con `useState(false)`
+  // el PRIMER render decía «ancha» y en un móvil la tira se pintaba un
+  // fotograma antes de desaparecer — salto de layout gratis.
+  it("mide el ancho ya en el primer render, sin esperar al efecto", () => {
+    fijarCompacto(true);
+    const vistos: boolean[] = [];
+    function Sonda() {
+      vistos.push(useCompacto());
+      return null;
+    }
+    render(<Sonda />);
+    expect(vistos[0]).toBe(true);
   });
 
   it("marca como secundarios los datos que se repliegan antes de envolver", () => {

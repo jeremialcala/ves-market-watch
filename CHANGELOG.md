@@ -19,6 +19,23 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Fixed
 
+- **La tira de estado podía pintarse un fotograma en móvil (2026-07-31)** —
+  reportada como visible en móvil; el contenedor del compose servía un bundle
+  anterior al trabajo responsive, pero al mirarlo apareció un defecto real:
+  - `useCompacto` arrancaba en `false`, así que **el primer render siempre era
+    el ancho**: en un móvil la tira se pintaba y desaparecía al correr el
+    efecto, con su salto de layout. Ahora el ancho se mide **síncronamente** en
+    el estado inicial.
+  - La tira se esconde además **por CSS** bajo 760 px. No es redundancia: el
+    estado de React llega un tic tarde y la regla vale aunque el JS falle.
+  - `tests/unit/compacto.test.ts` vigila que el 759 del CSS y el
+    `ANCHO_COMPACTO` del hook no se separen — TS y CSS plano no pueden
+    compartir constante. El test del fotograma se comprobó a la inversa:
+    revirtiendo el hook, falla.
+  - Restaurada la sección «Shell responsive» del `design.md` del SPA, que se
+    perdió por error al reescribir la sección de paleta en el commit anterior.
+  - 169 → **173 tests**.
+
 - **Paleta de datos del `web-spa`: los acentos de marca dejan de codificar dato
   (2026-07-31)** — cierra la regresión de accesibilidad que dejó el rediseño:
   - **Par categórico validado por tema**: claro `#10846e` ↔ `#cf4946`

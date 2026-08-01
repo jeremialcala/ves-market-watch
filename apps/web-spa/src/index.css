@@ -480,6 +480,17 @@ body {
   }
 }
 
+/* Por debajo del corte, la tira NO existe: su contenido vive en la barra
+   compacta y en la línea meta del menú. `StatusStrip` ya devuelve null, pero la
+   regla se declara también aquí porque el estado de React llega un tic tarde y
+   la tira alcanzaba a pintarse un fotograma. El 759 es `ANCHO_COMPACTO - 1` de
+   `lib/useCompacto.ts`; que no se separen lo vigila `tests/unit/compacto.test.ts`. */
+@media (max-width: 759px) {
+  .vmw-tira {
+    display: none;
+  }
+}
+
 /* Móvil estrecho: el nombre de la vista cede el sitio antes que la marca o el
    pulso del stream — está a un toque de distancia en el menú. El corte está en
    480 px, que es donde deja de caber entera junto a marca, pulso y botón. */

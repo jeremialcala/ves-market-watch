@@ -70,6 +70,35 @@ El canario `tests/unit/paleta.test.ts` fija estos valores: si alguien cambia un
 slot, el test falla y pide volver a pasar el validador. Lo que se rompió esta
 vez fue precisamente que el color cambió y la palabra «validada» se quedó.
 
+## Shell responsive (2026-07-31)
+El diseño declara la tira de estado dentro de `isWide`: **en compacto no
+existe**, y su información se reparte en vez de perderse. La escalera, medida en
+el navegador (las media queries no corren en jsdom):
+
+| Ancho | Barra | Tira de estado | Vista actual |
+|---|---|---|---|
+| ≥ 1080 px | ancha, 1 fila | completa (estado · suscripciones · último evento · cuota · calc) | — |
+| 760–1079 px | ancha, 2 filas | se repliegan suscripciones y cuota | — |
+| 480–759 px | compacta | ausente → punto + antigüedad en la barra; detalle completo en la línea meta del menú | visible |
+| < 480 px | compacta | ídem | retirada |
+| < 360 px | compacta, título con elipsis | ídem | retirada |
+
+La tira se esconde **por dos vías a la vez**: `StatusStrip` devuelve `null`
+cuando el ancho es compacto, y el CSS la oculta bajo 760 px. No es redundancia
+gratuita — el estado de React llega un tic tarde, así que con solo la primera la
+tira alcanzaba a pintarse un fotograma en móvil, con su salto de layout. El
+ancho se mide además de forma **síncrona** en el estado inicial del hook, para
+que el primer render ya sea el correcto. El 759 del CSS y el `ANCHO_COMPACTO`
+del hook no pueden compartir constante (TS y CSS plano): lo que impide que se
+separen es `tests/unit/compacto.test.ts`.
+
+Lo que **nunca** se repliega es el estado del stream: en ancho va como `Tag`, en
+compacto como punto + antigüedad, y en ambos casos es región viva (`role=status`,
+`aria-live="polite"`) con el estado en texto accesible — el color del punto no
+codifica solo. La etiqueta de vista lleva `flex: none` a propósito: sin él, flex
+la estruja a 0 px mucho antes de su punto de corte y el texto queda partido a
+media palabra; o entra entera, o se retira.
+
 ## Bloques sin fuente de datos (regla RF-5 aplicada al rediseño)
 El diseño pide secciones que la plataforma **no calcula**: régimen de mercado,
 percentiles de backtest de los medidores, escenarios con probabilidades y
@@ -134,7 +163,7 @@ la descomposición reparte el precio P2P con la tasa oficial vigente y el VWAP.
 - Lockfile commiteado (SCA en CI — Gate 2); cero secretos en el bundle.
 
 ## Verificación
-- **169 tests** (unit / component / contract) con **88,9 % de ramas** (umbral
+- **173 tests** (unit / component / contract) con **88,7 % de ramas** (umbral
   Gate 2: 80 %): decimal exhaustivo (incl. la aritmética `BigInt` y el borde de
   medianoche del día operativo VET), reducers, políticas WSS, StreamClient
   contra servidor WS mockeado, endpoints contra MSW, paneles con fixtures

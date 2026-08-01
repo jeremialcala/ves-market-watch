@@ -7,6 +7,23 @@ timestamp: 2026-07-31T00:00:00Z
 
 # Log
 
+## 2026-07-31 — Un reporte sobre un contenedor viejo destapó un defecto real
+- Reportaron la tira de estado visible en móvil. El contenedor del compose
+  servía un bundle anterior al trabajo responsive —se comprobó buscando
+  marcadores del código nuevo en el JS servido—, así que el síntoma venía de ahí.
+- Pero al mirarlo apareció un defecto de verdad: `useCompacto` arrancaba en
+  `false`, o sea que **el primer render siempre era el ancho**. En un móvil la
+  tira se pintaba un fotograma y desaparecía al correr el efecto.
+- Arreglado midiendo el ancho de forma síncrona en el estado inicial y
+  escondiendo la tira **también por CSS**: el estado de React llega un tic tarde
+  y la regla vale aunque el JS falle. Canario para que el corte no se separe
+  entre TS y CSS.
+- Dos lecciones: **verificar contra lo que el usuario mira**, no contra el
+  working tree; y un reporte puede ser correcto aunque su causa inmediata sea
+  otra — aquí la medición previa y el reporte eran ambos ciertos.
+- De paso: al reescribir la sección de paleta en el commit anterior me llevé por
+  delante la sección «Shell responsive» del design.md. Recuperada de git.
+
 ## 2026-07-31 — La paleta de datos deja de ser la paleta de marca
 - Arreglado el defecto que dejó el rediseño: en tema claro el par compra/venta
   daba ΔE 5,9 bajo protanopia. Ahora `#10846e` ↔ `#cf4946` (ΔE 8,1), a solo 4,1
