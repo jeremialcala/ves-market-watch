@@ -1,7 +1,7 @@
 ---
 type: Service
 title: web-spa
-description: Dashboard web (React + Vite + TS) autenticado vía Auth0 — implementado 2026-07-27 (ADR-0017); pendiente el client_id real del tenant y el e2e autenticado en vivo.
+description: Dashboard web (React + Vite + TS) autenticado vía Auth0 — implementado 2026-07-27 (ADR-0017); login sin fricción y sesión persistente verificados en vivo 2026-08-01 (ADR-0020).
 resource: ../../apps/web-spa/
 tags: [typescript, react, implementado, front-end, spa]
 timestamp: 2026-08-01T00:00:00Z
@@ -103,8 +103,6 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   ADR-0016 · Amenazas T12/T15.
 
 ## Pendiente
-- F1 de ADR-0017 (requiere `auth0 login`): app SPA del tenant → `client_id` a
-  `src/config.ts`; client M2M de prueba; rotation + `allow_offline_access`.
-- Checklist e2e con login real (DevTools sin tokens en storage, renovación
-  15 min, push < 1 s).
+- Topología de despliegue real: los túneles de Cloudflare son de desarrollo
+  (ADR-0020 lo deja abierto a propósito).
 - Multi-pestaña (BroadcastChannel) y code-splitting del Histórico (v2).

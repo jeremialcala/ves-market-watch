@@ -1,6 +1,6 @@
 # Diseño — web-spa
 
-- **Estado:** review — implementado 2026-07-27; pendiente client_id real del tenant (F1) y e2e autenticado en vivo
+- **Estado:** review — implementado 2026-07-27; login sin fricción verificado en vivo 2026-08-01 (ADR-0020)
 - **Fecha:** 2026-07-31
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 03-implementation
@@ -184,6 +184,22 @@ distancia y `met` vienen calculados; el SPA no reclasifica nada.
   compra / coral venta / salvia sin lado); el signo de la Δ va en glifo + texto; un
   solo eje por gráfico; tooltips con el string exacto.
 
+## Sesión y login (ADR-0020)
+El guard `auth/RequireAuth.tsx` distingue **cuatro estados disjuntos** —
+comprobando sesión · error **con botón de reintento** · redirigiendo · dentro —
+y las cuatro cadenas se traducen (antes estaban a fuego en español, con las
+claves `auth.*` del diccionario sin usar).
+
+El reintento **limpia el `?code=&state=` de la URL** antes de relanzar, y eso no
+es cosmética: cuando `handleRedirectCallback` falla, el `onRedirectCallback` que
+limpia la URL no llega a correr, así que cada recarga vuelve a entrar por el
+mismo camino y vuelve a fallar. Sin ese botón el estado es **terminal**: solo se
+sale editando la URL a mano.
+
+La sesión persiste entre recargas gracias al **dominio propio**
+(`auth.higerotech.com`), que hace la cookie SSO de primera parte — no gracias a
+guardar nada en el navegador.
+
 ## Seguridad (T12 aplicado)
 - Tokens nunca en localStorage/sessionStorage (verificable en DevTools).
 - Refresh rotation + access token de 900 s (tenant); reconexión WSS con token
@@ -194,12 +210,25 @@ distancia y `met` vienen calculados; el SPA no reclasifica nada.
   **`frame-src` del tenant** — el SDK re-autentica en silencio con un iframe
   `prompt=none`, y sin esa directiva cae en `default-src 'self'`, se bloquea y
   cada recarga acaba en Universal Login visible.
-- Las cabeceras viven en `nginx-security-headers.conf` y se **incluyen en cada
-  `location` que declare `add_header` propio**: nginx no las hereda si el
+- **`worker-src 'self' blob:`** (añadido 2026-08-01, ADR-0020). No es opcional:
+  con `useRefreshTokens` y caché en memoria, `auth0-spa-js` canjea el código en
+  un Web Worker que crea desde un `blob:`. Sin la directiva cae en
+  `default-src 'self'`, el worker **construye pero muere al cargar** —sin
+  excepción, sin log y sin petición de red— y **el login se cuelga por
+  completo**. Amplía lo mínimo: un blob solo puede llevar código del propio
+  origen y `script-src 'self'` queda intacto.
+- Las cabeceras viven en `nginx-security-headers.conf.template` y se **incluyen
+  en cada `location` que declare `add_header` propio**: nginx no las hereda si el
   location define los suyos, y por eso el sitio estuvo sirviéndose sin ninguna
-  cabecera de seguridad pese a estar escritas en la config. Lo vigila
-  `tests/unit/csp.test.ts`, que además comprueba que el dominio de `frame-src`
-  es el `config.auth0Domain` del bundle.
+  cabecera de seguridad pese a estar escritas en la config.
+- **La CSP es plantilla, no literal**: las `${VITE_*}` las sustituye `envsubst`
+  en el build con los MISMOS `ARG` que hornean el bundle, así que el dominio de
+  la política y el del bundle **no pueden divergir** — si divergieran, el
+  navegador bloquearía justo lo que el SDK necesita, con la cabecera escrita y
+  aparentemente correcta. Lo vigila `tests/unit/csp.test.ts`: invariantes de
+  T12, que cada variable de la plantilla esté en la lista de `envsubst`, que el
+  build aborte si queda alguna sin sustituir, y que los defaults de los `ARG`
+  coincidan con los de `src/config.ts`.
 - Lockfile commiteado (SCA en CI — Gate 2); cero secretos en el bundle.
 
 ## Verificación
@@ -217,9 +246,10 @@ distancia y `met` vienen calculados; el SPA no reclasifica nada.
 - Build de producción y contenedor nginx verificados (compose, puerto 8080).
 
 ## Pendiente
-- F1 de ADR-0017: app SPA en el tenant (client_id → `src/config.ts`), client
-  M2M de prueba, rotation/offline_access — requiere `auth0 login` (HITL).
-- Checklist e2e con login real (plan de verificación de ADR-0017).
+- Topología de **despliegue real** (producción/staging): los túneles de
+  Cloudflare son solución de desarrollo, no de despliegue (ADR-0020 lo deja
+  explícitamente abierto).
+- Multi-pestaña: cada pestaña abre su propia conexión WSS.
 - Multi-pestaña (BroadcastChannel) y code-splitting del Histórico (v2) — el
   bundle pasó de 500 kB al entrar el rediseño.
 - Retirar los bloques `demo · sin fuente` a medida que el `indicator-engine`

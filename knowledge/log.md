@@ -2,10 +2,42 @@
 type: Log
 title: Historia del knowledge bundle
 description: Registro cronológico de cambios en el contexto del proyecto (más reciente primero).
-timestamp: 2026-08-01T00:00:00Z
+timestamp: 2026-08-01T12:00:00Z
 ---
 
 # Log
+
+## 2026-08-01 (tarde) — El login estaba roto y nadie lo sabía (ADR-0020)
+- Pedido: «que entrar sea más directo y que la sesión persista». Al medirlo en
+  vivo aparecieron **tres problemas distintos**, y ninguno era el que parecía.
+- **La CSP tumbó el login sin que nada fallara.** Faltaba `worker-src`: con
+  `useRefreshTokens` + caché en memoria, `auth0-spa-js` canjea el código en un
+  Web Worker creado desde un `blob:`; sin la directiva cae en
+  `default-src 'self'`, el worker **construye pero muere al cargar** — sin
+  excepción, sin log y sin petición de red — y el login se colgaba para siempre.
+  Lo introdujo el arreglo del 2026-07-31: mientras la CSP no llegaba al
+  navegador todo funcionaba, y se rompió justo cuando la política empezó a
+  aplicarse de verdad. **Una CSP que por fin se envía es un cambio funcional.**
+- **`web_origins` estaba vacío en el tenant**: Auth0 rechaza el
+  `response_mode=web_message` del iframe sin él, así que el silent auth nunca
+  pudo funcionar, con cookies de terceros o sin ellas.
+- **El consentimiento y la no-persistencia eran el mismo problema.** Auth0 solo
+  omite el consentimiento para clientes *verificables*, y `http://localhost` no
+  lo es; y como `prompt=none` no puede mostrar esa pantalla, devolvía
+  `consent_required` y el silent auth caía a login visible.
+- Arreglado con dominio propio `auth.higerotech.com` + desarrollo por túneles de
+  Cloudflare. **Verificado en vivo**: entra sin clics, F5 y pestaña nueva
+  mantienen la sesión, y **cero tokens en storage** — T12 no se relajó; se
+  descartó `localStorage`, que era la vía corta.
+- **Cuatro cosas que la documentación daba por pendientes ya estaban hechas** en
+  el tenant: `allow_offline_access`, rotación de refresh tokens, `is_first_party`
+  y el grant `refresh_token`. Siete documentos declaraban «F1 pendiente» y el
+  design del gateway decía «sin offline access». La doc llevaba semanas
+  describiendo un tenant que no era el real: corregido en todos.
+- Lección de método: tres diagnósticos míos cayeron por verificación floja —
+  probar que el worker *se construía* pero no que *corriera*, leer
+  `sessionStorage` desde el origen equivocado, y dar por bueno un contenedor que
+  no se había reconstruido. Mandó la medición en vivo, no la lectura del código.
 
 ## 2026-08-01 — El panel de medidores deja de ser demo (RF-6, ADR-0019)
 - El «Panel de instrumentos» mostraba valores reales rodeados de literales: la

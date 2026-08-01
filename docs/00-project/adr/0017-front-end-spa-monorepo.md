@@ -27,8 +27,11 @@ gateway desde un origen distinto, y cómo se tipan los contratos.
 3. **Manejo de tokens = exactamente los controles de T12**:
    `cacheLocation: "memory"` (nunca localStorage), access token de vida corta
    (900 s, ya fijado en el tenant), `useRefreshTokens: true` con **rotación**
-   habilitada en el tenant (esta ADR habilita `allow_offline_access` en la API —
-   ADR-0012 lo prometía y el tenant no lo tenía), y renovación proactiva del
+   habilitada en el tenant (`allow_offline_access` en la API — *corregido
+   2026-08-01: esta ADR afirmaba habilitarlo y no lo hizo; al auditar el tenant
+   ya estaba en `true`, junto con la rotación, `is_first_party` y el grant
+   `refresh_token`. La documentación llevaba semanas describiendo un tenant que
+   no era el real*), y renovación proactiva del
    token del WSS a `exp − 60 s` con reconexión + reposición de estado por REST
    (ADR-0016: el push es best-effort). Al **recargar la página** no hay tokens
    en memoria: el SDK re-autentica en **silencio por iframe** (`prompt=none`
@@ -36,8 +39,19 @@ gateway desde un origen distinto, y cómo se tipan los contratos.
    Allowed Web Origins en la app del tenant), sin login visible y sin tocar
    storage. *(Enmienda 2026-07-28: la versión inicial deshabilitaba el fallback
    y cada F5 mandaba a Universal Login visible — visto en el rodaje real.)*
+
+   > **Enmienda 2026-08-01 (ADR-0020).** Ese fallback por iframe **nunca llegó a
+   > funcionar**, por dos causas que esta ADR no podía prever: `web_origins`
+   > estaba vacío en el tenant (Auth0 rechaza el `response_mode=web_message` sin
+   > él) y, sobre `localhost`, la cookie SSO del dominio canónico es de terceros
+   > y el consentimiento obligatorio hace que `prompt=none` devuelva
+   > `consent_required`. Además, con `cacheLocation: "memory"` el refresh token
+   > **muere en la recarga junto al access token**: `offline_access` sirve para
+   > renovar con la pestaña viva, no para sobrevivir a un F5. La persistencia
+   > real la da el **dominio propio** (ADR-0020), no esta configuración.
 4. **CORS por allowlist en el gateway** (nueva env `ALLOWED_ORIGINS`, default
-   `http://localhost:5173,http://localhost:8080`): solo `GET`, header
+   `http://localhost:5173,http://localhost:8080` — ampliado en ADR-0020 con el
+   host del túnel de desarrollo): solo `GET`, header
    `Authorization`, sin credentials (bearer, no cookies), `expose_headers` para
    `X-RateLimit-*`/`Retry-After`. Sin proxy de Vite: un solo mecanismo idéntico
    en dev (5173) y en el build nginx (8080), ejercitado a diario. El WSS no

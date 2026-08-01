@@ -81,11 +81,18 @@ Contrato: `npm run generate:api` regenera `src/api/types.gen.ts` desde
 - Amenazas T12 (tokens en el browser — implementación aquí), T15 (CORS) en
   `../../docs/02-design/threat-model.md`
 
+## Desarrollo con login sin fricción (ADR-0020)
+El flujo bueno va por los túneles de Cloudflare
+(`criterio-dev.higerotech.com`), no por `localhost:8080`: solo un host HTTPS
+bajo `higerotech.com` es «verificable» para Auth0 (sin pantalla de
+consentimiento) y comparte dominio registrable con `auth.higerotech.com` (cookie
+SSO de primera parte, la sesión sobrevive al F5). En `localhost` el
+consentimiento y la falta de persistencia son inevitables — es correcto, no un
+fallo. Los hosts se configuran con `VITE_API_BASE_URL`, `VITE_AUTH0_DOMAIN` y
+`ALLOWED_ORIGINS` en el `.env` de la raíz.
+
 ## Pendiente
-- `VITE_AUTH0_CLIENT_ID` real: se rellena al aprovisionar la app SPA en el
-  tenant (F1 de ADR-0017 — requiere `auth0 login`).
-- e2e en vivo con token real: `npm run test:e2e:live` con
-  `AUTH0_M2M_CLIENT_ID/SECRET` (client M2M de prueba, F1).
+- Topología de despliegue real: los túneles son de desarrollo (ADR-0020).
 - Multi-pestaña: elección de líder (BroadcastChannel) para no agotar las 5
   conexiones WSS por usuario.
 - Code-splitting de la vista Histórico (Recharts pesa en el bundle).

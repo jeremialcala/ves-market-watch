@@ -46,6 +46,18 @@ de emitir tokens y pasa a ser **Resource Server** que solo los valida.
   por Auth0/SPA. MFA y attack protection (brute-force, breached-password, bot detection) se
   habilitan en el tenant.
 
+> **Enmienda 2026-08-01 (ADR-0020): el emisor cambia.** Con el dominio propio
+> `auth.higerotech.com`, el claim `iss` de los tokens pasa a ser
+> `https://auth.higerotech.com/` y el JWKS a servirse desde ese host. El gateway
+> valida `iss` de forma **estricta**, así que `AUTH0_ISSUER` y `JWKS_URI` se
+> mueven en la misma ventana de cambio o **todos los tokens se rechazan con
+> 401**. Se optó por un emisor único (SPA, e2e M2M y gateway a la vez) en vez de
+> aceptar una lista: dos emisores degradarían T11 de «un emisor» a «una lista
+> que alguien puede ampliar sin pensar».
+>
+> Consecuencia operativa: los registros DNS del dominio y su certificado pasan a
+> ser **activos críticos** del sistema de identidad.
+
 ## Alternativas consideradas
 | Opción | Pros | Contras | Riesgo de seguridad |
 |---|---|---|---|

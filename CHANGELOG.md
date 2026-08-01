@@ -17,6 +17,62 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Security
+
+- **El login estaba roto en el contenedor y la CSP era la causa (2026-08-01,
+  ADR-0020).** Faltaba `worker-src 'self' blob:`. Con `useRefreshTokens` y caché
+  en memoria, `auth0-spa-js` canjea el código en un Web Worker creado desde un
+  `blob:`; sin la directiva cae en `default-src 'self'`, el worker **construye
+  pero muere al cargar** —sin excepción, sin log y sin ninguna petición de red— y
+  el login se colgaba indefinidamente. Lo introdujo el arreglo del 2026-07-31
+  (`798b83b`): mientras la CSP no llegaba al navegador el login funcionaba, y se
+  rompió justo cuando la política empezó a aplicarse de verdad. *Una CSP que por
+  fin se envía es un cambio funcional, no solo de seguridad.* Canario en
+  `tests/unit/csp.test.ts`.
+- **Cookie SSO de primera parte con dominio propio** (`auth.higerotech.com`):
+  T12 **no se relaja** —los tokens siguen solo en memoria— y de paso desaparece
+  la presión de pasar a `localStorage` para ganar comodidad, que era el riesgo
+  real que acechaba a ese control. Se descartó explícitamente esa alternativa.
+- **`web_origins` estaba vacío en el tenant**: Auth0 rechaza el
+  `response_mode=web_message` del iframe sin él, así que la re-autenticación
+  silenciosa nunca pudo funcionar. Corregido.
+
+### Fixed
+
+- **El fallo de login era un estado terminal.** Cuando `handleRedirectCallback`
+  lanzaba, el `onRedirectCallback` que limpia la URL no llegaba a correr, así que
+  el `?code=&state=` se quedaba puesto y **cada recarga volvia a fallar igual**:
+  solo se salía editando la URL a mano. `RequireAuth` gana un botón de reintento
+  que limpia el callback antes de relanzar.
+- **El guard mentía durante la comprobación de sesión**: mostraba «Redirigiendo
+  al inicio de sesión…» mientras hacía `checkSession()`. Ahora distingue cuatro
+  estados disjuntos (comprobando · error con salida · redirigiendo · dentro).
+- **Las pantallas de sesión no se traducían**, pese a que `design.md` afirmaba lo
+  contrario: las claves `auth.*` existían en ES y EN desde hacía semanas y ningún
+  componente las consumía. Cableadas.
+- **Documentación que describía un tenant que no era el real**: siete documentos
+  declaraban «F1 pendiente» (app SPA y client M2M ya aprovisionados desde el
+  2026-07-27) y el design del gateway decía «sin offline access» cuando el tenant
+  lo tenía activo, junto con la rotación de refresh tokens. Corregido en todos.
+
+### Changed
+
+- **Desarrollo por túneles de Cloudflare** (`criterio-dev.higerotech.com` y
+  `criterio-api-dev.higerotech.com`): HTTPS real sin CA local ni tocar el almacén
+  de confianza, y hosts que no son `localhost` — requisito para que Auth0
+  considere el cliente «verificable» y omita el consentimiento. En
+  `localhost:8080` el consentimiento y la falta de persistencia son inevitables,
+  y eso es correcto, no un fallo.
+- **Un solo issuer**: `AUTH0_ISSUER` pasa a `https://auth.higerotech.com/` en
+  gateway, SPA, compose y e2e M2M a la vez. Se descartó una ventana de dos
+  emisores para no degradar T11 de «un emisor» a «una lista».
+- **La CSP deja de ser un literal**: `nginx-security-headers.conf` pasa a
+  plantilla sustituida por `envsubst` en el build con los MISMOS `ARG` que
+  hornean el bundle, así que el dominio de la política y el del bundle no pueden
+  divergir. `csp.test.ts` verifica el contrato de sustitución completo.
+- `offline_access` explícito en `SCOPES` — **solo por legibilidad**: el SDK ya lo
+  inyectaba por tener `useRefreshTokens`, y quien lo descartaba era el tenant.
+
 ### Added
 
 - **Módulo de análisis de indicadores — el panel de instrumentos deja de ser demo

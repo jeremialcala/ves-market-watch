@@ -28,6 +28,15 @@ login y el estado de salud son visibles sin sesión.
 > regla de presentación de bloques sin fuente de datos, que es RF-5 aplicada al
 > diseño.
 
+> Enmienda 2026-08-01 (ADR-0020): **RF-1 gana criterios verificables.** Decía
+> «tokens solo en memoria; renovación silenciosa; logout», que no permite
+> distinguir un login que funciona de uno roto. Se añade: la recarga **no muestra
+> login** mientras viva la sesión SSO; **todo fallo de autenticación ofrece
+> reintento** (nunca un estado terminal); y los estados de sesión se **distinguen
+> entre sí** (comprobando / redirigiendo / error). El escenario de abuso 4 se
+> amplía con el *callback envenenado*: un `?code=` inválido en la URL no puede
+> dejar al usuario encerrado.
+
 > Enmienda 2026-08-01 (ADR-0019): el motor ya calcula la lectura de los
 > medidores (RF-6 del PRD del motor), así que el panel de instrumentos deja de
 > ser un bloque demo y pasa a explicarse en ES/EN con dato servido — **RF-11**,

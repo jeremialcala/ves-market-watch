@@ -172,5 +172,9 @@ no se llenan».
 - **Compose end-to-end**: binding `analysis.updated` declarado, seis medidores
   persistidos por revisión, cinco en percentiles reales sobre ~28 000 muestras y
   outliers en respaldo por la enmienda del punto 5.
-- **Pendiente HITL**: la revisión visual del panel con login real sigue
-  bloqueada por el `client_id` del tenant (F1 de ADR-0017), igual que en 0018.
+- ~~**Pendiente HITL**: la revisión visual del panel con login real sigue
+  bloqueada por el `client_id` del tenant (F1 de ADR-0017), igual que en 0018.~~
+  **Desbloqueado el mismo día (ADR-0020)**: el `client_id` ya estaba
+  aprovisionado desde el 2026-07-27 —esta línea heredó una afirmación desfasada
+  de 0018— y el login quedó operativo al arreglar la CSP y adoptar el dominio
+  propio. La revisión visual del panel en vivo ya no está bloqueada.

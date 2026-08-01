@@ -27,8 +27,8 @@ la fuente de verdad (los documentos AI-DLC y el código).
   `../schemas/` + OpenAPI/AsyncAPI del gateway.
 - **Front-end [web-spa](services/web-spa.md) implementado** (2026-07-27,
   ADR-0017): dashboard React autenticado vía Auth0 con stream WSS + histórico;
-  CORS por allowlist en el gateway. Pendiente HITL: `auth0 login` para
-  aprovisionar la app SPA (client_id) y el client M2M del e2e en vivo.
+  CORS por allowlist en el gateway. El tenant está aprovisionado (app SPA y
+  client M2M) desde 2026-07-27.
 - El push WSS del gateway ya **se auto-recupera** ante caídas del bus, con alerta
   por transición y `/health` honesto (2026-07-30).
 - El `web-spa` viste el **sistema de diseño Higerotech** con tema claro/oscuro e
@@ -40,8 +40,12 @@ la fuente de verdad (los documentos AI-DLC y el código).
   reales de su ventana de 90 días y proximidad a las reglas del ruleset— vía
   [analysis.updated](events/analysis-updated.md), `GET /api/v1/analysis/current`
   y el tópico WSS `analysis`. Es descripción del presente, no pronóstico.
-- Siguiente paso natural: aprovisionar el tenant (F1 de ADR-0017), checklist
-  e2e con login real, y preparar la fase 04 (Gate 2).
+- **Login sin fricción, verificado en vivo** (2026-08-01, ADR-0020): dominio
+  propio `auth.higerotech.com` + desarrollo por túneles de Cloudflare. Entrar es
+  un redirect silencioso sin clics y la sesión sobrevive al F5, con los tokens
+  **solo en memoria** (T12 intacto).
+- Siguiente paso natural: decidir la topología de despliegue real (los túneles
+  son de desarrollo) y preparar la fase 04 (Gate 2).
 - Historia de cambios: [log.md](log.md) y `../CHANGELOG.md`.
 
 ## Mapa del bundle

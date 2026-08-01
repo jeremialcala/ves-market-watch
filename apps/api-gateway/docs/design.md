@@ -71,27 +71,32 @@ rate limit in-memory, profundidad interim): **ADR-0016**.
 
 ## Tenant Auth0 (aprovisionado 2026-07-14)
 
-Tenant de desarrollo: `dev-higerotech.us.auth0.com` (config pública por diseño, ADR-0012 —
-no hay secretos de firma del lado del gateway).
+Tenant de desarrollo: `dev-higerotech.us.auth0.com`, servido desde el **dominio
+propio `auth.higerotech.com`** desde 2026-08-01 (ADR-0020). Config pública por
+diseño (ADR-0012): no hay secretos de firma del lado del gateway.
 
 | Recurso | Valor |
 |---|---|
 | API (Resource Server) | `VES Market Watch API` — id `6a56683fbcee12f7916916ae` |
 | Audience | `https://api.vesmarketwatch/` |
-| Firma / vigencia | RS256; access token 900 s (también `token_lifetime_for_web`); sin offline access |
+| Firma / vigencia | RS256; access token 900 s (también `token_lifetime_for_web`); **offline access habilitado** (corregido 2026-08-01: esta tabla decía «sin offline access» y el tenant lo tenía activo — la doc describía un tenant que no era el real) |
 | RBAC | `enforce_policies: true`, `token_dialect: access_token_authz` (permisos viajan en el claim `permissions`) |
 | Permisos | `read:rates`, `read:indicators`, `read:signals`, `read:depth`, `stream:events` |
 | Rol `viewer` (`rol_04JPNH53SrEU3ybX`) | Los 5 permisos (todo el catálogo actual es de solo lectura/streaming) |
 | Rol `operator` (`rol_WqmKgWUWzfl8ICD9`) | Los mismos 5; se diferenciará con el permiso admin de re-validación HITL (ADR-0007) cuando exista |
+| Refresh token | Rotación (`rotating`), expiración 30 d absoluta / 1 d de inactividad |
+| Dominio propio | `auth.higerotech.com` (`cd_rBB36mckbyHfvLgk`), cert Let's Encrypt gestionado por Auth0 |
 | Attack protection | Brute-force: block+user_notification, 10 intentos · Breached-password: block+admin_notification (inmediata) · Suspicious-IP throttling: block+admin_notification |
 
 Config del gateway (variables de entorno, todas públicas):
 
 ```env
-AUTH0_DOMAIN=dev-higerotech.us.auth0.com
-AUTH0_ISSUER=https://dev-higerotech.us.auth0.com/
+# El issuer es el del DOMINIO PROPIO: con él, el claim `iss` de los tokens deja
+# de ser el canónico. El gateway valida issuer de forma estricta, así que este
+# valor y el dominio del SPA se mueven juntos o son 401 en todo (ADR-0020).
+AUTH0_ISSUER=https://auth.higerotech.com/
 AUTH0_AUDIENCE=https://api.vesmarketwatch/
-JWKS_URI=https://dev-higerotech.us.auth0.com/.well-known/jwks.json
+JWKS_URI=https://auth.higerotech.com/.well-known/jwks.json
 ```
 
 ## Contratos

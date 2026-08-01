@@ -4,7 +4,7 @@ title: api-gateway
 description: Capa de acceso REST + WSS para usuarios autenticados; Resource Server OIDC con Auth0 — implementado (2026-07-26) y verificado en vivo contra la infra del compose y el tenant real.
 resource: ../../apps/api-gateway/
 tags: [python, fastapi, implementado, api, wss]
-timestamp: 2026-08-01T00:00:00Z
+timestamp: 2026-08-01T12:00:00Z
 ---
 
 # api-gateway
@@ -33,6 +33,10 @@ in-memory, profundidad como proyección interim).
   suscripciones por `sub`, ping 30 s, cierre 4401 al expirar el token, token
   redactado en logs. Push = payload del evento del bus validado contra su schema
   (`{topic, event_id, occurred_at, data}`).
+- **Emisor**: valida contra el **dominio propio** `auth.higerotech.com`
+  (ADR-0020). El `iss` de los tokens dejó de ser el canónico, y `AUTH0_ISSUER` /
+  `JWKS_URI` se movieron junto al SPA en la misma ventana: por separado son 401
+  en todo.
 - **Datos**: asyncpg de **solo lectura** (`default_transaction_read_only=on`,
   defensa T9) sobre [official_rates](../tables/official_rates.md),
   [indicators](../tables/indicators.md), [signals](../tables/signals.md),
