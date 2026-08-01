@@ -1,7 +1,7 @@
 # Historial de implementación — VES Market Watch
 
 * **Estado:** review (documentación viva — regenerada por script, no editar a mano)
-* **Fecha:** 2026-07-31
+* **Fecha:** 2026-08-01
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
 * **Versión:** 0.4.0
@@ -92,6 +92,8 @@ gitGraph
     commit id: "f074aab"
     commit id: "47d1286"
     commit id: "798b83b"
+    commit id: "75bd24e"
+    commit id: "f525868"
 ```
 
 ### Estado actual de las ramas
@@ -99,7 +101,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `798b83b` | 2026-07-31 | 58 |
+| `develop` | `f525868` | 2026-08-01 | 60 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -115,6 +117,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `f525868` | commit | — | Jeremi Alcala | 2026-08-01 | feat(analisis): modulo de analisis de indicadores — el panel deja de ser demo |
+| `75bd24e` | commit | — | Jeremi Alcala | 2026-07-31 | docs(repo-history): regenerar |
 | `798b83b` | commit | — | Jeremi Alcala | 2026-07-31 | security(web-spa): la CSP no se enviaba; frame-src del tenant anadido |
 | `47d1286` | commit | — | Jeremi Alcala | 2026-07-31 | docs(repo-history): regenerar |
 | `f074aab` | commit | — | Jeremi Alcala | 2026-07-31 | fix(web-spa): la tira de estado no se pinta ni un fotograma en movil |
