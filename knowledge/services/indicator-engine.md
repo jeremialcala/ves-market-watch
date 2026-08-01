@@ -56,7 +56,12 @@ Python 3.12, hexagonal, mismas convenciones que [ingestor-bcv](ingestor-bcv.md).
   persiste solo al cambiar (ADR-0008), así que una fila vieja es una meseta y `Δ = 0` es
   evidencia positiva, no dato faltante. Sin config, el análisis se publica igual sin
   `reading`.
-- CLI: `python -m indicator_engine [--drain]`. 244 tests (unit/contract/integration/e2e);
+- Comparativa de la brecha contra su historia (RF-7, 2026-08-01): media, extremos y
+  **días realmente cubiertos** por ventana (7/30/90) en `gap_history`, con el mismo
+  TTL y la misma degradación que las distribuciones. La media se pondera **por
+  hora**: la serie derivada y la del motor tienen densidades distintas y un `avg()`
+  plano se inclina 5,4 pp hacia el tramo más muestreado.
+- CLI: `python -m indicator_engine [--drain]`. 302 tests (unit/contract/integration/e2e);
   RF-4, RF-6 y RF-7 verificados e2e en vivo (snapshot → `signals.emitted` y
   `analysis.updated` al bus y a sus tablas).
 

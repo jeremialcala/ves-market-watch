@@ -89,6 +89,19 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   probabilidades y riesgos redactados. Se quedan porque hacerlos reales exigiría
   pronosticar, que es no-objetivo declarado.
 
+## Descomposición de la brecha con historia por lado (2026-08-01, ADR-0021)
+- La tarjeta compara **compra y venta**, cada uno contra su propia historia, con
+  las referencias del contrato (`gap_history`): el SPA dejó de calcular medias.
+- **Rotula el tramo real**: «Promedio 12 d (de 30)» mientras la serie no alcance la
+  ventana, y pasa sola a la etiqueta nominal cuando crece. Antes decía «Promedio 30
+  días» sobre 12 días de historia.
+- **La cifra que cita la prosa está a la vista**, con test propio: la tarjeta llegó
+  a afirmar «7,70 puntos por debajo de su promedio de 90 días» mientras esa fila
+  mostraba el máximo — la afirmación era incomprobable y restar el máximo daba otro
+  número.
+- Antes de todo esto, tres tarjetas llevaban días en blanco por una carrera de
+  efectos de React; ver el log del 2026-08-01.
+
 ## Shell responsive (2026-07-31)
 - La tira de estado vive solo en la barra ancha (así lo declara el diseño): en
   compacto su información se reparte entre el punto de la barra (estado +
@@ -110,7 +123,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   y obliga a volver a pasar el validador.
 
 ## Verificación
-- **230 tests** (unit/component/contract con MSW y WS mock) — **88,2 % de ramas**
+- **259 tests** (unit/component/contract con MSW y WS mock) — **86,9 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

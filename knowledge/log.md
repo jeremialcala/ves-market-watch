@@ -7,6 +7,41 @@ timestamp: 2026-08-01T12:00:00Z
 
 # Log
 
+## 2026-08-01 (noche) — La brecha contra su historia, y tres defectos que solo vio el dato
+- La tarjeta de descomposición ya compara **compra y venta** contra su propia
+  historia, con la comparativa que calcula el motor (`gap_history`) y la prosa que
+  redacta el SPA. Venta tiene 242 días reales; compra, 12.
+- **El backfill del lado venta obligó a sembrar `indicators`**, que es el estado del
+  motor y lo que ADR-0013 desaconsejaba. Tres guardas lo acotan, y la primera fue un
+  hallazgo, no una precaución: el `ON CONFLICT` **no bastaba**, porque las marcas de
+  tiempo de las dos series no coinciden (10 min contra ~30 s) y habrían quedado
+  interleavadas. Como `ultimo_indicador` e `indicador_asof` no filtran por
+  `calc_version`, el motor habría leído su estado de una serie derivada. El backfill
+  se corta ANTES del primer punto del motor.
+- **La media de 90 días estaba sesgada 5,4 puntos, y lo vio el usuario mirando la
+  tarjeta.** Un `avg()` plano pondera por muestra, y dentro de esa ventana la
+  densidad varía 34× por la unión del backfill: 20,37 % plana contra 25,81 %
+  ponderada por hora. Los tres métodos ponderados convergen; la plana es la que se
+  sale. El sesgo es < 0,2 pp en las otras cinco combinaciones lado×ventana.
+  **Regla que queda:** toda agregación sobre `indicators` que cruce el 2026-07-20 se
+  pondera por tiempo.
+- **La prosa citaba una cifra invisible.** Decía «7,70 puntos por debajo de su
+  promedio de 90 días» mientras esa fila mostraba el MÁXIMO. La media citada no
+  aparecía, así que la afirmación era incomprobable — y restar el máximo daba otro
+  número. Regla nueva con test: si el motor afirma una distancia contra una
+  referencia, esa referencia se muestra.
+- **Desplegué el motor antes que el gateway** y este descartó cada
+  `analysis.updated` hasta ampliar el enum de claims. ADR-0021 pto. 4 advertía
+  exactamente ese orden y lo escribí yo el mismo día. Tratarlo como paso del
+  despliegue, no como nota.
+- **`sum()` sobre `bigint` devuelve `numeric`**, así que al agrupar por hora el
+  contador de muestras pasó a `Decimal` y el `json.dumps` del payload reventó. El
+  análisis estuvo ~4 min sin persistir; el `try/except` de ADR-0019 salvó el
+  pipeline. Los tests de contrato no lo vieron porque construyen los agregados a
+  mano con enteros.
+- Patrón de la jornada: **los seis defectos aparecieron mirando el dato o el
+  navegador, ninguno en las 561 pruebas.** Las pruebas los fijan ahora.
+
 ## 2026-08-01 (noche) — Tres tarjetas en blanco por el ORDEN de los efectos de React
 - La sparkline de 24 h, las comparativas de la brecha y el mapa de calor llevaban días
   vacíos. Causa: React ejecuta los efectos **de hijo a padre**, así que el efecto de

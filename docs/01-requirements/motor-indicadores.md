@@ -11,7 +11,7 @@
 - **Fecha:** 2026-07-11
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 01-requirements
-- **Versión:** 0.5.0
+- **Versión:** 0.6.0
 
 ## Problema y contexto
 Consolidar los eventos de las fuentes (P2P y BCV) y producir indicadores financieros de
@@ -108,6 +108,21 @@ forma reactiva: cada nuevo dato recalcula y publica los indicadores afectados.
   - El motor **clasifica** en códigos neutros de idioma; la prosa ES/EN la redacta el
     cliente, sin decidir nada sobre el orden.
   - La aclaración de que no es consejo ni pronóstico es **obligatoria** en la UI.
+
+  **Ampliación 2026-08-01 — la brecha contra su propia historia.** Cada revisión
+  publica además, por lado (compra y venta), la media y los extremos de la brecha en
+  ventanas móviles de días, con los **días realmente cubiertos** de cada una.
+
+  - `days_covered < days_configured` significa que la serie NO alcanza la ventana
+    pedida. Se publica igual, declarándolo, para que el cliente rotule el tramo
+    verdadero («Promedio 12 d de 30»). Mismo criterio que `scale.samples`.
+  - La media se pondera **por hora, no por muestra**: el histórico derivado y la
+    serie del motor tienen densidades distintas, y un promedio plano se inclina
+    hacia el tramo más muestreado. Los extremos sí son por muestra — son valores
+    observados y suavizarlos escondería el pico.
+  - Se afirma **una comparativa por lado**, contra la ventana completa más ancha.
+    Si ninguna está completa se afirma eso en su lugar: citar una media de 12 días
+    como referencia de 90 sería el error que esto corrige.
 
 ```mermaid
 requirementDiagram

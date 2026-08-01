@@ -124,6 +124,26 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **La descomposición de la brecha compara los dos lados contra su propia historia
+  (2026-08-01, RF-7 / RF-12, ADR-0021).** La tarjeta mostraba «Promedio 30 días» y
+  «Máximo 90 días» calculados sobre los 12 días que había en `indicators`: los
+  números eran reales y las ventanas no.
+  - **Backfill del lado VENTA**, 61.544 filas (2025-12-02 → 2026-07-20) derivadas de
+    los snapshots históricos contra la tasa oficial vigente. Solo ese lado, y medido
+    antes de escribir código: el export ES el lado venta (±0,6 VES de
+    `p2p_mediana_sell`, ~8 VES del buy), así que su brecha empalma con la del motor a
+    −0,08 pp mientras la de compra difería +1,08.
+  - **`days_covered` en cada ventana** es el mecanismo de honestidad: una ventana de
+    30 días con 12 de serie se publica igual, declarándolo, y la UI rotula «Promedio
+    12 d (de 30)». Pasa sola a la etiqueta nominal cuando la serie crece.
+  - **La media se pondera por hora, no por muestra.** El histórico derivado y la
+    serie del motor tienen densidades distintas y un `avg()` plano se inclinaba
+    **5,4 pp** hacia el tramo más muestreado. Los extremos siguen siendo por muestra.
+  - Claims `brecha_vs_historia`, `brecha_extremo` e `historia_parcial`, uno por lado
+    y contra la ventana completa más ancha. El SPA redacta; el motor clasifica.
+  - Contrato `gap_history` aditivo (openapi 0.6.0 → 0.7.0). ADR-0013 enmendado por
+    segunda vez: se siembra `indicators`, acotado por tres guardas.
+
 - **Histórico P2P al día: la serie de mercado llega hasta hoy (2026-08-01).** Cargado
   `query_result_2026-08-01T11_47_06…csv` con el `cargar` ya existente: 28.823 filas del
   export, de las que **2.951 eran nuevas** y 25.872 ya estaban — la idempotencia por

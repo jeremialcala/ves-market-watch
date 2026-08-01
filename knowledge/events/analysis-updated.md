@@ -18,7 +18,7 @@ por `GET /api/v1/analysis/current` desde la tabla
 
 Payload: `{as_of, currency, calc_version, analysis_version, ruleset_version,
 confidence, official_stale, triggered_by, indicators[], rule_proximity[],
-summary, reading?}` (contrato `schemas/analysis.v1.json`). El `occurred_at` del sobre es
+summary, reading?, gap_history?}` (contrato `schemas/analysis.v1.json`). El `occurred_at` del sobre es
 la hora de emisión; `as_of` es el instante del dato de mercado de la revisión.
 
 **Qué es**: por cada medidor con valor vigente, en qué **banda** cae dentro de
@@ -77,6 +77,22 @@ aparece con confianza baja.
 **Qué NO es**: régimen predictivo. Clasifica el presente con umbrales de config
 versionada; ADR-0019 pto. 9 quedó enmendado para acotar el término. Ninguna
 afirmación dice qué hacer.
+
+## `gap_history` — la brecha contra su historia (RF-7, desde 2026-08-01)
+
+Segundo bloque **aditivo y opcional**, en el mismo evento y por la misma razón que
+`reading`: la tarjeta cita a la vez el valor de hoy y sus referencias.
+
+`{sides: [{side, current, references: [{days_configured, days_covered, samples,
+mean, max, min}]}]}`.
+
+**`days_covered` es lo que hay que mirar.** Menor que `days_configured` ⇒ la serie
+no alcanza la ventana pedida; se publica igual, declarándolo, y la UI rotula el
+tramo real. Mismo mecanismo que `scale.samples`/`min_samples`.
+
+`mean` va **ponderada por hora**, no por muestra: la serie derivada
+([indicators](../tables/indicators.md), `calc_version 0`) tiene una fila cada 10 min
+y la del motor una cada ~30 s. `max`/`min` sí son por muestra.
 
 Definición de la lectura y sus reglas: [lectura de
 indicadores](../metrics/lectura-de-indicadores.md) (por medidor) y [lectura de

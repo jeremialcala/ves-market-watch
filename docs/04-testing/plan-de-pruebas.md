@@ -75,10 +75,10 @@ Estado observado en el repo (conteo de funciones `test_`):
 |---|---|---|---|
 | `ingestor-bcv` | Implementado | **54** (unit, integration, contract, e2e) | Confirmar cobertura de ramas ≥ 80 %; añadir marcador `security` para escenarios T1 (HTML alterado + tasa fuera de rango) |
 | `ingestor-binance` | Implementado | **48** (unit, integration, contract, e2e) | Igual que arriba; escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local |
-| `indicator-engine` | Fases 1, 2, señales (RF-4/RF-5, ADR-0015), análisis de la revisión (RF-6, ADR-0019) y lectura del estado de mercado (RF-7, ADR-0021) | **244** (unit, contract, integration, e2e) | Confirmar cobertura de ramas ≥ 80 %; recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) y de los dos ejes del régimen (`config/lectura.v1.yaml`); contrastar en vivo la atribución `oficial`/`ambos` un día hábil (el sábado el BCV no publica y `official_stale` la suprime por diseño) |
-| `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) — más el histórico de tasas oficiales del BCV (RF-6, 2026-08-01) | **80** (unit + integración contra TimescaleDB real) | Confirmar cobertura de ramas ≥ 80 %; integración del cargador de oficiales contra TimescaleDB real (hoy cubierto en unit + verificado sobre la carga real de 31.078 filas) |
+| `indicator-engine` | Fases 1, 2, señales (RF-4/RF-5, ADR-0015), análisis de la revisión (RF-6, ADR-0019) y lectura del estado de mercado (RF-7, ADR-0021) | **302** (unit, contract, integration, e2e) | Confirmar cobertura de ramas ≥ 80 %; recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) y de los dos ejes del régimen (`config/lectura.v1.yaml`); contrastar en vivo la atribución `oficial`/`ambos` un día hábil (el sábado el BCV no publica y `official_stale` la suprime por diseño) |
+| `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) — más el histórico de tasas oficiales del BCV (RF-6) y la brecha derivada del lado venta (RF-7), 2026-08-01 | **98** (unit + integración contra TimescaleDB real) | Confirmar cobertura de ramas ≥ 80 %; integración del cargador de oficiales contra TimescaleDB real (hoy cubierto en unit + verificado sobre la carga real de 31.078 filas) |
 | `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **103** (unit incl. CORS y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura ≥ 80 % |
-| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **230** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores y lectura del mercado con dato real en ES/EN, shell responsive y canarios de paleta, punto de corte y cabeceras CSP) — **88,2 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
+| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **259** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores y lectura del mercado con dato real en ES/EN, shell responsive y canarios de paleta, punto de corte y cabeceras CSP) — **86,9 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
 
 > El plan cubre tanto la **consolidación** de lo existente como la **especificación** de los casos
 > que deben acompañar el código pendiente, para que se escriban junto con la implementación (no
@@ -134,7 +134,7 @@ Notación: `[U]` unit · `[I]` integration · `[C]` contract · `[E]` e2e · `[S
 - `[I]` Consumidor AMQP real; `[E]` flujo `official.rate.updated` → `indicators.updated`.
 
 **Fase 2 y señales (implementadas y verificadas e2e, 2026-07-22 — RF-4/RF-5, ADR-0015) —
-casos cubiertos por la suite actual (244 tests):**
+casos cubiertos por la suite actual (302 tests):**
 - `[U]` Precio de referencia P2P: **mediana y VWAP** del top-N filtrado por lado — cubierto
   (`unit/test_referencia_p2p.py`).
 - `[U]` **Brecha BCV↔P2P** (abs y %), spreads compra/venta, volúmenes agregados, profundidad por
@@ -216,6 +216,26 @@ casos cubiertos por la suite actual (244 tests):**
   también: la aditividad es lo que permite desplegar el gateway por delante del motor.
   Seis variantes rechazadas, entre ellas un claim predictivo fuera del enum y prosa
   colada en el evento — `contract/test_analysis_event_schema.py`.
+
+### Comparativa contra la historia (RF-7, ampliación 2026-08-01)
+
+- `[U]` La ventana COMPLETA más ancha es la referencia; una ancha pero incompleta no
+  lo es, y sin ninguna completa se afirma `historia_parcial` en su lugar —
+  `unit/test_comparativas.py`.
+- `[U]` Se publican TODAS las ventanas, incompletas incluidas, con su cobertura:
+  filtrarlas escondería el dato que hace honesta la etiqueta del cliente.
+- `[I]` **La media no se inclina hacia el tramo más muestreado.** Sembrado a
+  propósito: 48 h a 40 % con 6 muestras/hora y 48 h a 10 % con 120/hora. La media
+  honesta es 25 %; una media por muestra da 11,4 %. Es exactamente lo que pasó al
+  empalmar el histórico con la serie del motor —
+  `integration/test_distribuciones_timescale.py`.
+- `[I]` Los extremos SÍ son por muestra (un pico de una sola lectura sobrevive), y
+  los contadores son **enteros serializables**: `sum()` sobre `bigint` devuelve
+  `numeric` y ese `Decimal` reventaba el `json.dumps` del payload.
+- `[U]` **Coherencia de presentación**: la cifra que cita la prosa tiene que estar en
+  la tarjeta. Nació de un defecto real —se afirmaba una distancia contra la media
+  mientras se mostraba el máximo— y es la regla que lo impide —
+  `component/descomposicion.test.tsx`.
 
 > **Arranque en frío: comportamiento correcto, no un bug.** En un compose recién
 > levantado `indicators` está vacía, `samples < 200` y **los seis medidores salen en
@@ -338,6 +358,9 @@ cierre de la columna «Verificación fase 04-testing».
 | Tema claro/oscuro explícito y recordado | web-spa-dashboard (RF-10) | U | web-spa |
 | Lectura del mercado sin consejo ni pronóstico, en ES/EN | web-spa-dashboard (RF-12) | U/C | web-spa |
 | Histórico de tasas oficiales: columna ASK, escala BsD y procedencia visible | ingesta-historica (RF-6) | U | ingestor-historico |
+| Brecha derivada del lado venta, cortada antes de la serie del motor | ingesta-historica (RF-7) | U | ingestor-historico |
+| Comparativa contra la historia con cobertura declarada | motor-indicadores (RF-7) | U/I/C | indicator-engine |
+| La cifra que cita la prosa está en la tarjeta | web-spa-dashboard (RF-12) | U | web-spa |
 | Sello `demo · sin fuente` en todo bloque sin dato servido | web-spa-dashboard (RF-5 ampliado) | U/S | web-spa |
 
 ## 9. Pruebas no funcionales

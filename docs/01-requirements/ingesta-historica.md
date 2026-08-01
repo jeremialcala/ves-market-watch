@@ -5,7 +5,7 @@
 - **Fecha:** 2026-07-11
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 01-requirements
-- **Versión:** 0.3.0
+- **Versión:** 0.4.0
 
 ## Problema y contexto
 Antes de que existiera la plataforma, un sistema previo capturó cada ~10 minutos el
@@ -107,6 +107,29 @@ que recibe**, no asumir un layout fijo.
     del BCV es anterior a nuestra captura.
   - Sin publicación al bus, igual que RF-1 (ADR-0013): reemitir seis años de
     `official.rate.updated` dispararía el motor como si fueran cambios de hoy.
+- **RF-7** **Brecha histórica del lado venta** (2026-08-01): derivar
+  `p2p_brecha_pct_sell` y `p2p_brecha_abs_sell` cruzando los snapshots ya cargados con
+  la tasa oficial vigente en cada instante, y persistirlos en `indicators` —la misma
+  tabla y los mismos nombres que usa el motor— para que `/indicators/history` los
+  sirva como una serie sola.
+
+  Reglas que lo acotan, todas verificables:
+  - **Solo el lado venta.** El precio del export queda a ±0,6 VES de
+    `p2p_mediana_sell` y a ~8 VES del buy: la brecha derivada empalma con la del motor
+    a −0,08 pp por ese lado y difiere +1,08 pp por el otro. Derivar el de compra
+    metería un escalón de ~1 pp.
+  - **El backfill se corta ANTES del primer punto que publicó el motor.** No basta el
+    `ON CONFLICT`: las marcas de tiempo de las dos series no coinciden, así que sin el
+    corte quedarían interleavadas y el motor —que no filtra por `calc_version` al leer
+    su estado— tomaría por propia una serie derivada.
+  - **`calc_version` distinto del motor** (`0`, sentinela de «derivado») y
+    **`metadata` con la procedencia**: origen, fórmula, lado y sesgo medido. Quien
+    filtre por el `calc_version` del motor sigue viendo solo lo que él calculó.
+  - La fórmula es **literalmente** la del motor, no una equivalente algebraica: el
+    orden de las operaciones cambia el redondeo decimal.
+  - Consecuencia que hereda todo consumidor: **el muestreo deja de ser uniforme**
+    (10 min contra ~30 s), así que agregar sobre una ventana que cruce la unión exige
+    ponderar por tiempo.
 
 ## Requisitos de seguridad (mapeados a OWASP ASVS)
 | Riesgo | Control | ASVS |

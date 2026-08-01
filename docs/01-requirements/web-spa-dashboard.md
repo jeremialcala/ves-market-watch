@@ -135,6 +135,18 @@ login y el estado de salud son visibles sin sesión.
     (encabeza y desplaza al régimen), oficial rancia (sin atribución) y escala en
     respaldo (sin la frase de banda).
 
+  **Ampliación 2026-08-01 — la descomposición de la brecha compara ambos lados.**
+  La tarjeta muestra compra y venta, cada uno contra su propia historia, y:
+
+  - **rotula el tramo REAL** de cada ventana cuando la serie no la alcanza
+    («Promedio 12 d de 30»), y pasa sola a la etiqueta nominal cuando la serie
+    crece. Antes decía «Promedio 30 días» sobre 12 días: el número era real y la
+    ventana no;
+  - **la cifra que cita la prosa tiene que estar a la vista**. Si el motor afirma
+    una distancia contra una referencia, esa referencia se muestra: una afirmación
+    incomprobable es tan mala como una falsa. Hay un test que lo fija;
+  - no recalcula nada: las referencias llegan del contrato (`gap_history`).
+
 - **RF-5 ampliado — bloques sin fuente**: todo bloque que el diseño pida y la
   plataforma no calcule debe distinguirse del dato servido **a simple vista**
   (sello `demo · sin fuente` + explicación en la sección). Un ejemplo que se lee

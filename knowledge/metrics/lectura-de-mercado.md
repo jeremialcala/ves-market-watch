@@ -88,6 +88,31 @@ Una lista **ordenada**, no un conjunto: lo que invalida al resto va primero.
 El motor no redacta: cada código tiene una frase por idioma en el diccionario del
 [web-spa](../services/web-spa.md), que concatena en este orden sin decidir nada.
 
+## La brecha contra su propia historia (2026-08-01)
+
+Por cada lado (compra y venta), la media y los extremos de la brecha en ventanas
+de **7, 30 y 90 días**, en el bloque `gap_history` del mismo evento.
+
+Cada ventana publica sus **`days_covered`**: hasta dónde llega la serie dentro de
+ella. Es el mecanismo de honestidad, calcado de `scale.samples`/`min_samples` —
+una ventana de 30 días con 12 de serie se publica igual, declarándolo, y el
+cliente rotula «Promedio 12 d (de 30)» en vez de mentir.
+
+| lado | 7 d | 30 d | 90 d |
+|---|---|---|---|
+| compra | completa | **12 d de 30** | **12 d de 90** |
+| venta | completa | completa | completa |
+
+**La media se pondera por hora, no por muestra.** El histórico derivado y la serie
+del motor tienen densidades distintas (10 min contra ~30 s), y un promedio plano se
+inclina hacia el tramo más muestreado: 20,37 % contra 25,81 % en la venta a 90
+días, 5,4 puntos. Los extremos sí son por muestra.
+
+Se afirma **una comparativa por lado**, contra la ventana completa más ancha —
+contra 90 días dice más que contra 7—. Si ninguna está completa se afirma
+`historia_parcial` en su lugar: citar una media de 12 días como referencia de 90
+sería el error que esto corrige.
+
 ## La frontera
 
 Es lo que define la métrica tanto como la fórmula:

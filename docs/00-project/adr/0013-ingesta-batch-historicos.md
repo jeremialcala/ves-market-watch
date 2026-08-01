@@ -81,5 +81,25 @@ variabilidad y si el histórico entra por el mismo camino que los datos en vivo.
   consulta la filtra, así que aislar las filas históricas sigue siendo una cláusula
   `WHERE`. Y el orden por `captured_at` garantiza que el backfill rellene hacia atrás
   sin reescribir hacia delante.
+
+  **Segunda enmienda (2026-08-01, RF-7): también se siembra `indicators`**, la
+  tabla que es el ESTADO DEL MOTOR. Es un paso más largo que el anterior y por eso
+  va acotado por tres guardas, no por una convención:
+
+  1. **El backfill se corta ANTES del primer punto que publicó el motor.** No basta
+     el `ON CONFLICT`: las marcas de tiempo de las dos series no coinciden (10 min
+     contra ~30 s), así que el conflicto casi nunca dispara y habrían quedado
+     interleavadas dos series que difieren 0,08 pp. Y como `ultimo_indicador` e
+     `indicador_asof` **no filtran por `calc_version`**, el motor habría leído su
+     propio estado de una serie derivada.
+  2. **`calc_version: 0`** como sentinela de «derivado». `WHERE calc_version = 1`
+     sigue devolviendo solo lo que calculó el motor, y la frontera se busca
+     ignorando lo ya derivado —si no, una segunda pasada se estrecharía sola—.
+  3. **`metadata` con la procedencia**: origen, fórmula, lado y el sesgo medido con
+     su ventana de solape.
+
+  Y solo el lado VENTA, que es lo que la medición permitía: el precio del export
+  queda a ±0,6 VES de `p2p_mediana_sell` y a ~8 VES del buy. Derivar la brecha de
+  compra habría metido un escalón de ~1 pp.
 - (−) Heurística de columnas puede equivocarse ante exports ambiguos → mitigación:
   log del mapeo detectado + `--dry-run`.

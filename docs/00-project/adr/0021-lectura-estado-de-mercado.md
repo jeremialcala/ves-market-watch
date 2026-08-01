@@ -116,7 +116,44 @@ todo lo que la maqueta hacía bien.
     «Confianza media» con 0,50 % de outliers, y «media» no existe en el contrato.
     Se sustituye por chips con el valor real.
 
-13. **Qué NO se hace:** ni pronósticos, ni probabilidades, ni horizontes, ni
+13. **Ampliación (2026-08-01): la brecha contra su propia historia.** Se añaden
+    tres afirmaciones —`brecha_vs_historia`, `brecha_extremo` e
+    `historia_parcial`— y un bloque aditivo `gap_history` con media, extremos y,
+    lo decisivo, **los días realmente cubiertos** de cada ventana.
+
+    `days_covered` es el mecanismo, calcado de `scale.samples`/`min_samples`: una
+    ventana de 30 días con 12 de serie **se publica igual**, declarando su
+    alcance, para que el cliente rotule el tramo verdadero. La tarjeta llevaba
+    meses diciendo «Promedio 30 días» sobre 12 días de historia — el número era
+    real y la etiqueta no.
+
+    Se emite **una comparativa por lado**, contra la ventana COMPLETA más ancha:
+    tres ventanas × dos lados serían seis frases y ninguna se leería. Los números
+    de las demás viajan igual en `gap_history`. Y si ninguna ventana está
+    completa, se emite `historia_parcial` **en lugar** de la comparativa: citar
+    una media de 12 días como referencia de 90 sería el fallo que esto corrige.
+
+14. **La media se promedia POR HORA, no por muestra**, y esto no es refinamiento
+    estadístico: es corrección de un sesgo medido. El histórico derivado
+    (ADR-0013 RF-7) tiene una fila cada 10 min y la serie del motor una cada
+    ~30 s, así que un `avg()` plano pondera 6× el tramo reciente. Sobre la brecha
+    de venta a 90 días: **20,37 % plana contra 25,81 % ponderada — 5,42 pp**. Los
+    tres métodos ponderados convergen (hora 25,81, día 25,79, hora-luego-día
+    25,77); la plana es la que se sale. El sesgo es < 0,2 pp en las otras cinco
+    combinaciones lado×ventana: solo aparece donde la ventana cruza la unión del
+    backfill.
+
+    Los **extremos siguen siendo por muestra**: son valores realmente observados
+    y promediarlos por hora escondería justo el pico que interesa.
+
+15. **La cifra que cita la prosa tiene que estar a la vista.** Regla de
+    presentación con test propio, aprendida de un defecto real: la tarjeta decía
+    «7,70 puntos por debajo de su promedio de 90 días» mientras esa fila mostraba
+    el MÁXIMO. La media citada no aparecía, así que la afirmación era
+    incomprobable — y restar el máximo daba otro número, con lo que la tarjeta
+    parecía contradecirse.
+
+16. **Qué NO se hace:** ni pronósticos, ni probabilidades, ni horizontes, ni
     consejo imperativo. Lo que orienta va en **condicional** («si tienes que
     comprar, hoy…»), que informa sin ordenar. Los escenarios con probabilidades
     (62/24/14 %) y los riesgos redactados **conservan su sello demo**: hacerlos
@@ -158,6 +195,17 @@ todo lo que la maqueta hacía bien.
 - (−) La guarda asimétrica del punto 8 es una regla que hay que **recordar** al
   añadir series: si mañana entra otro indicador publicado-solo-en-cambio, habrá
   que declararlo. Está anotado en el propio código y con un test que lo nombra.
+- (−) **El muestreo dejó de ser uniforme** al empalmar el histórico derivado con
+  la serie del motor. Toda agregación futura sobre `indicators` que cruce el
+  2026-07-20 tiene que ponderar por tiempo; un `avg()` plano se inclina hacia el
+  tramo más denso. Hay un test de integración que lo reproduce con datos
+  sembrados (6/h contra 120/h) y exige la media honesta.
+- (−) **Los campos aditivos con enum cerrado obligan a desplegar el gateway
+  ANTES que el motor**, y el punto 4 ya lo advertía. Al añadir los claims nuevos
+  se desplegó al revés y el gateway descartó cada `analysis.updated` («no es uno
+  de […]») hasta ampliar el enum. El pipeline estuvo degradado unos minutos: la
+  advertencia estaba escrita y aun así se incumplió, así que conviene tratarla
+  como paso del despliegue y no como nota.
 
 ## Verificación
 
