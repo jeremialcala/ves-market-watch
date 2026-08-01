@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from decimal import Decimal
 from typing import Protocol, Sequence
 
+from ingestor_historico.domain.brechas import BrechaDerivada
 from ingestor_historico.domain.estadisticas import PuntoSerie
 from ingestor_historico.domain.models import SnapshotHistorico
 from ingestor_historico.domain.tasas_oficiales import TasaOficialHistorica
@@ -32,6 +34,38 @@ class RepositorioHistorico(Protocol):
     async def leer_puntos(
         self, desde: datetime | None, hasta: datetime | None
     ) -> list[PuntoSerie]: ...
+
+
+@dataclass(frozen=True, slots=True)
+class PuntoDerivable:
+    """Un snapshot histórico con la tasa oficial que regía en ese instante."""
+
+    as_of: datetime
+    precio_p2p: Decimal | None
+    tasa_oficial: Decimal | None
+
+
+class RepositorioBrechas(Protocol):
+    """Lectura de los insumos y escritura de la serie derivada.
+
+    `frontera_serie_viva` es la pieza de seguridad del diseño, no una comodidad:
+    devuelve el `as_of` más antiguo que el MOTOR publicó para ese indicador. El
+    backfill no puede escribir en ese instante ni después, porque las marcas de
+    tiempo de las dos series no coinciden (10 min contra ~30 s) y el
+    `ON CONFLICT` no las fusionaría: quedarían interleavadas dos series que
+    difieren 0,08 pp, y `ultimo_indicador`/`indicador_asof` —que NO filtran por
+    `calc_version`— devolverían una u otra al azar.
+    """
+
+    async def frontera_serie_viva(self, indicador: str, moneda: str) -> datetime | None: ...
+
+    async def puntos_derivables(
+        self, hasta_exclusive: datetime | None
+    ) -> list[PuntoDerivable]: ...
+
+    async def guardar_brechas(
+        self, brechas: Sequence[BrechaDerivada], metadata: dict
+    ) -> ResumenPersistencia: ...
 
 
 class RepositorioTasasOficiales(Protocol):
