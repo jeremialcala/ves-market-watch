@@ -88,6 +88,8 @@ gitGraph
     commit id: "c852844"
     commit id: "aed25fa"
     commit id: "7ac255a"
+    commit id: "f7280f1"
+    commit id: "f074aab"
 ```
 
 ### Estado actual de las ramas
@@ -95,7 +97,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `7ac255a` | 2026-07-31 | 54 |
+| `develop` | `f074aab` | 2026-07-31 | 56 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -111,6 +113,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `f074aab` | commit | — | Jeremi Alcala | 2026-07-31 | fix(web-spa): la tira de estado no se pinta ni un fotograma en movil |
+| `f7280f1` | commit | — | Jeremi Alcala | 2026-07-31 | docs(repo-history): regenerar tras el arreglo de la paleta |
 | `7ac255a` | commit | — | Jeremi Alcala | 2026-07-31 | fix(web-spa): la paleta de datos deja de ser la paleta de marca |
 | `aed25fa` | commit | — | Jeremi Alcala | 2026-07-31 | docs(repo-history): regenerar tras el shell responsive |
 | `c852844` | commit | — | Jeremi Alcala | 2026-07-31 | feat(web-spa): shell responsive — la tira de estado se reparte, no se encoge |
