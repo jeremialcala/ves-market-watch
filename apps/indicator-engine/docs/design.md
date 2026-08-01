@@ -123,11 +123,21 @@
   del agregado de conjunto ordenado. Subir `work_mem` para evitar su desborde a
   temporales gana solo ~15 % (798 ms → 679 ms), así que tampoco compensa tocarlo.
   Reabrir si cambia la densidad de captura o la ventana.
-- **`indicators` no tiene política de retención** (sí la tienen `p2p_snapshots_raw`
-  e `indicator_analysis`). No afecta al rendimiento de la consulta —la ventana de
-  90 días excluye chunks por sí sola— pero la tabla crece sin límite: ~2,2 GB/año
-  al ritmo actual. Decidir retención o compresión antes de que sea un problema
-  operativo; ojo, es el estado del motor, así que la ventana no puede bajar de lo
-  que necesitan `ultimo_indicador` e `indicador_asof` (horas, no días).
+- ~~`indicators` sin política de tamaño~~ — **resuelto con COMPRESIÓN, no
+  retención** (migración 004, 2026-08-01). Borrar de `indicators` habría sido una
+  decisión de producto: `GET /indicators/history` acota el TAMAÑO de cada
+  petición a 90 días, no su antigüedad, así que no existe profundidad a partir de
+  la cual el dato deje de ser servible. Comprimir no quita nada y midió mejor en
+  los dos ejes: **24,9×** en los chunks comprimidos (256 MB → 37 MB en régimen) y
+  la consulta de percentiles **más rápida** (747 → 585 ms), porque descomprimir
+  cuesta menos que leer 228 MB. Verificados además el histórico del gateway
+  (10 ms), el INSERT en chunk vivo, el INSERT retroactivo en chunk comprimido y
+  —lo que de verdad importaba— que `ON CONFLICT DO NOTHING` **sigue rechazando
+  duplicados sobre chunks comprimidos**: la idempotencia at-least-once descansa
+  en esa PK.
+- **Retención sigue sin decidirse, y es a propósito**: con compresión el
+  crecimiento baja a ~300 MB/año, así que no hay urgencia. Cuando se decida, la
+  ventana no puede bajar de lo que necesitan `ultimo_indicador` e
+  `indicador_asof` (horas, no días) ni de lo que la API promete poder responder.
 - `add_compression_policy` sobre `indicator_analysis` a los 7 días si el volumen
   (~260 k filas / 1-2 GB en 90 d) aprieta.
