@@ -7,6 +7,20 @@ timestamp: 2026-08-01T12:00:00Z
 
 # Log
 
+## 2026-08-01 (noche) — El mapa de calor pasa al lado venta
+- Con el lado compra las dos primeras filas del mapa (14 días) salían vacías: esa
+  serie arranca el 2026-07-20. La de venta tiene 242 días derivados, así que el mapa
+  ya se pinta entero. El rótulo declara el lado — con dos series en la app, callarlo
+  es ambiguo.
+- **La sparkline se queda en compra**: vive en una tarjeta titulada «lado buy» y
+  cambiarla la contradiría. El hook pasa a recibir el lado en vez de fijarlo.
+- **Hallazgo al tocarlo**: la petición diaria de 90 días ya no la usaba nadie desde
+  que la descomposición pasó a `gap_history`, y se disparaba **una vez por
+  componente** que usara el hook. Eran tres paginaciones de 90 días por carga de
+  página, ninguna leída. Fuera.
+- Lo que se ve ahora en el mapa —una banda oscura el 23/7— es un hueco de captura
+  REAL (15:00–19:00 UTC sin filas), no un artefacto: el mapa no interpola.
+
 ## 2026-08-01 (noche) — La brecha contra su historia, y tres defectos que solo vio el dato
 - La tarjeta de descomposición ya compara **compra y venta** contra su propia
   historia, con la comparativa que calcula el motor (`gap_history`) y la prosa que

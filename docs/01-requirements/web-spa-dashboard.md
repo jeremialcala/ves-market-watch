@@ -147,6 +147,11 @@ login y el estado de salud son visibles sin sesión.
     incomprobable es tan mala como una falsa. Hay un test que lo fija;
   - no recalcula nada: las referencias llegan del contrato (`gap_history`).
 
+  El **mapa de calor** pasa a mirar el lado **venta**, que es el que tiene historia
+  real; con el de compra las primeras filas quedaban vacías. Cada vista que muestre
+  una serie de brecha **declara qué lado mira**: con dos series en la app, callarlo
+  es ambiguo.
+
 - **RF-5 ampliado — bloques sin fuente**: todo bloque que el diseño pida y la
   plataforma no calcule debe distinguirse del dato servido **a simple vista**
   (sello `demo · sin fuente` + explicación en la sección). Un ejemplo que se lee

@@ -101,6 +101,14 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   número.
 - Antes de todo esto, tres tarjetas llevaban días en blanco por una carrera de
   efectos de React; ver el log del 2026-08-01.
+- **El mapa de calor mira el lado VENTA** (2026-08-01): es el que tiene historia
+  real (242 días derivados) frente a los ~12 del de compra, con el que las dos
+  primeras filas del mapa salían vacías. El rótulo lo dice, porque con dos series
+  en la app callarlo sería ambiguo. La **sparkline sigue en compra**: vive en una
+  tarjeta titulada «lado buy» y cambiarla la contradiría.
+- De paso desapareció la petición diaria de 90 días: la consumía la descomposición
+  antes de pasar a `gap_history`, y se disparaba **una vez por componente** que
+  usara el hook —una paginación de 90 días cada una— sin que nadie la leyera.
 
 ## Shell responsive (2026-07-31)
 - La tira de estado vive solo en la barra ancha (así lo declara el diseño): en
@@ -123,7 +131,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   y obliga a volver a pasar el validador.
 
 ## Verificación
-- **259 tests** (unit/component/contract con MSW y WS mock) — **86,9 % de ramas**
+- **261 tests** (unit/component/contract con MSW y WS mock) — **87,0 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

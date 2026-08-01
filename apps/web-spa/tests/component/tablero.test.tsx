@@ -43,10 +43,19 @@ function serieHoraria(horas: number) {
   }));
 }
 
+/** Lo que la SPA pidió de verdad: indicador e intervalo por llamada. */
+const peticiones: { indicador: string | null; intervalo: string | null }[] = [];
+
 function conHistorial(filas: ReturnType<typeof serieHoraria>) {
+  peticiones.length = 0;
   servidor.use(
-    http.get(`${BASE}/indicators/history`, () =>
-      HttpResponse.json({
+    http.get(`${BASE}/indicators/history`, ({ request }) => {
+      const url = new URL(request.url);
+      peticiones.push({
+        indicador: url.searchParams.get("indicator"),
+        intervalo: url.searchParams.get("interval"),
+      });
+      return HttpResponse.json({
         data: filas,
         pagination: {
           page: 1,
@@ -55,8 +64,8 @@ function conHistorial(filas: ReturnType<typeof serieHoraria>) {
           has_more: false,
         },
         interval: "1h",
-      }),
-    ),
+      });
+    }),
   );
 }
 
@@ -135,6 +144,33 @@ describe("GapHeatmap", () => {
     await waitFor(() =>
       expect(screen.getByText(/sin serie horaria/i)).toBeTruthy(),
     );
+  });
+
+  it("mira el lado VENTA, que es el que tiene historia real", async () => {
+    /*
+     * Con el lado compra las dos primeras filas del mapa salían vacías: esa
+     * serie arranca el 2026-07-20 y la ventana son 14 días. La de venta tiene
+     * 242 días derivados (ADR-0013 RF-7).
+     */
+    conHistorial(serieHoraria(30));
+    render(<GapHeatmap />);
+
+    await waitFor(() => expect(peticiones.length).toBeGreaterThan(0));
+    expect(peticiones.map((p) => p.indicador)).toEqual(["p2p_brecha_pct_sell"]);
+    expect(screen.getByText(/lado venta/)).toBeTruthy();
+  });
+
+  it("pide UNA sola serie: la diaria de 90 días ya no la usa nadie", async () => {
+    /*
+     * La consumía la descomposición, que pasó a `gap_history` del contrato. Se
+     * disparaba una vez por componente que usara el hook —una paginación de 90
+     * días cada una— sin que nadie leyera el resultado.
+     */
+    conHistorial(serieHoraria(30));
+    render(<GapHeatmap />);
+
+    await waitFor(() => expect(peticiones.length).toBeGreaterThan(0));
+    expect(peticiones.map((p) => p.intervalo)).toEqual(["1h"]);
   });
 });
 

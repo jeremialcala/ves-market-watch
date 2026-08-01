@@ -11,7 +11,10 @@ import { NoDataState } from "./NoDataState";
  */
 export function GapHeatmap() {
   const { t, idioma } = useI18n();
-  const { horario, cargando, fallo } = useHistorialBrecha();
+  // Venta, no compra: es el lado con historia real (242 días derivados,
+  // ADR-0013 RF-7). Con el de compra las primeras filas del mapa salían vacías
+  // porque su serie arranca el 2026-07-20.
+  const { horario, cargando, fallo } = useHistorialBrecha("sell");
   const rango = extremos(horario);
 
   return (

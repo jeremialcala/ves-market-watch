@@ -331,7 +331,7 @@ export const ES = {
 
   // -- mapa de calor ---------------------------------------------------------
   "calor.titulo": "Mapa de calor de la brecha",
-  "calor.bajada": "últimos 14 días · bucket 1 h · VET",
+  "calor.bajada": "lado venta · últimos 14 días · bucket 1 h · VET",
   "calor.leyenda": "más tenue = brecha menor · más intenso = brecha mayor",
   "calor.celda": "{dia} {hora}:00 — {valor}",
   "calor.sinDato": "{dia} {hora}:00 — sin dato",
@@ -435,8 +435,8 @@ export const ES = {
     "La barra parte el precio P2P de compra en su pierna oficial y la brecha: es la misma cifra del titular, vista como reparto.",
   "descomposicion.sinPiernas":
     "Hacen falta la tasa oficial y el VWAP de compra para repartir el precio.",
-  "calor.fallo": "No se pudo cargar la serie horaria de la brecha.",
-  "calor.sinSerie": "Sin serie horaria en los últimos 14 días.",
+  "calor.fallo": "No se pudo cargar la serie horaria de la brecha de venta.",
+  "calor.sinSerie": "Sin serie horaria de venta en los últimos 14 días.",
   "analisis.escBase": "Base",
   "analisis.escBaseTexto":
     "La oficial sigue subiendo y el paralelo permanece anclado por el muro de bids.",
@@ -791,7 +791,7 @@ export const EN: Record<Clave, string> = {
 
 
   "calor.titulo": "Gap heatmap",
-  "calor.bajada": "last 14 days · hourly bucket · VET",
+  "calor.bajada": "sell side · last 14 days · hourly bucket · VET",
   "calor.leyenda": "fainter = narrower gap · stronger = wider gap",
   "calor.celda": "{dia} {hora}:00 — {valor}",
   "calor.sinDato": "{dia} {hora}:00 — no data",
@@ -884,8 +884,8 @@ export const EN: Record<Clave, string> = {
     "The bar splits the P2P buy price into its official leg and the gap: the same headline number, seen as a share.",
   "descomposicion.sinPiernas":
     "The official rate and the buy VWAP are needed to split the price.",
-  "calor.fallo": "Could not load the hourly gap series.",
-  "calor.sinSerie": "No hourly series in the last 14 days.",
+  "calor.fallo": "Could not load the hourly sell gap series.",
+  "calor.sinSerie": "No hourly sell series in the last 14 days.",
   "analisis.escBase": "Base",
   "analisis.escBaseTexto":
     "The official rate keeps climbing and the parallel stays anchored by the bid wall.",
