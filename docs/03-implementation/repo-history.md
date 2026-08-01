@@ -112,6 +112,13 @@ gitGraph
     commit id: "dfb061e"
     commit id: "6b07555"
     commit id: "0d2ecd9"
+    commit id: "027f056"
+    commit id: "2a70922"
+    commit id: "6c362a5"
+    commit id: "149e8b3"
+    commit id: "078d7f7"
+    commit id: "4989144"
+    commit id: "f9ca6cf"
 ```
 
 ### Estado actual de las ramas
@@ -119,7 +126,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `0d2ecd9` | 2026-08-01 | 78 |
+| `develop` | `f9ca6cf` | 2026-08-01 | 85 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -135,6 +142,13 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `f9ca6cf` | commit | — | Jeremi Alcala | 2026-08-01 | docs: fase 5 — AI-DLC de la comparativa histórica y barrido de coherencia |
+| `4989144` | commit | — | Jeremi Alcala | 2026-08-01 | fix(indicator-engine,web-spa): la media de 90 d estaba sesgada y la prosa citaba una cifra invisible |
+| `078d7f7` | commit | — | Jeremi Alcala | 2026-08-01 | feat(web-spa): la descomposición compara los dos lados y rotula el tramo real |
+| `149e8b3` | commit | — | Jeremi Alcala | 2026-08-01 | feat(indicator-engine): la brecha contra su propia historia, con cobertura real |
+| `6c362a5` | commit | — | Jeremi Alcala | 2026-08-01 | feat(ingestor-historico): brecha histórica del lado venta desde 2025-12 |
+| `2a70922` | commit | — | Jeremi Alcala | 2026-08-01 | fix(web-spa): tres tarjetas en blanco por el orden de los efectos de React |
+| `027f056` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `0d2ecd9` | commit | — | Jeremi Alcala | 2026-08-01 | fix(ingestor-historico): banks[].volume estaba vacío con el dato en el archivo |
 | `6b07555` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `dfb061e` | commit | — | Jeremi Alcala | 2026-08-01 | data(ingestor-historico): histórico P2P al día + defecto conocido en banks[].volume |
