@@ -97,6 +97,9 @@ gitGraph
     commit id: "f50f890"
     commit id: "f307d18"
     commit id: "8978022"
+    commit id: "b4ca2c5"
+    commit id: "657184e"
+    commit id: "af3a347"
 ```
 
 ### Estado actual de las ramas
@@ -104,7 +107,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `8978022` | 2026-08-01 | 63 |
+| `develop` | `af3a347` | 2026-08-01 | 66 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -120,6 +123,9 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `af3a347` | commit | — | Jeremi Alcala | 2026-08-01 | docs(rendimiento): medida la consulta de percentiles, sobra margen |
+| `657184e` | commit | — | Jeremi Alcala | 2026-08-01 | docs: cerrar dos pendientes que sobrevivieron a su propio cumplimiento |
+| `b4ca2c5` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `8978022` | commit | — | Jeremi Alcala | 2026-08-01 | docs(auth): ADR-0020, enmiendas y correccion de un tenant mal documentado |
 | `f307d18` | commit | — | Jeremi Alcala | 2026-08-01 | fix(web-spa): el login estaba roto — faltaba worker-src en la CSP |
 | `f50f890` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
