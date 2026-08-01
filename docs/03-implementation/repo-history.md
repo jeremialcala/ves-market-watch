@@ -86,6 +86,8 @@ gitGraph
     commit id: "22a7c7a"
     commit id: "5ed6042"
     commit id: "c852844"
+    commit id: "aed25fa"
+    commit id: "7ac255a"
 ```
 
 ### Estado actual de las ramas
@@ -93,7 +95,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `c852844` | 2026-07-31 | 52 |
+| `develop` | `7ac255a` | 2026-07-31 | 54 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -109,6 +111,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `7ac255a` | commit | — | Jeremi Alcala | 2026-07-31 | fix(web-spa): la paleta de datos deja de ser la paleta de marca |
+| `aed25fa` | commit | — | Jeremi Alcala | 2026-07-31 | docs(repo-history): regenerar tras el shell responsive |
 | `c852844` | commit | — | Jeremi Alcala | 2026-07-31 | feat(web-spa): shell responsive — la tira de estado se reparte, no se encoge |
 | `5ed6042` | commit | — | Jeremi Alcala | 2026-07-31 | docs(repo-history): regenerar tras el rediseno y los barridos |
 | `22a7c7a` | commit | — | Jeremi Alcala | 2026-07-31 | docs: barridos de coherencia (gates, charter, PRDs, plan de pruebas, knowledge) |
