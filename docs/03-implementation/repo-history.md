@@ -108,6 +108,8 @@ gitGraph
     commit id: "ee29078"
     commit id: "219945f"
     commit id: "95dbde8"
+    commit id: "04eab58"
+    commit id: "dfb061e"
 ```
 
 ### Estado actual de las ramas
@@ -115,7 +117,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `95dbde8` | 2026-08-01 | 74 |
+| `develop` | `dfb061e` | 2026-08-01 | 76 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -131,6 +133,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `dfb061e` | commit | — | Jeremi Alcala | 2026-08-01 | data(ingestor-historico): histórico P2P al día + defecto conocido en banks[].volume |
+| `04eab58` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `95dbde8` | commit | — | Jeremi Alcala | 2026-08-01 | feat(ingestor-historico): histórico de tasas oficiales del BCV desde 2020 |
 | `219945f` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `ee29078` | commit | — | Jeremi Alcala | 2026-08-01 | docs: barrido de coherencia tras ADR-0021 |
