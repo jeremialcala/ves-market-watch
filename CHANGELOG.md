@@ -89,6 +89,14 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Histórico P2P al día: la serie de mercado llega hasta hoy (2026-08-01).** Cargado
+  `query_result_2026-08-01T11_47_06…csv` con el `cargar` ya existente: 28.823 filas del
+  export, de las que **2.951 eran nuevas** y 25.872 ya estaban — la idempotencia por
+  `(captured_at, source_id)` probada en vivo, no solo en test. La tabla queda en
+  **32.525 filas · 2025-12-02 → 2026-08-01 · 243 días sin huecos > 2 días**, en cadencia
+  de 10 minutos. Unión entre exports sin escalón (824,08 → 824,23) y las horas naive
+  del export interpretadas en hora de Venezuela (`TZ_ORIGEN`, UTC−4).
+
 - **Histórico de tasas oficiales del BCV: la serie arranca en 2020, no en julio de
   2026 (2026-08-01, RF-6 de ADR-0013).** `ingestor-historico` gana el comando
   `cargar-oficiales`, que carga el export de los XLS publicados por el propio BCV en

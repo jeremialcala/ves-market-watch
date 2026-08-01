@@ -9,9 +9,11 @@ timestamp: 2026-07-11T00:00:00Z
 
 # ingestor-historico
 
-**Implementado** (2026-07-11) — verificado con el export real
-`query_result_2026-07-11….csv`: 1.064 filas (2025-12-02 → 2025-12-11) cargadas,
-recarga idempotente (0 nuevas / 1.064 duplicadas) y varianza calculada. Python 3.12,
+**Implementado** (2026-07-11) — verificado con exports reales. Al 2026-08-01 lleva
+cargadas **32.525 filas de mercado** (2025-12-02 → 2026-08-01, 243 días sin huecos > 2
+días) en tres exports, y **31.078 tasas oficiales** del BCV (2020-03-30 → 2026-08-03).
+La idempotencia está probada en vivo: el export del 2026-08-01 traía 28.823 filas y
+solo 2.951 eran nuevas. Python 3.12,
 hexagonal, mismas convenciones que los demás servicios. PRD:
 `docs/01-requirements/ingesta-historica.md` · ADR-0013.
 
@@ -43,6 +45,13 @@ motor de indicadores como si fueran cambios de hoy.
 - 68 tests (unit + integración contra TimescaleDB real).
 
 ## Pendientes
+- **`banks[].volume` vacío en el formato de export nuevo.** El volumen por banco viene
+  en `InforPerBank`, un mapa **anidado** cuyo NOMBRE no contiene ninguna palabra de
+  volumen, así que la heurística no lo mapea y la columna cae en `extra`. No se pierde
+  el dato (viaja verbatim) y hoy nada lo consume, pero deja `volume` poblado para el
+  primer export y nulo para los otros dos dentro de la misma tabla. Arreglo: reconocer
+  mapas anidados en `detectar_columnas` — ver
+  [historical_market_snapshots](../tables/historical_market_snapshots.md).
 - Usar la serie como línea base de varianza para los umbrales de señales: la fase 2 del
   engine y el motor de reglas (ADR-0015) se entregaron **sin** consumirla — el motor no
   referencia `historical_market_snapshots`. Sigue como mejora para la recalibración HITL.

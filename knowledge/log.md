@@ -7,6 +7,23 @@ timestamp: 2026-08-01T12:00:00Z
 
 # Log
 
+## 2026-08-01 (noche) — Histórico P2P al día, y un defecto que estaba escondido
+- Cargado el export del 2026-08-01: 28.823 filas, de las que **solo 2.951 eran nuevas**.
+  La tabla queda en 32.525 filas (2025-12-02 → 2026-08-01), 243 días **sin huecos > 2
+  días**, y la unión entre exports no tiene escalón (824,08 → 824,23).
+- **Hallazgo al verificar, no al cargar**: `banks[].volume` está poblado en el primer
+  export (3.192 de 3.192 entradas) y **vacío en los otros dos** (0 de 113.972). La causa
+  es que el formato nuevo publica el volumen por banco en `InforPerBank`, un mapa
+  **anidado** cuyo nombre no contiene ninguna palabra de volumen; la heurística busca
+  en el nombre, no en el contenido, así que la columna cae en `extra`.
+- **No es pérdida de dato** —`extra` guarda la columna verbatim, que es justo lo que
+  ADR-0013 previó— y hoy nada consume `volume`: la varianza solo usa `rate`. Pero deja
+  la misma columna poblada para unas filas y nula para otras dentro de la misma tabla,
+  y un `null` ahí se lee como «sin volumen», que sería falso. Anotado como pendiente
+  con el arreglo concreto: reconocer mapas anidados en `detectar_columnas`.
+- Ese arreglo obliga además a **recargar** los 28.510 + 2.951 ya insertados, porque
+  `ON CONFLICT DO NOTHING` no actualiza. Es trabajo aparte, no un parche de una línea.
+
 ## 2026-08-01 (noche) — La serie oficial arranca en 2020, no en julio de 2026
 - Cargadas **31.078 filas / 23 monedas** en `official_rates` desde el export de los XLS
   del BCV, con un comando nuevo del `ingestor-historico` (`cargar-oficiales`, RF-6).
