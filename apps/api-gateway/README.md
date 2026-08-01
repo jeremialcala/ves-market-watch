@@ -42,7 +42,7 @@ src/api_gateway/
   domain/        # Usuario, paginación/rangos, rate limit, profundidad (puras)
   application/   # puertos, casos de uso de lectura, gestor de suscripciones WSS
   adapters/      # auth/jwks (Auth0), timescale (read-only), amqp (push), http (REST+WSS)
-tests/           # 78 tests: unit / contract / integration / e2e (ver tests/README.md)
+tests/           # 90 tests: unit / contract / integration / e2e (ver tests/README.md)
 docs/            # design.md · openapi.yaml (REST) · asyncapi.yaml (WSS)
 ```
 

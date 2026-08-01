@@ -4,7 +4,7 @@ title: api-gateway
 description: Capa de acceso REST + WSS para usuarios autenticados; Resource Server OIDC con Auth0 — implementado (2026-07-26) y verificado en vivo contra la infra del compose y el tenant real.
 resource: ../../apps/api-gateway/
 tags: [python, fastapi, implementado, api, wss]
-timestamp: 2026-07-26T00:00:00Z
+timestamp: 2026-07-30T00:00:00Z
 ---
 
 # api-gateway
@@ -37,15 +37,22 @@ in-memory, profundidad como proyección interim).
 - **Bus**: consume los 4 eventos de `market.events` con **cola efímera**
   (exclusiva, auto-delete): el push es best-effort, el estado consultable vive en
   REST/DB (ADR-0016). Evento inválido contra su schema → descarte con log.
+  **Sobrevive a caídas del bus** (2026-07-30): arranca sin broker y reintenta con
+  backoff hasta engancharse; la `RobustConnection` re-declara cola, bindings y
+  consumidor al reconectar; cada transición emite una alerta (CRITICAL) y
+  `/health` reporta `broker: down` mientras no haya consumo real.
 
 ## Verificación
-- **78 tests** (unit, contract contra el `openapi.yaml`, integration contra
+- **90 tests** (unit, contract contra el `openapi.yaml`, integration contra
   TimescaleDB/RabbitMQ reales — incl. rechazo de INSERT por el pool read-only —
   y e2e: REST autenticado + evento en el bus → frame por el WSS suscrito). La
   autenticación de tests usa un par RSA/JWKS local (`tests/soporte_auth.py`).
 - **En vivo** (compose raíz, puerto host **8800**): `/api/v1/health` →
   `{"status":"ok","components":{"database":"ok","broker":"ok","auth":"ok"}}` y
   401 `problem+json` sin token, validando contra el tenant Auth0 real.
+- **Reconexión verificada en vivo** (2026-07-30): `rabbitmqctl close_connection`
+  sobre la conexión del gateway → alerta de caída y **restablecido en 28 ms**,
+  con la cola efímera, sus 4 bindings y el consumidor de vuelta.
 
 ## Referencias
 - PRD: `../../docs/01-requirements/api-streaming.md` · Contratos:
@@ -54,6 +61,7 @@ in-memory, profundidad como proyección interim).
 - ADR-0012 (auth OIDC) · ADR-0016 (implementación) · Amenazas T3, T4, T9, T11, T12.
 
 ## Pendiente
-- App SPA del tenant Auth0 (se crea junto con el front-end) y un client M2M de
-  prueba para verificar en vivo el flujo autenticado con token real (HITL).
+- Registrar en el tenant Auth0 la app SPA (el front-end ya existe: `apps/web-spa`,
+  ADR-0017 — falta su `client_id`) y un client M2M de prueba para verificar en vivo
+  el flujo autenticado con token real (HITL).
 - MFA del tenant cuando haya usuarios reales.

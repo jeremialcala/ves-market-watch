@@ -1,14 +1,13 @@
 """Fábrica de la aplicación FastAPI: wiring de adaptadores y casos de uso.
 
-Los parámetros `validador`/`repositorio`/`con_amqp` permiten inyectar fakes
-en tests (unit/contract sin infraestructura). La documentación del contrato
+Los parámetros `validador`/`repositorio`/`notificador`/`con_amqp` permiten
+inyectar fakes en tests (unit/contract sin infra). La documentación del contrato
 vive en `docs/openapi.yaml` — la autogenerada se deshabilita para no exponer
 una segunda fuente de verdad (ni superficie extra).
 """
 
 from __future__ import annotations
 
-import logging
 from contextlib import asynccontextmanager
 from datetime import timedelta
 from decimal import Decimal
@@ -17,6 +16,7 @@ from types import SimpleNamespace
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api_gateway.adapters.alertas import LoggingAlertNotifier
 from api_gateway.adapters.amqp.consumer import ConsumidorPushWss
 from api_gateway.adapters.auth.jwks import ValidadorTokenAuth0
 from api_gateway.adapters.http import rest, ws
@@ -31,12 +31,14 @@ from api_gateway.application.consultas import (
     ConsultarSenales,
     ConsultarTasaOficialVigente,
 )
-from api_gateway.application.ports import LecturaRepository, TokenValidator
+from api_gateway.application.ports import (
+    AlertNotifier,
+    LecturaRepository,
+    TokenValidator,
+)
 from api_gateway.application.suscripciones import GestorSuscripciones
 from api_gateway.config import Settings
 from api_gateway.domain.rate_limit import LimitadorVentanaFija
-
-logger = logging.getLogger(__name__)
 
 
 def create_app(
@@ -44,6 +46,7 @@ def create_app(
     *,
     validador: TokenValidator | None = None,
     repositorio: LecturaRepository | None = None,
+    notificador: AlertNotifier | None = None,
     con_amqp: bool = True,
 ) -> FastAPI:
     @asynccontextmanager
@@ -86,15 +89,11 @@ def create_app(
                 exchange_name=settings.amqp_exchange,
                 gestor=app.state.gestor,
                 schemas_dir=settings.schemas_dir,
+                notifier=notificador or LoggingAlertNotifier(),
             )
-            try:
-                await app.state.consumidor.start()
-            except Exception as exc:  # noqa: BLE001 — REST sirve aunque el bus falte
-                logger.warning(
-                    "broker no disponible al arrancar (%s); push WSS deshabilitado "
-                    "hasta reinicio — /health lo reporta degraded",
-                    exc,
-                )
+            # No lanza: si el bus falta, reintenta en segundo plano y alerta;
+            # el REST sirve igual y /health reporta degraded mientras tanto.
+            await app.state.consumidor.start()
         try:
             yield
         finally:

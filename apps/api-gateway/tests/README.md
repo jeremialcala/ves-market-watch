@@ -1,4 +1,4 @@
-# Tests — api-gateway (pirámide AI-DLC, 78 tests)
+# Tests — api-gateway (pirámide AI-DLC, 90 tests)
 
 ```bash
 python -m pytest tests -q            # unit + contract siempre; integration/e2e
@@ -11,13 +11,18 @@ docker compose up -d --wait          # (raíz del repo) habilita integration/e2e
   (whitelist y límites 5/10), validación de tokens (expirado, audiencia ajena =
   ID token, issuer ajeno, alg ≠ RS256, kid desconocido, fallback `scope`) y el
   protocolo WSS in-process (4401/4403/1008, subscribe/error, expiración en sesión).
+  También la **supervisión del consumidor AMQP** sin infraestructura
+  (`test_consumidor_reconexion.py`): `start()` no lanza sin bus y alerta una sola
+  vez, el supervisor engancha cuando el bus vuelve, `close()` cancela el reintento,
+  y la app entera arranca sin broker con `/health` degraded y `broker: down`.
 - `contract/` — cada respuesta REST (200 y errores RFC 7807) validada contra los
   schemas de `docs/openapi.yaml` (OpenAPI 3.1 = JSON Schema 2020-12); cabeceras
   `X-RateLimit-*`, 429 con `Retry-After`, 404 sin datos.
 - `integration/` — repositorio contra TimescaleDB real (última tasa `valid`, una
   fila por día, time_bucket, señales con evidencia; **INSERT rechazado por el pool
   read-only**) y consumidor de push contra RabbitMQ real (evento válido llega al
-  suscriptor; inválido contra su schema se descarta).
+  suscriptor; inválido contra su schema se descarta; **caída del bus** → alerta,
+  `conectado()` en falso y push reanudado tras la reconexión).
 - `e2e/` — app completa contra DB y bus reales: `/health` todo ok, REST autenticado
   sirve lo sembrado conforme al contrato, y un `signals.emitted` publicado en el
   bus llega como frame por el WSS suscrito.

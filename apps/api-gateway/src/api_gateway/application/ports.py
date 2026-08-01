@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from datetime import date, datetime
+from typing import Protocol
 
 from api_gateway.domain.modelos import Usuario
 
@@ -20,6 +21,17 @@ class TokenValidator(ABC):
     @abstractmethod
     def estado(self) -> str:
         """'ok' | 'degraded' — salud del validador para /health (sin llamar a Auth0)."""
+
+
+class AlertNotifier(Protocol):
+    """Canal de alertas de operación — mismo puerto que el indicator-engine.
+
+    El gateway alerta las transiciones del bus: sin bus no hay push WSS y el
+    síntoma para el cliente es «datos que no se mueven», silencioso salvo que
+    alguien mire `/health` a mano.
+    """
+
+    async def alertar(self, mensaje: str) -> None: ...
 
 
 class LecturaRepository(ABC):

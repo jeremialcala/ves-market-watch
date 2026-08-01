@@ -33,12 +33,18 @@ rate limit in-memory, profundidad interim): **ADR-0016**.
   - `amqp/consumer.py` — cola **efímera** (exclusiva, auto-delete) sobre
     `market.events` con bind a los 4 routing keys; valida cada evento contra su
     schema (`schemas/`) y difunde `{topic, event_id, occurred_at, data}`.
+    **Auto-recuperable** (2026-07-30): si el bus no está al arrancar, un
+    supervisor reintenta con backoff exponencial + jitter hasta conectar; una
+    vez conectado, la `RobustConnection` re-declara cola, bindings y consumidor.
+    Cada transición (caída / restablecimiento) emite **una** alerta por episodio
+    vía `AlertNotifier` (`adapters/alertas.py`, CRITICAL en log).
   - `http/` — FastAPI: REST (`rest.py`, cadena token → permiso → rate limit por
     endpoint), WSS (`ws.py`, cierres 4401/4403/1008, ping 30 s, cierre programado
     al `exp` del token) y problemas RFC 7807 (`problem.py`).
 - **Arranque** (`app.py`, `__main__.py`): fábrica con inyección para tests; si el
-  broker falta al arrancar, REST sirve igual y `/health` reporta `degraded`; el
-  access log redacta `token=` de la query del handshake WSS.
+  broker falta al arrancar, REST sirve igual, `/health` reporta `degraded` y el
+  push WSS se engancha solo en cuanto el bus vuelva (sin reinicio); el access log
+  redacta `token=` de la query del handshake WSS.
 
 ## Seguridad
 - Validación del access token: firma RS256 vía JWKS de Auth0; verifica `iss` (tenant),
@@ -92,13 +98,20 @@ JWKS_URI=https://dev-higerotech.us.auth0.com/.well-known/jwks.json
   payload canónico de los eventos referenciando `schemas/` (sin duplicar contratos).
 
 ## Verificación
-- **78 tests** en verde: unit (dominio + validador con JWKS RSA local propio),
+- **90 tests** en verde: unit (dominio + validador con JWKS RSA local propio),
   contract (respuestas vs. `openapi.yaml`, errores RFC 7807), integration
   (TimescaleDB y RabbitMQ reales; INSERT rechazado por el pool read-only) y e2e
   (REST autenticado + `signals.emitted` del bus → frame WSS). Ver `tests/README.md`.
 - **En vivo** (compose raíz, puerto host 8800): `/api/v1/health` →
   `{"status":"ok","components":{"database":"ok","broker":"ok","auth":"ok"}}` con la
   plataforma completa corriendo, y 401 `problem+json` sin token contra el tenant real.
+  Corte forzado de la conexión del gateway (`rabbitmqctl close_connection`,
+  2026-07-30): alerta de caída inmediata, **restablecido en 28 ms** con la cola
+  efímera, sus 4 bindings y el consumidor restaurados (verificado con
+  `rabbitmqctl list_queues`/`list_bindings`) — el resto de servicios sin tocar.
 
 ## Pendiente
-- `<TODO: app SPA (cliente público, Auth Code + PKCE) en el tenant — se crea junto con el front-end; client M2M de prueba para el e2e autenticado en vivo (HITL); MFA del tenant se decide cuando haya usuarios reales>`
+- `<TODO: aprovisionar en el tenant Auth0 la app SPA (cliente público, Auth Code + PKCE) que
+  consume este gateway — el front-end ya existe (`apps/web-spa`, ADR-0017), falta su client_id;
+  client M2M de prueba para el e2e autenticado en vivo (HITL); MFA del tenant se decide cuando
+  haya usuarios reales>`
