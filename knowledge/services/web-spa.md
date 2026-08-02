@@ -164,6 +164,17 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
 - `tests/unit/paleta.test.ts` fija los valores medidos: cambiarlos rompe el test
   y obliga a volver a pasar el validador.
 
+## La tasa rancia dejó de medirse en horas (2026-08-02, ADR-0022)
+- Los textos de `official_stale` cambian de **significado**, no solo de redacción:
+  «más de 6 h sin actualizarse» → «sin tasa para hoy». La bandera ya no dice que
+  la captura sea vieja, dice que el BCV no publicó la tasa de hoy.
+- Es lo que quita la contradicción que la app enseñaba en la misma pantalla:
+  «vigente 2026-08-03» junto a «más de 6 h sin actualizarse». La tasa del lunes
+  publicada el viernes está vigente todo el fin de semana.
+- Efecto colateral visible: la prosa de atribución y **las piernas de la
+  descomposición** dejan de desaparecer los fines de semana, porque el motor ya no
+  suprime la atribución sobre una tasa que sí rige.
+
 ## Las piernas del movimiento bajo la barra (2026-08-02)
 - La descripción genérica de la barra deja paso a **las dos piernas y su neto**,
   en VES absolutos: `Oficial 6 h` · `P2P 6 h` · `Neto brecha`. Salen del claim

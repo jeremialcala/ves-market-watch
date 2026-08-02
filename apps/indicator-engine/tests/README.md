@@ -1,8 +1,8 @@
 # Tests — indicator-engine (pirámide AI-DLC)
 
-Suite: **302 tests** — cubre las fases 1 y 2, el motor de señales (RF-4, ADR-0015),
-el análisis de la revisión (RF-6, ADR-0019) y la lectura del estado de mercado
-(RF-7, ADR-0021).
+Suite: **315 tests** — cubre las fases 1 y 2, el motor de señales (RF-4, ADR-0015),
+el análisis de la revisión (RF-6, ADR-0019), la lectura del estado de mercado
+(RF-7, ADR-0021) y la vigencia de la tasa oficial por fecha-valor (ADR-0022).
 
 - `unit/` — cálculos puros (brecha, variación), referencia P2P (mediana/VWAP),
   casos de uso (dedup, `official_stale`, `process_p2p_snapshot`), reglas de señal

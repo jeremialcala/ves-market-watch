@@ -62,9 +62,9 @@ par y el salvia de marca leía gris igualmente (croma 0,046).
 luminosidad monótona y el extremo cercano a la superficie por encima de 2:1.
 Antes era salvia → teal → coral con los valores del tema oscuro escritos a
 fuego: no monótona (así no se lee una magnitud) y en claro su extremo bajo
-quedaba a 1,67:1 sobre blanco, o sea invisible. Ahora cinco pasos por tema
-(`--calor-1` … `--calor-5`), y la leyenda habla de intensidad porque en claro
-sube oscureciendo y en oscuro aclarando.
+quedaba a 1,67:1 sobre blanco, o sea invisible. Desde entonces son cinco pasos
+por tema (`--calor-1` … `--calor-5`) de un tono que sube oscureciendo en claro y
+aclarando en oscuro — por eso la rampa nunca se rotula por su luminosidad.
 
 **Dos codificaciones, dos preguntas (2026-08-02).** La rampa cubre del p10 al
 p90 y el coral (`--calor-alto-1`, `--calor-alto-2`) marca lo que los supera. No
@@ -285,7 +285,7 @@ guardar nada en el navegador.
 - Lockfile commiteado (SCA en CI — Gate 2); cero secretos en el bundle.
 
 ## Verificación
-- **179 tests** (unit / component / contract) con **88,7 % de ramas** (umbral
+- **316 tests** (unit / component / contract) con **87,5 % de ramas** (umbral
   Gate 2: 80 %): decimal exhaustivo (incl. la aritmética `BigInt` y el borde de
   medianoche del día operativo VET), reducers, políticas WSS, StreamClient
   contra servidor WS mockeado, endpoints contra MSW, paneles con fixtures

@@ -31,9 +31,20 @@ PK `(captured_at, currency)`; índice `(currency, captured_at DESC)`.
 ## Reglas
 - **Append-only**: correcciones = fila nueva; vigente por `value_date` = mayor
   `captured_at` con `status='valid'` (ADR-0009).
+- **`value_date` ES la vigencia** (ADR-0022). El BCV publica por la tarde la tasa
+  del **siguiente día hábil** —el viernes 31/07/2026 a las 16:36 publicó la del
+  lunes 03/08— y salta feriados: el jueves 23/07 publicó la del lunes 27, porque
+  el viernes 24 fue feriado. De ahí que una tasa esté vigente mientras su
+  `value_date` no haya pasado (día de Caracas), y que `stale` NO se mida como
+  antigüedad de `captured_at`: hacerlo marcaba rancia una tasa buena todos los
+  fines de semana. Los feriados venezolanos no son derivables de un calendario;
+  esta columna es el único dato fiable de vigencia.
 - Escribe: [ingestor-bcv](../services/ingestor-bcv.md) (INSERT/SELECT; UPDATE solo
   para la resolución HITL de sospechas — única excepción al append-only, auditada).
-  Leerá: indicator-engine y api-gateway (solo lectura).
+  Leen (solo lectura): [api-gateway](../services/api-gateway.md), y desde ADR-0022
+  también [indicator-engine](../services/indicator-engine.md), que consulta
+  únicamente `value_date` con `status='valid'` — su única lectura fuera de
+  `indicators`.
 - Retención ≥ 12 meses (clasificación: dato público). **Sin política automática de
   retención ni compresión**: el backfill de 2020 no se borra solo.
 
