@@ -18,6 +18,8 @@ from urllib.parse import urlsplit, urlunsplit
 
 import pytest
 
+from api_gateway.domain.vigencia import VET
+
 from api_gateway.application.ports import LecturaRepository
 from api_gateway.config import Settings
 from tests.soporte_auth import (  # noqa: F401 — reexportados para los tests
@@ -125,16 +127,26 @@ class RepositorioEnMemoria(LecturaRepository):
         return self.db_ok
 
 
+def hoy_vet() -> date:
+    """El día en Caracas. `date.today()` usaría la zona de la máquina, que en CI
+    puede ser cualquiera — y la vigencia se juzga en VET (ADR-0022)."""
+    return datetime.now(VET).date()
+
+
 def fila_tasa(
     currency: str = "USD",
     rate: str = "417.03000000",
     hace: timedelta = timedelta(hours=1),
+    fecha_valor: date | None = None,
 ) -> dict:
+    """Una tasa oficial. `fecha_valor` es la VIGENCIA y `hace` solo cuándo se
+    capturó: son ejes distintos (ADR-0009) y desde ADR-0022 solo el primero
+    decide si está rancia."""
     ahora = datetime.now(UTC)
     return {
         "currency": currency,
         "rate": rate,
-        "value_date": date.today(),
+        "value_date": hoy_vet() if fecha_valor is None else fecha_valor,
         "captured_at": ahora - hace,
     }
 

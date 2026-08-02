@@ -15,9 +15,9 @@ from tests.conftest import (
     fila_analisis,
     fila_indicador,
     fila_tasa,
+    hoy_vet,
 )
 
-STALE = timedelta(hours=6)
 FRESCURA = timedelta(minutes=20)
 
 
@@ -29,21 +29,36 @@ def repo() -> RepositorioEnMemoria:
 # -- tasa oficial ------------------------------------------------------------
 
 
-async def test_tasa_vigente_fresca_no_es_stale(repo):
-    repo.tasas["USD"] = fila_tasa(hace=timedelta(hours=1))
-    resultado = await ConsultarTasaOficialVigente(repo, STALE).ejecutar("USD")
+async def test_la_tasa_de_hoy_no_es_stale(repo):
+    repo.tasas["USD"] = fila_tasa()
+    resultado = await ConsultarTasaOficialVigente(repo).ejecutar("USD")
     assert resultado["stale"] is False
     assert resultado["rate"] == "417.03000000"
 
 
-async def test_tasa_vieja_se_sirve_marcada_stale(repo):
-    repo.tasas["USD"] = fila_tasa(hace=timedelta(hours=7))
-    resultado = await ConsultarTasaOficialVigente(repo, STALE).ejecutar("USD")
+async def test_una_fecha_valor_YA_PASADA_se_sirve_marcada_stale(repo):
+    # Rancia significa: el BCV no publicó la tasa de hoy (ADR-0022).
+    repo.tasas["USD"] = fila_tasa(fecha_valor=hoy_vet() - timedelta(days=1))
+    resultado = await ConsultarTasaOficialVigente(repo).ejecutar("USD")
     assert resultado["stale"] is True
 
 
+async def test_una_CAPTURA_VIEJA_con_fecha_valor_futura_NO_es_stale(repo):
+    """El fin de semana: el viernes por la tarde el BCV publica la del lunes.
+
+    La regla vieja —antigüedad de la captura > 6 h— marcaba rancia esa tasa el
+    sábado y el domingo, contradiciendo a la propia app, que enseñaba al lado
+    «vigente 03/08».
+    """
+    repo.tasas["USD"] = fila_tasa(
+        hace=timedelta(days=3), fecha_valor=hoy_vet() + timedelta(days=1)
+    )
+    resultado = await ConsultarTasaOficialVigente(repo).ejecutar("USD")
+    assert resultado["stale"] is False
+
+
 async def test_sin_tasa_devuelve_none(repo):
-    assert await ConsultarTasaOficialVigente(repo, STALE).ejecutar("EUR") is None
+    assert await ConsultarTasaOficialVigente(repo).ejecutar("EUR") is None
 
 
 # -- referencia P2P ----------------------------------------------------------
@@ -95,7 +110,7 @@ async def test_indicadores_usd_con_p2p_fresco(repo):
     repo.vigentes[("p2p_spread_pct", "VES")] = fila_indicador("-0.35000000")
     repo.vigentes[("p2p_liquidez_buy", "VES")] = fila_indicador("125000.0")
     repo.vigentes[("p2p_liquidez_sell", "VES")] = fila_indicador("98000.0")
-    resultado = await ConsultarIndicadoresVigentes(repo, STALE, FRESCURA).ejecutar(
+    resultado = await ConsultarIndicadoresVigentes(repo, FRESCURA).ejecutar(
         "USD"
     )
     assert resultado["official_stale"] is False
@@ -110,7 +125,7 @@ async def test_indicadores_p2p_rancios_van_en_null(repo):
     repo.vigentes[("p2p_brecha_abs_buy", "VES")] = fila_indicador(
         "433.0", hace=timedelta(hours=2)
     )
-    resultado = await ConsultarIndicadoresVigentes(repo, STALE, FRESCURA).ejecutar(
+    resultado = await ConsultarIndicadoresVigentes(repo, FRESCURA).ejecutar(
         "USD"
     )
     assert resultado["gap_abs"] is None
@@ -120,7 +135,7 @@ async def test_indicadores_p2p_rancios_van_en_null(repo):
 async def test_indicadores_de_moneda_sin_par_p2p_van_en_null(repo):
     repo.tasas["EUR"] = fila_tasa(currency="EUR", rate="480.10000000")
     repo.vigentes[("official_rate", "EUR")] = fila_indicador("480.10000000")
-    resultado = await ConsultarIndicadoresVigentes(repo, STALE, FRESCURA).ejecutar(
+    resultado = await ConsultarIndicadoresVigentes(repo, FRESCURA).ejecutar(
         "EUR"
     )
     assert resultado["gap_abs"] is None and resultado["spread_pct"] is None
@@ -128,19 +143,19 @@ async def test_indicadores_de_moneda_sin_par_p2p_van_en_null(repo):
 
 async def test_indicadores_sin_official_rate_devuelve_none(repo):
     assert (
-        await ConsultarIndicadoresVigentes(repo, STALE, FRESCURA).ejecutar("USD")
+        await ConsultarIndicadoresVigentes(repo, FRESCURA).ejecutar("USD")
         is None
     )
 
 
-async def test_official_stale_si_no_hay_tasa_o_es_vieja(repo):
+async def test_official_stale_si_no_hay_tasa_o_su_fecha_valor_paso(repo):
     repo.vigentes[("official_rate", "USD")] = fila_indicador("417.03")
-    resultado = await ConsultarIndicadoresVigentes(repo, STALE, FRESCURA).ejecutar(
+    resultado = await ConsultarIndicadoresVigentes(repo, FRESCURA).ejecutar(
         "USD"
     )
     assert resultado["official_stale"] is True
-    repo.tasas["USD"] = fila_tasa(hace=timedelta(hours=8))
-    resultado = await ConsultarIndicadoresVigentes(repo, STALE, FRESCURA).ejecutar(
+    repo.tasas["USD"] = fila_tasa(fecha_valor=hoy_vet() - timedelta(days=1))
+    resultado = await ConsultarIndicadoresVigentes(repo, FRESCURA).ejecutar(
         "USD"
     )
     assert resultado["official_stale"] is True

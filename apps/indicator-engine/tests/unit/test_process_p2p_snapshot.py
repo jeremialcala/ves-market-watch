@@ -1,6 +1,6 @@
 """Tests del caso de uso ProcesarSnapshotP2P con adaptadores en memoria."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
 from indicator_engine.adapters.memory import (
@@ -87,9 +87,54 @@ def _oficial(valor: str = "736.9339", hace: timedelta = timedelta(hours=1)) -> I
     )
 
 
+# `AHORA` es el 20/7 a las 16:00 UTC = mediodía en Caracas: una tasa con
+# fecha-valor de ese mismo día está vigente.
+FECHA_VALOR_VIGENTE = date(2026, 7, 20)
+
+
+def _con_oficial(repo, valor: str = "736.9339", hace: timedelta = timedelta(hours=1),
+                 fecha_valor: date = FECHA_VALOR_VIGENTE) -> None:
+    """Deja el repo con una tasa oficial COHERENTE: cuánto vale y para cuándo rige.
+
+    Las dos cosas juntas porque son los dos ejes del mismo hecho (ADR-0009): el
+    indicador guarda el valor y su instante de cambio, y `official_rates` la
+    fecha-valor. Declarar solo el primero describe un mundo imposible —una tasa
+    sin vigencia— y el motor lo trata, con razón, como si no hubiera tasa.
+    """
+    repo.indicadores.append(_oficial(valor, hace))
+    repo.fechas_valor["USD"] = fecha_valor
+
+
+async def test_la_brecha_del_finde_NO_marca_la_oficial_rancia():
+    """El defecto que ADR-0022 corrige, en el caso de uso completo.
+
+    La tasa cambió por última vez hace tres días (viernes por la tarde) pero su
+    fecha-valor es el lunes: está vigente. La regla vieja comparaba contra
+    `oficial.as_of` —cuándo CAMBIÓ el indicador— y encendía la bandera todos los
+    fines de semana, suprimiendo con ella la atribución de la brecha.
+    """
+    repo, _, caso = _armar()
+    _con_oficial(repo, hace=timedelta(days=3), fecha_valor=date(2026, 7, 21))
+
+    resultado = await caso.ejecutar(_snapshot("BUY", ["858", "860", "862"]))
+
+    assert not resultado.official_stale
+
+
+async def test_la_brecha_marca_rancia_si_la_fecha_valor_ya_paso():
+    repo, _, caso = _armar()
+    # Cambio RECIENTE, pero rige para ayer: el BCV no publicó la de hoy. La
+    # regla vieja, que solo miraba la antigüedad, no lo habría visto.
+    _con_oficial(repo, hace=timedelta(minutes=5), fecha_valor=date(2026, 7, 19))
+
+    resultado = await caso.ejecutar(_snapshot("BUY", ["858", "860", "862"]))
+
+    assert resultado.official_stale
+
+
 async def test_primer_snapshot_produce_referencia_y_brecha():
     repo, publisher, caso = _armar()
-    repo.indicadores.append(_oficial())
+    _con_oficial(repo)
 
     resultado = await caso.ejecutar(_snapshot("BUY", ["858", "860", "862"]))
 
@@ -126,7 +171,7 @@ async def test_sin_tasa_oficial_no_hay_brecha_y_stale_true():
 
 async def test_lado_opuesto_fresco_agrega_spread_y_ratio():
     repo, _, caso = _armar()
-    repo.indicadores.append(_oficial())
+    _con_oficial(repo)
     await caso.ejecutar(
         _snapshot(
             "BUY",
@@ -149,7 +194,7 @@ async def test_lado_opuesto_fresco_agrega_spread_y_ratio():
 
 async def test_lado_opuesto_viejo_no_produce_spread():
     repo, _, caso = _armar()
-    repo.indicadores.append(_oficial())
+    _con_oficial(repo)
     await caso.ejecutar(
         _snapshot(
             "BUY",
@@ -169,7 +214,7 @@ async def test_lado_opuesto_viejo_no_produce_spread():
 
 async def test_momentum_bid_contra_el_historico_de_3h():
     repo, _, caso = _armar()
-    repo.indicadores.append(_oficial())
+    _con_oficial(repo)
     await caso.ejecutar(
         _snapshot(
             "SELL",
@@ -190,7 +235,7 @@ async def test_momentum_bid_contra_el_historico_de_3h():
 
 async def test_drenaje_oferta_contra_el_historico_de_6h():
     repo, _, caso = _armar()
-    repo.indicadores.append(_oficial())
+    _con_oficial(repo)
     await caso.ejecutar(
         _snapshot(
             "BUY",
@@ -215,7 +260,7 @@ async def test_drenaje_oferta_contra_el_historico_de_6h():
 
 async def test_hueco_de_captura_omite_la_ventana():
     repo, _, caso = _armar()
-    repo.indicadores.append(_oficial())
+    _con_oficial(repo)
     await caso.ejecutar(
         _snapshot(
             "SELL",
@@ -233,7 +278,7 @@ async def test_hueco_de_captura_omite_la_ventana():
 
 async def test_confianza_baja_suprime_senales_pero_publica_referencia():
     repo, publisher, caso = _armar()
-    repo.indicadores.append(_oficial())
+    _con_oficial(repo)
     limpios = _anuncios(["858", "860"])
     marcados = tuple(
         AnuncioP2P(Decimal("9999"), Decimal("100"), outlier=True, es_merchant=False)
@@ -253,7 +298,7 @@ async def test_confianza_baja_suprime_senales_pero_publica_referencia():
 
 async def test_evento_duplicado_no_reprocesa():
     repo, publisher, caso = _armar()
-    repo.indicadores.append(_oficial())
+    _con_oficial(repo)
     await caso.ejecutar(_snapshot("BUY"))
     n_indicadores = len(repo.indicadores)
 
@@ -268,7 +313,7 @@ async def test_evento_duplicado_no_reprocesa():
 
 async def test_senal_se_emite_persiste_y_publica():
     repo, publisher, caso = _armar_con_ruleset()
-    repo.indicadores.append(_oficial())
+    _con_oficial(repo)
 
     resultado = await caso.ejecutar(_snapshot("BUY", ["858", "860", "862"]))
 
@@ -288,7 +333,7 @@ async def test_senal_se_emite_persiste_y_publica():
 
 async def test_cooldown_suprime_la_reemision_del_mismo_tipo():
     repo, publisher, caso = _armar_con_ruleset(cooldown=60)
-    repo.indicadores.append(_oficial())
+    _con_oficial(repo)
     await caso.ejecutar(
         _snapshot(
             "BUY",
@@ -308,7 +353,7 @@ async def test_cooldown_suprime_la_reemision_del_mismo_tipo():
 
 async def test_pasado_el_cooldown_se_reemite():
     repo, publisher, caso = _armar_con_ruleset(cooldown=60)
-    repo.indicadores.append(_oficial())
+    _con_oficial(repo)
     await caso.ejecutar(
         _snapshot(
             "BUY",
@@ -327,7 +372,7 @@ async def test_pasado_el_cooldown_se_reemite():
 
 async def test_confianza_baja_no_emite_senal():
     repo, publisher, caso = _armar_con_ruleset()
-    repo.indicadores.append(_oficial())
+    _con_oficial(repo)
     limpios = _anuncios(["858", "860"])
     marcados = tuple(
         AnuncioP2P(Decimal("9999"), Decimal("100"), outlier=True, es_merchant=False)
@@ -342,7 +387,7 @@ async def test_confianza_baja_no_emite_senal():
 
 async def test_sin_ruleset_no_emite_senales():
     repo, publisher, caso = _armar()  # sin ruleset
-    repo.indicadores.append(_oficial())
+    _con_oficial(repo)
 
     resultado = await caso.ejecutar(_snapshot("BUY"))
 

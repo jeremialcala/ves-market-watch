@@ -177,7 +177,7 @@ describe("Calidad y procedencia del dato", () => {
     conAnalisis({ confidence: "low", official_stale: true });
     render(<DataProvenance />);
     expect(screen.getByText(/baja · demasiados precios raros/)).toBeTruthy();
-    expect(screen.getByText("más de 6 h sin actualizarse")).toBeTruthy();
+    expect(screen.getByText("sin tasa para hoy")).toBeTruthy();
   });
 
   it("con todo en orden no alarma", () => {

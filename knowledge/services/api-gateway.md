@@ -44,6 +44,14 @@ in-memory, profundidad como proyección interim).
   [p2p_snapshots_raw](../tables/p2p_snapshots_raw.md). La profundidad
   (`/market/depth`) se proyecta del último crudo minimizado (bandas de 0,5 %) —
   interim hasta que el engine materialice `p2p_top_of_book` (ADR-0016).
+- **Vigencia de la tasa oficial** (2026-08-02, ADR-0022): `stale` y
+  `official_stale` salen de la **fecha-valor**, no de la antigüedad de captura.
+  El BCV publica el viernes por la tarde la tasa del lunes, así que medirlo en
+  horas encendía la bandera cada fin de semana. La regla vive en
+  `domain/vigencia.py`, **duplicada a propósito** con la del motor: los dos
+  servicios se despliegan por separado y la alternativa era que el REST dijera
+  «vigente» de la misma tasa que el análisis marca rancia. `STALE_THRESHOLD_HOURS`
+  se retiró.
 - **Bus**: consume los 5 eventos de `market.events` con **cola efímera**
   (exclusiva, auto-delete): el push es best-effort, el estado consultable vive en
   REST/DB (ADR-0016). Evento inválido contra su schema → descarte con log.
@@ -53,7 +61,7 @@ in-memory, profundidad como proyección interim).
   `/health` reporta `broker: down` mientras no haya consumo real.
 
 ## Verificación
-- **103 tests** (unit, contract contra el `openapi.yaml`, integration contra
+- **104 tests** (unit, contract contra el `openapi.yaml`, integration contra
   TimescaleDB/RabbitMQ reales — incl. rechazo de INSERT por el pool read-only —
   y e2e: REST autenticado + evento en el bus → frame por el WSS suscrito). La
   autenticación de tests usa un par RSA/JWKS local (`tests/soporte_auth.py`).

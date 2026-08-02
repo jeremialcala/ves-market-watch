@@ -67,6 +67,7 @@ from indicator_engine.domain.models import (
     nombre_por_lado,
 )
 from indicator_engine.domain.reglas import Ruleset, Senal, evaluar_reglas
+from indicator_engine.domain.vigencia import oficial_rancia
 
 logger = logging.getLogger("indicator_engine")
 
@@ -94,7 +95,6 @@ class ProcesarSnapshotP2P:
         publisher: EventPublisher,
         repository: IndicatorRepository,
         calc_version: int = 1,
-        umbral_stale: timedelta = timedelta(hours=6),
         ventana_momentum: timedelta = timedelta(hours=3),
         ventana_drenaje: timedelta = timedelta(hours=6),
         # Más viejo que esto, el lado opuesto pertenece a otra época del mercado
@@ -117,7 +117,6 @@ class ProcesarSnapshotP2P:
         self._publisher = publisher
         self._repository = repository
         self._calc_version = calc_version
-        self._umbral_stale = umbral_stale
         self._ventana_momentum = ventana_momentum
         self._ventana_drenaje = ventana_drenaje
         self._tolerancia_opuesto = tolerancia_lado_opuesto
@@ -278,7 +277,16 @@ class ProcesarSnapshotP2P:
 
     async def _agregar_brecha(self, snap, mediana, indicadores) -> bool:
         """Brecha del lado vs la última tasa oficial conocida (as-of, ADR-0009).
-        Retorna la bandera `official_stale` (ADR-0007); sin tasa → True y sin brecha."""
+
+        Retorna `official_stale`, que sale de la **fecha-valor** de la tasa y no
+        de su antigüedad (ADR-0022). Antes se comparaba contra `oficial.as_of`,
+        que es cuándo CAMBIÓ el indicador: como el BCV publica el viernes por la
+        tarde la tasa del lunes, la bandera se encendía todos los fines de
+        semana sobre una tasa perfectamente vigente — y con ella se suprimían la
+        atribución y su prosa.
+
+        Sin tasa → True y sin brecha.
+        """
         oficial = await self._repository.ultimo_indicador(
             OFFICIAL_RATE, MONEDA_OFICIAL_REFERENCIA
         )
@@ -291,7 +299,13 @@ class ProcesarSnapshotP2P:
         indicadores.append(
             self._indicador(nombre_por_lado(P2P_BRECHA_PCT, snap.side), snap, brecha.gap_pct)
         )
-        return snap.capturado_en - oficial.as_of > self._umbral_stale
+        fecha_valor = await self._repository.fecha_valor_oficial(
+            MONEDA_OFICIAL_REFERENCIA
+        )
+        # Contra `capturado_en` del snapshot y no contra el reloj: la vigencia se
+        # juzga en el instante del dato que se está procesando, para que un
+        # reproceso tardío no reescriba la historia con el día de hoy.
+        return oficial_rancia(fecha_valor, snap.capturado_en)
 
     async def _agregar_microestructura(self, snap, referencia, indicadores) -> None:
         """Spread y ratio O/D con el último lado opuesto, solo si está fresco."""

@@ -29,7 +29,7 @@ sin round-trip por `numeric` (ADR-0017; mismo criterio que `signals.evidence`).
 | `analysis_version` | integer | Versión de `config/analisis.v*.yaml` (ventana, cortes, dominios) |
 | `ruleset_version` | integer | Versión del ruleset de señales evaluado |
 | `confidence` | text | `normal` \| `low` (> 30 % de outliers) |
-| `official_stale` | boolean | La tasa oficial de la brecha lleva > 6 h sin actualizarse |
+| `official_stale` | boolean | La **fecha-valor** de la tasa de la brecha ya pasó: el BCV no publicó la de hoy (ADR-0022) |
 | `scale_source` | text | `percentiles` \| `ruleset` — promovida desde el JSONB |
 | `analyzed_at` | timestamptz | Instante de análisis. Default `now()` |
 | `payload` | jsonb | El documento publicado, verbatim (`schemas/analysis.v1.json`) |

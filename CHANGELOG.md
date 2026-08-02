@@ -106,6 +106,32 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **La vigencia de la tasa oficial la manda la FECHA-VALOR, no la antigüedad
+  (2026-08-02, ADR-0022).** El BCV publica por la tarde la tasa del siguiente día
+  hábil: el viernes 31/07 a las 16:36 publicó la del lunes 03/08. Los cuatro
+  sitios que calculaban rancidez —dos en el motor, dos en el gateway— medían
+  antigüedad de captura, así que **marcaban `official_stale` todos los fines de
+  semana sobre una tasa perfectamente vigente**.
+  - No era cosmético: con la bandera encendida el motor **suprime la atribución**
+    de la brecha (ADR-0021), así que la descomposición se quedaba sin sus piernas
+    tres días de cada semana. Y la app se contradecía en la misma pantalla —
+    «vigente 2026-08-03» junto a «más de 6 h sin actualizarse».
+  - Se descartó derivar «siguiente día hábil» con un calendario: el 24/07/2026
+    fue feriado y el BCV publicó el jueves 23 la tasa del lunes 27. Los feriados
+    venezolanos no son función del almanaque; la fecha-valor del emisor sí es un
+    dato.
+  - **Rancia pasa a significar algo**: el BCV no publicó la tasa de hoy. El día
+    se corta en Caracas (VET, UTC−4 fijo) porque la tasa rige jornadas bancarias
+    venezolanas.
+  - `STALE_THRESHOLD_HOURS` desaparece del motor y del gateway — no queda como
+    config muerta. El motor gana su única lectura fuera de `indicators`
+    (`SELECT value_date FROM official_rates`, filtrando `status = 'valid'` para
+    que una tasa retenida por T1 no pase por vigencia).
+  - El **contrato no cambia de forma**: `stale` y `official_stale` siguen siendo
+    los mismos booleanos, solo cambia cuándo son `true`. Sin orden de despliegue
+    que respetar entre gateway y motor.
+  - Verificado en vivo: `official_stale` pasó de `t` a `f` en la primera revisión
+    tras desplegar, y la prosa de atribución volvió al dashboard.
 - **La descomposición muestra las piernas del movimiento, no una descripción de
   la barra (2026-08-02).** Bajo la barra van ahora `Oficial 6 h` · `P2P 6 h` ·
   `Neto brecha` en VES absolutos, desde el claim `atribucion` del motor

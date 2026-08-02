@@ -67,15 +67,14 @@ def create_app(
             max_conexiones=settings.wss_max_conexiones,
             max_suscripciones=settings.wss_max_suscripciones,
         )
-        umbral_stale = timedelta(hours=settings.stale_threshold_hours)
         frescura_p2p = timedelta(minutes=settings.p2p_frescura_min)
         repo = app.state.repositorio
         app.state.consultas = SimpleNamespace(
-            tasa_vigente=ConsultarTasaOficialVigente(repo, umbral_stale),
+            tasa_vigente=ConsultarTasaOficialVigente(repo),
             historial_tasa=ConsultarHistoricoTasaOficial(repo),
             referencia_p2p=ConsultarReferenciaP2P(repo, frescura_p2p),
             indicadores=ConsultarIndicadoresVigentes(
-                repo, umbral_stale, frescura_p2p
+                repo, frescura_p2p
             ),
             historial_indicadores=ConsultarHistoricoIndicadores(repo),
             profundidad=ConsultarProfundidad(

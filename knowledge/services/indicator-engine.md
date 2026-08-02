@@ -34,7 +34,10 @@ Python 3.12, hexagonal, mismas convenciones que [ingestor-bcv](ingestor-bcv.md).
 ## Propiedades implementadas
 - Idempotencia por `event_id` persistente (tabla `processed_events`).
 - Schema inválido o fallo de procesamiento → DLQ `market.events.dlq` + alerta (A05/A08).
-- `official_stale=true` si la captura supera 6 h (`STALE_THRESHOLD_HOURS`, ADR-0007).
+- `official_stale=true` si la **fecha-valor** de la tasa ya pasó (ADR-0022): el BCV
+  no publicó la de hoy. Antes se medía en horas de antigüedad y se encendía cada fin
+  de semana sobre una tasa vigente, suprimiendo con ella la atribución de la brecha.
+  El motor lee `official_rates.value_date` — su única lectura fuera de `indicators`.
 - Estado del motor = su propio histórico (sin estado en memoria; sobrevive reinicios).
   Los indicadores de ventana (momentum 3 h, drenaje 6 h) se calculan sobre ese histórico
   vía repositorio, no en memoria (ADR-0014).

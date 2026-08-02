@@ -262,7 +262,12 @@ export interface components {
              * @description Instante de captura desde el BCV.
              */
             captured_at: string;
-            /** @description True si la tasa vigente supera el umbral de frescura. */
+            /**
+             * @description True si la **fecha-valor** de la tasa ya pasó, es decir si el BCV no
+             *     ha publicado la de hoy (ADR-0022). No es una antigüedad de captura:
+             *     el viernes por la tarde el BCV publica la tasa del lunes, y esa tasa
+             *     está vigente todo el fin de semana.
+             */
             stale: boolean;
         };
         OfficialRateHistoryItem: {
@@ -308,6 +313,10 @@ export interface components {
             as_of: string;
             /** @description Versión de la fórmula (reproducibilidad, RF-3). */
             calc_version: number;
+            /**
+             * @description La fecha-valor de la tasa contra la que se calculó la brecha ya pasó
+             *     (ADR-0022). Misma regla que la de `OfficialRate.stale`.
+             */
             official_stale: boolean;
             /**
              * @description Brecha absoluta (P2P − oficial) en VES, del lado buy (comprar USDT

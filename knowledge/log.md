@@ -7,6 +7,42 @@ timestamp: 2026-08-01T12:00:00Z
 
 # Log
 
+## 2026-08-02 — La vigencia de la tasa oficial no era una antigüedad (ADR-0022)
+- Lo trajo el usuario como regla de negocio: **el BCV publica por la tarde la tasa
+  del siguiente día hábil**, así que la vigencia la manda `value_date`, no lo vieja
+  que sea la captura. Se comprobó en la serie real antes de tocar nada: el viernes
+  31/07 a las 16:36 se publicó la del lunes 03/08.
+- Los **cuatro** sitios que calculaban rancidez —dos en el motor, dos en el
+  gateway— medían antigüedad. Resultado: `official_stale=true` tres días de cada
+  semana sobre una tasa perfectamente vigente.
+- **No era cosmético.** Con esa bandera el motor suprime la atribución de la
+  brecha (ADR-0021), así que la descomposición se quedaba sin piernas cada fin de
+  semana. Y la app se contradecía en la misma pantalla: «vigente 2026-08-03» al
+  lado de «más de 6 h sin actualizarse». Llevaba ahí desde el principio.
+- **El feriado del 24/07 es lo que decide el diseño.** El jueves 23 el BCV publicó
+  con fecha-valor del lunes 27. Ningún calendario de «siguiente día hábil»
+  derivable acierta eso; la fecha-valor que publica el emisor sí. Por eso la regla
+  es `value_date < hoy_VET` y no un cálculo de días hábiles.
+- El día se corta en **Caracas**: la tasa rige jornadas bancarias venezolanas y
+  entre las 20:00 y las 24:00 VET el día UTC ya avanzó — usar UTC habría
+  adelantado el vencimiento medio día. Hay un test que lo fija.
+- La regla vive **duplicada** en motor y gateway (`domain/vigencia.py` en cada
+  uno). Se aceptó: los servicios se despliegan por separado y la alternativa era
+  que el REST dijera «vigente» de la misma tasa que el análisis marca rancia.
+- El motor gana su **única lectura fuera de `indicators`**
+  (`official_rates.value_date`), filtrando `status='valid'` para que una tasa
+  retenida por variación sospechosa (T1) no pase por vigencia. Actualizado el
+  docstring de mínimo privilegio, que declaraba dos tablas.
+- **Lo que el defecto se llevó por delante en la documentación:** el plan de
+  pruebas describía la supresión del fin de semana como «por diseño». No lo era;
+  era este defecto contado como si fuera una decisión.
+- `STALE_THRESHOLD_HOURS` se retira de los dos servicios en vez de quedar como
+  config muerta. El contrato no cambia de forma —mismos booleanos, mismo sitio—,
+  así que no hubo orden de despliegue que respetar.
+- Verificado en vivo: `official_stale` pasó de `t` a `f` en la primera revisión
+  tras desplegar, y con ella volvió la prosa de atribución y las piernas de la
+  descomposición, que hasta entonces solo tenía cubiertas por tests.
+
 ## 2026-08-02 — El mapa de calor gana un umbral, no solo colores nuevos
 - El prototipo pedía teal por debajo del p90 y coral por encima. Lo primero que
   encontré fue que la rampa coral de un solo tono **era una decisión razonada y

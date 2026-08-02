@@ -154,13 +154,11 @@ async def run(settings: Settings, drain: bool) -> None:
         publisher=publisher,
         repository=repository,
         calc_version=settings.calc_version,
-        umbral_stale=timedelta(hours=settings.stale_threshold_hours),
     )
     procesador_p2p = ProcesarSnapshotP2P(
         publisher=publisher,
         repository=repository,
         calc_version=settings.calc_version,
-        umbral_stale=timedelta(hours=settings.stale_threshold_hours),
         ruleset=ruleset,
         max_age_indicadores=timedelta(minutes=settings.signals_max_age_min),
         analisis=analisis,

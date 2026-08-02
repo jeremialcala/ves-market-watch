@@ -102,9 +102,11 @@
 ## Propiedades clave
 - **Idempotencia** ✔ — dedup por `event_id` persistente (escenario negativo 2).
 - **Validación de esquema + DLQ** ✔ — escenario negativo 4; alerta en cada descarte.
-- **Degradación `official_stale`** ✔ — tasa más vieja que `STALE_THRESHOLD_HOURS`
-  (6 h, ADR-0007) al momento del cálculo → bandera en el payload; sin tasa conocida
-  no se publica brecha y la bandera va en true; nunca se inventa dato (A10).
+- **Degradación `official_stale`** ✔ — la **fecha-valor** de la tasa ya pasó al
+  momento del cálculo, es decir el BCV no publicó la de hoy (ADR-0022) → bandera en
+  el payload; sin tasa conocida no se publica brecha y la bandera va en true; nunca
+  se inventa dato (A10). No es una antigüedad: el viernes por la tarde se publica la
+  tasa del lunes, y medirla en horas la marcaba rancia todos los fines de semana.
 - **Degradación `confianza_baja`** ✔ — > 30 % outliers ⇒ señales suprimidas con
   rastro (`p2p_outliers_pct`), referencia publicada marcada.
 - **Estado del motor = su histórico** — último valor y as-of se leen de la propia

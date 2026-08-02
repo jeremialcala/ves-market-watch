@@ -22,8 +22,9 @@ bandas, variación intradía y la recalibración HITL de umbrales.
   `knowledge/metrics/microestructura-p2p.md`.
 - Con > 30 % de outliers en el snapshot la confianza es baja: se publican solo la
   referencia y `p2p_outliers_pct` — las señales se suprimen, nunca en silencio.
-- Marca `official_stale=true` si la tasa oficial supera `STALE_THRESHOLD_HOURS` (6,
-  ADR-0007) al momento del cálculo.
+- Marca `official_stale=true` si la **fecha-valor** de la tasa oficial ya pasó al
+  momento del cálculo — o sea, si el BCV no publicó la tasa de hoy (ADR-0022). No se
+  mide en horas: el viernes por la tarde el BCV publica la tasa del lunes.
 - Persiste en la hypertable `indicators` con `calc_version` (RF-3, reproducibilidad) y
   publica `indicators.updated` con `triggered_by` = evento origen (trazabilidad V16).
 - **Señales (RF-4, ADR-0015):** evalúa el ruleset versionado (`config/senales.v1.yaml`)
@@ -44,7 +45,7 @@ python -m indicator_engine --drain
 
 Configuración por entorno: `AMQP_URL`, `AMQP_EXCHANGE` (`market.events`), `QUEUE_NAME`,
 `DLX_NAME`, `DLQ_NAME`, `PREFETCH` (10), `DATABASE_URL`, `CALC_VERSION` (1),
-`STALE_THRESHOLD_HOURS` (6), `SCHEMAS_DIR`, `SIGNALS_RULESET_PATH`
+`SCHEMAS_DIR`, `SIGNALS_RULESET_PATH`
 (`config/senales.v1.yaml`), `SIGNALS_MAX_AGE_MIN` (20). Secretos por entorno (A02).
 
 ## Tests

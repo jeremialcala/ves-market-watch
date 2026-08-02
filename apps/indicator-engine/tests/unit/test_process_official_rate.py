@@ -18,12 +18,13 @@ def _tasa(
     moneda: str = "USD",
     event_id: str = "11111111-1111-1111-1111-111111111111",
     capturada_hace: timedelta = timedelta(minutes=5),
+    fecha_valor: date = date(2026, 7, 6),  # `AHORA` en Caracas: vigente
 ) -> TasaOficialRecibida:
     return TasaOficialRecibida(
         event_id=event_id,
         moneda=moneda,
         valor=Decimal(valor),
-        fecha_valor=date(2026, 7, 6),
+        fecha_valor=fecha_valor,
         capturada_en=AHORA - capturada_hace,
     )
 
@@ -86,19 +87,39 @@ async def test_evento_duplicado_no_reprocesa_ni_publica():
     assert len(publisher.eventos) == 1
 
 
-async def test_official_stale_cuando_la_captura_supera_el_umbral():
+async def test_official_stale_cuando_la_fecha_valor_ya_paso():
+    """Rancia = el BCV no publicó la tasa de hoy (ADR-0022)."""
     _, publisher, caso = _armar()
 
-    resultado = await caso.ejecutar(_tasa(capturada_hace=timedelta(hours=7)))
+    resultado = await caso.ejecutar(_tasa(fecha_valor=date(2026, 7, 5)))  # ayer
 
     assert resultado.official_stale
     assert publisher.eventos[0]["payload"]["official_stale"] is True
 
 
-async def test_captura_fresca_no_es_stale():
+async def test_la_fecha_valor_de_hoy_esta_vigente():
     _, publisher, caso = _armar()
 
-    resultado = await caso.ejecutar(_tasa(capturada_hace=timedelta(minutes=30)))
+    resultado = await caso.ejecutar(_tasa(fecha_valor=date(2026, 7, 6)))
+
+    assert not resultado.official_stale
+    assert publisher.eventos[0]["payload"]["official_stale"] is False
+
+
+async def test_una_CAPTURA_VIEJA_con_fecha_valor_futura_NO_es_rancia():
+    """El caso del fin de semana, que es el que motivó ADR-0022.
+
+    El viernes por la tarde el BCV publica la tasa del lunes. El domingo esa
+    captura tiene tres días, y la tasa está perfectamente vigente: es la tasa
+    oficial del lunes. La regla vieja —comparar la antigüedad contra 6 h— la
+    marcaba rancia todos los fines de semana, y con ella se suprimían la
+    atribución de la brecha y su prosa.
+    """
+    _, publisher, caso = _armar()
+
+    resultado = await caso.ejecutar(
+        _tasa(capturada_hace=timedelta(days=3), fecha_valor=date(2026, 7, 7))
+    )
 
     assert not resultado.official_stale
     assert publisher.eventos[0]["payload"]["official_stale"] is False

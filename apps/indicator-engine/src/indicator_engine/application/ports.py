@@ -59,6 +59,16 @@ class IndicatorRepository(Protocol):
         """Persiste el lote de indicadores; reintentos no duplican filas."""
         ...
 
+    async def fecha_valor_oficial(self, moneda: str) -> date | None:
+        """Fecha-valor de la última tasa oficial válida — la VIGENCIA real.
+
+        Es la única lectura que el motor hace fuera de `indicators`, y no se
+        puede evitar: el indicador `official_rate` guarda cuándo CAMBIÓ la tasa,
+        no para qué día rige, y son cosas distintas. El viernes por la tarde el
+        BCV publica la tasa del lunes: el cambio es de hace tres días y la tasa
+        está vigente (`domain/vigencia.py`)."""
+        ...
+
     async def senal_reciente(self, tipo: str, moneda: str, desde: datetime) -> bool:
         """True si ya hay una señal de ese tipo/moneda con `as_of >= desde`
         (dedup por cooldown, RF-4/A08)."""

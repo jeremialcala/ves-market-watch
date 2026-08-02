@@ -16,6 +16,7 @@ from decimal import Decimal
 from api_gateway.application.ports import LecturaRepository
 from api_gateway.domain.paginacion import Pagina, meta_pagina
 from api_gateway.domain.profundidad import calcular_profundidad
+from api_gateway.domain.vigencia import oficial_rancia
 
 FIAT_P2P = "VES"
 MONEDA_BRECHA = "USD"  # la pierna oficial del par USDT/VES (ADR-0014)
@@ -27,9 +28,8 @@ def _por_lado(nombre: str, side: str) -> str:
 
 
 class ConsultarTasaOficialVigente:
-    def __init__(self, repo: LecturaRepository, umbral_stale: timedelta) -> None:
+    def __init__(self, repo: LecturaRepository) -> None:
         self._repo = repo
-        self._umbral = umbral_stale
 
     async def ejecutar(self, currency: str) -> dict | None:
         fila = await self._repo.tasa_oficial_vigente(currency)
@@ -41,7 +41,9 @@ class ConsultarTasaOficialVigente:
             "rate": fila["rate"],
             "value_date": fila["value_date"].isoformat(),
             "captured_at": captured_at.isoformat(),
-            "stale": datetime.now(UTC) - captured_at > self._umbral,
+            # `stale` sale de la fecha-valor, no de la antigüedad de la captura
+            # (ADR-0022): el viernes por la tarde el BCV publica la del lunes.
+            "stale": oficial_rancia(fila["value_date"], datetime.now(UTC)),
         }
 
 
@@ -120,11 +122,9 @@ class ConsultarIndicadoresVigentes:
     def __init__(
         self,
         repo: LecturaRepository,
-        umbral_stale: timedelta,
         frescura_p2p: timedelta,
     ) -> None:
         self._repo = repo
-        self._umbral = umbral_stale
         self._frescura = frescura_p2p
 
     async def ejecutar(self, currency: str) -> dict | None:
@@ -133,9 +133,10 @@ class ConsultarIndicadoresVigentes:
         if fila_oficial is None:
             return None
         tasa = await self._repo.tasa_oficial_vigente(currency)
-        official_stale = (
-            tasa is None
-            or datetime.now(UTC) - tasa["captured_at"] > self._umbral
+        # Misma regla que el motor (ADR-0022), para que el REST y el análisis no
+        # se contradigan sobre la misma tasa. Sin tasa → rancia.
+        official_stale = oficial_rancia(
+            None if tasa is None else tasa["value_date"], datetime.now(UTC)
         )
         respuesta: dict = {
             "currency": currency,

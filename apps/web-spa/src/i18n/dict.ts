@@ -128,7 +128,7 @@ export const ES = {
   "regimen.claim.confianzaBaja":
     "Demasiados anuncios con precio raro en esta lectura: los avisos están desactivados y el resto se mira con reservas.",
   "regimen.claim.oficialRancia":
-    "La tasa oficial lleva más de 6 horas sin actualizarse, así que no se puede decir qué lado movió la distancia.",
+    "El BCV no ha publicado la tasa de hoy, así que no se puede decir qué lado movió la distancia.",
 
   // Chips de contexto.
   "regimen.chip.frescos": "Datos frescos · {cuando}",
@@ -296,7 +296,7 @@ export const ES = {
   "medidores.escalaEnFormacion":
     "Aún comparando: {muestras} de {minimo} lecturas necesarias en {dias} días.",
   "medidores.oficialStale":
-    "La tasa oficial con la que se calculó esta brecha lleva más de 6 horas sin actualizarse.",
+    "Esta brecha se calculó contra una tasa cuya fecha-valor ya pasó: el BCV no ha publicado la de hoy.",
 
   // -- descomposición --------------------------------------------------------
   // --- Distancia al disparo (RF-6): a cuánto está el aviso más cercano ------
@@ -338,7 +338,7 @@ export const ES = {
   "procedencia.confianzaBaja": "baja · demasiados precios raros",
   "procedencia.oficial": "Tasa oficial del BCV",
   "procedencia.oficialFresca": "vigente",
-  "procedencia.oficialRancia": "más de 6 h sin actualizarse",
+  "procedencia.oficialRancia": "sin tasa para hoy",
   "procedencia.historiaCompra": "Historia de la brecha de compra",
   "procedencia.historiaVenta": "Historia de la brecha de venta",
   "procedencia.historiaCompleta": "{dias} días completos",
@@ -527,7 +527,7 @@ export const ES = {
   "analisis.riesgoLibroUmbral": "Alerta si merchants_pct > 80 %",
   "analisis.riesgoRancidez": "Rancidez de la oficial",
   "analisis.riesgoRancidezTexto":
-    "La brecha se calcula contra la tasa del BCV: pasadas 6 h sin captura se sirve official_stale y las señales se degradan.",
+    "La brecha se calcula contra la tasa del BCV, que rige por fecha-valor: el viernes por la tarde se publica la del lunes. Si esa fecha ya pasó se sirve official_stale y las señales se degradan.",
   "analisis.riesgoRancidezUmbral":
     "El titular marca «oficial stale» cuando pasa",
   "analisis.riesgoUmbrales": "Umbrales sin recalibrar",
@@ -673,7 +673,7 @@ export const EN: Record<Clave, string> = {
   "regimen.claim.confianzaBaja":
     "Too many listings with odd prices in this reading: alerts are switched off and the rest is to be taken with care.",
   "regimen.claim.oficialRancia":
-    "The official rate has not been updated in over 6 hours, so which side moved the distance cannot be told.",
+    "The BCV has not published today's rate, so which side moved the distance cannot be told.",
 
   "regimen.chip.frescos": "Fresh data · {cuando}",
   "regimen.chip.reglas": "{n} rules fired",
@@ -860,7 +860,7 @@ export const EN: Record<Clave, string> = {
   "procedencia.confianzaBaja": "low · too many odd prices",
   "procedencia.oficial": "BCV official rate",
   "procedencia.oficialFresca": "current",
-  "procedencia.oficialRancia": "over 6 h without an update",
+  "procedencia.oficialRancia": "no rate for today",
   "procedencia.historiaCompra": "Buy-side gap history",
   "procedencia.historiaVenta": "Sell-side gap history",
   "procedencia.historiaCompleta": "{dias} full days",
@@ -1031,7 +1031,7 @@ export const EN: Record<Clave, string> = {
   "analisis.riesgoLibroUmbral": "Alert if merchants_pct > 80 %",
   "analisis.riesgoRancidez": "Official rate staleness",
   "analisis.riesgoRancidezTexto":
-    "The gap is computed against the BCV rate: over 6 h without capture it is served as official_stale and the signals degrade.",
+    "The gap is computed against the BCV rate, which applies by value date: on Friday afternoon Monday's rate is published. Once that date has passed it is served as official_stale and the signals degrade.",
   "analisis.riesgoRancidezUmbral":
     "The headline flags official stale when it happens",
   "analisis.riesgoUmbrales": "Uncalibrated thresholds",

@@ -1,14 +1,18 @@
 """Repositorio de indicadores en PostgreSQL + TimescaleDB (ADR-0002).
 
 Esquema en `db/migrations/001_indicators.sql`. Consultas parametrizadas (A05).
-El rol del servicio solo necesita INSERT/SELECT sobre `indicators` y
-`processed_events` (mínimo privilegio, A01).
+Mínimo privilegio del rol (A01): INSERT/SELECT sobre `indicators`,
+`processed_events`, `signals` e `indicator_analysis`, y **SELECT sobre
+`official_rates`** — solo lectura, y solo de `value_date`: la vigencia de la
+tasa la manda su fecha-valor y ese dato no vive en `indicators`
+(`domain/vigencia.py`). El motor no escribe nunca en esa tabla, que es del
+ingestor-bcv.
 """
 
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Sequence
 
@@ -77,6 +81,30 @@ class TimescaleIndicatorRepository:
             as_of=fila["as_of"],
             calc_version=fila["calc_version"],
         )
+
+    async def fecha_valor_oficial(self, moneda: str) -> date | None:
+        """La fecha-valor de la última tasa VÁLIDA.
+
+        `status = 'valid'` no es opcional: una tasa retenida por variación
+        sospechosa (T1, ADR-0007) no rige nada, y tomarla como vigencia haría
+        que una lectura bloqueada por seguridad pareciera dato bueno.
+
+        Se ordena por `value_date` y no por `captured_at`: son dos ejes del
+        modelo bitemporal (ADR-0009) y aquí interesa la vigencia, no cuándo se
+        vio. Un resondeo tardío de una tasa antigua no debe adelantar a la del
+        día siguiente ya capturada.
+        """
+        fila = await self._pool.fetchrow(
+            """
+            SELECT value_date
+            FROM official_rates
+            WHERE currency = $1 AND status = 'valid'
+            ORDER BY value_date DESC, captured_at DESC
+            LIMIT 1
+            """,
+            moneda,
+        )
+        return None if fila is None else fila["value_date"]
 
     async def indicador_asof(
         self, nombre: str, moneda: str, momento

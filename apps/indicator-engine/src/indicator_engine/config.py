@@ -29,9 +29,6 @@ class Settings:
     prefetch: int
     database_url: str
     calc_version: int
-    # Antigüedad de la tasa oficial a partir de la cual la referencia se
-    # considera stale (ADR-0007: 6 h).
-    stale_threshold_hours: int
     schemas_dir: str
     # Ruleset de señales (RF-4); si el archivo no existe, el motor no emite señales.
     signals_ruleset_path: str
@@ -63,7 +60,6 @@ class Settings:
                 "DATABASE_URL", "postgresql://postgres:postgres@127.0.0.1:5433/ves_market"
             ),
             calc_version=int(env.get("CALC_VERSION", "1")),
-            stale_threshold_hours=int(env.get("STALE_THRESHOLD_HOURS", "6")),
             schemas_dir=env.get("SCHEMAS_DIR", str(SCHEMAS_POR_DEFECTO)),
             signals_ruleset_path=env.get(
                 "SIGNALS_RULESET_PATH", str(RULESET_POR_DEFECTO)

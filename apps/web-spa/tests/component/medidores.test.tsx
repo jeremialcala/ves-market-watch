@@ -192,7 +192,7 @@ describe("GaugePanel con análisis", () => {
   it("marca el aviso de tasa oficial rancia SOLO bajo la brecha", () => {
     marketStore.resync({ analisis: FIXTURE_ANALISIS_RESPALDO });
     render(<GaugePanel />);
-    expect(screen.getAllByText(/lleva más de 6 horas sin actualizarse/)).toHaveLength(1);
+    expect(screen.getAllByText(/cuya fecha-valor ya pasó/)).toHaveLength(1);
   });
 });
 

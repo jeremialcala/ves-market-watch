@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Sequence
 
@@ -25,6 +25,8 @@ class InMemoryIndicatorRepository:
         self.procesados: dict[str, str] = {}  # event_id → event_type
         self.senales: list[Senal] = []
         self.analisis: list[tuple[Analisis, dict]] = []
+        # Vigencia de la tasa oficial por moneda (ADR-0022). Vacío = sin tasa.
+        self.fechas_valor: dict[str, date] = {}
 
     async def ya_procesado(self, event_id: str) -> bool:
         return event_id in self.procesados
@@ -37,6 +39,15 @@ class InMemoryIndicatorRepository:
             if indicador.nombre == nombre and indicador.moneda == moneda:
                 return indicador
         return None
+
+    async def fecha_valor_oficial(self, moneda: str) -> date | None:
+        """La fecha-valor que el test haya declarado para esa moneda.
+
+        Por defecto `None` = «no hay tasa», que es rancia. El default NO es
+        vigente a propósito: un test que se olvide de declararla debe ver el
+        caso degradado, no uno cómodo.
+        """
+        return self.fechas_valor.get(moneda)
 
     async def indicador_asof(
         self, nombre: str, moneda: str, momento: datetime

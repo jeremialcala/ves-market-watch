@@ -35,7 +35,6 @@ class Settings:
     # Rate limiting por token (ventana fija de 60 s).
     rate_limit_per_min: int
     # Frescura de la tasa oficial (ADR-0007: 6 h).
-    stale_threshold_hours: int
     # Antigüedad máx. (min) de los indicadores P2P para servirse como vigentes.
     p2p_frescura_min: int
     # Límites WSS (PRD api-streaming / api-contracts).
@@ -71,7 +70,6 @@ class Settings:
                 if origen.strip()
             ),
             rate_limit_per_min=int(env.get("RATE_LIMIT_PER_MIN", "120")),
-            stale_threshold_hours=int(env.get("STALE_THRESHOLD_HOURS", "6")),
             p2p_frescura_min=int(env.get("P2P_FRESCURA_MIN", "20")),
             wss_max_conexiones=int(env.get("WSS_MAX_CONEXIONES", "5")),
             wss_max_suscripciones=int(env.get("WSS_MAX_SUSCRIPCIONES", "10")),
