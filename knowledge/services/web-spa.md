@@ -111,8 +111,9 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
 - **El mapa de calor mira el lado VENTA** (2026-08-01): es el que tiene historia
   real (242 días derivados) frente a los ~12 del de compra, con el que las dos
   primeras filas del mapa salían vacías. El rótulo lo dice, porque con dos series
-  en la app callarlo sería ambiguo. La **sparkline sigue en compra**: vive en una
-  tarjeta titulada «lado buy» y cambiarla la contradiría.
+  en la app callarlo sería ambiguo. (La sparkline se resolvió distinto —pinta los
+  dos lados— porque vive en una tarjeta cuyo titular y cifra son de compra, y
+  cambiarla sola la habría contradicho.)
 - De paso desapareció la petición diaria de 90 días: la consumía la descomposición
   antes de pasar a `gap_history`, y se disparaba **una vez por componente** que
   usara el hook —una paginación de 90 días cada una— sin que nadie la leyera.

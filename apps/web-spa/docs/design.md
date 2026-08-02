@@ -201,9 +201,10 @@ Esa suite es la que defiende la frontera cuando alguien reescriba una frase.
   > 30 % outliers, brecha lado buy), señales con tope de 50; el resync REST es
   autoritativo. `p2p.snapshot` no toca la UI: invalida la profundidad (refetch).
 - **`components/`/`views/`**: cuatro vistas — **dashboard** (titular de la brecha
-  como cifra héroe con su sparkline de 24 h, panel de instrumentos, descomposición,
-  mapa de calor, referencia P2P, microestructura, tasas oficiales, cronología de
-  señales con la evidencia desplegable **en línea** y profundidad), **análisis**
+  como cifra héroe con su sparkline de 24 h **de los dos lados**, panel de
+  instrumentos, descomposición, mapa de calor **del lado venta**, referencia P2P,
+  microestructura, tasas oficiales, cronología de señales con la evidencia
+  desplegable **en línea** y profundidad), **análisis**
   (ADR-0018: escenarios y riesgos sellados como demo; presión de liquidez real),
   **histórico** con Recharts, e **intradía** (2026-07-29, RF-7): parrilla de small
   multiples con todos los indicadores del día operativo VET agrupados por oficial /

@@ -123,6 +123,7 @@ gitGraph
     commit id: "a0c26d3"
     commit id: "5720bf4"
     commit id: "df1c2a8"
+    commit id: "2de8b70"
 ```
 
 ### Estado actual de las ramas
@@ -130,7 +131,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `df1c2a8` | 2026-08-01 | 89 |
+| `develop` | `2de8b70` | 2026-08-01 | 90 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -146,6 +147,7 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `2de8b70` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `df1c2a8` | commit | — | Jeremi Alcala | 2026-08-01 | feat(web-spa): la sparkline de 24 h pinta los dos lados con escala compartida |
 | `5720bf4` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `a0c26d3` | commit | — | Jeremi Alcala | 2026-08-01 | feat(web-spa): el mapa de calor mira el lado venta, que es el que tiene historia |

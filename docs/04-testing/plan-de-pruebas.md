@@ -404,7 +404,7 @@ cierre de la columna «Verificación fase 04-testing».
   contract tests del productor en verde (`contract/test_signal_event_schema.py`).
 - **Umbrales de señales (HITL):** los valores iniciales están fijados en `config/senales.v1.yaml`;
   su recalibración requiere decisión humana con datos de producción.
-- ~~`api-gateway` sin código~~ **Resuelto:** implementado 2026-07-26 con 90 tests (§5.4);
+- ~~`api-gateway` sin código~~ **Resuelto:** implementado 2026-07-26 con 90 tests, hoy 103 (§5.4);
   queda el e2e autenticado en vivo (client M2M de prueba — HITL).
 - **Secret store concreto:** definido para fase 05; los tests de rotación (T6) se afinan entonces.
 - **Pipeline CI aún no presente en el repo:** los gates T6/T8 y la matriz de la sección 11 son
