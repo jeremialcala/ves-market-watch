@@ -42,18 +42,41 @@ export function extremos(
  * serie (como el diseño): es una sparkline, no un gráfico con escala absoluta,
  * y por eso siempre va acompañada de sus extremos escritos.
  */
+export interface EscalaY {
+  min: number;
+  max: number;
+}
+
+/**
+ * Extremos comunes a varias series, para dibujarlas en la MISMA escala.
+ *
+ * Sin esto cada polilínea se escala con sus propios extremos y dos series en el
+ * mismo SVG se vuelven engañosas: una serie de 12,7 % puede quedar dibujada por
+ * encima de otra de 13,4 %.
+ */
+export function escalaComun(...series: readonly Punto[][]): EscalaY | null {
+  const valores = series.flat().map((p) => toChartNumber(p.valor));
+  if (valores.length === 0) {
+    return null;
+  }
+  return { min: Math.min(...valores), max: Math.max(...valores) };
+}
+
 export function puntosPolilinea(
   puntos: readonly Punto[],
   ancho: number,
   alto: number,
   pad: number,
+  /** Escala impuesta. Sin ella cada serie usa la suya, que es lo correcto
+   *  cuando va sola en su SVG. */
+  escala?: EscalaY | null,
 ): string {
   if (puntos.length === 0) {
     return "";
   }
   const valores = puntos.map((p) => toChartNumber(p.valor));
-  const min = Math.min(...valores);
-  const max = Math.max(...valores);
+  const min = escala?.min ?? Math.min(...valores);
+  const max = escala?.max ?? Math.max(...valores);
   const span = max - min || 1;
   const divisor = puntos.length > 1 ? puntos.length - 1 : 1;
   return valores

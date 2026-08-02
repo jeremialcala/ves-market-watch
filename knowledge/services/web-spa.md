@@ -101,6 +101,13 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   número.
 - Antes de todo esto, tres tarjetas llevaban días en blanco por una carrera de
   efectos de React; ver el log del 2026-08-01.
+- **La sparkline de 24 h pinta LOS DOS lados** (2026-08-01): la de compra es la
+  del titular y la cifra héroe; la de venta es la que tiene historia real y es,
+  además, el lado donde el usuario compra dólares. Las dos comparten **escala Y**
+  (`escalaComun`): sin eso cada polilínea se normaliza con sus propios extremos y
+  una serie de 12,2 % podría dibujarse por encima de otra de 14,8 %. Se distinguen
+  por **forma además de color** —continua contra discontinua—, y la leyenda repite
+  esa forma.
 - **El mapa de calor mira el lado VENTA** (2026-08-01): es el que tiene historia
   real (242 días derivados) frente a los ~12 del de compra, con el que las dos
   primeras filas del mapa salían vacías. El rótulo lo dice, porque con dos series
@@ -131,7 +138,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   y obliga a volver a pasar el validador.
 
 ## Verificación
-- **261 tests** (unit/component/contract con MSW y WS mock) — **87,0 % de ramas**
+- **269 tests** (unit/component/contract con MSW y WS mock) — **87,6 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

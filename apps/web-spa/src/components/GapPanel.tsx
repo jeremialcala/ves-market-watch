@@ -2,7 +2,12 @@ import { Pill } from "../ds/components";
 import { useI18n } from "../i18n/contexto";
 import { formatDecimal, formatPct } from "../lib/decimal";
 import { relativo, UMBRAL_P2P_MS } from "../lib/freshness";
-import { areaPolilinea, extremos, puntosPolilinea } from "../lib/series";
+import {
+  areaPolilinea,
+  escalaComun,
+  extremos,
+  puntosPolilinea,
+} from "../lib/series";
 import { useMarket } from "../state/marketStore";
 import { useHistorialBrecha } from "../state/useHistorialBrecha";
 import { FreshnessBadge } from "./FreshnessBadge";
@@ -20,7 +25,12 @@ const BUCKETS_24H = 24;
 export function GapPanel() {
   const { t, idioma } = useI18n();
   const { indicadores, tasas, p2p } = useMarket();
-  const { horario, cargando } = useHistorialBrecha();
+  // Las DOS series: la de compra es la del titular y la cifra héroe; la de
+  // venta es la que tiene historia real (242 días derivados) y es, además, el
+  // lado donde el usuario compra dólares. El hook comparte la petición si otro
+  // componente ya pidió el mismo lado.
+  const { horario: compra, cargando } = useHistorialBrecha("buy");
+  const { horario: venta } = useHistorialBrecha("sell");
 
   if (indicadores === null) {
     return (
@@ -32,9 +42,17 @@ export function GapPanel() {
   }
 
   const { gap_pct, gap_abs, spread_pct, official_stale } = indicadores;
-  const ventana = horario.slice(-BUCKETS_24H);
-  const linea = puntosPolilinea(ventana, ANCHO, ALTO, 8);
-  const rango = extremos(ventana);
+  const ventanaCompra = compra.slice(-BUCKETS_24H);
+  const ventanaVenta = venta.slice(-BUCKETS_24H);
+
+  // Escala COMPARTIDA: sin ella cada polilínea usa sus propios extremos y las
+  // dos líneas se vuelven engañosas — la de venta, más baja, podría dibujarse
+  // por encima de la de compra.
+  const escala = escalaComun(ventanaCompra, ventanaVenta);
+  const lineaCompra = puntosPolilinea(ventanaCompra, ANCHO, ALTO, 8, escala);
+  const lineaVenta = puntosPolilinea(ventanaVenta, ANCHO, ALTO, 8, escala);
+  const rangoCompra = extremos(ventanaCompra);
+  const rangoVenta = extremos(ventanaVenta);
   const oficialUsd = tasas["USD"];
 
   return (
@@ -85,7 +103,7 @@ export function GapPanel() {
       )}
 
       <div style={{ marginTop: "22px" }}>
-        {linea === "" ? (
+        {lineaCompra === "" && lineaVenta === "" ? (
           <NoDataState
             detalle={cargando ? t("generico.cargando") : t("brecha.sinSerie")}
           />
@@ -98,27 +116,52 @@ export function GapPanel() {
               role="img"
               aria-label={t("brecha.ventana24h")}
             >
-              <polyline
-                points={areaPolilinea(linea, ANCHO, ALTO)}
-                fill="var(--teal-tint)"
-                stroke="none"
-              />
-              <polyline
-                points={linea}
-                fill="none"
-                stroke="var(--series-buy)"
-                strokeWidth="2.2"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              />
+              {lineaCompra !== "" && (
+                <polyline
+                  points={areaPolilinea(lineaCompra, ANCHO, ALTO)}
+                  fill="var(--teal-tint)"
+                  stroke="none"
+                />
+              )}
+              {/* Venta primero: va detrás, para que la de compra —la del
+                  titular— quede encima si se cruzan. */}
+              {lineaVenta !== "" && (
+                <polyline
+                  points={lineaVenta}
+                  fill="none"
+                  stroke="var(--series-sell)"
+                  strokeWidth="1.8"
+                  strokeDasharray="5 4"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+              )}
+              {lineaCompra !== "" && (
+                <polyline
+                  points={lineaCompra}
+                  fill="none"
+                  stroke="var(--series-buy)"
+                  strokeWidth="2.2"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+              )}
             </svg>
             <div className="vmw-spark__pie">
               <span>{t("brecha.ventana24h")}</span>
-              {rango !== null ? (
-                <span>
-                  {t("brecha.minMax", {
-                    min: formatPct(rango.min, 2, idioma),
-                    max: formatPct(rango.max, 2, idioma),
+              {rangoCompra !== null ? (
+                <span className="vmw-spark__serie vmw-spark__serie--compra">
+                  {t("brecha.rangoCompra", {
+                    min: formatPct(rangoCompra.min, 2, idioma),
+                    max: formatPct(rangoCompra.max, 2, idioma),
+                  })}
+                </span>
+              ) : null}
+              {rangoVenta !== null ? (
+                <span className="vmw-spark__serie vmw-spark__serie--venta">
+                  {t("brecha.rangoVenta", {
+                    min: formatPct(rangoVenta.min, 2, idioma),
+                    max: formatPct(rangoVenta.max, 2, idioma),
                   })}
                 </span>
               ) : null}

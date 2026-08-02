@@ -1079,3 +1079,36 @@ body {
   margin-top: 12px;
   font-size: var(--fs-meta);
 }
+
+/* --- Sparkline con dos series (RF-2) ------------------------------------ */
+
+/* La leyenda va pegada a su color: es lo que distingue las dos líneas. El
+   punto se dibuja con el mismo token que el trazo. */
+.vmw-spark__serie {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.vmw-spark__serie::before {
+  content: "";
+  width: 10px;
+  height: 2px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.vmw-spark__serie--compra::before {
+  background: var(--series-buy);
+}
+
+/* Discontinua, igual que el trazo: quien no distinga los colores sigue
+   diferenciando las series por la forma. */
+.vmw-spark__serie--venta::before {
+  background: repeating-linear-gradient(
+    to right,
+    var(--series-sell) 0 4px,
+    transparent 4px 7px
+  );
+}

@@ -46,27 +46,53 @@ function aPuntos(filas: { as_of: string; value: string }[]): Punto[] {
     .sort((a, b) => a.t - b.t);
 }
 
+/**
+ * Peticiones EN VUELO, para que dos componentes que piden el mismo lado en el
+ * mismo commit compartan una sola llamada.
+ *
+ * Es deduplicación, no cache: la entrada se borra al resolverse. Un cache de
+ * verdad serviría datos viejos al volver a montar la vista, y esta serie se pide
+ * precisamente para tener el contexto reciente.
+ */
+const enVuelo = new Map<LadoBrecha, Promise<Punto[] | null>>();
+
+function pedirSerie(lado: LadoBrecha): Promise<Punto[] | null> {
+  const pendiente = enVuelo.get(lado);
+  if (pendiente !== undefined) {
+    return pendiente;
+  }
+  const hasta = new Date();
+  const desde = new Date(hasta.getTime() - DIAS_CALOR * 86_400_000);
+  const promesa = historialIndicadores(
+    desde,
+    hasta,
+    "1h",
+    { indicador: INDICADOR_BRECHA[lado], moneda: MONEDA_P2P },
+    // Sin `signal`: la petición la comparten varios componentes, así que el
+    // desmontaje de uno no puede cancelársela a los demás. Cada uno ignora el
+    // resultado si su propio `signal` ya abortó.
+    {},
+  )
+    .then(aPuntos)
+    .catch(() => null)
+    .finally(() => enVuelo.delete(lado));
+  enVuelo.set(lado, promesa);
+  return promesa;
+}
+
 export function useHistorialBrecha(lado: LadoBrecha = "buy"): HistorialBrecha {
   const [estado, setEstado] = useState<HistorialBrecha>(VACIO);
 
   useEffect(() => {
     const control = new AbortController();
-    const hasta = new Date();
-    const desde = new Date(hasta.getTime() - DIAS_CALOR * 86_400_000);
 
     void (async () => {
-      const horario = await historialIndicadores(
-        desde,
-        hasta,
-        "1h",
-        { indicador: INDICADOR_BRECHA[lado], moneda: MONEDA_P2P },
-        { signal: control.signal },
-      ).catch(() => null);
+      const horario = await pedirSerie(lado);
       if (control.signal.aborted) {
         return;
       }
       setEstado({
-        horario: horario === null ? [] : aPuntos(horario),
+        horario: horario ?? [],
         cargando: false,
         fallo: horario === null,
       });

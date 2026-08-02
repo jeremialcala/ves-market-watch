@@ -7,6 +7,22 @@ timestamp: 2026-08-01T12:00:00Z
 
 # Log
 
+## 2026-08-01 (noche) — La sparkline pinta los dos lados, con escala compartida
+- La sparkline vive en la tarjeta héroe, que es toda de compra (titular, cifra y
+  VWAP). Cambiarla sola habría puesto la línea a contradecir el número de encima,
+  así que pinta **las dos series**: compra —la del titular— y venta.
+- **El punto de corrección era la escala.** `puntosPolilinea` normalizaba con los
+  extremos de SUS puntos, así que dos series en el mismo SVG se estiraban cada una
+  a todo el alto: la de venta (12,2 %) habría quedado dibujada al mismo nivel que
+  la de compra (14,8 %), o por encima. `escalaComun` impone extremos comunes, y hay
+  un test que compara las Y de las dos polilíneas.
+- Se distinguen por **forma además de color** (continua contra discontinua) y la
+  leyenda repite la forma: quien no distinga los colores sigue leyendo el gráfico.
+- **Deduplicación de peticiones en vuelo**: tres componentes piden ahora series de
+  brecha y dos coinciden en el lado. Se comparte la promesa mientras está pendiente
+  y se borra al resolverse — es dedupe, no cache: un cache serviría datos viejos al
+  volver a montar la vista, y esta serie existe para dar contexto reciente.
+
 ## 2026-08-01 (noche) — El mapa de calor pasa al lado venta
 - Con el lado compra las dos primeras filas del mapa (14 días) salían vacías: esa
   serie arranca el 2026-07-20. La de venta tiene 242 días derivados, así que el mapa

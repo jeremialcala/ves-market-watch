@@ -20,6 +20,7 @@ import {
 } from "vitest";
 
 import { GapHeatmap } from "../../src/components/GapHeatmap";
+import { GapPanel } from "../../src/components/GapPanel";
 import { MarketRegimeCard } from "../../src/components/MarketRegimeCard";
 import { config } from "../../src/config";
 import { marketStore } from "../../src/state/marketStore";
@@ -113,6 +114,86 @@ describe("MarketRegimeCard", () => {
     expect(screen.queryByText("demo · sin fuente")).toBeNull();
     expect(screen.getByText(/sin lectura del mercado/i)).toBeTruthy();
     expect(screen.getByText("0,50 %")).toBeTruthy();
+  });
+});
+
+/** Serie horaria con un valor fijo, para distinguir las dos líneas por su rango. */
+function serieConstante(horas: number, valor: string) {
+  const ahora = Date.now();
+  return Array.from({ length: horas }, (_, i) => ({
+    as_of: new Date(ahora - i * 3_600_000).toISOString(),
+    indicator: "p2p_brecha_pct_buy",
+    currency: "VES",
+    value: valor,
+    calc_version: 1,
+  }));
+}
+
+/** Responde distinto según el indicador pedido. */
+function conHistorialPorLado(compra: string, venta: string) {
+  peticiones.length = 0;
+  servidor.use(
+    http.get(`${BASE}/indicators/history`, ({ request }) => {
+      const url = new URL(request.url);
+      const indicador = url.searchParams.get("indicator");
+      peticiones.push({ indicador, intervalo: url.searchParams.get("interval") });
+      const filas = serieConstante(30, indicador?.endsWith("_sell") ? venta : compra);
+      return HttpResponse.json({
+        data: filas,
+        pagination: { page: 1, page_size: 500, total_items: filas.length, has_more: false },
+        interval: "1h",
+      });
+    }),
+  );
+}
+
+describe("GapPanel · sparkline", () => {
+  it("pinta LAS DOS series con su leyenda", async () => {
+    conHistorialPorLado("14.25", "12.75");
+    marketStore.resync({ indicadores: FIXTURE_INDICADORES });
+    render(<GapPanel />);
+
+    await waitFor(() =>
+      expect(document.querySelectorAll(".vmw-spark polyline").length).toBe(3),
+    );
+    // Área + línea de venta + línea de compra.
+    expect(screen.getByText("compra 14,25 %–14,25 %")).toBeTruthy();
+    expect(screen.getByText("venta 12,75 %–12,75 %")).toBeTruthy();
+  });
+
+  it("pide un lado a cada serie y NADA MÁS", async () => {
+    conHistorialPorLado("14.25", "12.75");
+    marketStore.resync({ indicadores: FIXTURE_INDICADORES });
+    render(<GapPanel />);
+
+    await waitFor(() => expect(peticiones.length).toBe(2));
+    expect(peticiones.map((p) => p.indicador).sort()).toEqual([
+      "p2p_brecha_pct_buy",
+      "p2p_brecha_pct_sell",
+    ]);
+    expect(peticiones.every((p) => p.intervalo === "1h")).toBe(true);
+  });
+
+  it("con un solo lado disponible pinta ese y no finge el otro", async () => {
+    peticiones.length = 0;
+    servidor.use(
+      http.get(`${BASE}/indicators/history`, ({ request }) => {
+        const url = new URL(request.url);
+        const indicador = url.searchParams.get("indicator");
+        peticiones.push({ indicador, intervalo: url.searchParams.get("interval") });
+        const filas = indicador?.endsWith("_sell") ? [] : serieConstante(30, "14.25");
+        return HttpResponse.json({
+          data: filas,
+          pagination: { page: 1, page_size: 500, total_items: filas.length, has_more: false },
+          interval: "1h",
+        });
+      }),
+    );
+    marketStore.resync({ indicadores: FIXTURE_INDICADORES });
+    render(<GapPanel />);
+
+    await waitFor(() => expect(screen.getByText(/compra 14,25/)).toBeTruthy());
+    expect(screen.queryByText(/venta /)).toBeNull();
   });
 });
 

@@ -150,7 +150,9 @@ login y el estado de salud son visibles sin sesión.
   El **mapa de calor** pasa a mirar el lado **venta**, que es el que tiene historia
   real; con el de compra las primeras filas quedaban vacías. Cada vista que muestre
   una serie de brecha **declara qué lado mira**: con dos series en la app, callarlo
-  es ambiguo.
+  es ambiguo. La **sparkline de 24 h** pinta los dos lados,
+  con **escala Y compartida** —sin ella cada serie se normaliza sola y la más baja
+  puede quedar dibujada por encima— y distinguibles por **forma además de color**.
 
 - **RF-5 ampliado — bloques sin fuente**: todo bloque que el diseño pida y la
   plataforma no calcule debe distinguirse del dato servido **a simple vista**

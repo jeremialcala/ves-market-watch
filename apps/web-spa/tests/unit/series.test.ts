@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   areaPolilinea,
   colorCalor,
+  escalaComun,
   PASOS_CALOR,
   extremos,
   parrillaCalor,
@@ -125,5 +126,59 @@ describe("porcentajeDeMaximo", () => {
 
   it("con máximo cero no hay porcentaje", () => {
     expect(porcentajeDeMaximo("50", "0")).toBe("0%");
+  });
+});
+
+// -- escala compartida entre series ------------------------------------------
+
+describe("escala compartida", () => {
+  const compra = [
+    { t: 1, valor: "13.0" },
+    { t: 2, valor: "14.0" },
+  ];
+  const venta = [
+    { t: 1, valor: "12.0" },
+    { t: 2, valor: "12.5" },
+  ];
+
+  it("toma los extremos de TODAS las series", () => {
+    expect(escalaComun(compra, venta)).toEqual({ min: 12, max: 14 });
+  });
+
+  it("sin puntos no hay escala que imponer", () => {
+    expect(escalaComun([], [])).toBeNull();
+  });
+
+  it("con escala común, la serie MÁS BAJA queda dibujada más abajo", () => {
+    /*
+     * El defecto que esto evita: `puntosPolilinea` escala con los extremos de
+     * SUS puntos, así que dos series en el mismo SVG se normalizan cada una a
+     * todo el alto. La de venta (12,0–12,5 %) acabaría dibujada al mismo nivel
+     * que la de compra (13,0–14,0 %), o incluso por encima.
+     */
+    const escala = escalaComun(compra, venta);
+    const yDe = (linea: string) =>
+      linea.split(" ").map((par) => Number(par.split(",")[1]));
+
+    const yCompra = yDe(puntosPolilinea(compra, 100, 100, 8, escala));
+    const yVenta = yDe(puntosPolilinea(venta, 100, 100, 8, escala));
+
+    // En SVG, más Y = más abajo. Toda la venta va por debajo de toda la compra.
+    expect(Math.min(...yVenta)).toBeGreaterThan(Math.max(...yCompra));
+  });
+
+  it("sin escala común cada serie se normaliza sola, y por eso engaña", () => {
+    const yDe = (linea: string) =>
+      linea.split(" ").map((par) => Number(par.split(",")[1]));
+    const yCompra = yDe(puntosPolilinea(compra, 100, 100, 8));
+    const yVenta = yDe(puntosPolilinea(venta, 100, 100, 8));
+    // Idénticas pese a estar más de un punto porcentual separadas.
+    expect(yVenta).toEqual(yCompra);
+  });
+
+  it("sin escala explícita el comportamiento previo no cambia", () => {
+    expect(puntosPolilinea(compra, 100, 100, 8)).toBe(
+      puntosPolilinea(compra, 100, 100, 8, null),
+    );
   });
 });

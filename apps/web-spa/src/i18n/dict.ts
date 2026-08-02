@@ -68,8 +68,13 @@ export const ES = {
   "brecha.spread": "Spread BUY↔SELL: {valor}",
   "brecha.oficialPar": "oficial USD/VES {valor}",
   "brecha.vwap": "P2P VWAP {valor}",
-  "brecha.ventana24h": "24 h · brecha lado buy",
+  "brecha.ventana24h": "24 h · los dos lados",
+  // `minMax` la sigue usando la parrilla intradía, que pinta UNA serie.
   "brecha.minMax": "mín {min} · máx {max}",
+  // La leyenda ES la etiqueta de cada línea: sin ella dos trazos en el mismo
+  // gráfico no se distinguen, y uno de los dos no es el del titular.
+  "brecha.rangoCompra": "compra {min}–{max}",
+  "brecha.rangoVenta": "venta {min}–{max}",
   "brecha.sinSerie": "Sin serie de las últimas 24 h.",
 
   // -- lectura del mercado ---------------------------------------------------
@@ -559,8 +564,10 @@ export const EN: Record<Clave, string> = {
   "brecha.spread": "Spread BUY↔SELL: {valor}",
   "brecha.oficialPar": "official USD/VES {valor}",
   "brecha.vwap": "P2P VWAP {valor}",
-  "brecha.ventana24h": "24 h · buy-side gap",
+  "brecha.ventana24h": "24 h · both sides",
   "brecha.minMax": "min {min} · max {max}",
+  "brecha.rangoCompra": "buy {min}–{max}",
+  "brecha.rangoVenta": "sell {min}–{max}",
   "brecha.sinSerie": "No series for the last 24 h.",
 
   "regimen.titulo": "Today's reading",
