@@ -1,7 +1,7 @@
 # Historial de implementación — VES Market Watch
 
 * **Estado:** review (documentación viva — regenerada por script, no editar a mano)
-* **Fecha:** 2026-08-01
+* **Fecha:** 2026-08-02
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
 * **Versión:** 0.4.0
@@ -129,6 +129,8 @@ gitGraph
     commit id: "d601b39"
     commit id: "85c492a"
     commit id: "31eb62b"
+    commit id: "a8b8c02"
+    commit id: "603705d"
 ```
 
 ### Estado actual de las ramas
@@ -136,7 +138,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `31eb62b` | 2026-08-01 | 95 |
+| `develop` | `603705d` | 2026-08-02 | 97 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -152,6 +154,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `603705d` | commit | — | Jeremi Alcala | 2026-08-02 | feat(web-spa): el mapa de calor gana un umbral visible en el p90 |
+| `a8b8c02` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `31eb62b` | commit | — | Jeremi Alcala | 2026-08-01 | style(web-spa): distribución del dashboard según el prototipo |
 | `85c492a` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `d601b39` | commit | — | Jeremi Alcala | 2026-08-01 | feat(web-spa): dashboard según el prototipo Criterio |
