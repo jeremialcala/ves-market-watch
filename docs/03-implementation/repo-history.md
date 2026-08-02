@@ -125,6 +125,8 @@ gitGraph
     commit id: "df1c2a8"
     commit id: "2de8b70"
     commit id: "d1682ac"
+    commit id: "6190faa"
+    commit id: "d601b39"
 ```
 
 ### Estado actual de las ramas
@@ -132,7 +134,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `d1682ac` | 2026-08-01 | 91 |
+| `develop` | `d601b39` | 2026-08-01 | 93 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -148,6 +150,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `d601b39` | commit | — | Jeremi Alcala | 2026-08-01 | feat(web-spa): dashboard según el prototipo Criterio |
+| `6190faa` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `d1682ac` | commit | — | Jeremi Alcala | 2026-08-01 | docs: barrido de coherencia y repo-history |
 | `2de8b70` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `df1c2a8` | commit | — | Jeremi Alcala | 2026-08-01 | feat(web-spa): la sparkline de 24 h pinta los dos lados con escala compartida |
