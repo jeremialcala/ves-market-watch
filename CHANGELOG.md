@@ -106,6 +106,23 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **La descomposición muestra las piernas del movimiento, no una descripción de
+  la barra (2026-08-02).** Bajo la barra van ahora `Oficial 6 h` · `P2P 6 h` ·
+  `Neto brecha` en VES absolutos, desde el claim `atribucion` del motor
+  (`{responsable, paralelo, oficial}`), que existía sin cablear.
+  - **VES y no puntos porcentuales**: `Δbrecha = Δparalelo − Δoficial` solo es
+    exacta en VES. El neto se resta con BigInt porque es una identidad — pedirlo
+    aparte permitiría que las tres cifras no cuadraran en pantalla.
+  - **La pierna destacada la elige el motor** (`responsable`), no el panel.
+  - Sin claim de atribución no se inventan piernas: el motor la calla con la
+    oficial rancia o la brecha quieta. El respaldo explica **las dos cosas**, qué
+    es la barra y por qué no hay reparto: quitar la descripción sin más dejaba la
+    barra sin explicar cada vez que la oficial vencía, que es todos los fines de
+    semana.
+  - El **máximo** de la comparativa pasa a coral, el mismo color que el exceso del
+    mapa de calor: responde la misma pregunta, así que se lee igual.
+  - `P2P VWAP` → **`P2P buy VWAP`**: con dos lados en la app, callar cuál era
+    dejaba la cifra ambigua.
 - **El mapa de calor de la brecha gana un umbral visible (2026-08-02).** La rampa
   pasa a **teal** y cubre del p10 al p90; el **coral marca solo lo que supera el
   p90**. Son dos codificaciones para dos preguntas: la rampa dice *cuánta* brecha,

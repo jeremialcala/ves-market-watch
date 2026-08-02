@@ -237,3 +237,114 @@ describe("Descomposición de la brecha", () => {
     expect(screen.getByText("90-day maximum")).toBeTruthy();
   });
 });
+
+/** El claim de atribución con las dos piernas que quiera el caso. */
+function conAtribucion(oficial: string, paralelo: string, responsable: string) {
+  conHistoria(LADOS, [
+    { code: "brecha", data: { direccion: "ampliando", delta_pp: "2.30", horas: "6" } },
+    { code: "atribucion", data: { responsable, paralelo, oficial } },
+  ]);
+}
+
+describe("Las piernas del movimiento", () => {
+  it("muestra las dos piernas y su neto, en VES y con signo", () => {
+    // Las cifras del prototipo: la oficial sube 26,90 y el paralelo 7,60.
+    conAtribucion("26.90", "7.60", "oficial");
+    render(<GapDecomposition />);
+
+    expect(screen.getByText("Oficial 6 h")).toBeTruthy();
+    expect(screen.getByText("P2P 6 h")).toBeTruthy();
+    expect(screen.getByText("Neto brecha")).toBeTruthy();
+    // El «+» se escribe: sin él, «26,90» y «−19,30» no se leen como el mismo eje.
+    expect(screen.getByText("+26,90 VES")).toBeTruthy();
+    expect(screen.getByText("+7,60 VES")).toBeTruthy();
+  });
+
+  it("el NETO es la identidad Δparalelo − Δoficial, no una tercera medición", () => {
+    /*
+     * 7,60 − 26,90 = −19,30. Se resta aquí porque es una IDENTIDAD: pedirla
+     * aparte abriría la puerta a que las tres cifras no cuadren en pantalla.
+     * Y va en VES porque es la única unidad donde la identidad es exacta — en
+     * puntos porcentuales las dos piernas no suman la brecha.
+     */
+    conAtribucion("26.90", "7.60", "oficial");
+    render(<GapDecomposition />);
+    expect(screen.getByText("-19,30 VES")).toBeTruthy();
+  });
+
+  it("resta sin pasar por float", () => {
+    // 0,1 − 0,3 da −0.19999999999999998 en float64; el neto tiene que ser exacto.
+    conAtribucion("0.3", "0.1", "ambos");
+    render(<GapDecomposition />);
+    expect(screen.getByText("-0,2 VES")).toBeTruthy();
+  });
+
+  it("destaca la pierna que el MOTOR señala como responsable", () => {
+    conAtribucion("26.90", "7.60", "oficial");
+    render(<GapDecomposition />);
+
+    const destacadas = [
+      ...document.querySelectorAll("[data-responsable='si']"),
+    ].map((n) => n.textContent);
+    expect(destacadas).toEqual(["+26,90 VES"]);
+  });
+
+  it("con responsable «ambos» destaca las dos piernas, no el neto", () => {
+    conAtribucion("26.90", "7.60", "ambos");
+    render(<GapDecomposition />);
+
+    const destacadas = [
+      ...document.querySelectorAll("[data-responsable='si']"),
+    ].map((n) => n.textContent);
+    expect(destacadas).toEqual(["+26,90 VES", "+7,60 VES"]);
+  });
+
+  it("sin claim de atribución NO inventa piernas: dice qué falta", () => {
+    /*
+     * El motor calla la atribución a propósito cuando la oficial está rancia o
+     * la brecha no se movió (ADR-0021). Rellenar ese hueco con la explicación
+     * genérica de antes daba a entender que el reparto seguía vigente.
+     */
+    conHistoria(LADOS, [{ code: "oficial_rancia", data: {} }]);
+    render(<GapDecomposition />);
+
+    expect(screen.queryByText(/Neto brecha/)).toBeNull();
+    expect(
+      screen.getByText(/Qué pierna la movió no se puede decir ahora mismo/),
+    ).toBeTruthy();
+    // Y la barra NO se queda sin explicar: el respaldo sigue diciendo qué es.
+    expect(
+      screen.getByText(/reparte el precio P2P de compra entre su pierna oficial/),
+    ).toBeTruthy();
+  });
+
+  it("declara el LADO del VWAP que reparte", () => {
+    // Con dos lados en la app, «P2P VWAP» a secas dejaba la cifra ambigua.
+    conAtribucion("26.90", "7.60", "oficial");
+    render(<GapDecomposition />);
+    expect(screen.getByText(/P2P buy VWAP/)).toBeTruthy();
+  });
+
+  it("el MÁXIMO va en coral, igual que el extremo del mapa de calor", () => {
+    /*
+     * Misma pregunta, mismo color: «¿esto es lo alto que llega?». Si el máximo
+     * fuese teal como las medias, las dos tarjetas dejarían de leerse juntas.
+     */
+    conHistoria();
+    render(<GapDecomposition />);
+
+    const rellenos = [
+      ...document.querySelectorAll<HTMLElement>(".vmw-barra__relleno"),
+    ].map((n) => n.style.background);
+    expect(rellenos.filter((c) => c.includes("--coral"))).toHaveLength(2); // uno por lado
+    expect(rellenos.filter((c) => c.includes("--series-buy"))).toHaveLength(2); // los dos «Hoy»
+  });
+
+  it("en inglés", () => {
+    conAtribucion("26.90", "7.60", "oficial");
+    render(<GapDecomposition />, { idioma: "en" });
+    expect(screen.getByText("Official 6 h")).toBeTruthy();
+    expect(screen.getByText("Net gap")).toBeTruthy();
+    expect(screen.getByText("-19.30 VES")).toBeTruthy();
+  });
+});

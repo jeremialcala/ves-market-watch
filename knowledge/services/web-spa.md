@@ -164,6 +164,30 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
 - `tests/unit/paleta.test.ts` fija los valores medidos: cambiarlos rompe el test
   y obliga a volver a pasar el validador.
 
+## Las piernas del movimiento bajo la barra (2026-08-02)
+- La descripción genérica de la barra deja paso a **las dos piernas y su neto**,
+  en VES absolutos: `Oficial 6 h` · `P2P 6 h` · `Neto brecha`. Salen del claim
+  `atribucion` del motor (`{responsable, paralelo, oficial}`), que ya existía sin
+  cablear.
+- **VES y no puntos porcentuales**: `Δbrecha = Δparalelo − Δoficial` es exacta
+  solo en VES. El neto se resta en el cliente con BigInt porque es una IDENTIDAD;
+  pedirlo aparte abriría la puerta a que las tres cifras no cuadren en pantalla.
+- La ventana sale del claim `brecha` (`horas`), no del de atribución, que no la
+  repite. El motor calcula las tres cifras de un mismo `Variaciones` con una sola
+  `ventana_horas`, así que no pueden discrepar.
+- **La pierna destacada la elige el motor** (`responsable`), no el panel — la
+  misma regla que obligó a `RuleDistance` a usar `summary.closest_rule`.
+- Sin claim de atribución no se inventan piernas: el motor la calla a propósito
+  con la oficial rancia o la brecha quieta. El respaldo dice **las dos cosas** —
+  qué es la barra y por qué no hay reparto—, porque quitar la descripción sin más
+  dejaba la barra sin explicar en cuanto la oficial vencía (fines de semana,
+  siempre).
+- El **máximo** de la comparativa pasa a coral: el mismo color que el exceso del
+  mapa de calor, porque responde la misma pregunta —«¿esto es lo alto que
+  llega?»— y así las dos tarjetas se leen juntas.
+- `P2P VWAP` pasa a **`P2P buy VWAP`**: con dos lados en la app, callarlo dejaba
+  la cifra ambigua.
+
 ## Umbral visible en el mapa de calor (2026-08-02)
 - **Dos codificaciones para dos preguntas**: la rampa (teal, cinco escalones)
   dice *cuánta* brecha del p10 al p90; el coral (`--calor-alto-1/2`) dice que se
@@ -185,7 +209,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   categoría sobrevive al daltonismo. Aun así el exceso va también en el tooltip.
 
 ## Verificación
-- **307 tests** (unit/component/contract con MSW y WS mock) — **87,5 % de ramas**
+- **316 tests** (unit/component/contract con MSW y WS mock) — **87,5 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

@@ -2,7 +2,14 @@ import type { CSSProperties } from "react";
 
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
-import { compararDecimales, formatDecimal, formatPct, toChartNumber } from "../lib/decimal";
+import {
+  compararDecimales,
+  formatDecimal,
+  formatPct,
+  restarDecimales,
+  signo,
+  toChartNumber,
+} from "../lib/decimal";
 import { porcentajeDeMaximo } from "../lib/series";
 import { useMarket } from "../state/marketStore";
 import type { PayloadAnalisis } from "../ws/messages";
@@ -44,9 +51,18 @@ export function GapDecomposition() {
       : null;
 
   const lados = analisis?.gap_history?.sides ?? [];
-  const frases = (analisis?.reading?.claims ?? [])
+  const claims = analisis?.reading?.claims ?? [];
+  const frases = claims
     .map((claim) => fraseDeHistoria(claim, t, idioma))
     .filter((frase): frase is string => frase !== null);
+
+  // Las dos piernas del movimiento, tal como las midió el MOTOR.
+  //
+  // La ventana sale del claim `brecha` y no del de atribución: el motor calcula
+  // las tres cifras de un mismo `Variaciones`, con una sola `ventana_horas` de
+  // config, así que no pueden discrepar. `atribucion` no la repite.
+  const atribucion = claims.find((claim) => claim.code === "atribucion") ?? null;
+  const horas = claims.find((claim) => claim.code === "brecha")?.data.horas;
 
   return (
     <section className="vmw-seccion" aria-label={t("descomposicion.titulo")}>
@@ -87,9 +103,16 @@ export function GapDecomposition() {
                   {t("descomposicion.brecha")}
                 </div>
               </div>
-              <p className="vmw-nota" style={{ marginTop: "20px" }}>
-                {t("descomposicion.lectura")}
-              </p>
+              {atribucion === null ? (
+                // Sin atribución NO se rellena con una explicación genérica: el
+                // motor la calla a propósito —oficial rancia, o brecha que no se
+                // movió— y decir por qué se movió sería afirmar de más.
+                <p className="vmw-nota" style={{ marginTop: "20px" }}>
+                  {t("descomposicion.sinAtribucion")}
+                </p>
+              ) : (
+                <Piernas atribucion={atribucion} horas={horas} />
+              )}
               {frases.length > 0 && (
                 <p className="vmw-nota vmw-descomp__interpretacion">
                   {frases.join(" ")}
@@ -116,6 +139,81 @@ export function GapDecomposition() {
   );
 }
 
+/**
+ * Las dos piernas del movimiento y su neto, en VES absolutos.
+ *
+ * La unidad no es decorativa: `Δbrecha_abs = Δparalelo − Δoficial` es exacta
+ * SOLO en VES: en puntos porcentuales las dos piernas no suman la brecha. Por
+ * eso el motor publica estas dos en VES aunque clasifique el eje en pp, y por
+ * eso el neto se resta aquí con BigInt y no se pide aparte — es una identidad,
+ * no una tercera medición que pudiera discrepar de las otras dos.
+ *
+ * La pierna que el motor señala como responsable va destacada. La decide él
+ * (`responsable`), no este panel: recalcularla sería la misma doble fuente de
+ * verdad que ya obligó a `RuleDistance` a usar `summary.closest_rule`.
+ */
+function Piernas({
+  atribucion,
+  horas,
+}: {
+  atribucion: Claim;
+  horas: string | undefined;
+}) {
+  const { t, idioma } = useI18n();
+
+  const oficial = atribucion.data.oficial;
+  const paralelo = atribucion.data.paralelo;
+  const responsable = atribucion.data.responsable;
+
+  const piernas = [
+    {
+      etiqueta:
+        horas === undefined
+          ? t("descomposicion.movOficialSinVentana")
+          : t("descomposicion.movOficial", { horas }),
+      valor: oficial,
+      culpable: responsable === "oficial" || responsable === "ambos",
+    },
+    {
+      etiqueta:
+        horas === undefined
+          ? t("descomposicion.movP2PSinVentana")
+          : t("descomposicion.movP2P", { horas }),
+      valor: paralelo,
+      culpable: responsable === "paralelo" || responsable === "ambos",
+    },
+    {
+      etiqueta: t("descomposicion.movNeto"),
+      valor: restarDecimales(paralelo, oficial),
+      culpable: false,
+    },
+  ];
+
+  return (
+    <div className="vmw-descomp__piernas">
+      {piernas.map((pierna) => (
+        <div key={pierna.etiqueta}>
+          <span className="vmw-descomp__pierna-et">{pierna.etiqueta}</span>
+          <span
+            className="vmw-descomp__pierna-val"
+            data-responsable={pierna.culpable ? "si" : undefined}
+          >
+            {t("descomposicion.movValor", {
+              valor: conSigno(pierna.valor, idioma),
+            })}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** `+26,9` / `−19,3`: el signo se escribe siempre, también el «+». */
+function conSigno(valor: string, idioma: "es" | "en"): string {
+  const texto = formatDecimal(valor, { maxDecimales: 2, idioma });
+  return signo(valor) > 0 ? `+${texto}` : texto;
+}
+
 /** Un lado con su valor de hoy y sus referencias, cada una en su tramo real. */
 function BloqueLado({ lado }: { lado: LadoHistoria }) {
   const { t, idioma } = useI18n();
@@ -126,20 +224,20 @@ function BloqueLado({ lado }: { lado: LadoHistoria }) {
   // («7,70 puntos por debajo de su promedio de 90 días»): si no estuviera a la
   // vista, esa frase sería incomprobable — y peor, restar el máximo daría otro
   // número y la tarjeta parecería contradecirse.
-  const filas = [
-    { etiqueta: t("descomposicion.hoy"), valor: lado.current, hoy: true },
+  const filas: { etiqueta: string; valor: string | null; tono: Tono }[] = [
+    { etiqueta: t("descomposicion.hoy"), valor: lado.current, tono: "hoy" },
     ...lado.references.flatMap((referencia) => [
       {
         etiqueta: etiquetaMedia(referencia, t),
         valor: referencia.mean,
-        hoy: false,
+        tono: "media" as Tono,
       },
       ...(esVentanaAncha(referencia)
         ? [
             {
               etiqueta: etiquetaMaximo(referencia, t),
               valor: referencia.max,
-              hoy: false,
+              tono: "maximo" as Tono,
             },
           ]
         : []),
@@ -182,7 +280,7 @@ function BloqueLado({ lado }: { lado: LadoHistoria }) {
                     fila.valor === null || maximo === null
                       ? "0%"
                       : porcentajeDeMaximo(fila.valor, maximo),
-                  background: fila.hoy ? "var(--series-buy)" : "var(--teal-dim)",
+                  background: COLOR_FILA[fila.tono],
                 }}
               />
             </div>
@@ -199,6 +297,22 @@ function BloqueLado({ lado }: { lado: LadoHistoria }) {
     </div>
   );
 }
+
+type Tono = "hoy" | "media" | "maximo";
+
+/**
+ * Hoy destaca, las medias se atenúan y el MÁXIMO va en coral.
+ *
+ * El coral no es adorno: marca el extremo, exactamente el mismo significado que
+ * tiene en el mapa de calor (por encima del p90). Que la misma pregunta —«¿esto
+ * es lo alto que llega?»— se responda con el mismo color en las dos tarjetas es
+ * lo que permite leerlas juntas.
+ */
+const COLOR_FILA: Record<Tono, string> = {
+  hoy: "var(--series-buy)",
+  media: "var(--teal-dim)",
+  maximo: "var(--coral)",
+};
 
 /**
  * El máximo se muestra solo en la ventana más ancha.

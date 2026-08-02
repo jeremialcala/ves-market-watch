@@ -1065,6 +1065,40 @@ body {
   justify-content: center;
 }
 
+/* Las tres cifras del movimiento, bajo la barra. `auto-fit` y no `repeat(3)`:
+   con «Neto brecha» y un valor de cinco dígitos, tres columnas fijas se
+   solapaban por debajo de 380 px. */
+.vmw-descomp__piernas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 16px 18px;
+  margin-top: 22px;
+}
+
+.vmw-descomp__pierna-et {
+  display: block;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.vmw-descomp__pierna-val {
+  display: block;
+  margin-top: 7px;
+  font-family: var(--font-display);
+  font-size: clamp(19px, 2.3vw, 25px);
+  line-height: 1.1;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* La pierna que el motor señala como responsable. El color NO va solo: la prosa
+   de atribución que sigue la nombra con todas las letras. */
+.vmw-descomp__pierna-val[data-responsable="si"] {
+  color: var(--teal);
+}
+
 .vmw-descomp__interpretacion {
   margin-top: 12px;
   color: var(--text);
