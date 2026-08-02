@@ -89,6 +89,25 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   probabilidades y riesgos redactados. Se quedan porque hacerlos reales exigiría
   pronosticar, que es no-objetivo declarado.
 
+## Dashboard según el prototipo `Criterio` (2026-08-02)
+- **La lectura del mercado pasa a titular**, a todo el ancho: la vista responde
+  primero «qué pasa» y luego enseña con qué número. Los dos indicadores de un
+  vistazo salen a `HeadlineStats`.
+- **«Distancia al disparo»** (`RuleDistance`): qué le falta al aviso más cercano,
+  condición a condición. La regla la elige el MOTOR (`summary.closest_rule`), no
+  el panel — recalcularla creaba una segunda fuente de verdad que, con dos reglas
+  empatadas, nombraba una distinta que la síntesis en la misma pantalla.
+- **«Calidad y procedencia del dato»** (`DataProvenance`): reúne lo que cada panel
+  usó para afirmar lo que afirma — escala de los medidores, muestras, confianza,
+  frescura de la oficial y alcance real de la historia de cada lado.
+- **El panel de instrumentos se ordena por cercanía al umbral**, con el mismo
+  criterio normalizado que usa el motor. El orden dejó de ser una constante, así
+  que los tests pasaron a seleccionar por nombre y no por índice.
+- El sistema de diseño **no hubo que importarlo**: los 43 tokens del proyecto de
+  diseño coinciden valor por valor con los que ADR-0018 ya portó.
+- Quedan fuera «Crear alerta» y «Exportar CSV» (ADR-0021) y «Riesgos que vigilar»
+  conserva su sello demo: la cuenta sigue en **dos**.
+
 ## Descomposición de la brecha con historia por lado (2026-08-01, ADR-0021)
 - La tarjeta compara **compra y venta**, cada uno contra su propia historia, con
   las referencias del contrato (`gap_history`): el SPA dejó de calcular medias.
@@ -139,7 +158,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   y obliga a volver a pasar el validador.
 
 ## Verificación
-- **269 tests** (unit/component/contract con MSW y WS mock) — **87,6 % de ramas**
+- **291 tests** (unit/component/contract con MSW y WS mock) — **87,3 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

@@ -21,19 +21,34 @@ import { useMarket } from "../state/marketStore";
  * comprar…»), y el pie de aclaración no se retira por limpieza visual.
  */
 export function MarketRegimeCard() {
+  const { t } = useI18n();
+  const { analisis } = useMarket();
+
+  return (
+    <section className="vmw-hero vmw-veredicto" aria-label={t("regimen.titulo")}>
+      <div className="vmw-hero__brillo" aria-hidden="true" />
+      <div className="vmw-eyebrow">
+        <span>{t("regimen.titulo")}</span>
+      </div>
+      <Lectura analisis={analisis} />
+    </section>
+  );
+}
+
+/**
+ * Los dos indicadores que acompañan al titular.
+ *
+ * Salen de la tarjeta de régimen y viven aparte porque el titular pasó a ocupar
+ * todo el ancho: son contexto de un vistazo, no parte de la lectura.
+ */
+export function HeadlineStats() {
   const { t, idioma } = useI18n();
   const { vigentes, analisis } = useMarket();
-  const ratio = vigentes["p2p_ratio_oferta_demanda"];
-  const outliers = vigentes["p2p_outliers_pct_buy"];
+  const ratio = valorVigente(vigentes, analisis, "p2p_ratio_oferta_demanda");
+  const outliers = valorVigente(vigentes, analisis, "p2p_outliers_pct_buy");
 
   return (
     <div style={{ display: "grid", gap: "18px" }}>
-      <div className="vmw-tarjeta" style={{ padding: "24px 26px" }}>
-        <div className="vmw-eyebrow">
-          <span>{t("regimen.titulo")}</span>
-        </div>
-        <Lectura analisis={analisis} />
-      </div>
 
       <div className="vmw-grid" style={{ "--min": "180px" } as CSSProperties}>
         <div className="vmw-tarjeta--sm vmw-tarjeta">
@@ -67,6 +82,27 @@ export function MarketRegimeCard() {
   );
 }
 
+/**
+ * El valor vigente de un indicador, del push o —si aún no ha llegado— del
+ * análisis del resync.
+ *
+ * `vigentes` solo lo rellena el push WSS, así que en cada carga estos dos
+ * indicadores salían en blanco hasta el primer evento (~30 s) teniendo el dato
+ * ya en mano: el análisis del resync publica los mismos indicadores de la misma
+ * revisión. No es un valor distinto ni más viejo — es el mismo, por el otro
+ * camino.
+ */
+function valorVigente(
+  vigentes: Record<string, { value: string } | undefined>,
+  analisis: Analisis | null,
+  indicador: string,
+): { value: string } | undefined {
+  return (
+    vigentes[indicador] ??
+    analisis?.indicators.find((i) => i.indicator === indicador)
+  );
+}
+
 function Lectura({ analisis }: { analisis: Analisis | null }) {
   const { t, idioma } = useI18n();
   const lectura = analisis?.reading;
@@ -92,7 +128,10 @@ function Lectura({ analisis }: { analisis: Analisis | null }) {
         }}
       >
         <span aria-hidden="true" className="vmw-regimen__punto" />
-        <span className="vmw-cifra" style={{ fontSize: "clamp(22px, 3vw, 27px)" }}>
+        <span
+          className="vmw-cifra"
+          style={{ fontSize: "clamp(24px, 3.4vw, 34px)" }}
+        >
           {lectura.regime !== null
             ? t(`regimen.${lectura.regime}` as Clave)
             : t("regimen.sinRegimen")}

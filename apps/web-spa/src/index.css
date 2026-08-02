@@ -1112,3 +1112,141 @@ body {
     transparent 4px 7px
   );
 }
+
+/* --- Titular del veredicto y paneles nuevos del dashboard --------------- */
+
+/* El titular ocupa todo el ancho: es la respuesta a «qué pasa», y el resto de
+   la vista es su detalle. */
+.vmw-veredicto {
+  display: grid;
+  gap: 4px;
+}
+
+.vmw-hero__contra {
+  margin-top: 8px;
+  font-size: var(--fs-meta);
+  color: var(--text-muted);
+}
+
+/* --- Distancia al disparo ---------------------------------------------- */
+
+.vmw-disparo__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 16px;
+}
+
+.vmw-disparo__regla {
+  font-family: "Space Grotesk", Inter, sans-serif;
+  font-size: var(--fs-body);
+  color: var(--text);
+}
+
+.vmw-disparo__conteo {
+  font-size: var(--fs-meta);
+  color: var(--text-muted);
+}
+
+.vmw-disparo__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+/* Cuatro columnas en pantalla ancha; en móvil se apilan en dos, que es donde
+   el nombre del indicador deja de caber al lado del umbral. */
+.vmw-disparo__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) auto;
+  gap: 4px 12px;
+  align-items: baseline;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-body-xs);
+}
+
+@media (min-width: 620px) {
+  .vmw-disparo__fila {
+    grid-template-columns: minmax(0, 1.6fr) auto minmax(0, 1fr) auto;
+  }
+}
+
+.vmw-disparo__fila:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.vmw-disparo__nombre {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.vmw-disparo__valor {
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  text-align: right;
+}
+
+.vmw-disparo__umbral,
+.vmw-disparo__falta {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* La condición cumplida se marca con color Y con la palabra «cumplida»: el
+   color nunca es la única codificación. */
+.vmw-disparo__fila[data-cumple="si"] .vmw-disparo__falta {
+  color: var(--sage);
+}
+
+.vmw-disparo__nota {
+  margin-top: 14px;
+}
+
+/* --- Calidad y procedencia del dato ------------------------------------ */
+
+.vmw-proc__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.vmw-proc__fila {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-body-xs);
+}
+
+.vmw-proc__fila:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.vmw-proc__etiqueta {
+  color: var(--text-muted);
+}
+
+.vmw-proc__valor {
+  color: var(--text);
+  text-align: right;
+}
+
+/* Lo degradado se marca, pero el texto ya lo dice por sí solo. */
+.vmw-proc__valor[data-tono="coral"] {
+  color: var(--coral);
+}
+
+.vmw-proc__nota {
+  margin-top: 14px;
+}

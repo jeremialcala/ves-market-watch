@@ -7,6 +7,28 @@ timestamp: 2026-08-01T12:00:00Z
 
 # Log
 
+## 2026-08-02 — El dashboard, según el prototipo `Criterio`
+- Importado el proyecto de diseño con el MCP `DesignSync`. **El sistema de diseño
+  no había nada que traer**: sus 43 tokens coinciden valor por valor con los que
+  ADR-0018 ya portó. El trabajo era la disposición.
+- La lectura del mercado pasa a titular a todo el ancho, y entran dos paneles que
+  no existían: «Distancia al disparo» y «Calidad y procedencia del dato». Ninguno
+  añade dato: reúnen lo que el análisis ya publica.
+- **Dos defectos míos, encontrados mirando la pantalla y no los tests:**
+  - `RuleDistance` recalculaba «la regla más cercana» en vez de usar
+    `summary.closest_rule`. Con dos reglas empatadas a cero condiciones, el panel
+    nombraba una y la síntesis del panel de instrumentos otra, **en la misma
+    pantalla**. Ahora la elige el motor, y hay un test de coherencia.
+  - Los dos indicadores de un vistazo salían en blanco en cada carga: `vigentes`
+    solo lo rellena el push WSS y el resync REST no lo toca, teniendo el dato en
+    el análisis. Es un defecto anterior a este trabajo; se resuelve cayendo al
+    análisis cuando el push aún no ha llegado.
+- Ordenar los medidores por cercanía al umbral **rompió tres tests** que
+  seleccionaban por índice. Era acoplamiento legítimo mientras el orden fue una
+  constante; ahora es dato, así que seleccionan por nombre.
+- Fuera de alcance por decisión: «Crear alerta», «Exportar CSV» y hacer real
+  «Riesgos que vigilar», que exigiría pronosticar. El SPA sigue con dos sellos.
+
 ## 2026-08-01 (noche) — La sparkline pinta los dos lados, con escala compartida
 - La sparkline vive en la tarjeta héroe, que es toda de compra (titular, cifra y
   VWAP). Cambiarla sola habría puesto la línea a contradecir el número de encima,

@@ -73,6 +73,9 @@ export const ES = {
   "brecha.minMax": "mín {min} · máx {max}",
   // La leyenda ES la etiqueta de cada línea: sin ella dos trazos en el mismo
   // gráfico no se distinguen, y uno de los dos no es el del titular.
+  // El delta contra la media de 7 d; el signo va en el número, no en el texto.
+  "brecha.contra7": "{delta} pts vs. 7 días",
+  "brecha.contra7Parcial": "{delta} pts vs. {dias} d (de 7)",
   "brecha.rangoCompra": "compra {min}–{max}",
   "brecha.rangoVenta": "venta {min}–{max}",
   "brecha.sinSerie": "Sin serie de las últimas 24 h.",
@@ -294,6 +297,43 @@ export const ES = {
     "La tasa oficial con la que se calculó esta brecha lleva más de 6 horas sin actualizarse.",
 
   // -- descomposición --------------------------------------------------------
+  // --- Distancia al disparo (RF-6): a cuánto está el aviso más cercano ------
+  "disparo.titulo": "Distancia al disparo",
+  "disparo.bajada": "qué le falta al aviso más cercano",
+  "disparo.conteo": "cumple {cumplidas} de {totales}",
+  "disparo.cumple": "cumplida",
+  "disparo.necesitaPorEncima": "necesita > {umbral}",
+  "disparo.necesitaPorDebajo": "necesita < {umbral}",
+  "disparo.falta": "falta {distancia}",
+  "disparo.bloquea": "El que falta por moverse es {indicador}.",
+  "disparo.sinRegla":
+    "Ninguna regla es evaluable ahora mismo, así que no hay distancia que medir.",
+  "disparo.aclaracion":
+    "Dice a qué distancia está una regla ya definida, con los datos de ahora. No es una predicción de que vaya a dispararse.",
+
+  // --- Calidad y procedencia del dato --------------------------------------
+  "procedencia.titulo": "Calidad y procedencia del dato",
+  "procedencia.bajada": "con qué material se afirma lo demás",
+  "procedencia.sinAnalisis": "Sin análisis de la revisión todavía.",
+  "procedencia.escala": "Escala de los medidores",
+  "procedencia.escalaTodos": "{n} sobre percentiles reales",
+  "procedencia.escalaParcial":
+    "{n} sobre percentiles reales · {respaldo} en respaldo del ruleset",
+  "procedencia.muestras": "Muestras del medidor más pobre",
+  "procedencia.muestrasValor": "{n} de {minimo} mínimas",
+  "procedencia.confianza": "Confianza de la lectura",
+  "procedencia.confianzaNormal": "normal",
+  "procedencia.confianzaBaja": "baja · demasiados precios raros",
+  "procedencia.oficial": "Tasa oficial del BCV",
+  "procedencia.oficialFresca": "vigente",
+  "procedencia.oficialRancia": "más de 6 h sin actualizarse",
+  "procedencia.historiaCompra": "Historia de la brecha de compra",
+  "procedencia.historiaVenta": "Historia de la brecha de venta",
+  "procedencia.historiaCompleta": "{dias} días completos",
+  "procedencia.historiaParcial": "{dias} días de los {pedida} pedidos",
+  "procedencia.nota":
+    "Nada de esto es dato nuevo: es lo que cada panel usó para afirmar lo que afirma, reunido en un sitio.",
+
   "descomposicion.titulo": "Descomposición de la brecha",
   "descomposicion.bajada": "qué pierna mueve el número",
   "descomposicion.piernaOficial": "pierna oficial",
@@ -566,6 +606,8 @@ export const EN: Record<Clave, string> = {
   "brecha.vwap": "P2P VWAP {valor}",
   "brecha.ventana24h": "24 h · both sides",
   "brecha.minMax": "min {min} · max {max}",
+  "brecha.contra7": "{delta} pts vs. 7 days",
+  "brecha.contra7Parcial": "{delta} pts vs. {dias} d (of 7)",
   "brecha.rangoCompra": "buy {min}–{max}",
   "brecha.rangoVenta": "sell {min}–{max}",
   "brecha.sinSerie": "No series for the last 24 h.",
@@ -759,6 +801,42 @@ export const EN: Record<Clave, string> = {
     "Still building the comparison: {muestras} of {minimo} readings needed over {dias} days.",
   "medidores.oficialStale":
     "The official rate used for this gap has not been updated in over 6 hours.",
+
+  // --- Distance to trigger ---------------------------------------------------
+  "disparo.titulo": "Distance to trigger",
+  "disparo.bajada": "what the closest alert still needs",
+  "disparo.conteo": "{cumplidas} of {totales} met",
+  "disparo.cumple": "met",
+  "disparo.necesitaPorEncima": "needs > {umbral}",
+  "disparo.necesitaPorDebajo": "needs < {umbral}",
+  "disparo.falta": "{distancia} to go",
+  "disparo.bloquea": "The one still to move is {indicador}.",
+  "disparo.sinRegla":
+    "No rule is evaluable right now, so there is no distance to measure.",
+  "disparo.aclaracion":
+    "It states how far an already-defined rule is, with today's data. It is not a prediction that it will fire.",
+
+  // --- Data quality and provenance -------------------------------------------
+  "procedencia.titulo": "Data quality and provenance",
+  "procedencia.bajada": "what everything else is asserted from",
+  "procedencia.sinAnalisis": "No revision analysis yet.",
+  "procedencia.escala": "Gauge scale",
+  "procedencia.escalaTodos": "{n} on real percentiles",
+  "procedencia.escalaParcial": "{n} on real percentiles · {respaldo} on ruleset fallback",
+  "procedencia.muestras": "Samples on the thinnest gauge",
+  "procedencia.muestrasValor": "{n} of {minimo} minimum",
+  "procedencia.confianza": "Reading confidence",
+  "procedencia.confianzaNormal": "normal",
+  "procedencia.confianzaBaja": "low · too many odd prices",
+  "procedencia.oficial": "BCV official rate",
+  "procedencia.oficialFresca": "current",
+  "procedencia.oficialRancia": "over 6 h without an update",
+  "procedencia.historiaCompra": "Buy-side gap history",
+  "procedencia.historiaVenta": "Sell-side gap history",
+  "procedencia.historiaCompleta": "{dias} full days",
+  "procedencia.historiaParcial": "{dias} days of the {pedida} requested",
+  "procedencia.nota":
+    "None of this is new data: it is what each panel used to assert what it asserts, gathered in one place.",
 
   "descomposicion.titulo": "Gap decomposition",
   "descomposicion.bajada": "which leg moves the number",

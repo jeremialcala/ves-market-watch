@@ -7,7 +7,7 @@ import type {
 } from "../api/endpoints";
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
-import { formatDecimal, formatPct } from "../lib/decimal";
+import { formatDecimal, formatPct, toChartNumber } from "../lib/decimal";
 import { pctDesdeFraccion } from "../lib/escala";
 import { useMarket } from "../state/marketStore";
 
@@ -114,6 +114,19 @@ export function GaugePanel() {
     (analisis?.indicators ?? []).map((i) => [i.indicator, i]),
   );
 
+  // El orden deja de ser una constante y pasa a ser DATO: primero el medidor
+  // más cerca de disparar un aviso, que es la pregunta que trae a esta vista.
+  // Los que no tienen umbral que medir conservan su orden relativo (`sort` es
+  // estable), así que la lista no baila sin motivo entre revisiones.
+  const ordenados = [...MEDIDORES].sort((a, b) => {
+    const da = distanciaAUmbral(lecturas.get(a.indicador));
+    const db = distanciaAUmbral(lecturas.get(b.indicador));
+    if (da === null && db === null) return 0;
+    if (da === null) return 1;
+    if (db === null) return -1;
+    return da - db;
+  });
+
   return (
     <section className="vmw-seccion" aria-label={t("medidores.titulo")}>
       <div className="vmw-tarjeta vmw-tarjeta--panel">
@@ -130,7 +143,7 @@ export function GaugePanel() {
         className="vmw-grid"
         style={{ "--min": "300px", marginTop: "18px" } as CSSProperties}
       >
-        {MEDIDORES.map((medidor) => (
+        {ordenados.map((medidor) => (
           <MedidorTarjeta
             key={medidor.indicador}
             medidor={medidor}
@@ -385,6 +398,28 @@ function SintesisPanel({ analisis }: { analisis: Analisis | null }) {
  *  `SignalsFeed`). */
 function nombrePropio(valor: string): string {
   return valor.replaceAll("_", " ");
+}
+
+/**
+ * Distancia MÍNIMA de un medidor a un umbral que aún no ha cruzado, en
+ * coordenadas de dibujo [0,1].
+ *
+ * Es el mismo criterio con el que el motor cuenta «medidores cerca de su
+ * umbral»: normalizado, porque en unidades crudas no se puede comparar un
+ * porcentaje de brecha con un ratio de oferta. Un umbral ya cumplido no cuenta —
+ * dejó de estar cerca, está pasado.
+ *
+ * `null` = nada que medir; esos medidores van al final, sin reordenarse entre sí.
+ */
+function distanciaAUmbral(lectura: LecturaMedidor | undefined): number | null {
+  if (lectura?.position == null || lectura.rules.length === 0) {
+    return null;
+  }
+  const posicion = toChartNumber(lectura.position);
+  const distancias = lectura.rules
+    .filter((r) => !r.met)
+    .map((r) => Math.abs(posicion - toChartNumber(r.threshold_position)));
+  return distancias.length === 0 ? null : Math.min(...distancias);
 }
 
 /** El % de outliers que motivó la confianza baja, si el medidor está en la

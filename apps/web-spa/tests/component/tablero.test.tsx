@@ -21,7 +21,10 @@ import {
 
 import { GapHeatmap } from "../../src/components/GapHeatmap";
 import { GapPanel } from "../../src/components/GapPanel";
-import { MarketRegimeCard } from "../../src/components/MarketRegimeCard";
+import {
+  HeadlineStats,
+  MarketRegimeCard,
+} from "../../src/components/MarketRegimeCard";
 import { config } from "../../src/config";
 import { marketStore } from "../../src/state/marketStore";
 import { AnalysisView } from "../../src/views/AnalysisView";
@@ -90,7 +93,7 @@ afterAll(() => {
 // La lectura del mercado tiene su propia suite: `tests/component/lectura.test.tsx`.
 
 describe("MarketRegimeCard", () => {
-  it("sin lectura lo dice, y deja los dos indicadores reales al lado", () => {
+  it("sin lectura lo dice; los minis viven aparte desde que es titular", () => {
     marketStore.push({
       topic: "indicators",
       event_id: "evento-regimen",
@@ -113,7 +116,30 @@ describe("MarketRegimeCard", () => {
     // El régimen dejó de ser demo: sin lectura se dice, no se sella un ejemplo.
     expect(screen.queryByText("demo · sin fuente")).toBeNull();
     expect(screen.getByText(/sin lectura del mercado/i)).toBeTruthy();
+    // El titular pasó a ocupar todo el ancho, así que los indicadores de un
+    // vistazo salieron a `HeadlineStats`: aquí ya no están.
+    expect(screen.queryByText("0,50 %")).toBeNull();
+  });
+
+  it("los indicadores de un vistazo siguen pintándose, en HeadlineStats", () => {
+    marketStore.push({
+      topic: "indicators",
+      event_id: "evento-minis",
+      occurred_at: "2026-07-30T12:00:00Z",
+      data: {
+        as_of: "2026-07-30T12:00:00Z",
+        calc_version: 1,
+        official_stale: false,
+        triggered_by: "11111111-2222-3333-4444-555555555555",
+        indicators: [
+          { indicator: "p2p_outliers_pct_buy", currency: "VES", value: "0.50000000" },
+          { indicator: "p2p_ratio_oferta_demanda", currency: "VES", value: "0.59000000" },
+        ],
+      },
+    });
+    render(<HeadlineStats />);
     expect(screen.getByText("0,50 %")).toBeTruthy();
+    expect(screen.getByText("0,59")).toBeTruthy();
   });
 });
 

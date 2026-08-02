@@ -6,7 +6,7 @@
  * contrato no trae algo, el panel lo dice en vez de dibujarlo a ojo.
  */
 
-import { cleanup, screen } from "@testing-library/react";
+import { cleanup, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -17,6 +17,21 @@ import {
   FIXTURE_ANALISIS_RESPALDO,
 } from "../contract/fixtures.test";
 import { renderConProveedores as render } from "../render";
+
+/**
+ * El desplegable del medidor que se NOMBRA.
+ *
+ * El panel se ordena por cercanía al umbral desde el prototipo `Criterio`, así
+ * que el índice de un medidor cambia con los datos. Seleccionar por posición
+ * ataba estos tests a un orden que ya no es constante.
+ */
+function desplegableDe(medidor: string, etiqueta = /Ver explicación/): HTMLElement {
+  const tarjeta = screen.getByText(medidor).closest(".vmw-tarjeta");
+  if (tarjeta === null) {
+    throw new Error(`no encuentro la tarjeta del medidor «${medidor}»`);
+  }
+  return within(tarjeta as HTMLElement).getByRole("button", { name: etiqueta });
+}
 
 afterEach(() => {
   cleanup();
@@ -80,8 +95,7 @@ describe("GaugePanel con análisis", () => {
     expect(barra.querySelectorAll(".vmw-barra__umbral")).toHaveLength(2);
 
     // …y el desplegable lo repite en texto: el color nunca codifica solo.
-    const botones = screen.getAllByRole("button", { name: /Ver explicación/ });
-    await userEvent.click(botones[1]);
+    await userEvent.click(desplegableDe("Ratio oferta/demanda"));
     expect(
       screen.getByText(
         /techo inminente: el sistema avisa cuando baja de 0,2\. Ahora faltan 0,39\./,
@@ -117,7 +131,7 @@ describe("GaugePanel con análisis", () => {
     marketStore.resync({ analisis: FIXTURE_ANALISIS });
     render(<GaugePanel />);
 
-    const boton = screen.getAllByRole("button", { name: /Ver explicación/ })[0];
+    const boton = desplegableDe("Brecha buy");
     expect(boton.getAttribute("aria-expanded")).toBe("false");
     boton.focus();
     await userEvent.keyboard("{Enter}");
@@ -225,8 +239,7 @@ describe("GaugePanel en inglés", () => {
       screen.getByText(/It is not a prediction of what will happen\./),
     ).toBeTruthy();
 
-    const boton = screen.getAllByRole("button", { name: /Show explanation/ })[0];
-    await userEvent.click(boton);
+    await userEvent.click(desplegableDe("Gap buy", /Show explanation/));
     expect(
       screen.getByText(/How much more expensive the dollar is on the P2P market/),
     ).toBeTruthy();

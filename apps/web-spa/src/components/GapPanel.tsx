@@ -1,6 +1,6 @@
 import { Pill } from "../ds/components";
 import { useI18n } from "../i18n/contexto";
-import { formatDecimal, formatPct } from "../lib/decimal";
+import { formatDecimal, formatPct, restarDecimales } from "../lib/decimal";
 import { relativo, UMBRAL_P2P_MS } from "../lib/freshness";
 import {
   areaPolilinea,
@@ -13,6 +13,32 @@ import { useHistorialBrecha } from "../state/useHistorialBrecha";
 import { FreshnessBadge } from "./FreshnessBadge";
 import { NoDataState } from "./NoDataState";
 
+/**
+ * La brecha de hoy contra su media de 7 días, del lado COMPRA — el mismo lado
+ * que la cifra héroe, o el número de abajo contradiría al de arriba.
+ *
+ * Sale de `gap_history`, ya calculado por el motor; el SPA solo resta. Si la
+ * ventana no está completa se rotula el tramo real, igual que la descomposición.
+ */
+function deltaContra7Dias(
+  analisis: ReturnType<typeof useMarket>["analisis"],
+  hoy: string | null,
+): { delta: string; completa: boolean; diasCubiertos: number } | null {
+  if (hoy === null) {
+    return null;
+  }
+  const lado = analisis?.gap_history?.sides.find((s) => s.side === "buy");
+  const ref = lado?.references.find((r) => r.days_configured === 7);
+  if (ref?.mean == null) {
+    return null;
+  }
+  return {
+    delta: restarDecimales(hoy, ref.mean),
+    completa: ref.days_covered >= ref.days_configured,
+    diasCubiertos: ref.days_covered,
+  };
+}
+
 const ANCHO = 640;
 const ALTO = 110;
 const BUCKETS_24H = 24;
@@ -24,7 +50,7 @@ const BUCKETS_24H = 24;
  */
 export function GapPanel() {
   const { t, idioma } = useI18n();
-  const { indicadores, tasas, p2p } = useMarket();
+  const { indicadores, tasas, p2p, analisis } = useMarket();
   // Las DOS series: la de compra es la del titular y la cifra héroe; la de
   // venta es la que tiene historia real (242 días derivados) y es, además, el
   // lado donde el usuario compra dólares. El hook comparte la petición si otro
@@ -42,6 +68,7 @@ export function GapPanel() {
   }
 
   const { gap_pct, gap_abs, spread_pct, official_stale } = indicadores;
+  const contra7 = deltaContra7Dias(analisis, gap_pct ?? null);
   const ventanaCompra = compra.slice(-BUCKETS_24H);
   const ventanaVenta = venta.slice(-BUCKETS_24H);
 
@@ -92,6 +119,22 @@ export function GapPanel() {
                   })
                 : "—"}
             </div>
+            {contra7 !== null && (
+              <div className="vmw-hero__contra">
+                {t(
+                  contra7.completa
+                    ? "brecha.contra7"
+                    : "brecha.contra7Parcial",
+                  {
+                    delta: formatDecimal(contra7.delta, {
+                      maxDecimales: 2,
+                      idioma,
+                    }),
+                    dias: String(contra7.diasCubiertos),
+                  },
+                )}
+              </div>
+            )}
             <div style={{ marginTop: "6px" }}>
               <FreshnessBadge
                 asOf={indicadores.as_of}
