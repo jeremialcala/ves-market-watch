@@ -127,6 +127,8 @@ gitGraph
     commit id: "d1682ac"
     commit id: "6190faa"
     commit id: "d601b39"
+    commit id: "85c492a"
+    commit id: "31eb62b"
 ```
 
 ### Estado actual de las ramas
@@ -134,7 +136,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `d601b39` | 2026-08-01 | 93 |
+| `develop` | `31eb62b` | 2026-08-01 | 95 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -150,6 +152,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `31eb62b` | commit | — | Jeremi Alcala | 2026-08-01 | style(web-spa): distribución del dashboard según el prototipo |
+| `85c492a` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `d601b39` | commit | — | Jeremi Alcala | 2026-08-01 | feat(web-spa): dashboard según el prototipo Criterio |
 | `6190faa` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `d1682ac` | commit | — | Jeremi Alcala | 2026-08-01 | docs: barrido de coherencia y repo-history |
