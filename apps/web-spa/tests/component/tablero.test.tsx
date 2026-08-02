@@ -290,6 +290,59 @@ describe("GapHeatmap", () => {
     expect(screen.getByText(/lado venta/)).toBeTruthy();
   });
 
+  it("ancla la leyenda en el p10 y el p90 de la ventana que pinta", async () => {
+    /*
+     * `serieHoraria(30)` va de 12,00 a 14,90 en pasos de 0,10. Con el percentil
+     * discreto (ADR-0017) el p10 es la 3.ª muestra y el p90 la 27.ª: valores
+     * que EXISTEN en la serie, no interpolados — se están rotulando.
+     */
+    conHistorial(serieHoraria(30));
+    render(<GapHeatmap />);
+
+    await waitFor(() => expect(screen.getByText(/p10 12,20/)).toBeTruthy());
+    expect(screen.getByText(/p90 14,60/)).toBeTruthy();
+    // Y dice de dónde salen esos percentiles: de los 14 días pintados, no de
+    // una escala publicada — el lado venta no es medidor del panel.
+    expect(screen.getByText(/percentiles de estos 14 días/)).toBeTruthy();
+  });
+
+  it("el coral marca SOLO lo que supera el p90", async () => {
+    conHistorial(serieHoraria(30));
+    render(<GapHeatmap />);
+
+    await waitFor(() =>
+      expect(document.querySelectorAll(".vmw-calor__celda").length).toBe(14 * 24),
+    );
+    const pintadas = [...document.querySelectorAll(".vmw-calor__celda")]
+      .map((c) => c.getAttribute("style"))
+      .filter((s): s is string => s !== null);
+
+    // Por encima de 14,60 solo quedan 14,70 · 14,80 · 14,90.
+    const exceso = pintadas.filter((s) => s.includes("--calor-alto-"));
+    expect(exceso).toHaveLength(3);
+    // El resto usa la rampa secuencial, y ninguna celda se queda sin color.
+    expect(pintadas.filter((s) => /var\(--calor-\d\)/.test(s))).toHaveLength(
+      pintadas.length - 3,
+    );
+  });
+
+  it("el exceso se DICE, no solo se pinta", async () => {
+    /*
+     * La categoría no puede vivir solo en el tono: quien no distinga el coral
+     * del teal se quedaría sin el dato. Va también en el tooltip.
+     */
+    conHistorial(serieHoraria(30));
+    render(<GapHeatmap />);
+
+    await waitFor(() =>
+      expect(document.querySelectorAll(".vmw-calor__celda").length).toBe(14 * 24),
+    );
+    const titulos = [...document.querySelectorAll(".vmw-calor__celda")].map((c) =>
+      c.getAttribute("title"),
+    );
+    expect(titulos.filter((t) => t?.includes("por encima del p90"))).toHaveLength(3);
+  });
+
   it("pide UNA sola serie: la diaria de 90 días ya no la usa nadie", async () => {
     /*
      * La consumía la descomposición, que pasó a `gap_history` del contrato. Se

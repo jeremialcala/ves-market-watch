@@ -106,6 +106,30 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **El mapa de calor de la brecha gana un umbral visible (2026-08-02).** La rampa
+  pasa a **teal** y cubre del p10 al p90; el **coral marca solo lo que supera el
+  p90**. Son dos codificaciones para dos preguntas: la rampa dice *cuánta* brecha,
+  el coral dice que se salió del rango habitual de la ventana — y por eso cambia
+  de tono en vez de seguir subiendo de intensidad.
+  - **El tramo va de p10 a p90, no de mínimo a máximo**: una sola hora extrema
+    comprimía la rampa entera y dejaba el cuerpo de la serie repartido entre dos
+    escalones, con el mapa leyéndose plano.
+  - Los percentiles son **de los 14 días que se pintan** y la leyenda lo rotula
+    así: el lado venta no es medidor del panel, luego no tiene percentiles
+    publicados que citar. Son discretos (ADR-0017) — se escriben en pantalla, así
+    que tienen que ser valores realmente observados.
+  - Corte **estricto** (`> p90`): con una serie plana el p90 es el valor de todas
+    las celdas y un `>=` habría pintado el mapa entero como exceso, «la brecha se
+    salió de su rango» dicho de una serie que no se movió.
+  - La rampa teal **no pasó por el validador del skill dataviz** (no está
+    instalado). Se derivó igualando escalón por escalón el contraste de la coral
+    ya validada y se midió lo que el cambio arriesgaba: ΔE2000 mínimo entre
+    escalones 7,32 (oscuro) / 8,56 (claro), contra 6,96 / 8,86 de la coral. El
+    número que sostiene el diseño es el salto teal→coral, **ΔE 14,0 bajo
+    protanopia** — el doble de lo que separa dos escalones, así que la categoría
+    sobrevive al daltonismo. Aun así el exceso va **también en el tooltip**: una
+    categoría no debe vivir solo en el tono. Queda anotado como pendiente volver
+    a pasarla por el validador.
 - **Desarrollo por túneles de Cloudflare** (`criterio-dev.higerotech.com` y
   `criterio-api-dev.higerotech.com`): HTTPS real sin CA local ni tocar el almacén
   de confianza, y hosts que no son `localhost` — requisito para que Auth0

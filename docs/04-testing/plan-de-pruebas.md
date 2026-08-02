@@ -78,7 +78,7 @@ Estado observado en el repo (conteo de funciones `test_`):
 | `indicator-engine` | Fases 1, 2, señales (RF-4/RF-5, ADR-0015), análisis de la revisión (RF-6, ADR-0019) y lectura del estado de mercado (RF-7, ADR-0021) | **302** (unit, contract, integration, e2e) | Confirmar cobertura de ramas ≥ 80 %; recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) y de los dos ejes del régimen (`config/lectura.v1.yaml`); contrastar en vivo la atribución `oficial`/`ambos` un día hábil (el sábado el BCV no publica y `official_stale` la suprime por diseño) |
 | `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) — más el histórico de tasas oficiales del BCV (RF-6) y la brecha derivada del lado venta (RF-7), 2026-08-01 | **98** (unit + integración contra TimescaleDB real) | Confirmar cobertura de ramas ≥ 80 %; integración del cargador de oficiales contra TimescaleDB real (hoy cubierto en unit + verificado sobre la carga real de 31.078 filas) |
 | `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **103** (unit incl. CORS y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura ≥ 80 % |
-| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **293** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores y lectura del mercado con dato real en ES/EN, shell responsive y canarios de paleta, punto de corte y cabeceras CSP) — **87,4 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
+| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **307** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores y lectura del mercado con dato real en ES/EN, shell responsive y canarios de paleta, punto de corte y cabeceras CSP) — **87,5 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
 
 > El plan cubre tanto la **consolidación** de lo existente como la **especificación** de los casos
 > que deben acompañar el código pendiente, para que se escriban junto con la implementación (no
@@ -416,6 +416,15 @@ cierre de la columna «Verificación fase 04-testing».
   fija los valores medidos para que un cambio de color no pase en silencio.
   Sigue abierto, como asunto de diseño: subir el par del tema oscuro a la banda
   de luminosidad y al piso de croma (hoy pasa CVD pero queda fuera en esas dos).
+- **La rampa teal del mapa de calor NO pasó por el validador (2026-08-02).** El
+  script del skill dataviz no está instalado en la máquina donde se hizo el
+  cambio, así que la rampa se derivó igualando escalón por escalón el contraste
+  de la coral que sí validó, y se midieron aparte contraste, monotonía de
+  luminosidad y ΔE2000 bajo protanopia/deuteranopia (mín. entre escalones
+  7,32 oscuro / 8,56 claro; salto teal→coral 14,0 protan). Los números quedan
+  escritos en `tests/unit/paleta.test.ts`. **Pendiente:** volver a pasarla por el
+  validador cuando el skill esté disponible — es la misma distancia entre «medido»
+  y «validado» que este apartado existe para no dejar difuminar.
 
 ---
 

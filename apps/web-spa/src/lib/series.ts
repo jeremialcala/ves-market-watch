@@ -160,26 +160,106 @@ export function parrillaCalor(
   return filas;
 }
 
-/** Escalones de la rampa del mapa de calor (`--calor-1` … `--calor-5`). */
+/** Escalones de la rampa secuencial (`--calor-1` … `--calor-5`): hasta el p90. */
 export const PASOS_CALOR = 5;
+/** Escalones del tramo de exceso (`--calor-alto-1`, `--calor-alto-2`): sobre el p90. */
+export const PASOS_CALOR_ALTO = 2;
+
+export interface EscalaCalor {
+  /** Extremo bajo de la rampa. */
+  p10: string;
+  /** Umbral de exceso: por encima de aquí la celda pasa a coral. */
+  p90: string;
+  /** Techo del tramo de exceso. */
+  max: string;
+}
 
 /**
- * Paso de la rampa que corresponde a `valor` dentro de [min, max].
+ * Percentil **discreto** (nearest-rank): devuelve siempre un valor REALMENTE
+ * observado, nunca uno interpolado entre dos muestras.
  *
- * La rampa es **secuencial de un solo tono** con luminosidad monótona: el mapa
- * codifica MAGNITUD, y para eso el skill dataviz manda un tono light→dark, no
- * un recorrido de tres colores. La versión anterior iba salvia → teal → coral
- * con los valores del tema oscuro escritos a fuego: no era monótona en
- * luminosidad (así no se lee una magnitud) y en tema claro su extremo bajo
- * quedaba a 1,67:1 sobre blanco, es decir, invisible.
- *
- * Devuelve una variable CSS, no un color: así cada tema usa su rampa validada.
+ * Es la misma elección que ADR-0017 fijó para los percentiles del motor
+ * (`percentile_disc`, jamás `percentile_cont`): un extremo de la escala que
+ * nadie llegó a medir es una cifra inventada, y aquí encima se rotula en la
+ * leyenda. Con `q` bajo devuelve el primer valor cuya frecuencia acumulada
+ * alcanza `q`, igual que Postgres.
  */
-export function colorCalor(valor: string, min: number, max: number): string {
-  const span = max - min || 1;
-  const t = Math.max(0, Math.min(1, (toChartNumber(valor) - min) / span));
-  const paso = Math.min(PASOS_CALOR, Math.floor(t * PASOS_CALOR) + 1);
-  return `var(--calor-${paso})`;
+export function percentilDisc(puntos: readonly Punto[], q: number): string | null {
+  if (puntos.length === 0) {
+    return null;
+  }
+  const orden = puntos
+    .map((p) => p.valor)
+    .sort((a, b) => compararDecimales(a, b));
+  const i = Math.min(orden.length - 1, Math.max(0, Math.ceil(q * orden.length) - 1));
+  return orden[i];
+}
+
+/**
+ * Anclas de la escala del mapa: p10, p90 y techo.
+ *
+ * El tramo coloreado va del p10 al p90 en vez de min→max porque **una sola hora
+ * extrema comprimía toda la rampa**: con min/max, un pico aislado dejaba al
+ * resto del mapa repartido entre dos escalones y el mapa entero se leía plano.
+ *
+ * Son percentiles de la ventana que se está PINTANDO —los 14 días del mapa—, no
+ * los de la escala de ningún medidor: el lado venta no publica percentiles
+ * (no es medidor del panel), así que la leyenda los rotula por lo que son.
+ */
+export function escalaCalor(puntos: readonly Punto[]): EscalaCalor | null {
+  const rango = extremos(puntos);
+  const p10 = percentilDisc(puntos, 0.1);
+  const p90 = percentilDisc(puntos, 0.9);
+  if (rango === null || p10 === null || p90 === null) {
+    return null;
+  }
+  return { p10, p90, max: rango.max };
+}
+
+/** ¿Esta celda está por encima del p90? Comparación EXACTA, sin pasar por float. */
+export function esExceso(valor: string, escala: EscalaCalor): boolean {
+  // Estrictamente por encima, como dice la leyenda: con una serie plana el p90
+  // es el propio valor de todas las celdas y `>=` habría pintado el mapa entero
+  // como exceso.
+  return compararDecimales(valor, escala.p90) === 1;
+}
+
+/**
+ * Variable CSS de la celda: rampa secuencial hasta el p90, coral por encima.
+ *
+ * Dos codificaciones distintas para dos preguntas distintas. **Magnitud** es
+ * secuencial de un solo tono con luminosidad monótona —el mapa se lee de tenue
+ * a intenso—; el coral no es la continuación de esa rampa sino una **categoría**:
+ * la brecha salió del rango habitual de la propia ventana.
+ *
+ * Por qué no un recorrido continuo de dos tonos: la versión que iba salvia →
+ * teal → coral no era monótona en luminosidad (así no se lee una magnitud) y en
+ * tema claro su extremo bajo quedaba a 1,67:1 sobre blanco, invisible. La rampa
+ * teal de ahora se derivó igualando escalón por escalón el contraste de la coral
+ * ya validada, y el salto teal→coral se midió aparte para que la categoría
+ * sobreviva al daltonismo (protan ΔE 14,0 frente a ~7 entre escalones).
+ *
+ * Devuelve una variable, no un color: cada tema usa su rampa. Y el exceso se
+ * dice además en el tooltip, para que no dependa solo del color.
+ */
+export function colorCalor(valor: string, escala: EscalaCalor): string {
+  if (esExceso(valor, escala)) {
+    const desde = toChartNumber(escala.p90);
+    const t = fraccion(toChartNumber(valor) - desde, toChartNumber(escala.max) - desde);
+    return `var(--calor-alto-${escalon(t, PASOS_CALOR_ALTO)})`;
+  }
+  const desde = toChartNumber(escala.p10);
+  const t = fraccion(toChartNumber(valor) - desde, toChartNumber(escala.p90) - desde);
+  return `var(--calor-${escalon(t, PASOS_CALOR)})`;
+}
+
+/** Posición en [0, 1] dentro de un tramo; un tramo degenerado cae al principio. */
+function fraccion(avance: number, tramo: number): number {
+  return tramo <= 0 ? 0 : Math.max(0, Math.min(1, avance / tramo));
+}
+
+function escalon(t: number, pasos: number): number {
+  return Math.min(pasos, Math.floor(t * pasos) + 1);
 }
 
 /** Ancho relativo (0–100 %) de `valor` dentro de [0, max], para las barras. */

@@ -6,10 +6,13 @@ import { describe, expect, it } from "vitest";
 import {
   areaPolilinea,
   colorCalor,
+  escalaCalor,
   escalaComun,
   PASOS_CALOR,
+  PASOS_CALOR_ALTO,
   extremos,
   parrillaCalor,
+  percentilDisc,
   porcentajeDeMaximo,
   puntosPolilinea,
   type Punto,
@@ -97,23 +100,99 @@ describe("parrillaCalor", () => {
   });
 });
 
+describe("percentilDisc", () => {
+  const serie = (...valores: string[]) =>
+    valores.map((valor, i) => ({ t: i, valor }));
+
+  it("devuelve un valor OBSERVADO, nunca uno interpolado", () => {
+    // Entre 10 y 20 el p50 continuo daría 15, que nadie midió. ADR-0017 manda
+    // el discreto, y aquí encima el valor se rotula en la leyenda.
+    expect(percentilDisc(serie("10", "20"), 0.5)).toBe("10");
+  });
+
+  it("coincide con `percentile_disc` de Postgres", () => {
+    const diez = serie("1", "2", "3", "4", "5", "6", "7", "8", "9", "10");
+    expect(percentilDisc(diez, 0.9)).toBe("9");
+    expect(percentilDisc(diez, 0.1)).toBe("1");
+    expect(percentilDisc(diez, 1)).toBe("10");
+  });
+
+  it("ordena por valor decimal, no alfabéticamente", () => {
+    // "9" > "10" como cadenas: sin comparación decimal el p90 saldría al revés.
+    expect(percentilDisc(serie("10", "9", "2"), 0.9)).toBe("10");
+  });
+
+  it("sin puntos no hay percentil", () => {
+    expect(percentilDisc([], 0.9)).toBeNull();
+  });
+});
+
 describe("colorCalor", () => {
-  // La rampa es secuencial de un tono y vive en CSS (una por tema): aquí se
-  // comprueba el reparto en escalones, no el color — el color lo valida el
-  // validador del skill dataviz, no un test de igualdad de cadenas.
-  it("reparte el rango en los escalones de la rampa, de menor a mayor", () => {
-    expect(colorCalor("12", 12, 20)).toBe("var(--calor-1)");
-    expect(colorCalor("16", 12, 20)).toBe("var(--calor-3)");
-    expect(colorCalor("20", 12, 20)).toBe(`var(--calor-${PASOS_CALOR})`);
+  // Las rampas viven en CSS (una por tema): aquí se comprueba el reparto en
+  // escalones y el corte de categoría, no el color — los valores los fija
+  // `paleta.test.ts`.
+  const escala = { p10: "10", p90: "20", max: "30" };
+
+  it("reparte del p10 al p90 en los escalones de la rampa", () => {
+    expect(colorCalor("10", escala)).toBe("var(--calor-1)");
+    expect(colorCalor("14", escala)).toBe("var(--calor-3)");
+    expect(colorCalor("19.9", escala)).toBe(`var(--calor-${PASOS_CALOR})`);
   });
 
-  it("acota fuera de rango en vez de salirse de la rampa", () => {
-    expect(colorCalor("5", 12, 20)).toBe("var(--calor-1)");
-    expect(colorCalor("99", 12, 20)).toBe(`var(--calor-${PASOS_CALOR})`);
+  it("el p90 EXACTO todavía es rampa: el exceso es estrictamente por encima", () => {
+    expect(colorCalor("20", escala)).toBe(`var(--calor-${PASOS_CALOR})`);
+    expect(colorCalor("20.01", escala)).toBe("var(--calor-alto-1)");
   });
 
-  it("un rango degenerado no revienta", () => {
-    expect(colorCalor("12", 12, 12)).toMatch(/^var\(--calor-\d\)$/);
+  it("por encima del p90 usa el coral de exceso, con su propio reparto", () => {
+    expect(colorCalor("22", escala)).toBe("var(--calor-alto-1)");
+    expect(colorCalor("30", escala)).toBe(`var(--calor-alto-${PASOS_CALOR_ALTO})`);
+  });
+
+  it("por debajo del p10 se acota en vez de salirse de la rampa", () => {
+    expect(colorCalor("-5", escala)).toBe("var(--calor-1)");
+  });
+
+  it("una serie PLANA no se pinta entera como exceso", () => {
+    /*
+     * El caso degenerado que importa: con todos los valores iguales el p90 es
+     * ese mismo valor, y un corte con `>=` habría dejado el mapa entero en
+     * coral — «la brecha se salió de su rango» dicho de una serie que no se
+     * movió. Por eso el corte es estricto.
+     */
+    const plana = { p10: "12", p90: "12", max: "12" };
+    expect(colorCalor("12", plana)).toBe("var(--calor-1)");
+  });
+});
+
+describe("escalaCalor", () => {
+  it("ancla la rampa en p10/p90 y el exceso en el máximo", () => {
+    const puntos = Array.from({ length: 10 }, (_, i) => ({
+      t: i,
+      valor: String(i + 1),
+    }));
+    expect(escalaCalor(puntos)).toEqual({ p10: "1", p90: "9", max: "10" });
+  });
+
+  it("una hora extrema NO comprime la rampa entera", () => {
+    /*
+     * El defecto que motivó pasar de min/max a p10/p90: un solo pico dejaba al
+     * resto del mapa repartido entre dos escalones y todo se leía plano.
+     */
+    const puntos = [
+      ...Array.from({ length: 19 }, (_, i) => ({ t: i, valor: String(10 + i) })),
+      { t: 99, valor: "500" },
+    ];
+    const escala = escalaCalor(puntos);
+    expect(escala?.max).toBe("500");
+    // El p90 se queda con la masa de la serie, lejos del pico.
+    expect(Number(escala?.p90)).toBeLessThan(30);
+    // Y dos valores vecinos del cuerpo siguen cayendo en escalones distintos.
+    expect(colorCalor("11", escala!)).not.toBe(colorCalor("25", escala!));
+  });
+
+  it("sin puntos no hay escala", () => {
+    expect(escalaCalor([])).toBeNull();
   });
 });
 

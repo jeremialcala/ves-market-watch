@@ -66,6 +66,29 @@ quedaba a 1,67:1 sobre blanco, o sea invisible. Ahora cinco pasos por tema
 (`--calor-1` … `--calor-5`), y la leyenda habla de intensidad porque en claro
 sube oscureciendo y en oscuro aclarando.
 
+**Dos codificaciones, dos preguntas (2026-08-02).** La rampa cubre del p10 al
+p90 y el coral (`--calor-alto-1`, `--calor-alto-2`) marca lo que los supera. No
+es la continuación del degradado: la rampa dice *cuánta* brecha y el coral dice
+*otra cosa* —que se salió del rango habitual de la propia ventana—, y por eso
+cambia de tono en vez de seguir subiendo de intensidad. El corte es estricto
+(`> p90`): con una serie plana el p90 es el valor de todas las celdas y un `>=`
+habría pintado el mapa entero como exceso.
+
+El tramo va del p10 al p90 y no de mínimo a máximo porque **una sola hora
+extrema comprimía la rampa entera**: con min/max un pico aislado dejaba al resto
+repartido entre dos escalones. Los percentiles son de los 14 días pintados y la
+leyenda lo rotula así — el lado venta no es medidor del panel, así que no tiene
+percentiles publicados que citar. Son discretos (ADR-0017): valores realmente
+observados, que es lo mínimo cuando se escriben en la leyenda.
+
+La rampa teal **no pasó por el validador** (no está instalado): se derivó
+igualando escalón por escalón el contraste de la coral que sí validó, y se midió
+lo que el cambio ponía en riesgo — ΔE2000 mínimo entre escalones 7,32 (oscuro) y
+8,56 (claro), contra 6,96 / 8,86 de la coral. El número que sostiene el diseño
+es el salto teal→coral: **ΔE 14,0 bajo protanopia**, el doble de lo que separa
+dos escalones, así que la categoría sobrevive al daltonismo. Aun así el exceso
+se dice también en el tooltip: una categoría no debe vivir solo en el tono.
+
 El canario `tests/unit/paleta.test.ts` fija estos valores: si alguien cambia un
 slot, el test falla y pide volver a pasar el validador. Lo que se rompió esta
 vez fue precisamente que el color cambió y la palabra «validada» se quedó.

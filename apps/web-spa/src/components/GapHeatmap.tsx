@@ -1,6 +1,6 @@
 import { useI18n } from "../i18n/contexto";
-import { formatPct, toChartNumber } from "../lib/decimal";
-import { colorCalor, extremos, parrillaCalor } from "../lib/series";
+import { formatPct } from "../lib/decimal";
+import { colorCalor, escalaCalor, esExceso, parrillaCalor } from "../lib/series";
 import { DIAS_CALOR, useHistorialBrecha } from "../state/useHistorialBrecha";
 import { NoDataState } from "./NoDataState";
 
@@ -8,6 +8,10 @@ import { NoDataState } from "./NoDataState";
  * Mapa de calor día × hora (VET) de la brecha — dato REAL de
  * `/indicators/history` con bucket 1 h. Las horas sin bucket quedan vacías:
  * no se interpola para «rellenar bonito».
+ *
+ * La rampa llega hasta el p90 y el coral marca lo que lo supera. Ese p90 es de
+ * los 14 días que se están pintando, y la leyenda lo dice: el lado venta no es
+ * medidor del panel, así que no tiene percentiles publicados que citar.
  */
 export function GapHeatmap() {
   const { t, idioma } = useI18n();
@@ -15,7 +19,7 @@ export function GapHeatmap() {
   // ADR-0013 RF-7). Con el de compra las primeras filas del mapa salían vacías
   // porque su serie arranca el 2026-07-20.
   const { horario, cargando, fallo } = useHistorialBrecha("sell");
-  const rango = extremos(horario);
+  const escala = escalaCalor(horario);
 
   return (
     <section className="vmw-seccion" aria-label={t("calor.titulo")}>
@@ -24,7 +28,7 @@ export function GapHeatmap() {
         <span className="vmw-seccion__bajada">{t("calor.bajada")}</span>
       </div>
       <div className="vmw-tarjeta">
-        {rango === null ? (
+        {escala === null ? (
           <NoDataState
             detalle={
               cargando
@@ -63,22 +67,24 @@ export function GapHeatmap() {
                                   dia: fila.etiqueta,
                                   hora: celda.hora,
                                 })
-                              : t("calor.celda", {
-                                  dia: fila.etiqueta,
-                                  hora: celda.hora,
-                                  valor: formatPct(celda.valor, 2, idioma),
-                                })
+                              : // El exceso se DICE, no solo se pinta: si la
+                                // categoría viviera únicamente en el tono, para
+                                // quien no lo distinga no existiría.
+                                t(
+                                  esExceso(celda.valor, escala)
+                                    ? "calor.celdaExceso"
+                                    : "calor.celda",
+                                  {
+                                    dia: fila.etiqueta,
+                                    hora: celda.hora,
+                                    valor: formatPct(celda.valor, 2, idioma),
+                                  },
+                                )
                           }
                           style={
                             celda.valor === null
                               ? undefined
-                              : {
-                                  background: colorCalor(
-                                    celda.valor,
-                                    toChartNumber(rango.min),
-                                    toChartNumber(rango.max),
-                                  ),
-                                }
+                              : { background: colorCalor(celda.valor, escala) }
                           }
                         />
                       ))}
@@ -88,9 +94,17 @@ export function GapHeatmap() {
               </div>
             </div>
             <div className="vmw-calor__leyenda">
-              <span>{formatPct(rango.min, 2, idioma)}</span>
+              <span>
+                {t("calor.p10", { valor: formatPct(escala.p10, 2, idioma) })}
+              </span>
               <div className="vmw-calor__escala" aria-hidden="true" />
-              <span>{formatPct(rango.max, 2, idioma)}</span>
+              <span>
+                {t("calor.p90", { valor: formatPct(escala.p90, 2, idioma) })}
+              </span>
+              <span className="vmw-calor__exceso">
+                <i className="vmw-calor__muestra" aria-hidden="true" />
+                {t("calor.exceso")}
+              </span>
               <span>{t("calor.leyenda")}</span>
             </div>
           </>

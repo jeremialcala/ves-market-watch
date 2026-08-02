@@ -38,12 +38,20 @@
   --series-aqua: var(--text-muted);
 
   /* Rampa secuencial del mapa de calor: UN tono, luminosidad monótona
-     (magnitud ⇒ secuencial, dice el skill). Índice 1 = brecha menor. */
-  --calor-1: #b54a49;
-  --calor-2: #d06260;
-  --calor-3: #ec7b77;
-  --calor-4: #fe9b96;
-  --calor-5: #fec3bf;
+     (magnitud ⇒ secuencial, dice el skill). Índice 1 = brecha menor. Cubre
+     hasta el p90; derivada igualando escalón por escalón el contraste de la
+     rampa coral que validó el skill (2,52 · 3,49 · 4,83 · 6,47 · 8,61). */
+  --calor-1: #1e796d;
+  --calor-2: #259385;
+  --calor-3: #2caf9d;
+  --calor-4: #33cbb6;
+  --calor-5: #88e1d6;
+
+  /* Exceso: por encima del p90. NO es la continuación de la rampa, es otra
+     categoría — y por eso cambia de tono. Son los dos escalones más marcados
+     de la coral ya validada, reutilizados sin tocar. */
+  --calor-alto-1: #fe9b96;
+  --calor-alto-2: #fec3bf;
 
   /* Dirección de señal: es ESTADO, no serie — siempre con su texto al lado. */
   --dir-alcista: var(--teal);
@@ -57,11 +65,15 @@
   --series-sell: #cf4946;
   --series-aqua: var(--text-muted);
 
-  --calor-1: #fe8b86;
-  --calor-2: #db6c69;
-  --calor-3: #b84d4c;
-  --calor-4: #972e30;
-  --calor-5: #760715;
+  /* Contrastes 2,29 · 3,30 · 4,97 · 7,59 · 11,57 sobre blanco. */
+  --calor-1: #30bfad;
+  --calor-2: #279e8e;
+  --calor-3: #1f7d70;
+  --calor-4: #175e54;
+  --calor-5: #104039;
+
+  --calor-alto-1: #972e30;
+  --calor-alto-2: #760715;
 }
 
 @keyframes vmw-pulso {
@@ -778,6 +790,26 @@ body {
     var(--calor-3),
     var(--calor-4),
     var(--calor-5)
+  );
+}
+
+/* El exceso va como muestra suelta, no pegado al final de la barra: es una
+   categoría aparte, y encadenarlo al degradado lo leería como «más de lo
+   mismo». */
+.vmw-calor__exceso {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vmw-calor__muestra {
+  width: 22px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(
+    90deg,
+    var(--calor-alto-1),
+    var(--calor-alto-2)
   );
 }
 

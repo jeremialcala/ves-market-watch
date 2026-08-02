@@ -387,8 +387,12 @@ export const ES = {
   // -- mapa de calor ---------------------------------------------------------
   "calor.titulo": "Mapa de calor de la brecha",
   "calor.bajada": "lado venta · últimos 14 días · bucket 1 h · VET",
-  "calor.leyenda": "más tenue = brecha menor · más intenso = brecha mayor",
+  "calor.leyenda": "cada celda = 1 h · percentiles de estos 14 días",
+  "calor.p10": "p10 {valor}",
+  "calor.p90": "p90 {valor}",
+  "calor.exceso": "por encima del p90",
   "calor.celda": "{dia} {hora}:00 — {valor}",
+  "calor.celdaExceso": "{dia} {hora}:00 — {valor} · por encima del p90",
   "calor.sinDato": "{dia} {hora}:00 — sin dato",
 
   // -- referencia P2P --------------------------------------------------------
@@ -896,8 +900,12 @@ export const EN: Record<Clave, string> = {
 
   "calor.titulo": "Gap heatmap",
   "calor.bajada": "sell side · last 14 days · hourly bucket · VET",
-  "calor.leyenda": "fainter = narrower gap · stronger = wider gap",
+  "calor.leyenda": "each cell = 1 h · percentiles from these 14 days",
+  "calor.p10": "p10 {valor}",
+  "calor.p90": "p90 {valor}",
+  "calor.exceso": "above p90",
   "calor.celda": "{dia} {hora}:00 — {valor}",
+  "calor.celdaExceso": "{dia} {hora}:00 — {valor} · above p90",
   "calor.sinDato": "{dia} {hora}:00 — no data",
 
   "p2p.titulo": "P2P reference USDT/VES",

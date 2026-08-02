@@ -7,6 +7,40 @@ timestamp: 2026-08-01T12:00:00Z
 
 # Log
 
+## 2026-08-02 — El mapa de calor gana un umbral, no solo colores nuevos
+- El prototipo pedía teal por debajo del p90 y coral por encima. Lo primero que
+  encontré fue que la rampa coral de un solo tono **era una decisión razonada y
+  documentada** (la anterior salvia → teal → coral no era monótona en luminosidad
+  y en claro quedaba a 1,67:1 sobre blanco). Así que la pregunta no era «¿cambio
+  los colores?» sino «¿en qué se diferencia esto de lo que se rechazó?».
+- Se diferencia en que **no es un recorrido continuo de tres tonos**: es una rampa
+  secuencial más una **categoría** encima. La rampa dice *cuánta* brecha; el coral
+  dice que se salió del rango habitual. Dos codificaciones para dos preguntas.
+- El validador del skill dataviz **no está instalado**, así que no pude re-medir
+  con él. En vez de cambiar los colores a ojo, derivé la rampa teal **igualando
+  escalón por escalón el contraste de la coral ya validada** y medí lo que el
+  cambio ponía en riesgo: contraste, monotonía y ΔE2000 bajo protanopia/
+  deuteranopia. Queda anotado en el plan de pruebas como pendiente de validador
+  — es la distancia entre «medido» y «validado», y difuminarla fue exactamente el
+  fallo del 2026-07-31.
+- **El número que decide el diseño**: ΔE 14,0 en el salto teal→coral bajo
+  protanopia, el doble de lo que separa dos escalones de la rampa. Sin eso, la
+  categoría habría desaparecido justo para quien depende de que sea explícita. Aun
+  así el exceso va **también en el tooltip**: no debe vivir solo en el tono.
+- Dos decisiones que no venían de la maqueta y salieron de mirar el dato:
+  - El tramo va de **p10 a p90, no de mínimo a máximo**. Una sola hora extrema
+    comprimía la rampa entera y dejaba el cuerpo de la serie en dos escalones.
+  - El corte es **estricto** (`> p90`). Con una serie plana el p90 es el valor de
+    todas las celdas, y un `>=` habría pintado el mapa entero como exceso: «la
+    brecha se salió de su rango» dicho de una serie que no se movió.
+- Los percentiles son **de los 14 días que se pintan** y la leyenda lo rotula así.
+  El lado venta no es medidor del panel, luego no tiene percentiles publicados que
+  citar — publicarlos es Fase B. Son discretos (ADR-0017): se escriben en pantalla,
+  así que tienen que ser valores observados.
+- Verificado contra el dato real antes y después de desplegar: 329 celdas,
+  p90 17,18 %, **32 en coral (9,7 %)** por SQL; la app en vivo pinta exactamente
+  esas 32. Comprobados los dos temas en el navegador.
+
 ## 2026-08-02 — El dashboard, según el prototipo `Criterio`
 - Importado el proyecto de diseño con el MCP `DesignSync`. **El sistema de diseño
   no había nada que traer**: sus 43 tokens coinciden valor por valor con los que

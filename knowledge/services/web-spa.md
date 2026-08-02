@@ -164,8 +164,28 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
 - `tests/unit/paleta.test.ts` fija los valores medidos: cambiarlos rompe el test
   y obliga a volver a pasar el validador.
 
+## Umbral visible en el mapa de calor (2026-08-02)
+- **Dos codificaciones para dos preguntas**: la rampa (teal, cinco escalones)
+  dice *cuánta* brecha del p10 al p90; el coral (`--calor-alto-1/2`) dice que se
+  salió del rango habitual de la ventana. El coral **no** continúa el degradado
+  —cambia de tono— porque no es «más de lo mismo», es otra afirmación.
+- El tramo va de **p10 a p90, no de mínimo a máximo**: una sola hora extrema
+  comprimía la rampa entera y dejaba el cuerpo de la serie en dos escalones.
+- Los percentiles son **de los 14 días pintados** y la leyenda lo rotula así: el
+  lado venta no es medidor del panel, luego no tiene percentiles publicados que
+  citar. Discretos (ADR-0017) — se escriben en pantalla, así que tienen que ser
+  valores observados.
+- Corte **estricto** (`> p90`): con serie plana el p90 es el valor de todas las
+  celdas y `>=` habría pintado el mapa entero como exceso.
+- La rampa teal **no pasó por el validador** (no está instalado): se derivó
+  igualando escalón por escalón el contraste de la coral ya validada, y se midió
+  lo que el cambio arriesgaba — ΔE mín entre escalones 7,32/8,56 (contra
+  6,96/8,86 de la coral) y, lo que sostiene el diseño, **ΔE 14,0 bajo protanopia
+  en el salto teal→coral**: el doble de lo que separa dos escalones, así que la
+  categoría sobrevive al daltonismo. Aun así el exceso va también en el tooltip.
+
 ## Verificación
-- **293 tests** (unit/component/contract con MSW y WS mock) — **87,4 % de ramas**
+- **307 tests** (unit/component/contract con MSW y WS mock) — **87,5 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba
