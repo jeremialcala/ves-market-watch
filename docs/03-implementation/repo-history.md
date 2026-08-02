@@ -131,6 +131,8 @@ gitGraph
     commit id: "31eb62b"
     commit id: "a8b8c02"
     commit id: "603705d"
+    commit id: "4a2a69e"
+    commit id: "592e4b5"
 ```
 
 ### Estado actual de las ramas
@@ -138,7 +140,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `603705d` | 2026-08-02 | 97 |
+| `develop` | `592e4b5` | 2026-08-02 | 99 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -154,6 +156,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `592e4b5` | commit | — | Jeremi Alcala | 2026-08-02 | feat(web-spa): la descomposicion muestra las piernas del movimiento |
+| `4a2a69e` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `603705d` | commit | — | Jeremi Alcala | 2026-08-02 | feat(web-spa): el mapa de calor gana un umbral visible en el p90 |
 | `a8b8c02` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `31eb62b` | commit | — | Jeremi Alcala | 2026-08-01 | style(web-spa): distribución del dashboard según el prototipo |
