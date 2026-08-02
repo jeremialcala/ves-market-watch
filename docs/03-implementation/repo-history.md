@@ -135,6 +135,8 @@ gitGraph
     commit id: "592e4b5"
     commit id: "bf7aa01"
     commit id: "e0f5f8b"
+    commit id: "1383830"
+    commit id: "abef31d"
 ```
 
 ### Estado actual de las ramas
@@ -142,7 +144,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `e0f5f8b` | 2026-08-02 | 101 |
+| `develop` | `abef31d` | 2026-08-02 | 103 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -158,6 +160,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `abef31d` | commit | — | Jeremi Alcala | 2026-08-02 | docs: barrido de coherencia tras ADR-0022 y el mapa de calor |
+| `1383830` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `e0f5f8b` | commit | — | Jeremi Alcala | 2026-08-02 | fix(vigencia): la tasa oficial rige por fecha-valor, no por antiguedad (ADR-0022) |
 | `bf7aa01` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `592e4b5` | commit | — | Jeremi Alcala | 2026-08-02 | feat(web-spa): la descomposicion muestra las piernas del movimiento |
