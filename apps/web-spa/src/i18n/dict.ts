@@ -298,6 +298,16 @@ export const ES = {
 
   // -- descomposición --------------------------------------------------------
   // --- Distancia al disparo (RF-6): a cuánto está el aviso más cercano ------
+  // --- Los dos indicadores que acompañan al titular -----------------------
+  "minis.brecha30": "Brecha vs. 30 días",
+  "minis.brecha30Valor": "{delta} pts",
+  "minis.brecha30Nota": "contra su promedio de 30 días, {media}",
+  "minis.brecha30NotaParcial":
+    "contra su promedio de {dias} d (de 30), {media}",
+  "minis.brecha30Sin": "sin historia suficiente para comparar",
+  "minis.ratio": "Oferta / demanda",
+  "minis.ratioNota": "mediana de 90 días: {mediana}",
+
   "disparo.titulo": "Distancia al disparo",
   "disparo.bajada": "qué le falta al aviso más cercano",
   "disparo.conteo": "cumple {cumplidas} de {totales}",
@@ -803,6 +813,15 @@ export const EN: Record<Clave, string> = {
     "The official rate used for this gap has not been updated in over 6 hours.",
 
   // --- Distance to trigger ---------------------------------------------------
+  // --- The two stats next to the headline ------------------------------------
+  "minis.brecha30": "Gap vs. 30 days",
+  "minis.brecha30Valor": "{delta} pts",
+  "minis.brecha30Nota": "against its 30-day average, {media}",
+  "minis.brecha30NotaParcial": "against its {dias}-day average (of 30), {media}",
+  "minis.brecha30Sin": "not enough history to compare",
+  "minis.ratio": "Supply / demand",
+  "minis.ratioNota": "90-day median: {mediana}",
+
   "disparo.titulo": "Distance to trigger",
   "disparo.bajada": "what the closest alert still needs",
   "disparo.conteo": "{cumplidas} of {totales} met",

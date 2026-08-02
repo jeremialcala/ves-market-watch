@@ -104,7 +104,14 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   criterio normalizado que usa el motor. El orden dejó de ser una constante, así
   que los tests pasaron a seleccionar por nombre y no por índice.
 - El sistema de diseño **no hubo que importarlo**: los 43 tokens del proyecto de
-  diseño coinciden valor por valor con los que ADR-0018 ya portó.
+  diseño coinciden valor por valor con los que ADR-0018 ya portó, y su tarjeta
+  dominante (28 px, `--dark-3`, 26/28) es exactamente `.vmw-tarjeta`. Lo que
+  difería era la DISPOSICIÓN.
+- Distribución del prototipo: brecha y «distancia al disparo» lado a lado —el
+  número y su consecuencia se leen juntos—, los dos minis debajo, y referencia
+  P2P junto a calidad del dato. Los minis pasan a ser **brecha vs. 30 días** y
+  **oferta/demanda**; los outliers ya viven en el panel de instrumentos y en el
+  chip de confianza.
 - Quedan fuera «Crear alerta» y «Exportar CSV» (ADR-0021) y «Riesgos que vigilar»
   conserva su sello demo: la cuenta sigue en **dos**.
 
@@ -158,7 +165,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   y obliga a volver a pasar el validador.
 
 ## Verificación
-- **291 tests** (unit/component/contract con MSW y WS mock) — **87,3 % de ramas**
+- **293 tests** (unit/component/contract con MSW y WS mock) — **87,4 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

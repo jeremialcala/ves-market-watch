@@ -1250,3 +1250,18 @@ body {
 .vmw-proc__nota {
   margin-top: 14px;
 }
+
+/* La marca temporal del titular, junto al eyebrow. */
+.vmw-veredicto__cuando {
+  font-size: var(--fs-micro);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-dim);
+}
+
+/* Los dos paneles emparejados son TARJETAS, no secciones con título: así el
+   par se lee como dos tarjetas hermanas y no como dos bloques distintos. */
+.vmw-disparo,
+.vmw-proc {
+  margin-top: 16px;
+}

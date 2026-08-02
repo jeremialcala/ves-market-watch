@@ -28,7 +28,10 @@ import {
 import { config } from "../../src/config";
 import { marketStore } from "../../src/state/marketStore";
 import { AnalysisView } from "../../src/views/AnalysisView";
-import { FIXTURE_INDICADORES } from "../contract/fixtures.test";
+import {
+  FIXTURE_ANALISIS,
+  FIXTURE_INDICADORES,
+} from "../contract/fixtures.test";
 import { renderConProveedores as render } from "../render";
 import { limpiarTokenDeTest, registrarTokenDeTest } from "../soporte";
 
@@ -121,26 +124,46 @@ describe("MarketRegimeCard", () => {
     expect(screen.queryByText("0,50 %")).toBeNull();
   });
 
-  it("los indicadores de un vistazo siguen pintándose, en HeadlineStats", () => {
-    marketStore.push({
-      topic: "indicators",
-      event_id: "evento-minis",
-      occurred_at: "2026-07-30T12:00:00Z",
-      data: {
-        as_of: "2026-07-30T12:00:00Z",
-        calc_version: 1,
-        official_stale: false,
-        triggered_by: "11111111-2222-3333-4444-555555555555",
+  it("los minis son los del prototipo: brecha vs. 30 d y oferta/demanda", () => {
+    marketStore.resync({ analisis: FIXTURE_ANALISIS });
+    render(<HeadlineStats />);
+
+    // 13,45 − 16,22 = −2,77 pts contra su media de 30 días…
+    expect(screen.getByText("-2,77 pts")).toBeTruthy();
+    // …y la nota declara el TRAMO REAL, porque compra solo cubre 12 de 30.
+    expect(screen.getByText(/contra su promedio de 12 d \(de 30\)/)).toBeTruthy();
+  });
+
+  it("la mediana del ratio sale del corte p50, no de un «backtest»", () => {
+    /*
+     * El prototipo rotula «p50 backtest 0,47». No hay backtest ninguno: es el
+     * percentil 50 observado en la ventana, que el contrato ya publica en
+     * `scale.cuts`.
+     */
+    marketStore.resync({
+      analisis: {
+        ...FIXTURE_ANALISIS,
         indicators: [
-          { indicator: "p2p_outliers_pct_buy", currency: "VES", value: "0.50000000" },
-          { indicator: "p2p_ratio_oferta_demanda", currency: "VES", value: "0.59000000" },
+          {
+            ...FIXTURE_ANALISIS.indicators[0],
+            indicator: "p2p_ratio_oferta_demanda",
+            value: "0.59",
+          },
         ],
       },
     });
     render(<HeadlineStats />);
-    expect(screen.getByText("0,50 %")).toBeTruthy();
-    expect(screen.getByText("0,59")).toBeTruthy();
+    expect(screen.getByText(/mediana de 90 días: 15,9/)).toBeTruthy();
   });
+
+  it("sin escala empírica NO se cita mediana: se dice lo genérico", () => {
+    // El ratio no está en el análisis del fixture, así que no hay p50 que citar.
+    marketStore.resync({ analisis: FIXTURE_ANALISIS });
+    render(<HeadlineStats />);
+    expect(screen.queryByText(/mediana de 90 días/)).toBeNull();
+    expect(screen.getByText(/insumo de las reglas de señal/)).toBeTruthy();
+  });
+
 });
 
 /** Serie horaria con un valor fijo, para distinguir las dos líneas por su rango. */

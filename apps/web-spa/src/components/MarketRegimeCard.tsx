@@ -4,7 +4,7 @@ import type { Analisis } from "../api/endpoints";
 import { Stat } from "../ds/components";
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
-import { formatDecimal, formatPct } from "../lib/decimal";
+import { formatDecimal, formatPct, restarDecimales } from "../lib/decimal";
 import { relativo } from "../lib/freshness";
 import { useMarket } from "../state/marketStore";
 
@@ -29,6 +29,11 @@ export function MarketRegimeCard() {
       <div className="vmw-hero__brillo" aria-hidden="true" />
       <div className="vmw-eyebrow">
         <span>{t("regimen.titulo")}</span>
+        {analisis !== null && (
+          <span className="vmw-veredicto__cuando">
+            {cuando(analisis.as_of, t)}
+          </span>
+        )}
       </div>
       <Lectura analisis={analisis} />
     </section>
@@ -44,42 +49,106 @@ export function MarketRegimeCard() {
 export function HeadlineStats() {
   const { t, idioma } = useI18n();
   const { vigentes, analisis } = useMarket();
+
   const ratio = valorVigente(vigentes, analisis, "p2p_ratio_oferta_demanda");
-  const outliers = valorVigente(vigentes, analisis, "p2p_outliers_pct_buy");
+  const medianaRatio = medianaDe(analisis, "p2p_ratio_oferta_demanda");
+  const contra30 = contraMedia30(analisis);
 
   return (
-    <div style={{ display: "grid", gap: "18px" }}>
-
-      <div className="vmw-grid" style={{ "--min": "180px" } as CSSProperties}>
-        <div className="vmw-tarjeta--sm vmw-tarjeta">
-          <div className="vmw-eyebrow">{t("micro.outliers")}</div>
-          <Stat
-            tone="sage"
-            style={{ marginTop: "10px" }}
-            value={
-              outliers !== undefined
-                ? formatPct(outliers.value, 2, idioma)
-                : "—"
-            }
-            label={t("micro.outliersNota")}
-          />
-        </div>
-        <div className="vmw-tarjeta--sm vmw-tarjeta">
-          <div className="vmw-eyebrow">{t("micro.ratio")}</div>
-          <Stat
-            tone="teal"
-            style={{ marginTop: "10px" }}
-            value={
-              ratio !== undefined
-                ? formatDecimal(ratio.value, { maxDecimales: 2, idioma })
-                : "—"
-            }
-            label={t("micro.ratioNota")}
-          />
-        </div>
+    <div className="vmw-grid" style={{ "--min": "300px" } as CSSProperties}>
+      <div className="vmw-tarjeta--sm vmw-tarjeta">
+        <div className="vmw-eyebrow">{t("minis.brecha30")}</div>
+        <Stat
+          tone="teal"
+          style={{ marginTop: "10px" }}
+          value={
+            contra30 === null
+              ? "—"
+              : t("minis.brecha30Valor", {
+                  delta: formatDecimal(contra30.delta, {
+                    maxDecimales: 2,
+                    idioma,
+                  }),
+                })
+          }
+          label={
+            contra30 === null
+              ? t("minis.brecha30Sin")
+              : t(
+                  contra30.completa
+                    ? "minis.brecha30Nota"
+                    : "minis.brecha30NotaParcial",
+                  {
+                    media: formatPct(contra30.media, 2, idioma),
+                    dias: String(contra30.diasCubiertos),
+                  },
+                )
+          }
+        />
+      </div>
+      <div className="vmw-tarjeta--sm vmw-tarjeta">
+        <div className="vmw-eyebrow">{t("minis.ratio")}</div>
+        <Stat
+          tone="teal"
+          style={{ marginTop: "10px" }}
+          value={
+            ratio !== undefined
+              ? formatDecimal(ratio.value, { maxDecimales: 2, idioma })
+              : "—"
+          }
+          label={
+            medianaRatio === null
+              ? t("micro.ratioNota")
+              : t("minis.ratioNota", {
+                  mediana: formatDecimal(medianaRatio, {
+                    maxDecimales: 2,
+                    idioma,
+                  }),
+                })
+          }
+        />
       </div>
     </div>
   );
+}
+
+/**
+ * La brecha de hoy contra su media de 30 días, del lado COMPRA.
+ *
+ * El prototipo rotula esta tarjeta «desde 18,13 % el 1-jul», es decir el VALOR
+ * de hace 30 días. Eso no lo publica el contrato —`gap_history` da media y
+ * extremos, no el punto inicial—, así que se compara contra la media, que sí es
+ * dato, y la nota dice contra qué se compara en vez de insinuar otra cosa.
+ */
+function contraMedia30(
+  analisis: Analisis | null,
+): { delta: string; media: string; completa: boolean; diasCubiertos: number } | null {
+  const lado = analisis?.gap_history?.sides.find((s) => s.side === "buy");
+  const ref = lado?.references.find((r) => r.days_configured === 30);
+  if (lado?.current == null || ref?.mean == null) {
+    return null;
+  }
+  return {
+    delta: restarDecimales(lado.current, ref.mean),
+    media: ref.mean,
+    completa: ref.days_covered >= ref.days_configured,
+    diasCubiertos: ref.days_covered,
+  };
+}
+
+/**
+ * La mediana de la ventana de un medidor: su corte `p50` publicado.
+ *
+ * El prototipo la llama «p50 backtest», palabra que este proyecto no usa: no hay
+ * backtest ninguno, es el percentil 50 observado en la ventana de 90 días. Sin
+ * escala empírica (respaldo del ruleset) no hay mediana que citar.
+ */
+function medianaDe(analisis: Analisis | null, indicador: string): string | null {
+  const lectura = analisis?.indicators.find((i) => i.indicator === indicador);
+  if (lectura === undefined || lectura.scale.source !== "percentiles") {
+    return null;
+  }
+  return lectura.scale.cuts.find((c) => c.key === "p50")?.value ?? null;
 }
 
 /**

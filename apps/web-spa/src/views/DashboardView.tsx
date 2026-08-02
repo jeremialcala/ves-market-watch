@@ -30,20 +30,30 @@ export function DashboardView() {
       <div className="vmw-contenedor">
         <MarketRegimeCard />
 
+        {/* La brecha y lo que le falta al aviso, lado a lado: el número y su
+            consecuencia se leen juntos. */}
         <section
           className="vmw-grid"
-          style={{ "--min": "420px", gap: "28px" } as CSSProperties}
+          style={{ "--min": "400px", gap: "24px" } as CSSProperties}
         >
           <GapPanel />
-          <HeadlineStats />
+          <RuleDistance />
         </section>
 
-        <RuleDistance />
+        <HeadlineStats />
+
         <GaugePanel />
         <GapDecomposition />
         <GapHeatmap />
-        <P2PReferencePanel />
-        <DataProvenance />
+
+        {/* La referencia y de qué está hecha, lado a lado. */}
+        <section
+          className="vmw-grid"
+          style={{ "--min": "400px", gap: "24px" } as CSSProperties}
+        >
+          <P2PReferencePanel />
+          <DataProvenance />
+        </section>
         <OfficialRatePanel />
         <SignalsFeed />
         <DepthChart />

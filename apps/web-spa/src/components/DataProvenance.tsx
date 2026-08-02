@@ -21,13 +21,11 @@ export function DataProvenance() {
   const { analisis } = useMarket();
 
   return (
-    <section className="vmw-seccion" aria-label={t("procedencia.titulo")}>
-      <div className="vmw-seccion__cabecera">
-        <h3 className="vmw-seccion__titulo">{t("procedencia.titulo")}</h3>
-        <span className="vmw-seccion__bajada">{t("procedencia.bajada")}</span>
+    <div className="vmw-tarjeta" aria-label={t("procedencia.titulo")}>
+      <div className="vmw-eyebrow">
+        <span>{t("procedencia.titulo")}</span>
       </div>
-
-      <div className="vmw-tarjeta">
+      <div className="vmw-proc">
         {analisis === null ? (
           <NoDataState detalle={t("procedencia.sinAnalisis")} />
         ) : (
@@ -49,7 +47,7 @@ export function DataProvenance() {
           </>
         )}
       </div>
-    </section>
+    </div>
   );
 }
 
