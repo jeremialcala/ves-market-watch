@@ -121,6 +121,8 @@ gitGraph
     commit id: "f9ca6cf"
     commit id: "e759414"
     commit id: "a0c26d3"
+    commit id: "5720bf4"
+    commit id: "df1c2a8"
 ```
 
 ### Estado actual de las ramas
@@ -128,7 +130,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `a0c26d3` | 2026-08-01 | 87 |
+| `develop` | `df1c2a8` | 2026-08-01 | 89 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -144,6 +146,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `df1c2a8` | commit | — | Jeremi Alcala | 2026-08-01 | feat(web-spa): la sparkline de 24 h pinta los dos lados con escala compartida |
+| `5720bf4` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `a0c26d3` | commit | — | Jeremi Alcala | 2026-08-01 | feat(web-spa): el mapa de calor mira el lado venta, que es el que tiene historia |
 | `e759414` | commit | — | Jeremi Alcala | 2026-08-01 | docs(repo-history): regenerar |
 | `f9ca6cf` | commit | — | Jeremi Alcala | 2026-08-01 | docs: fase 5 — AI-DLC de la comparativa histórica y barrido de coherencia |
