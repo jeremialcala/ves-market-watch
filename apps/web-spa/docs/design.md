@@ -124,9 +124,9 @@ el navegador (las media queries no corren en jsdom):
 
 | Ancho | Barra | Tira de estado | Vista actual |
 |---|---|---|---|
-| ≥ 1080 px | ancha, 1 fila | completa (estado · suscripciones · último evento · cuota · calc) | — |
-| 760–1079 px | ancha, 2 filas | se repliegan suscripciones y cuota | — |
-| 480–759 px | compacta | ausente → punto + antigüedad en la barra; detalle completo en la línea meta del menú | visible |
+| ≥ 1080 px | ancha, 1 fila | completa (estado · último evento · suscripciones · sello de frescura) | — |
+| 760–1079 px | ancha, 1 fila | se repliegan las suscripciones; el resto no cede | — |
+| 480–759 px | compacta | ausente → punto + antigüedad en la barra; el detalle **y el diagnóstico** (suscripciones, calc/ruleset) en la línea meta del menú | visible |
 | < 480 px | compacta | ídem | retirada |
 | < 360 px | compacta, título con elipsis | ídem | retirada |
 
