@@ -11,6 +11,7 @@ import { Footer } from "../../src/components/shell/Footer";
 import { NavBar } from "../../src/components/shell/NavBar";
 import { StatusStrip } from "../../src/components/shell/StatusStrip";
 import { marketStore } from "../../src/state/marketStore";
+import { FIXTURE_ANALISIS } from "../contract/fixtures.test";
 import { renderConProveedores as render } from "../render";
 
 /** `matchMedia` no existe en jsdom: se simula para poder fijar el ancho. */
@@ -35,10 +36,17 @@ describe("StatusStrip", () => {
   it("sin eventos todavía lo dice, en vez de inventar una antigüedad", () => {
     render(<StatusStrip />);
     expect(screen.getByText(/sin eventos todavía/i)).toBeTruthy();
-    expect(screen.getByText(/calc — · ruleset v1/)).toBeTruthy();
   });
 
-  it("muestra suscripciones, antigüedad del último push y versión de cálculo", () => {
+  it("lleva estado, último push y suscripciones — y NADA de diagnóstico", () => {
+    /*
+     * La tira responde «¿puedo fiarme de lo que veo ahora?». La ruta del canal,
+     * la cuota REST y las versiones de calc/ruleset no cambian esa respuesta y
+     * competían por el único renglón con lo que sí: salieron al tooltip del
+     * punto de conexión, a «Calidad y procedencia» y, en compacto, a la línea
+     * meta del menú.
+     */
+    marketStore.cuota({ remaining: 118, limit: 120 });
     marketStore.push({
       topic: "indicators",
       event_id: "evento-tira",
@@ -51,16 +59,54 @@ describe("StatusStrip", () => {
         indicators: [],
       },
     });
-    render(<StatusStrip />);
-    expect(screen.getByText(/flujo \/ws\/v1 · 5 suscripciones/)).toBeTruthy();
+    const { container } = render(<StatusStrip />);
+
+    expect(screen.getByText(/5 suscripciones/)).toBeTruthy();
     expect(screen.getByText(/último evento hace 34 s/)).toBeTruthy();
-    expect(screen.getByText(/calc v3 · ruleset v1/)).toBeTruthy();
+
+    const tira = container.querySelector(".vmw-tira")?.textContent ?? "";
+    expect(tira).not.toMatch(/\/ws\/v1/);
+    expect(tira).not.toMatch(/cuota/i);
+    expect(tira).not.toMatch(/calc v/);
+    expect(tira).not.toMatch(/ruleset/);
   });
 
-  it("muestra la cuota REST cuando el gateway la envía", () => {
+  it("el diagnóstico sigue accesible en el tooltip del punto de conexión", () => {
     marketStore.cuota({ remaining: 118, limit: 120 });
+    marketStore.push({
+      topic: "indicators",
+      event_id: "evento-tooltip",
+      occurred_at: new Date().toISOString(),
+      data: {
+        as_of: new Date().toISOString(),
+        calc_version: 3,
+        official_stale: false,
+        triggered_by: "11111111-2222-3333-4444-555555555555",
+        indicators: [],
+      },
+    });
     render(<StatusStrip />);
-    expect(screen.getByText("cuota 118/120")).toBeTruthy();
+
+    const titulo =
+      document.querySelector('[role="status"]')?.getAttribute("title") ?? "";
+    expect(titulo).toMatch(/118/);
+    expect(titulo).toMatch(/calc v3/);
+  });
+
+  it("sella a qué momento pertenece el dato, en hora de Venezuela", () => {
+    marketStore.resync({
+      analisis: {
+        ...FIXTURE_ANALISIS,
+        as_of: "2026-08-01T18:32:00Z", // 14:32 VET
+      },
+    });
+    render(<StatusStrip />);
+    expect(screen.getByText(/datos al 1 ago · 14:32 VET/)).toBeTruthy();
+  });
+
+  it("sin análisis NO se inventa un sello de frescura", () => {
+    render(<StatusStrip />);
+    expect(screen.queryByText(/datos al/)).toBeNull();
   });
 
   // El diseño declara la tira dentro de `isWide`: en compacto no existe, y su
@@ -86,16 +132,14 @@ describe("StatusStrip", () => {
   });
 
   it("marca como secundarios los datos que se repliegan antes de envolver", () => {
-    marketStore.cuota({ remaining: 118, limit: 120 });
     render(<StatusStrip />);
     const secundarios = [
       ...document.querySelectorAll(".vmw-tira__secundario"),
     ].map((n) => n.textContent);
-    // Suscripciones y cuota ceden; estado y último evento nunca.
+    // Las suscripciones ceden; estado y último evento nunca.
     expect(secundarios.some((texto) => texto?.includes("suscripciones"))).toBe(
       true,
     );
-    expect(secundarios.some((texto) => texto?.includes("cuota"))).toBe(true);
     expect(secundarios.some((texto) => texto?.includes("último evento"))).toBe(
       false,
     );

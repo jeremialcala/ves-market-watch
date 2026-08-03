@@ -184,3 +184,23 @@ export function resumenIntradia(
     direccion: signo(deltaAbs),
   };
 }
+
+
+/**
+ * Sello de frescura en hora de Venezuela: «1 ago · 14:32 VET».
+ *
+ * El desplazamiento se aplica al instante y luego se formatea **en UTC**: así el
+ * nombre del mes sale localizado sin depender de que el runtime traiga la base
+ * de zonas IANA, que en jsdom no está garantizada. Es el mismo truco que usa
+ * `partesVET` para la parrilla del mapa de calor.
+ */
+export function selloVET(iso: string, idioma: "es" | "en"): string {
+  const enVET = new Date(Date.parse(iso) + VET_OFFSET_MIN * 60_000);
+  const mes = new Intl.DateTimeFormat(idioma === "es" ? "es-VE" : "en-US", {
+    month: "short",
+    timeZone: "UTC",
+  }).format(enVET);
+  const hh = String(enVET.getUTCHours()).padStart(2, "0");
+  const mm = String(enVET.getUTCMinutes()).padStart(2, "0");
+  return `${enVET.getUTCDate()} ${mes.replace(".", "")} · ${hh}:${mm} VET`;
+}

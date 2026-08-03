@@ -122,6 +122,18 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **La tira de estado vuelve a ser estado, no diagnóstico (2026-08-02).** Una
+  sola línea con el Tag del stream, el último evento, las suscripciones vivas y,
+  a la derecha, el sello «datos al 2 ago · 22:50 VET» (del `as_of` del análisis:
+  el instante del dato, no el de la entrega; sin análisis no se escribe).
+  - **Salen** `flujo /ws/v1`, la cuota REST y `calc/ruleset`: no cambian la
+    lectura del mercado y competían por el único renglón con lo que sí. Siguen
+    en el tooltip del punto de conexión, en «Calidad y procedencia» y, en
+    compacto, en la línea meta del menú.
+  - `flex-wrap: nowrap`: con `wrap` la tira se partía en dos en cuanto entraba
+    un dato más, que es lo que la volvía un panel.
+  - El Tag se comprime a 2 px verticales **en este uso**, no en el componente del
+    sistema: sus 7 px más los 7 de la tira la dejaban en 51 px. Ahora 41.
 - **La cuota del movimiento que puso la tasa oficial** (`gap_legs.official_share`).
   `atribuir` ya la calculaba y la tiraba tras clasificar; ahora se publica, para
   que el cliente no la recalcule con otra definición.

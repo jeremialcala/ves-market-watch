@@ -190,7 +190,9 @@ export function NavBar({ vista, onVista, usuario, onSalir }: Props) {
             {[
               usuario,
               estado,
-              t("estado.flujo", { n: TOPICOS.length }),
+              // En compacto la tira no existe, así que esta línea SÍ carga el
+              // diagnóstico: es el reparto que la sustituye, no un duplicado.
+              t("estado.suscripciones", { n: TOPICOS.length }),
               indicadores !== null
                 ? t("estado.version", { calc: indicadores.calc_version })
                 : t("estado.versionSinDato"),

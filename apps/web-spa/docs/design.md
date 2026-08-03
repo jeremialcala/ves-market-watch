@@ -93,6 +93,30 @@ El canario `tests/unit/paleta.test.ts` fija estos valores: si alguien cambia un
 slot, el test falla y pide volver a pasar el validador. Lo que se rompió esta
 vez fue precisamente que el color cambió y la palabra «validada» se quedó.
 
+## La tira de estado es estado, no diagnóstico (2026-08-02)
+Una sola línea (`7px 24px` sobre `--dark`, Inter 12,5 px, `letter-spacing .06em`,
+mayúsculas por CSS, `--text-muted`) con lo que responde **«¿puedo fiarme de lo
+que veo ahora?»**: el Tag salvia del stream, el último evento, las suscripciones
+vivas y —empujado a la derecha con `flex: 1`— el sello de frescura «datos al
+2 ago · 22:50 VET». Los `·` van al 40 %: se lee la pausa, no el punto.
+
+**Salieron** `flujo /ws/v1`, la cuota REST y `calc/ruleset`. Son diagnóstico: no
+cambian la lectura del mercado y competían por el único renglón con lo que sí.
+Siguen accesibles en el tooltip del punto de conexión, en «Calidad y procedencia»
+y, en compacto, en la línea meta del menú — que es donde vive el reparto porque
+la tira ahí no existe.
+
+Dos detalles que decidieron la forma: `flex-wrap: nowrap`, porque con `wrap` la
+tira se partía en dos en cuanto entraba un dato más (que es lo que la volvía un
+panel); y el Tag se comprime a 2 px verticales **en este uso** —no en el
+componente del sistema, que otras superficies usan con su aire— porque sus 7 px
+sumados a los 7 de la tira la dejaban en 51 px, una banda y no un renglón. Con
+esto son 41.
+
+El sello sale del `as_of` del análisis —el instante del DATO, no el de la
+entrega— y si no hay análisis no se escribe: inventar una hora sería lo contrario
+de lo que el sello existe para dar.
+
 ## Shell responsive (2026-07-31)
 El diseño declara la tira de estado dentro de `isWide`: **en compacto no
 existe**, y su información se reparte en vez de perderse. La escalera, medida en

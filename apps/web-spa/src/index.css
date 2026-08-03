@@ -269,11 +269,15 @@ body {
   background: var(--ink);
 }
 
+/* UNA sola línea: con `wrap` la tira se partía en dos en cuanto entraba un dato
+   más, que es lo que la volvía un panel. Lo que sobra se repliega por punto de
+   corte (`__secundario`), no envolviendo. */
 .vmw-tira {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 14px;
+  white-space: nowrap;
   padding: 7px var(--container-pad);
   background: var(--surface-band);
   border-bottom: var(--border-width) solid var(--border);
