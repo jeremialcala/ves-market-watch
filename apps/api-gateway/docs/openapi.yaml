@@ -1260,7 +1260,20 @@ components:
             Qué pierna movió la brecha, o null si no se puede afirmar. La decide
             el motor: recalcularla en el cliente crearía una segunda fuente de
             verdad.
-      required: [hours, official, parallel, responsible]
+        official_share:
+          oneOf:
+            - { $ref: '#/components/schemas/Decimal' }
+            - { type: 'null' }
+          description: |
+            Cuota del MOVIMIENTO total que puso la tasa oficial, en [0, 1]:
+            `|Δoficial| / (|Δoficial| + |Δparalelo|)`. Es el mismo número con el
+            que el motor decide `responsible`, y por eso se publica en vez de
+            recalcularse.
+
+            NO es «cuota del cierre»: con las dos piernas subiendo, la oficial
+            cierra la brecha y el paralelo la abre, así que del cierre la oficial
+            pone el 100 %. null si nada se movió o alguna pierna no es medible.
+      required: [hours, official, parallel, responsible, official_share]
 
     GapHistoryReference:
       type: object

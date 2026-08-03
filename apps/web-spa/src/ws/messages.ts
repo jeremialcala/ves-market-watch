@@ -215,6 +215,10 @@ export interface PayloadAnalisis {
     official: string | null;
     parallel: string | null;
     responsible: "paralelo" | "oficial" | "ambos" | null;
+    /** Cuota del MOVIMIENTO total que puso la oficial, en [0, 1]. No es cuota
+     *  del cierre: con las dos piernas subiendo, la oficial cierra y el paralelo
+     *  abre, así que del cierre la oficial pone el 100 %. */
+    official_share: string | null;
   };
 }
 

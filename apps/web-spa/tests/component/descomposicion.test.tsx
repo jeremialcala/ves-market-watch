@@ -243,12 +243,19 @@ function conPiernas(
   official: string | null,
   parallel: string | null,
   responsible: string | null = "oficial",
+  cuota: string | null = "0.78",
 ) {
   marketStore.resync({
     ...PIERNAS,
     analisis: {
       ...FIXTURE_ANALISIS,
-      gap_legs: { hours: 6, official, parallel, responsible },
+      gap_legs: {
+        hours: 6,
+        official,
+        parallel,
+        responsible,
+        official_share: cuota,
+      },
       gap_history: { sides: LADOS },
     },
   });
@@ -380,5 +387,34 @@ describe("Las piernas del movimiento", () => {
     expect(screen.getByText("Official 6 h")).toBeTruthy();
     expect(screen.getByText("Net gap")).toBeTruthy();
     expect(screen.getByText("-19.30 VES")).toBeTruthy();
+  });
+});
+
+describe("La cuota del movimiento", () => {
+  it("se dice «del MOVIMIENTO», nunca «del cierre»", () => {
+    /*
+     * Las cifras del prototipo desmienten su propia frase: con Δoficial +26,9 y
+     * Δparalelo +7,6 la brecha se cierra 19,3, pero el paralelo SUBIÓ, o sea que
+     * la abrió. Del cierre, la oficial pone el 100 %; el 78 % es su cuota del
+     * movimiento total.
+     */
+    conPiernas("26.90", "7.60", "oficial", "0.78");
+    render(<GapDecomposition />);
+
+    const texto = document.body.textContent ?? "";
+    expect(texto).toMatch(/78 % del movimiento/);
+    expect(texto).not.toMatch(/del cierre/);
+  });
+
+  it("sin responsable no se escribe la cuota: no hay a quién atribuirla", () => {
+    conPiernas("0", "-0.40", null, "0");
+    render(<GapDecomposition />);
+    expect(document.body.textContent ?? "").not.toMatch(/del movimiento/);
+  });
+
+  it("en inglés", () => {
+    conPiernas("26.90", "7.60", "oficial", "0.78");
+    render(<GapDecomposition />, { idioma: "en" });
+    expect(document.body.textContent ?? "").toMatch(/78 % of the movement/);
   });
 });

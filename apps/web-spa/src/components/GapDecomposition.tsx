@@ -6,6 +6,7 @@ import {
   compararDecimales,
   formatDecimal,
   formatPct,
+  porcentajeRelativo,
   restarDecimales,
   signo,
   toChartNumber,
@@ -183,7 +184,8 @@ function Piernas({ piernas }: { piernas: GapLegs }) {
   ];
 
   return (
-    <div className="vmw-descomp__piernas">
+    <>
+      <div className="vmw-descomp__piernas">
       {filas.map((fila) => (
         <div key={fila.etiqueta}>
           <span className="vmw-descomp__pierna-et">{fila.etiqueta}</span>
@@ -201,8 +203,36 @@ function Piernas({ piernas }: { piernas: GapLegs }) {
           </span>
         </div>
       ))}
-    </div>
+      </div>
+      {/* La cuota del movimiento. Se dice «del movimiento» y NO «del cierre»:
+          con las dos piernas subiendo, la oficial cierra la brecha y el paralelo
+          la abre, así que del cierre la oficial pone el 100 %. El prototipo lo
+          rotulaba como cuota del cierre y sus propias cifras lo desmentían. */}
+      {responsible !== null && piernas.official_share !== null && (
+        <p className="vmw-nota vmw-descomp__cuota">
+          {t(
+            responsible === "oficial"
+              ? "descomposicion.cuotaOficial"
+              : responsible === "paralelo"
+                ? "descomposicion.cuotaParalelo"
+                : "descomposicion.cuotaAmbos",
+            { pct: porcentaje(piernas.official_share, idioma) },
+          )}
+        </p>
+      )}
+    </>
   );
+}
+
+/** La cuota llega como fracción [0,1]; se escribe en porcentaje.
+ *
+ *  `porcentajeRelativo(f, "1")` es `f / 1 × 100` con la aritmética BigInt de
+ *  `lib/decimal`: exacta, sin pasar por float. Devuelve `null` solo si la base
+ *  fuese cero, que aquí no puede.
+ */
+function porcentaje(fraccion: string, idioma: "es" | "en"): string {
+  const pct = porcentajeRelativo(fraccion, "1", 0);
+  return pct === null ? "—" : formatPct(pct, 0, idioma);
 }
 
 /** `+26,9` / `−19,3`: el signo se escribe siempre, también el «+». */

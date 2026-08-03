@@ -375,6 +375,14 @@ export const ES = {
   "descomposicion.movP2P": "P2P {horas} h",
   "descomposicion.movNeto": "Neto brecha",
   "descomposicion.movValor": "{valor} VES",
+  // Cuota del MOVIMIENTO, no del cierre: con las dos piernas subiendo la oficial
+  // cierra la brecha y el paralelo la abre.
+  "descomposicion.cuotaOficial":
+    "La tasa oficial puso el {pct} del movimiento: lo que se movió fue el lado oficial, no el de la calle.",
+  "descomposicion.cuotaParalelo":
+    "La tasa oficial puso el {pct} del movimiento: lo que se movió fue el precio de la calle.",
+  "descomposicion.cuotaAmbos":
+    "Se movieron los dos lados: la tasa oficial puso el {pct} del movimiento y el precio de la calle el resto.",
   "descomposicion.comparativas": "Brecha hoy vs. historia",
   "descomposicion.hoy": "Hoy",
   "descomposicion.promedio7": "Promedio 7 días",
@@ -913,6 +921,12 @@ export const EN: Record<Clave, string> = {
   "descomposicion.movP2P": "P2P {horas} h",
   "descomposicion.movNeto": "Net gap",
   "descomposicion.movValor": "{valor} VES",
+  "descomposicion.cuotaOficial":
+    "The official rate accounted for {pct} of the movement: it was the official side that moved, not the street.",
+  "descomposicion.cuotaParalelo":
+    "The official rate accounted for {pct} of the movement: what moved was the street price.",
+  "descomposicion.cuotaAmbos":
+    "Both sides moved: the official rate accounted for {pct} of the movement and the street price for the rest.",
   "descomposicion.comparativas": "Gap today vs. history",
   "descomposicion.hoy": "Today",
   "descomposicion.promedio7": "7-day average",

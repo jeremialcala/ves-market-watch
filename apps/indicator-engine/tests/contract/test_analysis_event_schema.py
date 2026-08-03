@@ -558,7 +558,13 @@ def test_el_evento_con_gap_legs_cumple_el_schema():
     evento = _evento(con_lectura=True, vista=VISTA_LECTURA)
     _validador().validate(evento)
     piernas = evento["payload"]["gap_legs"]
-    assert set(piernas) == {"hours", "official", "parallel", "responsible"}
+    assert set(piernas) == {
+        "hours",
+        "official",
+        "parallel",
+        "responsible",
+        "official_share",
+    }
 
 
 def test_las_piernas_viajan_CON_responsible_null_y_el_schema_lo_acepta():
@@ -600,3 +606,23 @@ def test_las_piernas_van_en_punto_fijo_como_el_resto_del_contrato():
         valor = evento["payload"]["gap_legs"][clave]
         if valor is not None:
             assert "E" not in valor and "e" not in valor
+
+
+def test_la_cuota_de_la_oficial_es_una_fraccion_en_0_1():
+    """Cuota del MOVIMIENTO, no del cierre.
+
+    Con las dos piernas subiendo, la oficial cierra la brecha y el paralelo la
+    abre: del cierre la oficial pone el 100 %, así que rotularlo «cuota del
+    cierre» —como hacía el prototipo— contradice sus propias cifras.
+    """
+    evento = _evento(con_lectura=True, vista=VISTA_LECTURA)
+    cuota = evento["payload"]["gap_legs"]["official_share"]
+    if cuota is not None:
+        assert Decimal("0") <= Decimal(cuota) <= Decimal("1")
+    _validador().validate(evento)
+
+
+def test_sin_movimiento_la_cuota_es_null_y_el_schema_lo_acepta():
+    evento = _evento(con_lectura=True, vista=VISTA_LECTURA)
+    evento["payload"]["gap_legs"]["official_share"] = None
+    _validador().validate(evento)

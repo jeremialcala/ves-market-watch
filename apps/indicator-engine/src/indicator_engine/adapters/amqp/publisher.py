@@ -270,6 +270,11 @@ def _piernas_a_dict(piernas) -> dict:
         "official": None if piernas.oficial is None else format(piernas.oficial, "f"),
         "parallel": None if piernas.paralelo is None else format(piernas.paralelo, "f"),
         "responsible": piernas.responsable,
+        "official_share": (
+            None
+            if piernas.cuota_oficial is None
+            else format(piernas.cuota_oficial, "f")
+        ),
     }
 
 

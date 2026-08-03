@@ -703,7 +703,8 @@
             "hours",
             "official",
             "parallel",
-            "responsible"
+            "responsible",
+            "official_share"
           ],
           "additionalProperties": false,
           "properties": {
@@ -750,6 +751,18 @@
                 }
               ],
               "description": "Qué pierna movió la brecha, o null si no se puede afirmar — brecha estable, tasa oficial rancia (ADR-0022) o piernas no medibles. La decide el motor: recalcularla en el cliente crearía una segunda fuente de verdad."
+            },
+            "official_share": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Cuota del MOVIMIENTO total que puso la tasa oficial, en [0, 1]: `|Δoficial| / (|Δoficial| + |Δparalelo|)`. Es la misma cifra con la que el motor decide `responsible`, publicada para que el cliente no la recalcule con otra definición. NO es «cuota del cierre»: con las dos piernas subiendo, la oficial cierra la brecha y el paralelo la abre, así que del cierre la oficial pone el 100 % — redactarlo como cuota del cierre contradice las propias cifras. null si nada se movió o alguna pierna no es medible."
             }
           }
         }

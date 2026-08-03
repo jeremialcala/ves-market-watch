@@ -694,6 +694,17 @@ export interface components {
              *     verdad.
              */
             responsible: ("paralelo" | "oficial" | "ambos") | null;
+            /**
+             * @description Cuota del MOVIMIENTO total que puso la tasa oficial, en [0, 1]:
+             *     `|Δoficial| / (|Δoficial| + |Δparalelo|)`. Es el mismo número con el
+             *     que el motor decide `responsible`, y por eso se publica en vez de
+             *     recalcularse.
+             *
+             *     NO es «cuota del cierre»: con las dos piernas subiendo, la oficial
+             *     cierra la brecha y el paralelo la abre, así que del cierre la oficial
+             *     pone el 100 %. null si nada se movió o alguna pierna no es medible.
+             */
+            official_share: components["schemas"]["Decimal"] | null;
         };
         /**
          * @description Una ventana de comparación. `days_covered` es el mecanismo de honestidad:

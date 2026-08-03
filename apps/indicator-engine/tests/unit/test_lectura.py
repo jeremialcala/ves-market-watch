@@ -31,6 +31,7 @@ from indicator_engine.domain.analisis import (
     Sintesis,
 )
 from indicator_engine.domain.lectura import (
+    cuota_oficial,
     BRECHA_AMPLIANDO,
     BRECHA_COMPRIMIENDO,
     BRECHA_ESTABLE,
@@ -548,3 +549,50 @@ def test_la_ventana_de_las_piernas_es_la_MISMA_que_la_del_claim_de_brecha(config
 
     brecha = next(a for a in lectura.afirmaciones if a.codigo == CLAIM_BRECHA)
     assert str(lectura.piernas.ventana_horas) == brecha.datos["horas"]
+
+
+def test_la_cuota_es_del_MOVIMIENTO_no_del_cierre(config):
+    """Las cifras del prototipo, que contradicen su propia frase.
+
+    Δoficial +26,9 y Δparalelo +7,6 dan una brecha que se cierra 19,3. La oficial
+    subiendo la cierra; el paralelo subiendo la ABRE. Del cierre, entonces, la
+    oficial pone el 100 % y el paralelo se opone — «el 78 % del cierre» es falso.
+    El 78 % es su cuota del MOVIMIENTO total, que es lo que se publica.
+    """
+    v = var("-19.30", "7.60", "26.90")
+
+    cuota = cuota_oficial(v)
+    assert cuota is not None
+    assert round(cuota * 100, 1) == Decimal("78.0")
+
+
+def test_la_cuota_y_el_responsable_salen_del_MISMO_numero(config):
+    """Si divergieran, la tarjeta diría «78 % la oficial» junto a un responsable
+    que dice otra cosa. `atribuir` clasifica exactamente esta cuota.
+
+    Y con las cifras del prototipo el responsable NO es «oficial»: 78 % no llega
+    a la dominancia mínima de 0,8, así que el motor dice «ambos». La cuota se
+    publica precisamente para eso — matiza una clasificación que es un corte.
+    """
+    v = var("-19.30", "7.60", "26.90")
+    lectura = lectura_completa(config, variaciones=v)
+
+    assert lectura.piernas.cuota_oficial == cuota_oficial(v)
+    assert lectura.piernas.responsable == "ambos"
+
+
+def test_pasada_la_dominancia_el_responsable_SI_es_la_oficial(config):
+    # 0,85 ≥ 0,8: aquí sí hay una pierna dominante.
+    v = var("-17.00", "3.00", "17.00")
+    lectura = lectura_completa(config, variaciones=v)
+
+    assert lectura.piernas.responsable == "oficial"
+    assert lectura.piernas.cuota_oficial > Decimal("0.8")
+
+
+def test_sin_movimiento_no_hay_cuota(config):
+    assert cuota_oficial(var("0", "0", "0")) is None
+
+
+def test_sin_pierna_medible_no_hay_cuota(config):
+    assert cuota_oficial(var("-1.03", None, "0")) is None

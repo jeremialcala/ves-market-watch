@@ -160,6 +160,9 @@ class Piernas:
     paralelo: Decimal | None
     oficial: Decimal | None
     responsable: str | None
+    """Cuota del movimiento que puso la oficial, en [0, 1]. `None` si nada se
+    movió: ahí no hay reparto que publicar."""
+    cuota_oficial: Decimal | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -278,6 +281,31 @@ def componer_regimen(movimiento: str | None, brecha: str | None) -> str | None:
     return f"{movimiento}_{brecha}"
 
 
+def cuota_oficial(variaciones: Variaciones) -> Decimal | None:
+    """Qué parte del MOVIMIENTO total puso la tasa oficial, en [0, 1].
+
+    `|Δoficial| / (|Δoficial| + |Δparalelo|)`. Es la misma cifra con la que
+    `atribuir` decide el responsable, así que se calcula una vez y se publica:
+    si el cliente la recalculara, un cambio de definición aquí lo dejaría
+    diciendo un porcentaje que ya no es el que clasificó.
+
+    **Es cuota del movimiento, NO «del cierre»**, y la diferencia importa. Con
+    Δoficial +26,9 y Δparalelo +7,6 la brecha se cierra 19,3: la oficial subiendo
+    la cierra y el paralelo subiendo la ABRE, o sea que del cierre la oficial
+    pone el 100 % y el paralelo se opone. Lo que vale 78 % es su cuota del
+    movimiento total. Redactarlo como «el 78 % del cierre» —que es lo que hacía
+    el prototipo— contradice sus propias cifras.
+
+    `None` si alguna pierna no es medible o si nada se movió.
+    """
+    if variaciones.paralelo is None or variaciones.oficial is None:
+        return None
+    total = abs(variaciones.paralelo) + abs(variaciones.oficial)
+    if total == _CERO:
+        return None
+    return abs(variaciones.oficial) / total
+
+
 def atribuir(variaciones: Variaciones, config: ConfigLectura) -> str | None:
     """Quién movió la brecha, sobre la identidad exacta Δbrecha = Δparalelo − Δoficial.
 
@@ -286,15 +314,13 @@ def atribuir(variaciones: Variaciones, config: ConfigLectura) -> str | None:
     cada 30 min y persiste fila solo al cambiar, así que la ausencia de cambio es
     evidencia positiva.
     """
-    if variaciones.paralelo is None or variaciones.oficial is None:
-        return None
-    total = abs(variaciones.paralelo) + abs(variaciones.oficial)
-    if total == _CERO:
-        return None  # nada se movió: no hay nada que atribuir
-    peso_paralelo = abs(variaciones.paralelo) / total
+    cuota = cuota_oficial(variaciones)
+    if cuota is None:
+        return None  # sin piernas medibles, o nada se movió
+    peso_paralelo = Decimal(1) - cuota
     if peso_paralelo >= config.dominancia_minima:
         return RESP_PARALELO
-    if (Decimal(1) - peso_paralelo) >= config.dominancia_minima:
+    if cuota >= config.dominancia_minima:
         return RESP_OFICIAL
     return RESP_AMBOS
 
@@ -541,6 +567,7 @@ def _piernas(
         paralelo=variaciones.paralelo,
         oficial=variaciones.oficial,
         responsable=responsable,
+        cuota_oficial=cuota_oficial(variaciones),
     )
 
 

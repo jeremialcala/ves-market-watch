@@ -228,6 +228,7 @@ export const FIXTURE_ANALISIS = {
     official: "0",
     parallel: "-8.40",
     responsible: "paralelo",
+    official_share: "0",
   },
   // La brecha de cada lado contra su propia historia (RF-7). El caso REAL
   // medido en vivo: compra con 12 días de serie —así que sus ventanas de 30 y
