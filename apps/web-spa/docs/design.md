@@ -234,7 +234,10 @@ distancia y `met` vienen calculados; el SPA no reclasifica nada.
   binaria (`normal|low`) y una barra continua fingiría una precisión que no
   existe — la maqueta la tenía al 68 % escrito a mano, y encima rotulada
   «Confianza media», valor que no existe en el contrato.
-- **Aclaración** siempre presente, igual que en la síntesis del panel.
+- **Sin aclaración escrita** desde el 2026-08-02: la tarjeta describe el mercado
+  en lenguaje llano, no se describe a sí misma, y la misma advertencia salía tres
+  veces en la misma pantalla. El control pasó a ser el registro, verificado por
+  test — ver abajo.
 
 El registro está **acotado por test**, no solo por convención:
 `tests/component/lectura.test.tsx` comprueba contra el texto renderizado que no
@@ -334,7 +337,7 @@ guardar nada en el navegador.
 - Lockfile commiteado (SCA en CI — Gate 2); cero secretos en el bundle.
 
 ## Verificación
-- **316 tests** (unit / component / contract) con **87,5 % de ramas** (umbral
+- **339 tests** (unit / component / contract) con **87,1 % de ramas** (umbral
   Gate 2: 80 %): decimal exhaustivo (incl. la aritmética `BigInt` y el borde de
   medianoche del día operativo VET), reducers, políticas WSS, StreamClient
   contra servidor WS mockeado, endpoints contra MSW, paneles con fixtures

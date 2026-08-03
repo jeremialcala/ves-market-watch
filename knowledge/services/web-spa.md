@@ -223,7 +223,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   categoría sobrevive al daltonismo. Aun así el exceso va también en el tooltip.
 
 ## Verificación
-- **316 tests** (unit/component/contract con MSW y WS mock) — **87,5 % de ramas**
+- **339 tests** (unit/component/contract con MSW y WS mock) — **87,1 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

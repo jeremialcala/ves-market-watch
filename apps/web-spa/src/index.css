@@ -790,8 +790,7 @@ body {
   color: var(--text);
 }
 
-.vmw-medidor__aviso,
-.vmw-medidor__aclaracion {
+.vmw-medidor__aviso {
   margin-top: 10px;
   font-size: var(--fs-micro);
   color: var(--text-dim);
@@ -1508,10 +1507,6 @@ body {
 /* Lo degradado se marca, pero el texto ya lo dice por sí solo. */
 .vmw-proc__valor[data-tono="coral"] {
   color: var(--coral);
-}
-
-.vmw-proc__nota {
-  margin-top: 14px;
 }
 
 /* La marca temporal del titular, junto al eyebrow. */

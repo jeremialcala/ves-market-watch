@@ -1,4 +1,4 @@
-# Tests — api-gateway (pirámide AI-DLC, 104 tests)
+# Tests — api-gateway (pirámide AI-DLC, 108 tests)
 
 ```bash
 python -m pytest tests -q            # unit + contract siempre; integration/e2e

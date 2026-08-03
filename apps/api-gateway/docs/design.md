@@ -114,7 +114,7 @@ JWKS_URI=https://auth.higerotech.com/.well-known/jwks.json
   payload canónico de los eventos referenciando `schemas/` (sin duplicar contratos).
 
 ## Verificación
-- **104 tests** en verde: unit (dominio + validador con JWKS RSA local propio),
+- **108 tests** en verde: unit (dominio + validador con JWKS RSA local propio),
   contract (respuestas vs. `openapi.yaml`, errores RFC 7807), integration
   (TimescaleDB y RabbitMQ reales; INSERT rechazado por el pool read-only) y e2e
   (REST autenticado + `signals.emitted` del bus → frame WSS). Ver `tests/README.md`.
