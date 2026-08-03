@@ -148,6 +148,9 @@ gitGraph
     commit id: "c4f2630"
     commit id: "172f794"
     commit id: "7d0d712"
+    commit id: "e7accd4"
+    commit id: "ee39077"
+    commit id: "98ea475"
 ```
 
 ### Estado actual de las ramas
@@ -155,7 +158,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `7d0d712` | 2026-08-02 | 114 |
+| `develop` | `98ea475` | 2026-08-02 | 117 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -171,6 +174,9 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `98ea475` | commit | — | Jeremi Alcala | 2026-08-02 | refactor(web-spa): la barra a 76 px fijos y «Salir» deja de ser coral |
+| `ee39077` | commit | — | Jeremi Alcala | 2026-08-02 | docs(web-spa): la tabla del shell describia la tira vieja |
+| `e7accd4` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `7d0d712` | commit | — | Jeremi Alcala | 2026-08-02 | refactor(web-spa): la tira de estado vuelve a ser estado, no diagnostico |
 | `172f794` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `c4f2630` | commit | — | Jeremi Alcala | 2026-08-02 | feat(signals): resultado observado por senal, sin tasa de acierto |
