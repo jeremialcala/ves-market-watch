@@ -1,6 +1,8 @@
+import type { CuotaRateLimit } from "../api/client";
 import type { Analisis } from "../api/endpoints";
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
+import { formatPct } from "../lib/decimal";
 import { useMarket } from "../state/marketStore";
 import { NoDataState } from "./NoDataState";
 
@@ -17,8 +19,8 @@ import { NoDataState } from "./NoDataState";
  * qué material se afirmó.
  */
 export function DataProvenance() {
-  const { t } = useI18n();
-  const { analisis } = useMarket();
+  const { t, idioma } = useI18n();
+  const { analisis, vigentes, cuota } = useMarket();
 
   return (
     <div className="vmw-tarjeta" aria-label={t("procedencia.titulo")}>
@@ -31,7 +33,7 @@ export function DataProvenance() {
         ) : (
           <>
             <ul className="vmw-proc__lista">
-              {filas(analisis, t).map((fila) => (
+              {filas(analisis, t, vigentes, cuota, idioma).map((fila) => (
                 <li key={fila.etiqueta} className="vmw-proc__fila">
                   <span className="vmw-proc__etiqueta">
                     {/* El punto REPITE lo que ya dice el valor en coral: es
@@ -67,7 +69,13 @@ type Traducir = (
 ) => string;
 type Fila = { etiqueta: string; valor: string; alerta?: boolean };
 
-function filas(analisis: Analisis, tr: Traducir): Fila[] {
+function filas(
+  analisis: Analisis,
+  tr: Traducir,
+  vigentes: Record<string, { value: string }>,
+  cuota: CuotaRateLimit,
+  idioma: "es" | "en",
+): Fila[] {
   // Escala de los medidores: cuántos se comparan contra percentiles REALES y
   // cuántos contra el respaldo del ruleset. La degradación viaja en el payload
   // (`scale.source`), así que aquí solo se cuenta.
@@ -123,6 +131,36 @@ function filas(analisis: Analisis, tr: Traducir): Fila[] {
       alerta: analisis.official_stale,
     },
   ];
+
+  // Cobertura de merchants: qué parte del volumen del lado de compra viene de
+  // comerciantes verificados. Es un indicador del flujo (`p2p_merchants_pct_buy`),
+  // no del análisis, y por eso se lee del store — si no ha llegado, se calla.
+  const merchants = vigentes["p2p_merchants_pct_buy"];
+  if (merchants !== undefined) {
+    filas.push({
+      etiqueta: tr("procedencia.merchants"),
+      valor: tr("procedencia.merchantsValor", {
+        pct: formatPct(merchants.value, 2, idioma),
+      }),
+    });
+  }
+
+  // Cuota REST de la ventana y versiones del motor: estaban solo en la tira de
+  // estado, que en móvil no existe. Aquí es donde alguien pregunta «¿con qué se
+  // calculó esto?».
+  if (cuota.remaining !== undefined && cuota.limit !== undefined) {
+    filas.push({
+      etiqueta: tr("procedencia.cuota"),
+      valor: `${cuota.remaining} / ${cuota.limit}`,
+    });
+  }
+  filas.push({
+    etiqueta: tr("procedencia.motor"),
+    valor: tr("procedencia.motorValor", {
+      calc: analisis.calc_version,
+      ruleset: analisis.ruleset_version,
+    }),
+  });
 
   // Alcance real de la historia de cada lado. Es la misma honestidad que la
   // descomposición rotula en sus ventanas, dicha una vez y en un solo sitio.

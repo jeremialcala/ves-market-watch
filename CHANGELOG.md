@@ -106,6 +106,23 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **Variación de la tasa oficial por moneda y tres filas nuevas en «Calidad y
+  procedencia» (2026-08-02).** Todo con dato que ya viajaba: sin cambios de
+  contrato ni de motor.
+  - Cada moneda del BCV muestra cuánto se movió **vs. la publicación anterior**.
+    NO se rotula «24 h» como el prototipo: entre dos publicaciones cabe un fin de
+    semana o un feriado (ADR-0022), y ponerle horas sería inventar la ventana.
+  - **Colisión multi-moneda encontrada de paso**: `vigentes` se indexa solo por
+    nombre de indicador, lo cual vale para todo lo `p2p_*` —de una sola moneda—
+    pero no para la familia `official_rate*`, donde las cinco del BCV se pisaban
+    entre sí. Era latente (nadie la leía). La variación vive ahora en su propio
+    mapa por moneda, con test.
+  - La variación **se repone por REST** en el resync: el push solo la trae cuando
+    el BCV publica, una vez al día, así que si no la cifra tardaría hasta 24 h en
+    aparecer. Una sola petición para las cinco monedas.
+  - «Calidad y procedencia» suma **cobertura de merchants**, **cuota API** y
+    **motor (calc/ruleset)**. Las dos últimas solo vivían en la tira de estado,
+    que en móvil no existe.
 - **Las piernas de la brecha se publican SIEMPRE (2026-08-02, ADR-0023).** Las
   dos deltas viajaban dentro del claim `atribucion` y desaparecían con él, así
   que la tarjeta de descomposición se quedaba con **160 px vacíos** cada vez que

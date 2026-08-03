@@ -1447,6 +1447,18 @@ body {
   align-content: space-between;
 }
 
+/* La variación de la oficial. El color acompaña al signo, que ya va escrito. */
+.vmw-oficial__delta {
+  margin-top: 6px;
+  font-size: var(--fs-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--teal);
+}
+
+.vmw-oficial__delta[data-signo="baja"] {
+  color: var(--coral);
+}
+
 .vmw-proc__punto {
   display: inline-block;
   width: 6px;

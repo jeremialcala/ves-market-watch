@@ -357,6 +357,11 @@ export const ES = {
   "procedencia.historiaVenta": "Historia de la brecha de venta",
   "procedencia.historiaCompleta": "{dias} días completos",
   "procedencia.historiaParcial": "{dias} días de los {pedida} pedidos",
+  "procedencia.merchants": "Cobertura de merchants",
+  "procedencia.merchantsValor": "{pct} del volumen de compra",
+  "procedencia.cuota": "Cuota API (ventana)",
+  "procedencia.motor": "Motor",
+  "procedencia.motorValor": "calc v{calc} · ruleset v{ruleset}",
   "procedencia.nota":
     "Nada de esto es dato nuevo: es lo que cada panel usó para afirmar lo que afirma, reunido en un sitio.",
 
@@ -438,6 +443,7 @@ export const ES = {
   "oficial.titulo": "Tasa oficial BCV",
   "oficial.bajada": "fecha-valor {fecha} · capturada {cuando}",
   "oficial.sinDatos": "Sin tasas oficiales registradas todavía.",
+  "oficial.variacion": "{delta} vs. la publicación anterior",
   "oficial.stale": "stale",
   "oficial.vigente": "vigente {fecha}",
 
@@ -891,6 +897,11 @@ export const EN: Record<Clave, string> = {
   "procedencia.historiaVenta": "Sell-side gap history",
   "procedencia.historiaCompleta": "{dias} full days",
   "procedencia.historiaParcial": "{dias} days of the {pedida} requested",
+  "procedencia.merchants": "Merchant coverage",
+  "procedencia.merchantsValor": "{pct} of buy-side volume",
+  "procedencia.cuota": "API quota (window)",
+  "procedencia.motor": "Engine",
+  "procedencia.motorValor": "calc v{calc} · ruleset v{ruleset}",
   "procedencia.nota":
     "None of this is new data: it is what each panel used to assert what it asserts, gathered in one place.",
 
@@ -963,6 +974,7 @@ export const EN: Record<Clave, string> = {
   "oficial.titulo": "Official BCV rate",
   "oficial.bajada": "value date {fecha} · captured {cuando}",
   "oficial.sinDatos": "No official rates recorded yet.",
+  "oficial.variacion": "{delta} vs. previous publication",
   "oficial.stale": "stale",
   "oficial.vigente": "value date {fecha}",
 

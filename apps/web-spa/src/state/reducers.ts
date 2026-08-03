@@ -47,8 +47,18 @@ export interface EstadoMercado {
   analisis: Analisis | null;
   profundidad: { buy?: Profundidad; sell?: Profundidad };
   senales: Senal[];
-  /** Último valor por indicador canónico (currency VES/USD, formato largo). */
+  /** Último valor por indicador canónico (currency VES/USD, formato largo).
+   *
+   *  OJO: la clave es SOLO el nombre del indicador. Vale para todo lo `p2p_*`,
+   *  que es de una moneda (VES), pero la familia `official_rate*` existe en las
+   *  cinco del BCV y ahí colisiona — el último evento pisa al anterior. Por eso
+   *  la variación de la oficial vive en `variacionOficial`, indexada por moneda,
+   *  y no se lee de aquí. */
   vigentes: Record<string, Vigente>;
+  /** Variación de la tasa oficial respecto a la PUBLICACIÓN ANTERIOR, por
+   *  moneda. No es «24 h»: entre dos publicaciones puede haber un fin de semana
+   *  o un feriado (ADR-0022), y rotularlo en horas sería inventar la ventana. */
+  variacionOficial: Record<string, { pct: string; as_of: string }>;
   conexion: EstadoConexion;
   detalleConexion: string | null;
   cuota: CuotaRateLimit;
@@ -67,6 +77,7 @@ export const ESTADO_INICIAL: EstadoMercado = {
   profundidad: {},
   senales: [],
   vigentes: {},
+  variacionOficial: {},
   conexion: "desconectado",
   detalleConexion: null,
   cuota: {},
@@ -78,6 +89,7 @@ export const ESTADO_INICIAL: EstadoMercado = {
 const MAX_SENALES = 50;
 const MAX_EVENTOS_VISTOS = 200;
 const UMBRAL_OUTLIERS_LOW = "30";
+const INDICADOR_VARIACION_OFICIAL = "official_rate_change_pct";
 
 // -- push --------------------------------------------------------------------
 
@@ -146,10 +158,16 @@ function aplicarIndicadores(
   data: PayloadIndicadores,
 ): EstadoMercado {
   const vigentes = { ...estado.vigentes };
+  const variacionOficial = { ...estado.variacionOficial };
   for (const fila of data.indicators) {
     vigentes[fila.indicator] = { value: fila.value, as_of: data.as_of };
+    // La variación de la oficial SÍ conserva su moneda: es la única familia
+    // multi-moneda del flujo, y en `vigentes` las cinco se pisarían entre sí.
+    if (fila.indicator === INDICADOR_VARIACION_OFICIAL) {
+      variacionOficial[fila.currency] = { pct: fila.value, as_of: data.as_of };
+    }
   }
-  const intermedio = { ...estado, vigentes };
+  const intermedio = { ...estado, vigentes, variacionOficial };
   return {
     ...intermedio,
     p2p: {
@@ -241,6 +259,9 @@ export interface SnapshotResync {
   profundidad?: { buy?: Profundidad; sell?: Profundidad };
   senales?: Senal[];
   salud?: Salud | null;
+  /** Repuesta por REST porque el push solo la trae cuando el BCV publica, una
+   *  vez al día: sin esto la cifra tardaría hasta 24 h en aparecer. */
+  variacionOficial?: Record<string, { pct: string; as_of: string }>;
 }
 
 /** El resync REST es autoritativo: sobreescribe las vistas que trae. */
@@ -261,5 +282,8 @@ export function aplicarResync(
     }),
     ...(snapshot.senales !== undefined && { senales: snapshot.senales }),
     ...(snapshot.salud !== undefined && { salud: snapshot.salud }),
+    ...(snapshot.variacionOficial !== undefined && {
+      variacionOficial: snapshot.variacionOficial,
+    }),
   };
 }

@@ -54,6 +54,20 @@ function payloadIndicadores(
   };
 }
 
+/** Un `indicators.updated` de la tasa oficial, que es multi-moneda. */
+function payloadOficial(moneda: string, pct: string): PayloadIndicadores {
+  return {
+    as_of: `2026-07-27T12:00:00Z`,
+    calc_version: 1,
+    official_stale: false,
+    triggered_by: "11111111-2222-3333-4444-555555555555",
+    indicators: [
+      { indicator: "official_rate", currency: moneda, value: "700" },
+      { indicator: "official_rate_change_pct", currency: moneda, value: pct },
+    ],
+  };
+}
+
 const SENAL: PayloadSenal = {
   type: "correccion_inminente",
   direction: "bajista",
@@ -199,5 +213,57 @@ describe("aplicarResync", () => {
     expect(resync.tasas.USD.rate).toBe("418.00000000");
     expect(resync.indicadores).toBeNull();
     expect(resync.senales).toHaveLength(1); // no vino en el snapshot: intacta
+  });
+});
+
+
+describe("variación de la tasa oficial por moneda", () => {
+  it("conserva la MONEDA: cinco publicaciones no se pisan entre sí", () => {
+    /*
+     * `vigentes` se indexa solo por nombre de indicador, lo cual vale para todo
+     * lo `p2p_*` —que es de una sola moneda— pero NO para la familia
+     * `official_rate*`, que existe en las cinco del BCV. Ahí el último evento
+     * pisaba al anterior. Por eso la variación vive en su propio mapa.
+     */
+    let estado = ESTADO_INICIAL;
+    for (const [moneda, pct] of [
+      ["USD", "0.69"],
+      ["EUR", "1.52"],
+      ["CNY", "0.64"],
+    ] as const) {
+      estado = aplicarPush(
+        estado,
+        push("indicators", payloadOficial(moneda, pct)),
+      );
+    }
+
+    expect(estado.variacionOficial.USD.pct).toBe("0.69");
+    expect(estado.variacionOficial.EUR.pct).toBe("1.52");
+    expect(estado.variacionOficial.CNY.pct).toBe("0.64");
+    // Y en `vigentes` sí se pisan — por eso no se lee de ahí.
+    expect(estado.vigentes["official_rate_change_pct"].value).toBe("0.64");
+  });
+
+  it("una moneda sin variación publicada no aparece inventada", () => {
+    const estado = aplicarPush(
+      ESTADO_INICIAL,
+      push("indicators", payloadOficial("USD", "0.69")),
+    );
+    expect(estado.variacionOficial.EUR).toBeUndefined();
+  });
+});
+
+describe("el resync repone la variación de la oficial", () => {
+  it("la clave llega al estado y NO se filtra en la lista blanca", () => {
+    /*
+     * `aplicarResync` copia solo las claves que conoce. Al añadir una nueva y
+     * olvidarla aquí, el snapshot la traía y el estado la descartaba en
+     * silencio: TypeScript no lo ve porque el spread condicional esquiva el
+     * chequeo de propiedades excedentes.
+     */
+    const estado = aplicarResync(ESTADO_INICIAL, {
+      variacionOficial: { USD: { pct: "0.28", as_of: "2026-07-31T20:00:00Z" } },
+    });
+    expect(estado.variacionOficial.USD.pct).toBe("0.28");
   });
 });
