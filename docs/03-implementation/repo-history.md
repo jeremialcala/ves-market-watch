@@ -1,7 +1,7 @@
 # Historial de implementación — VES Market Watch
 
 * **Estado:** review (documentación viva — regenerada por script, no editar a mano)
-* **Fecha:** 2026-08-02
+* **Fecha:** 2026-08-03
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
 * **Versión:** 0.4.0
@@ -161,6 +161,8 @@ gitGraph
     commit id: "ce5560b"
     commit id: "8549165"
     commit id: "834d032"
+    commit id: "2a4fbef"
+    commit id: "c742332"
 ```
 
 ### Estado actual de las ramas
@@ -168,7 +170,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `834d032` | 2026-08-02 | 127 |
+| `develop` | `c742332` | 2026-08-03 | 129 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -184,6 +186,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `c742332` | commit | — | Jeremi Alcala | 2026-08-03 | feat(web-spa): la tarjeta de brecha como bloque rector |
+| `2a4fbef` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `834d032` | commit | — | Jeremi Alcala | 2026-08-02 | feat(web-spa): «Lectura de hoy» como unica superficie con tinte |
 | `8549165` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `ce5560b` | commit | — | Jeremi Alcala | 2026-08-02 | fix(web-spa): las pestañas se salian de la barra entre 760 y 1050 px |
