@@ -93,6 +93,37 @@ El canario `tests/unit/paleta.test.ts` fija estos valores: si alguien cambia un
 slot, el test falla y pide volver a pasar el validador. Lo que se rompió esta
 vez fue precisamente que el color cambió y la palabra «validada» se quedó.
 
+## «Lectura de hoy»: la única superficie con tinte (2026-08-02)
+Radio 28 px, `linear-gradient(160deg, --teal-tint-strong, --dark-2)`, borde
+`--teal-line`, padding 24/28. **Que sea la única es lo que la hace funcionar**:
+dos superficies teñidas compiten y ninguna destaca, así que se retiró el brillo
+teal de `GapPanel` —conserva su degradado NEUTRO, que es superficie y no acento—
+y hay un test que lo fija.
+
+El teal del texto se reserva para el eyebrow, que marca la superficie. El sello
+de frescura y la nota metodológica van a 13 px y `--text-dim`: **no** teal, para
+que no compitan con el titular.
+
+Titular como `h2` de verdad —es el encabezado de la vista y un lector de pantalla
+tiene que poder saltar a él—, con punto luminoso de 10 px, Space Grotesk
+`clamp(24px, 3.4vw, 34px)` a −0,03em. Prosa Inter 16/1,6 acotada a **780 px** con
+`text-wrap: pretty`: más largo que eso, la vista pierde el renglón al volver.
+
+Los chips van en **dos grupos separados a la vista** porque responden preguntas
+distintas —de qué material está hecha la lectura (frescura, reglas disparadas) y
+a qué conclusión llega (medidores cerca del umbral, confianza)—; en una sola fila
+había que leerlos todos para saber cuál era cuál. El de riesgo va en coral.
+
+**Las dos acciones de la cabecera**, 40 px y radio 100:
+
+- **«Exportar CSV» funciona.** Vuelca la lectura de la revisión con los decimales
+  exactos del contrato —sin `toFixed` ni `Number`—, con CRLF y BOM porque es lo
+  que Excel espera. Es dato que ya está en el cliente: no necesita servidor.
+- **«Crear alerta» va deshabilitada y lo explica en su `title`.** ADR-0021 la dejó
+  fuera de alcance porque no es un botón: exige persistencia por usuario,
+  evaluación en el motor y un canal de aviso. Pintarla activa y que no hiciera
+  nada sería peor que no pintarla.
+
 ## La barra de navegación (2026-08-02)
 76 px **fijos**, pegajosa, `rgb(21 24 27 / 82%)` con `blur(16px)` y hairline
 inferior al 8 %. Marca con isotipo de 26 px y nombre en Space Grotesk 18/700 a

@@ -131,6 +131,15 @@ export const ES = {
     "El BCV no ha publicado la tasa de hoy, así que no se puede decir qué lado movió la distancia.",
 
   // Chips de contexto.
+  "regimen.exportar": "Exportar CSV",
+  "regimen.crearAlerta": "Crear alerta",
+  "regimen.alertaNoDisponible":
+    "Todavía no disponible: crear un aviso propio necesita guardarlo por usuario, evaluarlo en el motor y un canal para avisarte.",
+  "regimen.csv.campo": "campo",
+  "regimen.csv.valor": "valor",
+  // Los chips van en dos grupos: de qué está hecha la lectura, y a qué concluye.
+  "regimen.grupo.dato": "Estado del dato",
+  "regimen.grupo.conclusion": "Conclusión de la lectura",
   "regimen.chip.frescos": "Datos frescos · {cuando}",
   "regimen.chip.reglas": "{n} reglas disparadas",
   "regimen.chip.cerca": "{n} medidores cerca de su umbral",
@@ -699,6 +708,14 @@ export const EN: Record<Clave, string> = {
   "regimen.claim.oficialRancia":
     "The BCV has not published today's rate, so which side moved the distance cannot be told.",
 
+  "regimen.exportar": "Export CSV",
+  "regimen.crearAlerta": "Create alert",
+  "regimen.alertaNoDisponible":
+    "Not available yet: a custom alert needs per-user storage, evaluation in the engine and a channel to notify you.",
+  "regimen.csv.campo": "field",
+  "regimen.csv.valor": "value",
+  "regimen.grupo.dato": "Data status",
+  "regimen.grupo.conclusion": "Reading conclusion",
   "regimen.chip.frescos": "Fresh data · {cuando}",
   "regimen.chip.reglas": "{n} rules fired",
   "regimen.chip.cerca": "{n} gauges near their threshold",

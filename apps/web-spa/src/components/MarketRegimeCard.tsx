@@ -18,7 +18,12 @@ import { useMarket } from "../state/marketStore";
  *
  * La frontera importa tanto como el contenido: la tarjeta describe el presente
  * y **no aconseja**. Lo único que orienta va en condicional («si tienes que
- * comprar…»), y el pie de aclaración no se retira por limpieza visual.
+ * comprar…»); el control ya no es una frase escrita sino el registro mismo,
+ * acotado por `lectura.test.tsx` en los dos idiomas.
+ *
+ * Es la **única superficie con tinte de la vista**: el degradado teal la separa
+ * del resto sin gritar. Que sea la única es lo que la hace funcionar — dos
+ * superficies teñidas compiten y ninguna destaca.
  */
 export function MarketRegimeCard() {
   const { t } = useI18n();
@@ -27,17 +32,99 @@ export function MarketRegimeCard() {
   return (
     <section className="vmw-hero vmw-veredicto" aria-label={t("regimen.titulo")}>
       <div className="vmw-hero__brillo" aria-hidden="true" />
-      <div className="vmw-eyebrow">
-        <span>{t("regimen.titulo")}</span>
-        {analisis !== null && (
-          <span className="vmw-veredicto__cuando">
-            {cuando(analisis.as_of, t)}
-          </span>
-        )}
+      <div className="vmw-veredicto__cabecera">
+        <div className="vmw-eyebrow vmw-veredicto__eyebrow">
+          <span>{t("regimen.titulo")}</span>
+          {analisis !== null && (
+            <span className="vmw-veredicto__cuando">
+              {cuando(analisis.as_of, t)}
+            </span>
+          )}
+        </div>
+        <Acciones analisis={analisis} />
       </div>
       <Lectura analisis={analisis} />
     </section>
   );
+}
+
+/**
+ * Las dos acciones de la cabecera.
+ *
+ * «Exportar CSV» hace lo que dice: vuelca la lectura de esta revisión —régimen,
+ * cifras y chips— con los decimales EXACTOS del contrato, sin pasar por float.
+ * Es dato que ya está en el cliente, así que no necesita nada del servidor.
+ *
+ * «Crear alerta» va **deshabilitada y lo explica**. ADR-0021 la dejó fuera de
+ * alcance porque no es un botón: exige persistencia por usuario, evaluación en
+ * el motor y un canal de aviso. Pintarla activa y que no hiciera nada sería
+ * peor que no pintarla; deshabilitada, la disposición se sostiene y nadie se
+ * lleva un chasco.
+ */
+function Acciones({ analisis }: { analisis: Analisis | null }) {
+  const { t, idioma } = useI18n();
+
+  return (
+    <div className="vmw-veredicto__acciones">
+      <button
+        type="button"
+        className="vmw-accion"
+        disabled={analisis === null}
+        onClick={() => analisis !== null && exportarCsv(analisis, t, idioma)}
+      >
+        {t("regimen.exportar")}
+      </button>
+      <button
+        type="button"
+        className="vmw-accion vmw-accion--teal"
+        disabled
+        title={t("regimen.alertaNoDisponible")}
+      >
+        {t("regimen.crearAlerta")}
+      </button>
+    </div>
+  );
+}
+
+/** CRLF: es lo que espera Excel en un CSV; con LF solo mete todo en una fila. */
+const SALTO_CSV = "\r\n";
+/** Sin BOM, Excel abre el UTF-8 como Latin-1 y parte los acentos. */
+const BOM = "\ufeff";
+
+/**
+ * Vuelca la lectura a CSV con los decimales EXACTOS del contrato.
+ *
+ * Sin `toFixed` ni `Number`: los valores viajan como string y así salen. El
+ * separador es la coma y los campos van entrecomillados, porque la prosa del
+ * régimen lleva comas dentro.
+ */
+function exportarCsv(analisis: Analisis, t: Traducir, idioma: "es" | "en"): void {
+  const lectura = analisis.reading;
+  const filas: string[][] = [
+    [t("regimen.csv.campo"), t("regimen.csv.valor")],
+    ["as_of", analisis.as_of],
+    ["currency", analisis.currency],
+    ["regime", lectura?.regime ?? ""],
+    ["confidence", analisis.confidence],
+    ["official_stale", String(analisis.official_stale)],
+    ["gauges_near_threshold", String(lectura?.gauges_near_threshold ?? "")],
+    ["rules_met", analisis.summary.rules_met.join(" ")],
+    ["closest_rule", analisis.summary.closest_rule ?? ""],
+  ];
+  for (const indicador of analisis.indicators) {
+    filas.push([indicador.indicator, indicador.value]);
+  }
+
+  const csv = filas
+    .map((fila) => fila.map((c) => `"${c.replaceAll('"', '""')}"`).join(","))
+    .join(SALTO_CSV);
+  const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `lectura-${analisis.as_of.slice(0, 10)}-${idioma}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 /**
@@ -188,53 +275,57 @@ function Lectura({ analisis }: { analisis: Analisis | null }) {
 
   return (
     <>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "12px",
-          marginTop: "12px",
-        }}
-      >
+      <div className="vmw-veredicto__titular">
         <span aria-hidden="true" className="vmw-regimen__punto" />
-        <span
-          className="vmw-cifra"
-          style={{ fontSize: "clamp(24px, 3.4vw, 34px)" }}
-        >
+        {/* h2 de verdad, no un span con pinta de titular: es el encabezado de la
+            vista y un lector de pantalla tiene que poder saltar a él. */}
+        <h2 className="vmw-veredicto__titulo">
           {lectura.regime !== null
             ? t(`regimen.${lectura.regime}` as Clave)
             : t("regimen.sinRegimen")}
-        </span>
+        </h2>
       </div>
 
       {/* Una frase por afirmación, en el orden que manda el motor: lo que
-          invalida al resto va primero. */}
-      <p className="vmw-nota" style={{ marginTop: "12px" }}>
+          invalida al resto va primero. Acotado a 780 px porque una línea más
+          larga que eso cuesta seguirla con la vista. */}
+      <p className="vmw-veredicto__prosa">
         {lectura.claims.map((c) => fraseDe(c, t, fmt)).filter(Boolean).join(" ")}
       </p>
 
-      <div className="vmw-regimen__chips">
-        <Chip texto={t("regimen.chip.frescos", { cuando: cuando(analisis.as_of, t) })} />
-        <Chip texto={t("regimen.chip.reglas", { n: analisis.summary.rules_met.length })} />
-        <Chip
-          tono={lectura.gauges_near_threshold > 0 ? "coral" : undefined}
-          texto={
-            lectura.gauges_near_threshold === 1
-              ? t("regimen.chip.cercaUno")
-              : t("regimen.chip.cerca", { n: lectura.gauges_near_threshold })
-          }
-        />
-        <Chip
-          tono={analisis.confidence === "low" ? "coral" : undefined}
-          texto={t(
-            analisis.confidence === "low"
-              ? "regimen.chip.confianzaBaja"
-              : "regimen.chip.confianzaNormal",
-            { outliers: pctOutliers(analisis, idioma) },
-          )}
-        />
+      {/* Dos grupos, separados a la vista, porque responden preguntas distintas:
+          de qué material está hecha la lectura, y a qué conclusión llega. Antes
+          iban los cuatro en fila y había que leerlos todos para saber cuál era
+          cuál. */}
+      <div className="vmw-regimen__grupos">
+        <div className="vmw-regimen__chips" aria-label={t("regimen.grupo.dato")}>
+          <Chip texto={t("regimen.chip.frescos", { cuando: cuando(analisis.as_of, t) })} />
+          <Chip texto={t("regimen.chip.reglas", { n: analisis.summary.rules_met.length })} />
+        </div>
+        <span className="vmw-regimen__divisor" aria-hidden="true" />
+        <div
+          className="vmw-regimen__chips"
+          aria-label={t("regimen.grupo.conclusion")}
+        >
+          <Chip
+            tono={lectura.gauges_near_threshold > 0 ? "coral" : undefined}
+            texto={
+              lectura.gauges_near_threshold === 1
+                ? t("regimen.chip.cercaUno")
+                : t("regimen.chip.cerca", { n: lectura.gauges_near_threshold })
+            }
+          />
+          <Chip
+            tono={analisis.confidence === "low" ? "coral" : undefined}
+            texto={t(
+              analisis.confidence === "low"
+                ? "regimen.chip.confianzaBaja"
+                : "regimen.chip.confianzaNormal",
+              { outliers: pctOutliers(analisis, idioma) },
+            )}
+          />
+        </div>
       </div>
-
     </>
   );
 }

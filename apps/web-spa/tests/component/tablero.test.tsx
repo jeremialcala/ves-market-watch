@@ -384,3 +384,24 @@ describe("AnalysisView", () => {
     expect(screen.getByText(/sin liquidez servida/i)).toBeTruthy();
   });
 });
+
+describe("Una sola superficie con tinte", () => {
+  it("el brillo teal vive SOLO en «Lectura de hoy»", () => {
+    /*
+     * El tinte separa la lectura del resto, y eso solo funciona mientras sea el
+     * único: dos superficies teñidas compiten y ninguna destaca. `GapPanel`
+     * conserva su degradado NEUTRO, que es superficie y no acento.
+     */
+    marketStore.resync({ analisis: FIXTURE_ANALISIS, indicadores: FIXTURE_INDICADORES });
+    render(
+      <>
+        <MarketRegimeCard />
+        <GapPanel />
+      </>,
+    );
+
+    const brillos = [...document.querySelectorAll(".vmw-hero__brillo")];
+    expect(brillos).toHaveLength(1);
+    expect(brillos[0].closest(".vmw-veredicto")).not.toBeNull();
+  });
+});

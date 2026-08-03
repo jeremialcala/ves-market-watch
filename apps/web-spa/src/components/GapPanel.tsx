@@ -83,9 +83,10 @@ export function GapPanel() {
   const oficialUsd = tasas["USD"];
 
   return (
+    // Sin el brillo teal: ese tinte es de «Lectura de hoy» y solo funciona
+    // mientras sea el ÚNICO. Esta tarjeta conserva su degradado neutro, que es
+    // superficie y no acento.
     <section className="vmw-hero" aria-label={t("brecha.titulo")}>
-      <div className="vmw-hero__brillo" aria-hidden="true" />
-
       <div className="vmw-eyebrow">
         <span>{t("brecha.titulo")}</span>
         {official_stale ? (

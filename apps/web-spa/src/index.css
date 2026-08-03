@@ -1528,7 +1528,128 @@ body {
   color: var(--coral);
 }
 
+/*
+ * «Lectura de hoy»: la ÚNICA superficie con tinte de la vista.
+ *
+ * Que sea la única es lo que la hace funcionar — dos superficies teñidas
+ * compiten y ninguna destaca. Por eso el degradado teal vive aquí y en ningún
+ * otro sitio del dashboard.
+ */
+.vmw-veredicto {
+  border-radius: 28px;
+  background: linear-gradient(160deg, var(--teal-tint-strong), var(--dark-2));
+  border: var(--border-width) solid var(--teal-line);
+  padding: 24px 28px;
+}
+
+.vmw-veredicto__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+
+/* El eyebrow es lo único teal del texto: marca la superficie, no compite con
+   el titular. La nota metodológica NO lo es — ver `__cuando`. */
+.vmw-veredicto__eyebrow {
+  color: var(--teal);
+  font-size: var(--fs-caption);
+  text-transform: uppercase;
+}
+
+.vmw-veredicto__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.vmw-accion {
+  height: 40px;
+  padding: 0 20px;
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid var(--border-2);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-xs);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+
+.vmw-accion:hover:not(:disabled) {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.vmw-accion--teal {
+  border-color: var(--teal-line);
+  background: var(--teal-tint);
+  color: var(--teal);
+}
+
+/* Deshabilitada Y con su porqué en el `title`: un botón muerto sin explicación
+   es peor que no ponerlo. */
+.vmw-accion:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* El titular: punto luminoso + h2 del sistema. */
+.vmw-veredicto__titular {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.vmw-veredicto__titulo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3.4vw, 34px);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--white);
+}
+
+/* 780 px: más largo que eso, la vista pierde el renglón al volver. */
+.vmw-veredicto__prosa {
+  margin: 14px 0 0;
+  max-width: 780px;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+
+/* Los chips en dos grupos: material de la lectura | conclusión. */
+.vmw-regimen__grupos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-top: 18px;
+}
+
+.vmw-regimen__divisor {
+  width: 1px;
+  height: 20px;
+  background: var(--border-2);
+}
+
+@media (width <= 620px) {
+  .vmw-regimen__divisor {
+    display: none;
+  }
+}
+
 /* La marca temporal del titular, junto al eyebrow. */
+/* Sello de frescura y nota metodológica: 13 px y `--text-dim`, NO teal. El teal
+   se reserva para el eyebrow, que es lo que marca la superficie. */
 .vmw-veredicto__cuando {
   font-size: var(--fs-micro);
   letter-spacing: 0;

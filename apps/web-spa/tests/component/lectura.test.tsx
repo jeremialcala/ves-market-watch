@@ -7,7 +7,7 @@
  */
 
 import { cleanup, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { MarketRegimeCard } from "../../src/components/MarketRegimeCard";
 import { ES } from "../../src/i18n/dict";
@@ -162,5 +162,76 @@ describe("Lectura del mercado", () => {
     for (const prohibido of [/should/i, /will rise/i, /will fall/i, /expected to/i]) {
       expect(texto).not.toMatch(prohibido);
     }
+  });
+});
+
+describe("Cabecera de la lectura", () => {
+  it("«Crear alerta» va DESHABILITADA y dice por qué", () => {
+    /*
+     * ADR-0021 la dejó fuera de alcance: no es un botón, exige persistencia por
+     * usuario, evaluación en el motor y un canal de aviso. Pintarla activa y que
+     * no hiciera nada sería peor que no pintarla.
+     */
+    marketStore.resync({ analisis: FIXTURE_ANALISIS });
+    render(<MarketRegimeCard />);
+
+    const alerta = screen.getByRole("button", { name: /crear alerta/i });
+    expect(alerta.hasAttribute("disabled")).toBe(true);
+    expect(alerta.getAttribute("title")).toMatch(/Todavía no disponible/);
+  });
+
+  it("«Exportar CSV» sí funciona: vuelca la lectura de esta revisión", () => {
+    const urls: string[] = [];
+    const blobs: Blob[] = [];
+    const crear = vi
+      .spyOn(URL, "createObjectURL")
+      .mockImplementation((b) => {
+        blobs.push(b as Blob);
+        urls.push("blob:x");
+        return "blob:x";
+      });
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    const clic = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+
+    marketStore.resync({ analisis: FIXTURE_ANALISIS });
+    render(<MarketRegimeCard />);
+    screen.getByRole("button", { name: /exportar csv/i }).click();
+
+    expect(crear).toHaveBeenCalledTimes(1);
+    expect(clic).toHaveBeenCalledTimes(1);
+    expect(blobs[0].type).toContain("text/csv");
+    vi.restoreAllMocks();
+  });
+
+  it("sin análisis no se puede exportar nada", () => {
+    render(<MarketRegimeCard />);
+    const exportar = screen.getByRole("button", { name: /exportar csv/i });
+    expect(exportar.hasAttribute("disabled")).toBe(true);
+  });
+
+  it("los chips van en DOS grupos, no en una fila indistinta", () => {
+    /*
+     * Responden preguntas distintas —de qué material está hecha la lectura, y a
+     * qué conclusión llega—, y en una sola fila había que leerlos todos para
+     * saber cuál era cuál.
+     */
+    marketStore.resync({ analisis: FIXTURE_ANALISIS });
+    render(<MarketRegimeCard />);
+
+    const grupos = [...document.querySelectorAll(".vmw-regimen__chips")];
+    expect(grupos).toHaveLength(2);
+    expect(grupos[0].getAttribute("aria-label")).toBe("Estado del dato");
+    expect(grupos[1].getAttribute("aria-label")).toBe("Conclusión de la lectura");
+    expect(grupos[0].textContent).toMatch(/Datos frescos/);
+    expect(grupos[1].textContent).toMatch(/Confianza/);
+  });
+
+  it("el titular es un h2 de verdad, no un span con pinta de titular", () => {
+    // Es el encabezado de la vista: un lector de pantalla tiene que saltar a él.
+    marketStore.resync({ analisis: FIXTURE_ANALISIS });
+    render(<MarketRegimeCard />);
+    expect(screen.getByRole("heading", { level: 2 })).toBeTruthy();
   });
 });

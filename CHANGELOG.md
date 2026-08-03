@@ -120,8 +120,26 @@ Convención de mantenimiento (inventario por ejecución):
   - Sin color de veredicto en la interfaz, a propósito: es un hecho, no un
     acierto ni un fallo. Tests que lo fijan en gateway y SPA.
 
+### Added
+
+- **«Exportar CSV» en la lectura del día (2026-08-02).** Vuelca la revisión con
+  los decimales EXACTOS del contrato (sin `toFixed` ni `Number`), con CRLF y BOM
+  porque es lo que Excel espera. Sale del dato que ya está en el cliente.
+
 ### Changed
 
+- **«Lectura de hoy» pasa a ser la ÚNICA superficie con tinte (2026-08-02).**
+  Radio 28, degradado teal, borde `--teal-line`, padding 24/28. Se retiró el
+  brillo teal de `GapPanel` —conserva su degradado neutro— porque dos superficies
+  teñidas compiten y ninguna destaca; hay test que lo fija.
+  - Titular como **`h2` de verdad**, con punto de 10 px y Space Grotesk
+    `clamp(24px,3.4vw,34px)` a −0,03em. Prosa a 780 px con `text-wrap: pretty`.
+  - **Chips en dos grupos** separados a la vista: estado del dato y conclusión.
+    En una sola fila había que leerlos todos para saber cuál era cuál.
+  - Sello y nota metodológica a 13 px `--text-dim`, **no** teal: el teal se
+    reserva para el eyebrow, que es lo que marca la superficie.
+  - **«Crear alerta» se pinta pero deshabilitada, y lo explica**: ADR-0021 la dejó
+    fuera de alcance y activa no haría nada, que es peor que no ponerla.
 - **Fuera las descripciones del control: la interfaz describe el mercado, no se
   describe a sí misma (2026-08-02).** Se retiran los tres pies de aclaración —el
   de la tarjeta de régimen, el de la síntesis del panel y el de la distancia al
