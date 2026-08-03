@@ -176,6 +176,8 @@ gitGraph
     commit id: "a9ea4a1"
     commit id: "b59b673"
     commit id: "5581471"
+    commit id: "c293b1d"
+    commit id: "f8faa89"
 ```
 
 ### Estado actual de las ramas
@@ -183,7 +185,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `5581471` | 2026-08-03 | 142 |
+| `develop` | `f8faa89` | 2026-08-03 | 144 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -199,6 +201,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `f8faa89` | commit | — | Jeremi Alcala | 2026-08-03 | docs: barrido de coherencia y revision de gates |
+| `c293b1d` | commit | — | Jeremi Alcala | 2026-08-03 | docs(repo-history): regenerar |
 | `5581471` | commit | — | Jeremi Alcala | 2026-08-03 | chore(auth0): las etiquetas del tenant siguen al producto (ADR-0024 enmienda) |
 | `b59b673` | commit | — | Jeremi Alcala | 2026-08-03 | docs(repo-history): regenerar |
 | `a9ea4a1` | commit | — | Jeremi Alcala | 2026-08-03 | feat: el producto pasa a llamarse Criterio (ADR-0024) |
