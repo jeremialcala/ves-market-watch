@@ -153,6 +153,8 @@ gitGraph
     commit id: "98ea475"
     commit id: "b3d95fc"
     commit id: "534afa1"
+    commit id: "be00558"
+    commit id: "f0961fd"
 ```
 
 ### Estado actual de las ramas
@@ -160,7 +162,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `534afa1` | 2026-08-02 | 119 |
+| `develop` | `f0961fd` | 2026-08-02 | 121 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -176,6 +178,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `f0961fd` | commit | — | Jeremi Alcala | 2026-08-02 | refactor(web-spa): la interfaz describe el mercado, no se describe a si misma |
+| `be00558` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `534afa1` | commit | — | Jeremi Alcala | 2026-08-02 | refactor(web-spa): fuera el pie de aclaracion de la tarjeta de regimen |
 | `b3d95fc` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `98ea475` | commit | — | Jeremi Alcala | 2026-08-02 | refactor(web-spa): la barra a 76 px fijos y «Salir» deja de ser coral |
