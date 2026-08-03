@@ -1,19 +1,22 @@
 """Casos de uso de lectura: frescura, confianza y armado de la vista REST."""
 
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
 from api_gateway.application.consultas import (
+    ConsultarSenales,
     ConsultarAnalisisVigente,
     ConsultarIndicadoresVigentes,
     ConsultarReferenciaP2P,
     ConsultarTasaOficialVigente,
 )
+from api_gateway.domain.paginacion import Pagina
 from tests.conftest import (
     RepositorioEnMemoria,
     fila_analisis,
     fila_indicador,
+    fila_senal,
     fila_tasa,
     hoy_vet,
 )
@@ -191,3 +194,61 @@ async def test_sin_fila_devuelve_none(repo):
 async def test_la_moneda_no_se_confunde(repo):
     repo.analisis["VES"] = fila_analisis(hace=timedelta(minutes=1))
     assert await ConsultarAnalisisVigente(repo, FRESCURA).ejecutar("COP") is None
+
+
+# -- resultado observado de una señal ----------------------------------------
+
+
+async def test_publica_la_variacion_de_la_brecha_tras_la_senal(repo):
+    repo.filas_senales = [fila_senal()]
+    resultado = await ConsultarSenales(repo).ejecutar(
+        datetime.now(UTC) - timedelta(days=1), datetime.now(UTC), None, Pagina(1, 50)
+    )
+
+    outcome = resultado["data"][0]["outcome"]
+    assert outcome["hours"] == 12
+    assert outcome["gap_delta_pp"] == "1.80"  # 15,00 − 13,20
+
+
+async def test_es_HISTORIA_no_acierto_no_hay_veredicto_ni_contador(repo):
+    """El no-objetivo del PRD: no insinuar capacidad predictiva.
+
+    Se publica la variación y nada más. Un «N de M» agregado se lee como tasa de
+    acierto — y con las 7 señales que hay hoy, una regla tiene n = 1, donde
+    «1 de 1» parecería un 100 %.
+    """
+    repo.filas_senales = [fila_senal()]
+    resultado = await ConsultarSenales(repo).ejecutar(
+        datetime.now(UTC) - timedelta(days=1), datetime.now(UTC), None, Pagina(1, 50)
+    )
+
+    outcome = resultado["data"][0]["outcome"]
+    assert set(outcome) == {"hours", "gap_delta_pp"}
+    # Ni veredicto por señal ni recuento agregado en la página.
+    for prohibido in ("hit", "acierto", "success", "score", "aciertos"):
+        assert prohibido not in outcome
+        assert prohibido not in resultado
+
+
+async def test_sin_cumplirse_la_ventana_NO_se_publica_resultado(repo):
+    """Todavía no ocurrió: rellenarlo con lo que haya contaría un tramo más
+    corto como si fuera el completo."""
+    fila = fila_senal()
+    fila["brecha_despues"] = None
+    repo.filas_senales = [fila]
+    resultado = await ConsultarSenales(repo).ejecutar(
+        datetime.now(UTC) - timedelta(days=1), datetime.now(UTC), None, Pagina(1, 50)
+    )
+
+    assert resultado["data"][0]["outcome"] is None
+
+
+async def test_sin_brecha_en_el_instante_de_la_senal_tampoco(repo):
+    fila = fila_senal()
+    fila["brecha_en_senal"] = None
+    repo.filas_senales = [fila]
+    resultado = await ConsultarSenales(repo).ejecutar(
+        datetime.now(UTC) - timedelta(days=1), datetime.now(UTC), None, Pagina(1, 50)
+    )
+
+    assert resultado["data"][0]["outcome"] is None

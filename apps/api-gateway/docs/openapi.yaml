@@ -791,6 +791,29 @@ components:
           items: { $ref: '#/components/schemas/DepthLevel' }
       required: [side, as_of, levels]
 
+    SignalOutcome:
+      type: object
+      additionalProperties: false
+      description: |
+        Qué hizo la brecha en las horas siguientes a la señal. **Es historia
+        observada, no una medida de acierto**: se publica la variación y nada
+        más — sin veredicto y sin contador agregado. El no-objetivo del PRD es no
+        insinuar capacidad predictiva, y un «N de M» se lee como tasa de acierto.
+
+        Ausente mientras la ventana no se haya cumplido: eso todavía no ocurrió.
+      properties:
+        hours:
+          type: integer
+          minimum: 1
+          description: Ventana observada tras la señal.
+        gap_delta_pp:
+          allOf: [{ $ref: '#/components/schemas/SignedDecimal' }]
+          description: |
+            Variación de `p2p_brecha_pct_buy` en puntos porcentuales entre el
+            instante de la señal y el final de la ventana. Ambos extremos se
+            resuelven as-of (ADR-0009).
+      required: [hours, gap_delta_pp]
+
     Signal:
       type: object
       additionalProperties: false
@@ -844,6 +867,13 @@ components:
               type: string
               description: Identificador versionado de la regla evaluada (`<type>@v<n>`).
           required: [inputs, rule]
+        outcome:
+          oneOf:
+            - { $ref: '#/components/schemas/SignalOutcome' }
+            - { type: 'null' }
+          description: |
+            Qué hizo la brecha tras la señal. `null` mientras la ventana no se
+            haya cumplido — o si falta alguno de los dos extremos.
       required: [type, direction, currency, as_of, emitted_at, calc_version, triggered_by, evidence]
 
     SignalPage:

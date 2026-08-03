@@ -13,6 +13,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
+from api_gateway.adapters.timescale.repository import VENTANA_RESULTADO_H
 from api_gateway.application.ports import LecturaRepository
 from api_gateway.domain.paginacion import Pagina, meta_pagina
 from api_gateway.domain.profundidad import calcular_profundidad
@@ -256,6 +257,29 @@ class ConsultarAnalisisVigente:
         return fila["payload"]
 
 
+def _resultado_observado(fila) -> dict | None:
+    """Qué hizo la brecha en las horas siguientes a la señal.
+
+    **Es historia, no acierto.** Se publica la variación y nada más: ni un
+    veredicto, ni un contador agregado de «N de M». El no-objetivo del PRD es no
+    insinuar capacidad predictiva, y un contador agregado se lee como una tasa de
+    acierto — sobre todo con las 7 señales que hay hoy, donde una regla tiene
+    n = 1 y «1 de 1» parecería un 100 %.
+
+    `None` mientras la ventana no se haya cumplido: eso todavía no ocurrió, y
+    rellenarlo con lo que haya sería contar un tramo más corto como si fuera el
+    completo.
+    """
+    antes = fila["brecha_en_senal"]
+    despues = fila["brecha_despues"]
+    if antes is None or despues is None:
+        return None
+    return {
+        "hours": VENTANA_RESULTADO_H,
+        "gap_delta_pp": format(Decimal(despues) - Decimal(antes), "f"),
+    }
+
+
 class ConsultarSenales:
     def __init__(self, repo: LecturaRepository) -> None:
         self._repo = repo
@@ -277,6 +301,7 @@ class ConsultarSenales:
                     "calc_version": f["calc_version"],
                     "triggered_by": f["triggered_by"],
                     "evidence": f["evidence"],
+                    "outcome": _resultado_observado(f),
                 }
                 for f in filas
             ],

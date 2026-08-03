@@ -30,6 +30,12 @@ async def _init_conexion(conexion: asyncpg.Connection) -> None:
     )
 
 
+# Ventana del resultado observado de una señal. 12 h: cubre una sesión completa
+# del mercado P2P sin solaparse con la siguiente señal de la misma regla, que el
+# cooldown ya separa.
+VENTANA_RESULTADO_H = 12
+
+
 class TimescaleLecturaRepository(LecturaRepository):
     def __init__(self, pool: asyncpg.Pool) -> None:
         self._pool = pool
@@ -197,14 +203,33 @@ class TimescaleLecturaRepository(LecturaRepository):
         offset: int,
         limite: int,
     ) -> tuple[list[dict], int]:
+        # `outcome_*`: la brecha EN la señal y `VENTANA_RESULTADO` después. Es
+        # historia observada, no una medida de acierto — la lectura la fija el
+        # caso de uso, que publica la variación y nada más (RF-5).
+        #
+        # Los dos lados usan el valor más cercano por debajo del instante
+        # buscado (`ORDER BY as_of DESC LIMIT 1`), el mismo criterio as-of que el
+        # motor (ADR-0009). Si la ventana aún no se ha cumplido, el segundo sale
+        # NULL y el resultado no se publica: todavía no ocurrió.
         filas = await self._pool.fetch(
             """
-            SELECT emitted_at, as_of, type, direction, currency,
-                   calc_version, triggered_by::text AS triggered_by, evidence
-            FROM signals
-            WHERE emitted_at BETWEEN $1 AND $2
-              AND ($3::text IS NULL OR type = $3)
-            ORDER BY emitted_at DESC
+            SELECT s.emitted_at, s.as_of, s.type, s.direction, s.currency,
+                   s.calc_version, s.triggered_by::text AS triggered_by,
+                   s.evidence,
+                   (SELECT i.value FROM indicators i
+                     WHERE i.indicator = 'p2p_brecha_pct_buy'
+                       AND i.currency = 'VES' AND i.as_of <= s.as_of
+                     ORDER BY i.as_of DESC LIMIT 1)::text AS brecha_en_senal,
+                   (SELECT i.value FROM indicators i
+                     WHERE i.indicator = 'p2p_brecha_pct_buy'
+                       AND i.currency = 'VES'
+                       AND i.as_of <= s.as_of + make_interval(hours => $6)
+                       AND i.as_of >= s.as_of
+                     ORDER BY i.as_of DESC LIMIT 1)::text AS brecha_despues
+            FROM signals s
+            WHERE s.emitted_at BETWEEN $1 AND $2
+              AND ($3::text IS NULL OR s.type = $3)
+            ORDER BY s.emitted_at DESC
             OFFSET $4 LIMIT $5
             """,
             desde,
@@ -212,6 +237,7 @@ class TimescaleLecturaRepository(LecturaRepository):
             tipo,
             offset,
             limite,
+            VENTANA_RESULTADO_H,
         )
         total = await self._pool.fetchval(
             """

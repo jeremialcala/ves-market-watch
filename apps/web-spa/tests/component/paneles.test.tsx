@@ -141,6 +141,40 @@ describe("SignalsFeed", () => {
     expect(screen.queryByText("p2p_ratio_oferta_demanda")).toBeNull();
   });
 
+  it("dice qué hizo la brecha DESPUÉS, sin veredicto ni tasa de acierto", async () => {
+    /*
+     * No-objetivo del PRD: no insinuar capacidad predictiva. Se publica la
+     * variación observada y nada más — ni «acertó», ni un «N de M» agregado,
+     * que con n = 1 parecería un 100 %.
+     */
+    const usuario = userEvent.setup();
+    marketStore.resync({
+      senales: [
+        { ...FIXTURE_SENAL, outcome: { hours: 12, gap_delta_pp: "1.80" } },
+      ],
+    });
+    render(<SignalsFeed />);
+
+    await usuario.click(screen.getByRole("button", { name: /correccion/i }));
+    expect(
+      screen.getByText(/la brecha se movió 1,80 puntos en 12 h/),
+    ).toBeTruthy();
+
+    const texto = document.body.textContent ?? "";
+    for (const prohibido of [/acert/i, /acierto/i, /de 1/, /éxito/i]) {
+      expect(texto).not.toMatch(prohibido);
+    }
+  });
+
+  it("sin ventana cumplida no se inventa resultado", async () => {
+    const usuario = userEvent.setup();
+    marketStore.resync({ senales: [{ ...FIXTURE_SENAL, outcome: null }] });
+    render(<SignalsFeed />);
+
+    await usuario.click(screen.getByRole("button", { name: /correccion/i }));
+    expect(screen.queryByText(/Después:/)).toBeNull();
+  });
+
   it("AGRUPA por regla y cuenta los disparos", async () => {
     /*
      * La cronología plana repetía la misma regla una vez por disparo. Agrupada

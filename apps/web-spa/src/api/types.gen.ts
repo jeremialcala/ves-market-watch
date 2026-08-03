@@ -365,6 +365,24 @@ export interface components {
             levels: components["schemas"]["DepthLevel"][];
         };
         /**
+         * @description Qué hizo la brecha en las horas siguientes a la señal. **Es historia
+         *     observada, no una medida de acierto**: se publica la variación y nada
+         *     más — sin veredicto y sin contador agregado. El no-objetivo del PRD es no
+         *     insinuar capacidad predictiva, y un «N de M» se lee como tasa de acierto.
+         *
+         *     Ausente mientras la ventana no se haya cumplido: eso todavía no ocurrió.
+         */
+        SignalOutcome: {
+            /** @description Ventana observada tras la señal. */
+            hours: number;
+            /**
+             * @description Variación de `p2p_brecha_pct_buy` en puntos porcentuales entre el
+             *     instante de la señal y el final de la ventana. Ambos extremos se
+             *     resuelven as-of (ADR-0009).
+             */
+            gap_delta_pp: components["schemas"]["SignedDecimal"];
+        };
+        /**
          * @description Señal financiera con evidencia trazable (T10), alineada con el contrato de
          *     evento `schemas/signal.v1.json`. El evento ya se emite y persiste (motor de
          *     reglas RF-4/ADR-0015); este recurso devolverá datos cuando el api-gateway lea
@@ -410,6 +428,11 @@ export interface components {
                 /** @description Identificador versionado de la regla evaluada (`<type>@v<n>`). */
                 rule: string;
             };
+            /**
+             * @description Qué hizo la brecha tras la señal. `null` mientras la ventana no se
+             *     haya cumplido — o si falta alguno de los dos extremos.
+             */
+            outcome?: components["schemas"]["SignalOutcome"] | null;
         };
         SignalPage: {
             data: components["schemas"]["Signal"][];

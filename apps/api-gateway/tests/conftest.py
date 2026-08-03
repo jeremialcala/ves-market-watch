@@ -177,6 +177,10 @@ def fila_senal(tipo: str = "correccion_inminente") -> dict:
             "rule": f"{tipo}@v1",
             "inputs": {"p2p_spread_pct": "-0.8", "p2p_momentum_bid_3h_pct": "1.4"},
         },
+        # Resultado observado: la brecha EN la señal y tras la ventana. `None` en
+        # la segunda = la ventana no se ha cumplido todavía.
+        "brecha_en_senal": "13.20",
+        "brecha_despues": "15.00",
     }
 
 

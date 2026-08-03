@@ -158,6 +158,22 @@ export function SignalsFeed() {
                               ),
                             )}
                           </dl>
+                          {/* Qué hizo la brecha después. HISTORIA, no acierto:
+                              la variación y nada más — sin veredicto y sin un
+                              «N de M» agregado, que se leería como tasa de
+                              acierto (no-objetivo del PRD). Ausente mientras la
+                              ventana no se haya cumplido. */}
+                          {senal.outcome != null && (
+                            <div className="vmw-evidencia__resultado">
+                              {t("senales.resultado", {
+                                horas: senal.outcome.hours,
+                                delta: formatDecimal(
+                                  senal.outcome.gap_delta_pp,
+                                  { maxDecimales: 2, idioma },
+                                ),
+                              })}
+                            </div>
+                          )}
                           <div className="vmw-evidencia__traza">
                             {t("senales.calcVersion", {
                               version: senal.calc_version,

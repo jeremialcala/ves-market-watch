@@ -461,6 +461,8 @@ export const ES = {
   "senales.disparos": "{n} disparos",
   "senales.disparoUno": "1 disparo",
   "senales.ultima": "última: {cuando}",
+  // Historia observada, NO acierto: se dice qué hizo la brecha y ya.
+  "senales.resultado": "Después: la brecha se movió {delta} puntos en {horas} h.",
   "senales.sinDatos":
     "Sin señales en las últimas horas — el mercado no ha disparado ninguna regla.",
   "senales.evidencia": "Evidencia · insumos al as_of",
@@ -997,6 +999,7 @@ export const EN: Record<Clave, string> = {
   "senales.disparos": "{n} firings",
   "senales.disparoUno": "1 firing",
   "senales.ultima": "last: {cuando}",
+  "senales.resultado": "After: the gap moved {delta} points in {horas} h.",
   "senales.sinDatos":
     "No signals in the last hours — the market has not fired any rule.",
   "senales.evidencia": "Evidence · inputs at as_of",

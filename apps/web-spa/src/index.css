@@ -936,6 +936,14 @@ body {
   border-top: var(--border-width) solid var(--border);
 }
 
+/* El resultado observado. Sin color de veredicto a propósito: es un hecho, no
+   un acierto ni un fallo. */
+.vmw-evidencia__resultado {
+  margin-top: 14px;
+  font-size: var(--fs-body-xs);
+  color: var(--text);
+}
+
 .vmw-evidencia__traza {
   margin-top: 14px;
   font-size: var(--fs-meta);

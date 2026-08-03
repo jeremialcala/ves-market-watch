@@ -104,8 +104,34 @@ Convención de mantenimiento (inventario por ejecución):
   2026-07-27) y el design del gateway decía «sin offline access» cuando el tenant
   lo tenía activo, junto con la rotación de refresh tokens. Corregido en todos.
 
+### Added
+
+- **Resultado observado de cada señal (2026-08-02).** El gateway publica, por
+  señal, cuánto se movió la brecha en las 12 h siguientes (`Signal.outcome`).
+  Los dos extremos se resuelven as-of (ADR-0009); si la ventana no se ha
+  cumplido, el campo va `null` — eso todavía no ocurrió.
+  - **Es historia, no acierto.** Se publica la variación y nada más: sin
+    veredicto por señal y **sin el contador agregado «N de M»** que pedía el
+    prototipo. El no-objetivo del PRD es no insinuar capacidad predictiva, y un
+    «N de M» se lee como tasa de acierto — con las 7 señales que hay hoy, una
+    regla tiene n = 1 y «1 de 1» parecería un 100 %.
+  - Lo confirma el dato real: `arranque_alcista` es alcista y la brecha bajó
+    después en 5 de 6 casos. Un contador habría contado una historia.
+  - Sin color de veredicto en la interfaz, a propósito: es un hecho, no un
+    acierto ni un fallo. Tests que lo fijan en gateway y SPA.
+
 ### Changed
 
+- **La cuota del movimiento que puso la tasa oficial** (`gap_legs.official_share`).
+  `atribuir` ya la calculaba y la tiraba tras clasificar; ahora se publica, para
+  que el cliente no la recalcule con otra definición.
+  - **No es «cuota del cierre», y el prototipo se contradecía**: con Δoficial
+    +26,9 y Δparalelo +7,6 la brecha se cierra 19,3, pero el paralelo SUBIÓ —la
+    abrió—, así que del cierre la oficial pone el 100 %, no el 78 %. El 78 % es
+    su cuota del movimiento total, y así se rotula.
+  - Con esas mismas cifras el responsable **no** es «oficial»: 78 % no llega a la
+    dominancia mínima de 0,8, así que el motor dice «ambos». La cuota matiza una
+    clasificación que es un corte.
 - **Variación de la tasa oficial por moneda y tres filas nuevas en «Calidad y
   procedencia» (2026-08-02).** Todo con dato que ya viajaba: sin cambios de
   contrato ni de motor.
