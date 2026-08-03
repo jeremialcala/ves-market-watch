@@ -9,7 +9,10 @@ from indicator_engine.application.contracts import EventoInvalido
 
 
 def test_evento_valido_se_convierte_al_dto(validador, crear_evento):
-    evento = crear_evento(currency="EUR", rate="763.19191650")
+    # La fecha va EXPLÍCITA: lo que se comprueba es que el campo cruza el
+    # validador sin tocarse, y con el valor por defecto del fixture —el día
+    # operativo de hoy— la aserción se estaría comparando contra sí misma.
+    evento = crear_evento(currency="EUR", rate="763.19191650", value_date="2026-07-06")
 
     tasa = validador.validar_tasa_oficial(evento)
 

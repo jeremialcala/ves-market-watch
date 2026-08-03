@@ -15,6 +15,8 @@ from urllib.parse import urlsplit, urlunsplit
 
 import pytest
 
+from indicator_engine.domain.vigencia import dia_operativo
+
 MIGRACIONES = Path(__file__).parents[1] / "db" / "migrations"
 SCHEMAS_DIR = Path(__file__).parents[3] / "schemas"
 
@@ -27,7 +29,7 @@ _SUGERENCIA = "levantar la infraestructura con: docker compose up -d --wait (ra�
 def evento_tasa_oficial(
     currency: str = "USD",
     rate: str = "667.05000000",
-    value_date: str = "2026-07-06",
+    value_date: str | None = None,
     captured_at: str | None = None,
     event_id: str | None = None,
 ) -> dict:
@@ -43,7 +45,13 @@ def evento_tasa_oficial(
             "source": "BCV",
             "currency": currency,
             "rate": rate,
-            "value_date": value_date,
+            # El DÍA OPERATIVO de hoy, no una fecha congelada. Desde ADR-0022 la
+            # vigencia se mide por fecha valor, así que un literal del pasado hace
+            # que todo evento del fixture nazca rancio: el e2e llevaba rojo desde
+            # que la regla entró, afirmando `official_stale is False` sobre una
+            # tasa que el motor consideraba —con razón— caducada. Quien necesite
+            # una tasa rancia pasa la fecha a mano, que es lo que dice el caso.
+            "value_date": value_date or dia_operativo(datetime.now(UTC)).isoformat(),
             "captured_at": captured_at or datetime.now(UTC).isoformat(),
             "status": "valid",
         },

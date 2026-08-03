@@ -39,6 +39,16 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Fixed
 
+- **El e2e del motor llevaba rojo desde `e0f5f8b` y nadie lo vio (2026-08-03).**
+  ADR-0022 pasó a medir la vigencia por **fecha valor**, y el fixture de eventos
+  del `indicator-engine` traía `value_date: "2026-07-06"` congelado: desde ese
+  commit todo evento del fixture nacía rancio, y `test_flujo_completo_…` afirmaba
+  `official_stale is False` sobre una tasa que el motor consideraba —con razón—
+  caducada. El fixture pasa a emitir el **día operativo de hoy**, que es lo que
+  significa «una tasa publicada»; quien necesite una rancia la pide explícita.
+  *La lección no es el literal: es que la entrega de ADR-0022 se verificó con la
+  suite del SPA y las suites de Python no se corrieron.*
+
 - **Tres tarjetas del dashboard llevaban días en blanco por una carrera al montar
   (2026-08-01).** La sparkline de 24 h, las comparativas de la brecha y el mapa de calor
   se alimentan de `useHistorialBrecha`, un efecto de MONTAJE. React ejecuta los efectos
