@@ -169,6 +169,8 @@ gitGraph
     commit id: "9e508aa"
     commit id: "c5a2660"
     commit id: "8ca8db5"
+    commit id: "b15e29d"
+    commit id: "3a358cf"
 ```
 
 ### Estado actual de las ramas
@@ -176,7 +178,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `8ca8db5` | 2026-08-03 | 135 |
+| `develop` | `3a358cf` | 2026-08-03 | 137 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -192,6 +194,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `3a358cf` | commit | — | Jeremi Alcala | 2026-08-03 | feat(web-spa): el mapa de calor pasa a rampa secuencial y el coral a categoria |
+| `b15e29d` | commit | — | Jeremi Alcala | 2026-08-03 | docs(repo-history): regenerar |
 | `8ca8db5` | commit | — | Jeremi Alcala | 2026-08-03 | feat(web-spa): el panel de instrumentos pierde su banda de cabecera |
 | `c5a2660` | commit | — | Jeremi Alcala | 2026-08-03 | docs(repo-history): regenerar |
 | `9e508aa` | commit | — | Jeremi Alcala | 2026-08-03 | feat(web-spa): los dos minis comparten fila, a un cuarto del ancho cada uno |
