@@ -190,6 +190,13 @@ todo lo que la maqueta hacía bien.
 - (−) **Un régimen con nombre pegadizo invita a citarlo fuera de contexto.** El
   pie de aclaración es obligatorio y no se retira «por limpieza visual» — hay un
   test que lo exige.
+  - **Enmienda 2026-08-02:** el pie sale de la tarjeta de régimen, y solo de
+    ella. La misma advertencia se repetía **tres veces en el dashboard** —aquí,
+    en la síntesis del panel de instrumentos y en la distancia al disparo—, y
+    repetida tres veces deja de leerse. Sigue siendo obligatoria en las otras
+    dos, y lo que este ADR protege de verdad —que la prosa no aconseje ni
+    prediga— se mantiene: la batería de expresiones prohibidas contra el texto
+    renderizado no se toca y ahora cubre también el inglés.
 - (−) **La prosa compuesta puede leerse como narrativa causal más fuerte de lo que
   es.** El orden de los claims lo decide el motor y se revisó con datos reales,
   pero es una lectura que hay que volver a mirar cuando el mercado cambie de cara.
@@ -226,8 +233,9 @@ todo lo que la maqueta hacía bien.
   rechazadas, entre ellas un claim predictivo fuera del enum y prosa en el evento.
 - **SPA: 230 tests, 88,2 % de ramas** (umbral Gate 2: 80 %). La suite nueva
   `lectura.test.tsx` comprueba, además de que pinte, que **no aconseja ni
-  predice**: batería de expresiones prohibidas contra el texto renderizado, y la
-  aclaración obligatoria presente.
+  predice**: batería de expresiones prohibidas contra el texto renderizado, en
+  los dos idiomas. (El pie de aclaración de esta tarjeta se retiró el 2026-08-02
+  por duplicidad; ver la enmienda arriba.)
 - **En vivo (2026-08-01, compose)**: régimen `lateral_comprimiendo` persistido por
   revisión, coherente con los medidores. Medición real ejecutada contra la base:
   `Δbrecha = −1,168 pp`, `Δparalelo = −8,749 VES`, `Δoficial = 0` exacto ⇒

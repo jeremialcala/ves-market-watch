@@ -94,8 +94,6 @@ export const ES = {
     "Sin lectura del mercado en esta revisión: se muestran los indicadores, no su interpretación.",
   "regimen.sinRegimen":
     "Todavía no se puede nombrar el estado del mercado: falta alguno de los dos datos que lo definen.",
-  "regimen.aclaracion":
-    "Describe cómo está el mercado ahora, con los datos de esta lectura. No es una predicción ni una recomendación.",
 
   // Los nueve regímenes: <movimiento>_<brecha>. El titular de la tarjeta.
   "regimen.subiendo_ampliando": "Al alza, con la brecha abriéndose",
@@ -673,8 +671,6 @@ export const EN: Record<Clave, string> = {
     "No market reading in this revision: the indicators are shown without their interpretation.",
   "regimen.sinRegimen":
     "The state of the market cannot be named yet: one of the two figures that define it is missing.",
-  "regimen.aclaracion":
-    "Describes how the market stands right now, with the data in this reading. It is not a prediction nor a recommendation.",
 
   "regimen.subiendo_ampliando": "Rising, with the gap widening",
   "regimen.subiendo_estable": "Rising, with the gap holding",

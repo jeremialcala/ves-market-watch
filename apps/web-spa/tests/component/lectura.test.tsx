@@ -59,8 +59,11 @@ describe("Lectura del mercado", () => {
     render(<MarketRegimeCard />);
     const texto = document.body.textContent ?? "";
 
-    // La aclaración es obligatoria y no se retira «por limpieza visual».
-    expect(screen.getByText(ES["regimen.aclaracion"])).toBeTruthy();
+    // El pie de aclaración salió de ESTA tarjeta (2026-08-02): la misma
+    // advertencia se repetía TRES veces en el dashboard —aquí, en la síntesis
+    // del panel y en la distancia al disparo—. Sigue vigente en las otras dos;
+    // lo que no puede aflojarse es lo de abajo, que es el control de verdad.
+    expect(document.body.textContent).not.toMatch(/No es una predicción ni una recomendación/);
     // Nada imperativo ni predictivo: son los dos límites que el repo declara
     // (no-objetivo del PRD y ADR-0019).
     for (const prohibido of [
@@ -153,8 +156,11 @@ describe("Lectura del mercado", () => {
 
     expect(screen.getByText("Compressing sideways")).toBeTruthy();
     expect(screen.getByText(/If you have to buy/)).toBeTruthy();
-    expect(
-      screen.getByText(/It is not a prediction nor a recommendation/),
-    ).toBeTruthy();
+    // El pie de aclaración salió de esta tarjeta; el registro sigue igual de
+    // acotado en los dos idiomas, que es lo que este test vigila.
+    const texto = document.body.textContent ?? "";
+    for (const prohibido of [/should/i, /will rise/i, /will fall/i, /expected to/i]) {
+      expect(texto).not.toMatch(prohibido);
+    }
   });
 });

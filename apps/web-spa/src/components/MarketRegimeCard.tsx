@@ -235,7 +235,6 @@ function Lectura({ analisis }: { analisis: Analisis | null }) {
         />
       </div>
 
-      <p className="vmw-medidor__aclaracion">{t("regimen.aclaracion")}</p>
     </>
   );
 }

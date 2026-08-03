@@ -211,7 +211,9 @@ Cada medidor pinta lo que trae `analysis.updated` / `GET /analysis/current`
 - **Síntesis** donde estaba el sello: regla más cercana e indicador bloqueante,
   con precedencia deliberada —confianza baja gana a todo, porque si los avisos
   están suprimidos hablar de proximidad engaña— y la aclaración de que no es una
-  predicción, siempre presente.
+  predicción, siempre presente. Esta es una de las **dos** que quedan: la de la
+  tarjeta de régimen se retiró el 2026-08-02 porque la misma advertencia salía
+  tres veces en la misma pantalla y repetida tres veces deja de leerse.
 
 `src/lib/escala.ts` es el **único punto de aritmética** del panel: convierte la
 fracción [0,1] del contrato a un ancho CSS. Banda, posición, posición de umbral,
