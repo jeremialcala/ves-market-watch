@@ -174,6 +174,8 @@ gitGraph
     commit id: "e4b3604"
     commit id: "84dd5c0"
     commit id: "a9ea4a1"
+    commit id: "b59b673"
+    commit id: "5581471"
 ```
 
 ### Estado actual de las ramas
@@ -181,7 +183,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `a9ea4a1` | 2026-08-03 | 140 |
+| `develop` | `5581471` | 2026-08-03 | 142 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -197,6 +199,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `5581471` | commit | — | Jeremi Alcala | 2026-08-03 | chore(auth0): las etiquetas del tenant siguen al producto (ADR-0024 enmienda) |
+| `b59b673` | commit | — | Jeremi Alcala | 2026-08-03 | docs(repo-history): regenerar |
 | `a9ea4a1` | commit | — | Jeremi Alcala | 2026-08-03 | feat: el producto pasa a llamarse Criterio (ADR-0024) |
 | `84dd5c0` | commit | — | Jeremi Alcala | 2026-08-03 | fix(tests): el e2e del motor llevaba rojo desde ADR-0022 y nadie lo vio |
 | `e4b3604` | commit | — | Jeremi Alcala | 2026-08-03 | docs(repo-history): regenerar |
