@@ -13,9 +13,10 @@ export const config = {
   // El `iss` de los tokens pasa a ser https://auth.higerotech.com/ — el gateway
   // valida issuer de forma estricta, así que ambos se mueven juntos o es 401.
   auth0Domain: import.meta.env.VITE_AUTH0_DOMAIN ?? "auth.higerotech.com",
-  // App «VES Market Watch SPA» del tenant (aprovisionada 2026-07-27, ADR-0017 F1).
-  // Conserva el nombre viejo a propósito: es el registro del tenant, no la marca
-  // (ADR-0024). Renombrarlo allí es cosmético; el `audience` de abajo, no.
+  // App «Criterio SPA» del tenant (aprovisionada 2026-07-27 como «VES Market
+  // Watch SPA», renombrada 2026-08-03 con el producto — ADR-0017 F1, ADR-0024).
+  // El nombre es etiqueta; lo que identifica la app es este client_id, y no se
+  // movió. El `audience` de abajo tampoco: ese no se puede mover.
   auth0ClientId:
     import.meta.env.VITE_AUTH0_CLIENT_ID ?? "8CpfA64FlGTmuyF8w07rDFlrZHEeuRER",
   auth0Audience:

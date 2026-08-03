@@ -146,11 +146,18 @@ Convención de mantenimiento (inventario por ejecución):
   los diagramas C4, el bundle de conocimiento y el título de OpenAPI/AsyncAPI.
   - **De paso, el `<title>` de la pestaña dejaba de decir `web-spa`** — el valor
     con el que Vite crea el andamiaje, que llevaba ahí desde ADR-0017.
-  - **El tenant de Auth0 conserva el nombre viejo, a propósito.** Esa tabla
-    describe lo que hay registrado, no cómo se llama el producto; alinearla sin
-    tocar el tenant la volvería ficción. Y el `audience`
-    `https://api.vesmarketwatch/` **no se mueve nunca**: viaja dentro de cada
-    access token emitido, no es un nombre pendiente de actualizar.
+  - **El tenant de Auth0 se renombró también** (a petición del dueño del
+    producto, el mismo día): `Criterio API`, `Criterio SPA` y `Criterio M2M
+    tests`. Se hizo con un `PATCH` de un solo campo sobre la Management API —no
+    con `auth0 apis update --name`, que expone `--enforce-policies` y
+    `--offline-access` como booleanos y podría apagar el RBAC sin que nadie lo
+    pida—, con snapshot previo y diff posterior: `name` fue el único campo
+    modificado en los tres. Verificado en vivo: el SPA vuelve a pedir token
+    contra la API renombrada y la brecha pinta.
+  - **Ningún identificador se movió**, y el `audience`
+    `https://api.vesmarketwatch/` **no puede moverse**: es inmutable en Auth0 y
+    viaja dentro de cada access token emitido. No es un nombre pendiente de
+    actualizar; es una clave. Queda como discordancia permanente y deliberada.
   - Los identificadores internos (repositorio, paquetes, contenedores, prefijo
     `vmw-`) tampoco cambian: no se leen en pantalla y el refactor no le da nada
     al usuario.
