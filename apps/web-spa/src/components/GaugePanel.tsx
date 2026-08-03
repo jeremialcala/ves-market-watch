@@ -1,10 +1,8 @@
 import { useState, type CSSProperties } from "react";
 
-import type {
-  Analisis,
-  Banda,
-  LecturaMedidor,
-} from "../api/endpoints";
+import { Icon } from "../ds/components";
+
+import type { Banda, LecturaMedidor } from "../api/endpoints";
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
 import { formatDecimal, formatPct, toChartNumber } from "../lib/decimal";
@@ -94,7 +92,6 @@ const MEDIDORES: readonly Medidor[] = [
   },
 ];
 
-const INDICADOR_OUTLIERS = "p2p_outliers_pct_buy";
 const INDICADOR_BRECHA = "p2p_brecha_pct_buy";
 
 /**
@@ -139,8 +136,6 @@ export function GaugePanel() {
         </span>
       </div>
 
-      <SintesisPanel analisis={analisis} />
-
       <div
         className="vmw-grid"
         style={{ "--min": "300px", marginTop: "18px" } as CSSProperties}
@@ -184,27 +179,22 @@ function MedidorTarjeta({
   // El valor sale del análisis cuando lo hay, para que cifra y banda pertenezcan
   // a la misma revisión; si no, del store (hay valor pero no lectura).
   const crudo = lectura?.value ?? vigente?.value;
+  // Sin historia suficiente NO se pinta cifra. El valor medido es real, pero
+  // esta tarjeta es COMPARATIVA: sin escala empírica, el número solo invita a
+  // compararlo con una referencia que no existe. El motor lo declara degradando
+  // `scale.source` a `ruleset`.
+  const sinHistoria = lectura !== undefined && lectura.scale.source === "ruleset";
   const texto =
-    crudo === undefined
+    crudo === undefined || sinHistoria
       ? "—"
       : medidor.pct
         ? formatPct(crudo, 2, idioma)
         : fmt(crudo);
 
   const escala = lectura?.scale;
-  const pie =
-    escala === undefined
-      ? null
-      : escala.source === "percentiles"
-        ? t("medidores.escala.ventana", { dias: escala.window_days })
-        : t("medidores.escala.ruleset", {
-            muestras: escala.samples,
-            minimo: escala.min_samples,
-            dias: escala.window_days,
-          });
 
   return (
-    <div className="vmw-tarjeta">
+    <div className="vmw-tarjeta vmw-medidor">
       <div className="vmw-medidor__cabecera">
         <span className="vmw-eyebrow">{t(medidor.etiqueta)}</span>
         {/* El distintivo dice la BANDA que publicó el motor, en el vocabulario
@@ -224,13 +214,24 @@ function MedidorTarjeta({
         )}
       </div>
 
-      <div className="vmw-cifra vmw-medidor__valor">{texto}</div>
+      {sinHistoria ? (
+        <div className="vmw-medidor__sin-historia">
+          {t("medidores.sinHistoria")}
+        </div>
+      ) : (
+        <div className="vmw-cifra vmw-medidor__valor">{texto}</div>
+      )}
 
-      {/* Barra: solo si hay coordenada. `position: null` ⇒ nada que dibujar
-          honestamente, y el pie ya explica por qué. */}
-      {lectura !== undefined && lectura.position !== null ? (
+      {/* La barra lleva TRES cosas y cada una con su tratamiento, nunca el
+          mismo: la banda normal es superficie (blanco al 10 %), el umbral es
+          una línea coral de 1,5 px y el valor de hoy una pastilla teal. Si las
+          tres se dibujaran igual, no se sabría cuál es cuál.
+
+          Sin coordenada —o sin historia suficiente— la barra va VACÍA: se ve el
+          hueco, no se rellena a ojo. */}
+      {lectura !== undefined && lectura.position !== null && !sinHistoria ? (
         <div
-          className="vmw-barra vmw-barra--con-umbral"
+          className="vmw-medidor__escala-barra"
           role="img"
           aria-label={t("medidores.barraEtiqueta", {
             etiqueta: t(medidor.etiqueta),
@@ -238,51 +239,54 @@ function MedidorTarjeta({
             banda: t(`medidores.banda.${CLAVE_BANDA[lectura.band]}` as Clave),
             fuente: t(`medidores.fuente.${lectura.scale.source}` as Clave),
           })}
-          style={{ marginTop: "14px" }}
         >
-          <div
-            className="vmw-barra__relleno"
-            style={{
-              width: pctDesdeFraccion(lectura.position),
-              background: medidor.color,
-            }}
-          />
+          {escala !== undefined && escala.cuts.length >= 3 && (
+            <div
+              className="vmw-medidor__banda"
+              style={{
+                left: pctDesdeFraccion(escala.cuts[0].position),
+                width: `${(
+                  (toChartNumber(escala.cuts[2].position) -
+                    toChartNumber(escala.cuts[0].position)) *
+                  100
+                ).toFixed(1)}%`,
+              }}
+            />
+          )}
           {/* UNA marca por regla: p2p_ratio_oferta_demanda alimenta TRES. */}
           {lectura.rules.map((r) => (
-            <div
+            <i
               key={r.rule}
-              className="vmw-barra__umbral"
+              className="vmw-medidor__umbral"
               data-cumple={r.met}
               title={`${r.type} · ${r.op} ${r.threshold}`}
               style={{ left: pctDesdeFraccion(r.threshold_position) }}
             />
           ))}
+          <i
+            className="vmw-medidor__hoy"
+            style={{ left: pctDesdeFraccion(lectura.position) }}
+          />
         </div>
       ) : (
-        <div
-          className="vmw-barra vmw-barra--sin-escala"
-          style={{ marginTop: "14px" }}
-        />
+        <div className="vmw-medidor__escala-barra vmw-medidor__escala-barra--vacia" />
       )}
 
-      {/* Los cortes de la escala, cada uno BAJO su posición en la barra. Antes
-          iban como una cadena en la cabecera («bajo 10,55 · normal 15,90 …»):
-          el número estaba, pero no dónde caía. La palabra sigue en el `title`,
-          porque el proyecto rotula bajo/normal/alto y no percentiles. */}
-      {escala !== undefined && escala.source === "percentiles" ? (
-        <div className="vmw-medidor__cortes" aria-hidden="true">
+      {/* La escala rotulada con PALABRAS —bajo/normal/alto—, nunca «percentil X»
+          (ADR-0019). El valor exacto de cada corte va en el `title`. */}
+      {escala !== undefined && !sinHistoria ? (
+        <div className="vmw-medidor__cortes">
           {escala.cuts.map((corte) => (
             <span
               key={corte.key}
-              title={t(`medidores.corte.${corte.key}` as Clave)}
+              title={fmt(corte.value)}
               style={{ left: pctDesdeFraccion(corte.position) }}
             >
-              {fmt(corte.value)}
+              {t(`medidores.corte.${corte.key}` as Clave)}
             </span>
           ))}
         </div>
       ) : null}
-      {pie !== null && <div className="vmw-medidor__escala">{pie}</div>}
 
       <p className="vmw-nota" style={{ marginTop: "12px" }}>
         {crudo === undefined
@@ -317,7 +321,9 @@ function MedidorTarjeta({
             onClick={() => setAbierto(!abierto)}
           >
             {t(abierto ? "medidores.detalle.cerrar" : "medidores.detalle.abrir")}
-            <span aria-hidden="true">{abierto ? "−" : "+"}</span>
+            {/* El icono gira al abrir: la misma flecha dice las dos direcciones
+                sin cambiar de glifo. */}
+            <Icon name="arrowRight" size={16} aria-hidden="true" />
           </button>
           {abierto ? (
             <div
@@ -383,53 +389,6 @@ function MedidorTarjeta({
   );
 }
 
-/**
- * Síntesis del panel. Orden de precedencia deliberado: confianza baja gana a
- * todo (si los avisos están suprimidos, hablar de proximidad engaña), luego
- * reglas cumplidas, luego la más cercana, luego el aviso de no evaluables, y
- * `ninguna` como suelo. El pie de aclaración va SIEMPRE.
- */
-function SintesisPanel({ analisis }: { analisis: Analisis | null }) {
-  const { t, idioma } = useI18n();
-  if (analisis === null) {
-    return (
-      <div className="vmw-panel__sintesis">
-        <p className="vmw-nota">{t("medidores.sinAnalisis")}</p>
-      </div>
-    );
-  }
-  const s = analisis.summary;
-  const linea =
-    analisis.confidence === "low"
-      ? t("medidores.sintesis.confianzaBaja", {
-          outliers: pctOutliers(analisis, idioma),
-        })
-      : s.rules_met.length > 0
-        ? t("medidores.sintesis.cumplidas", {
-            reglas: s.rules_met.map(nombrePropio).join(", "),
-          })
-        : s.closest_rule !== null
-          ? t("medidores.sintesis.cerca", {
-              regla: nombrePropio(s.closest_rule),
-              cumplidas: s.conditions_met,
-              totales: s.conditions_total,
-              indicador: nombrePropio(s.blocked_by ?? "—"),
-            })
-          : s.rules_evaluable < s.rules_total
-            ? t("medidores.sintesis.noEvaluable", {
-                evaluables: s.rules_evaluable,
-                totales: s.rules_total,
-              })
-            : t("medidores.sintesis.ninguna");
-
-  return (
-    <div className="vmw-panel__sintesis">
-      <div className="vmw-eyebrow">{t("medidores.sintesis.titulo")}</div>
-      <p className="vmw-nota">{linea}</p>
-    </div>
-  );
-}
-
 /** Nombres de reglas e indicadores: vocabulario del contrato, no se traducen —
  *  solo se leen mejor con los guiones bajos como espacios (mismo criterio que
  *  `SignalsFeed`). */
@@ -457,13 +416,4 @@ function distanciaAUmbral(lectura: LecturaMedidor | undefined): number | null {
     .filter((r) => !r.met)
     .map((r) => Math.abs(posicion - toChartNumber(r.threshold_position)));
   return distancias.length === 0 ? null : Math.min(...distancias);
-}
-
-/** El % de outliers que motivó la confianza baja, si el medidor está en la
- *  lectura; si no, se dice que no se sabe en vez de inventar una cifra. */
-function pctOutliers(analisis: Analisis, idioma: "es" | "en"): string {
-  const outliers = analisis.indicators.find(
-    (i) => i.indicator === INDICADOR_OUTLIERS,
-  );
-  return outliers === undefined ? "—" : formatPct(outliers.value, 2, idioma);
 }

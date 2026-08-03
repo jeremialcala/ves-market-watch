@@ -5,6 +5,8 @@ import type { SVGProps } from "react";
 const GLIFOS = {
   menu: { vb: "0 0 24 24", sw: 1.8, d: ["M4 7h16M4 12h16M4 17h16"] },
   close: { vb: "0 0 24 24", sw: 1.8, d: ["M6 6l12 12M18 6L6 18"] },
+  /** Flecha de «seguir leyendo». Trazo, no relleno: hereda `currentColor`. */
+  arrowRight: { vb: "0 0 24 24", sw: 1.8, d: ["M5 12h14M13 6l6 6-6 6"] },
 } as const;
 
 export type NombreIcono = keyof typeof GLIFOS;

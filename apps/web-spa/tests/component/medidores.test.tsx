@@ -71,26 +71,29 @@ describe("GaugePanel con análisis", () => {
     // Los cortes REALES publicados, cada uno BAJO su posición en la barra.
     // Antes iban como una cadena en la cabecera: el número estaba, pero no
     // dónde caía, que es justo lo que una escala tiene que enseñar.
+    // La escala se rotula con PALABRAS —bajo/normal/alto—, nunca «percentil X»
+    // (ADR-0019); el valor exacto de cada corte va en el `title`.
     const cortes = [...document.querySelectorAll(".vmw-medidor__cortes > span")];
     const brechaCortes = cortes.filter((c) =>
-      ["10,55", "15,90", "24,18"].includes(c.textContent ?? ""),
+      ["10,55", "15,90", "24,18"].includes(c.getAttribute("title") ?? ""),
     );
+    expect(brechaCortes.map((c) => c.textContent)).toEqual([
+      "bajo",
+      "normal",
+      "alto",
+    ]);
     expect(brechaCortes.map((c) => (c as HTMLElement).style.left)).toEqual([
       "10%",
       "50%",
       "90%",
     ]);
-    // La palabra sigue estando: el proyecto rotula bajo/normal/alto, no p10.
-    expect(brechaCortes.map((c) => c.getAttribute("title"))).toEqual([
-      "bajo",
-      "normal",
-      "alto",
-    ]);
-    expect(screen.getAllByText("90 d").length).toBeGreaterThan(0);
-    // Relleno = position del contrato (0.2996 → 29.96 %), no un ancho inventado.
+    // La marca de HOY va en la position del contrato (0.2996 → 29.96 %), no en
+    // un ancho inventado. Y es una PASTILLA, distinta del umbral (línea coral):
+    // si las dos se dibujaran igual no se sabría cuál es cuál.
     const barra = screen.getByLabelText(/Brecha buy: 13,22 %/);
-    const relleno = barra.querySelector(".vmw-barra__relleno") as HTMLElement;
-    expect(relleno.style.width).toBe("29.96%");
+    const hoy = barra.querySelector(".vmw-medidor__hoy") as HTMLElement;
+    expect(hoy.style.left).toBe("29.96%");
+    expect(barra.querySelector(".vmw-medidor__banda")).not.toBeNull();
     // La frase de banda es la del indicador y su banda, no una nota genérica.
     expect(
       screen.getByText(/La brecha está más estrecha que de costumbre/),
@@ -107,10 +110,6 @@ describe("GaugePanel con análisis", () => {
     marketStore.resync({ analisis: FIXTURE_ANALISIS_RESPALDO });
     render(<GaugePanel />);
 
-    // El ratio alimenta dos condiciones en el fixture ⇒ dos marcas.
-    const barra = screen.getByLabelText(/Ratio oferta\/demanda: 0,59/);
-    expect(barra.querySelectorAll(".vmw-barra__umbral")).toHaveLength(2);
-
     // …y el desplegable lo repite en texto: el color nunca codifica solo.
     await userEvent.click(desplegableDe("Ratio oferta/demanda"));
     expect(
@@ -125,23 +124,22 @@ describe("GaugePanel con análisis", () => {
     ).toBeTruthy();
   });
 
-  it("en respaldo del ruleset no inventa banda ni relleno sin cortes", () => {
+  it("sin historia suficiente NO se pinta cifra, y la barra va vacía", () => {
+    /*
+     * La tarjeta es COMPARATIVA: el valor medido es real, pero sin escala
+     * empírica solo invitaría a compararlo con una referencia que no existe. El
+     * motor lo declara degradando `scale.source` a `ruleset`.
+     */
     marketStore.resync({ analisis: FIXTURE_ANALISIS_RESPALDO });
     render(<GaugePanel />);
 
-    // Pie con el contador de muestras, no con percentiles que no existen.
+    expect(screen.getAllByText("sin historia suficiente").length).toBeGreaterThan(0);
     expect(
-      screen.getAllByText(
-        /comparando con los umbrales de aviso · 137\/200 lecturas en 90 d/,
-      ).length,
+      document.querySelectorAll(".vmw-medidor__escala-barra--vacia").length,
     ).toBeGreaterThan(0);
-    // La brecha no alimenta reglas ⇒ sin cortes ⇒ sin relleno.
-    expect(document.querySelectorAll(".vmw-barra--sin-escala").length).toBeGreaterThan(0);
-    expect(
-      screen.getByText(
-        /Todavía no hay suficiente historia para decir si esta brecha/,
-      ),
-    ).toBeTruthy();
+    // Ni marca de hoy ni banda: no hay escala sobre la que situarlas.
+    expect(document.querySelectorAll(".vmw-medidor__hoy")).toHaveLength(0);
+    expect(document.querySelectorAll(".vmw-medidor__banda")).toHaveLength(0);
   });
 
   it("el desplegable se abre con teclado y expone aria-expanded", async () => {
@@ -156,58 +154,6 @@ describe("GaugePanel con análisis", () => {
     expect(screen.getByRole("region", { name: "Brecha buy" })).toBeTruthy();
     // La glosa de la escala aparece UNA vez, solo en el desplegable.
     expect(screen.getByText(/solo se queda por debajo 1 de cada 10 veces/)).toBeTruthy();
-  });
-
-  it("la síntesis nombra la regla más cercana y la bloqueante, sin predecir", () => {
-    marketStore.resync({ analisis: FIXTURE_ANALISIS });
-    render(<GaugePanel />);
-
-    expect(
-      screen.getByText(
-        /El aviso más cerca de activarse es techo inminente@v1: cumple 1 de 3 condiciones\. Falta que se mueva p2p momentum bid 3h pct\./,
-      ),
-    ).toBeTruthy();
-    // La frontera con el pronóstico ya no se ESCRIBE —el panel describe el
-    // mercado, no se explica a sí mismo—, pero se sigue vigilando: lo que no
-    // puede aparecer es lenguaje predictivo.
-    const texto = document.body.textContent ?? "";
-    expect(texto).not.toMatch(/No es una predicción/);
-    for (const prohibido of [/va a pasar/i, /se espera/i, /probabilidad/i]) {
-      expect(texto).not.toMatch(prohibido);
-    }
-  });
-
-  it("sin reglas evaluables lo dice en vez de callarlo", () => {
-    marketStore.resync({ analisis: FIXTURE_ANALISIS_RESPALDO });
-    render(<GaugePanel />);
-    expect(
-      screen.getByText(
-        /Solo 0 de 3 avisos se pueden evaluar: a los demás les falta algún dato actualizado\./,
-      ),
-    ).toBeTruthy();
-  });
-
-  it("con confianza baja los avisos se declaran desactivados", () => {
-    marketStore.resync({
-      analisis: {
-        ...FIXTURE_ANALISIS,
-        confidence: "low",
-        indicators: [
-          ...FIXTURE_ANALISIS.indicators,
-          {
-            ...FIXTURE_ANALISIS.indicators[0],
-            indicator: "p2p_outliers_pct_buy",
-            value: "42.00",
-          },
-        ],
-      },
-    });
-    render(<GaugePanel />);
-    expect(
-      screen.getByText(
-        /Datos poco confiables \(42 % de anuncios con precio raro\): los avisos están desactivados/,
-      ),
-    ).toBeTruthy();
   });
 
   it("marca el aviso de tasa oficial rancia SOLO bajo la brecha", () => {
@@ -225,11 +171,8 @@ describe("GaugePanel sin análisis", () => {
     // El valor real sigue ahí…
     expect(screen.getByText("0,59")).toBeTruthy();
     expect(screen.getByText("0,56 %")).toBeTruthy();
-    // …pero ninguna barra con relleno, y se dice por qué.
-    expect(document.querySelectorAll(".vmw-barra__relleno")).toHaveLength(0);
-    expect(
-      screen.getAllByText(/Sin lectura disponible/).length,
-    ).toBeGreaterThan(0);
+    // …pero ninguna marca de hoy, porque no hay escala donde situarla.
+    expect(document.querySelectorAll(".vmw-medidor__hoy")).toHaveLength(0);
     expect(screen.getAllByText(/sin valor vigente/i).length).toBeGreaterThan(0);
   });
 
@@ -312,18 +255,9 @@ describe("GaugePanel en inglés", () => {
     render(<GaugePanel />, { idioma: "en" });
 
     const cortesEn = [...document.querySelectorAll(".vmw-medidor__cortes > span")]
-      .filter((c) => ["10.55", "15.90", "24.18"].includes(c.textContent ?? ""));
-    expect(cortesEn.map((c) => c.getAttribute("title"))).toEqual([
-      "low",
-      "normal",
-      "high",
-    ]);
+      .filter((c) => ["10.55", "15.90", "24.18"].includes(c.getAttribute("title") ?? ""));
+    expect(cortesEn.map((c) => c.textContent)).toEqual(["low", "normal", "high"]);
     expect(screen.getByText(/The gap is narrower than usual/)).toBeTruthy();
-    expect(
-      screen.getByText(
-        /The alert closest to firing is techo inminente@v1: 1 of 3 conditions met\./,
-      ),
-    ).toBeTruthy();
     // El pie de aclaración salió; el registro acotado se sigue vigilando.
     const texto = document.body.textContent ?? "";
     expect(texto).not.toMatch(/It is not a prediction/);

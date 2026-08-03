@@ -126,6 +126,24 @@ Convención de mantenimiento (inventario por ejecución):
   los decimales EXACTOS del contrato (sin `toFixed` ni `Number`), con CRLF y BOM
   porque es lo que Excel espera. Sale del dato que ya está en el cliente.
 
+### Changed
+
+- **El panel de instrumentos pierde su banda de cabecera (2026-08-03).** Queda en
+  una línea: `h3` + bajada de 13,5 px con cuántos medidores hay y cómo se ordenan.
+  La banda «Qué dice el panel» decía lo mismo que «Distancia al disparo».
+  - Cada medidor a radio 22 sobre `--dark-3`, cifra Space Grotesk 30 px, y la
+    barra con **tres tratamientos distintos**: tramo normal como superficie
+    (blanco 10 %), hoy como pastilla teal 3×14 y umbral como línea coral de
+    1,5 px. Si se dibujaran igual no se sabría cuál es cuál.
+  - Escala rotulada con **palabras** (bajo/normal/alto) a 12 px; el valor exacto
+    de cada corte, en el `title`.
+  - «Ver explicación» pasa a botón teal de 44 px con `arrowRight` — objetivo
+    táctil, no un enlace de 14 px. Se añade el icono al sistema de diseño.
+  - **Sin historia suficiente no se pinta cifra**: «sin historia suficiente» y
+    barra vacía. Tiene coste —el valor medido es real— pero la tarjeta es
+    comparativa y sin escala empírica el número invita a una comparación que no
+    existe.
+
 ### Fixed
 
 - **Los bloques del dashboard estaban PEGADOS en cuatro sitios (2026-08-03).** La

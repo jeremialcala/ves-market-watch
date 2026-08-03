@@ -93,6 +93,37 @@ El canario `tests/unit/paleta.test.ts` fija estos valores: si alguien cambia un
 slot, el test falla y pide volver a pasar el validador. Lo que se rompió esta
 vez fue precisamente que el color cambió y la palabra «validada» se quedó.
 
+## El panel de instrumentos, sin banda de cabecera (2026-08-03)
+La cabecera queda en **una línea**: `h3` en Space Grotesk `clamp(20px, 2.4vw, 24px)`
+en caja de oración y una bajada de 13,5 px `--text-dim` con cuántos medidores hay
+y en qué orden. Fuera la banda «Qué dice el panel» — decía lo mismo que
+«Distancia al disparo», que es la tarjeta que existe para eso, y su contenido
+explicativo vive en «Ver explicación».
+
+Cada medidor: radio 22 sobre `--dark-3` con hairline al 8 %, nombre a 12,5 px en
+mayúsculas por CSS y cifra Space Grotesk 30 px.
+
+**La barra lleva tres cosas y cada una con SU tratamiento**, que es el punto:
+
+| qué | cómo | por qué |
+|---|---|---|
+| tramo normal | superficie, blanco al 10 % | es contexto, no una marca |
+| valor de hoy | pastilla teal 3×14 px | la posición que se lee |
+| umbral | línea coral de 1,5 px | otro color **y** otra forma |
+
+Si los tres se dibujaran igual no se sabría cuál es cuál. Debajo, la escala
+rotulada con **palabras** —bajo/normal/alto— a 12 px, con el valor exacto de cada
+corte en el `title`; nunca «percentil X» (ADR-0019).
+
+«Ver explicación» pasa a botón de texto **teal** con `arrowRight` de 16 px y
+**44 px de alto**: es un objetivo táctil, no un enlace de 14 px que haya que
+acertar. La flecha gira al abrir, así que el mismo glifo dice las dos direcciones.
+
+**Sin historia suficiente no se pinta cifra**: se dice «sin historia suficiente» y
+la barra va vacía y punteada. Es una decisión con coste — el valor medido ES real
+— pero la tarjeta es comparativa, y un número sin escala empírica solo invita a
+compararlo con una referencia que todavía no existe.
+
 ## Separación entre bloques: 24 px uniformes (2026-08-03)
 `.vmw-vista > .vmw-contenedor > * + * { margin-top: 24px }`.
 

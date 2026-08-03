@@ -161,6 +161,9 @@ export const ES = {
   "medidores.bajada":
     "{n} medidores sobre su escala de 90 días · primero el más cerca de su umbral",
   "medidores.sinValor": "sin valor vigente",
+  // Sin escala empírica no se pinta cifra: la tarjeta es comparativa y el número
+  // solo invitaría a compararlo con una referencia que todavía no existe.
+  "medidores.sinHistoria": "sin historia suficiente",
   "medidores.brecha": "Brecha buy",
 
   // Qué mide (definición, en el desplegable).
@@ -733,6 +736,7 @@ export const EN: Record<Clave, string> = {
   "medidores.bajada":
     "{n} gauges on their 90-day scale · closest to its threshold first",
   "medidores.sinValor": "no current value",
+  "medidores.sinHistoria": "not enough history",
   "medidores.brecha": "Gap buy",
 
   "medidores.def.brecha":
