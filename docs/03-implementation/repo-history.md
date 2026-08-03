@@ -155,6 +155,8 @@ gitGraph
     commit id: "534afa1"
     commit id: "be00558"
     commit id: "f0961fd"
+    commit id: "b8b625a"
+    commit id: "90d9100"
 ```
 
 ### Estado actual de las ramas
@@ -162,7 +164,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `f0961fd` | 2026-08-02 | 121 |
+| `develop` | `90d9100` | 2026-08-02 | 123 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -178,6 +180,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `90d9100` | commit | — | Jeremi Alcala | 2026-08-02 | docs: barrido de coherencia tras el bloque 3, la barra y las aclaraciones |
+| `b8b625a` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `f0961fd` | commit | — | Jeremi Alcala | 2026-08-02 | refactor(web-spa): la interfaz describe el mercado, no se describe a si misma |
 | `be00558` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `534afa1` | commit | — | Jeremi Alcala | 2026-08-02 | refactor(web-spa): fuera el pie de aclaracion de la tarjeta de regimen |
