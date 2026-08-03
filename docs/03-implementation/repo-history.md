@@ -159,6 +159,8 @@ gitGraph
     commit id: "90d9100"
     commit id: "43f00b6"
     commit id: "ce5560b"
+    commit id: "8549165"
+    commit id: "834d032"
 ```
 
 ### Estado actual de las ramas
@@ -166,7 +168,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `ce5560b` | 2026-08-02 | 125 |
+| `develop` | `834d032` | 2026-08-02 | 127 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -182,6 +184,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `834d032` | commit | — | Jeremi Alcala | 2026-08-02 | feat(web-spa): «Lectura de hoy» como unica superficie con tinte |
+| `8549165` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `ce5560b` | commit | — | Jeremi Alcala | 2026-08-02 | fix(web-spa): las pestañas se salian de la barra entre 760 y 1050 px |
 | `43f00b6` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `90d9100` | commit | — | Jeremi Alcala | 2026-08-02 | docs: barrido de coherencia tras el bloque 3, la barra y las aclaraciones |
