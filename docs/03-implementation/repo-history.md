@@ -151,6 +151,8 @@ gitGraph
     commit id: "e7accd4"
     commit id: "ee39077"
     commit id: "98ea475"
+    commit id: "b3d95fc"
+    commit id: "534afa1"
 ```
 
 ### Estado actual de las ramas
@@ -158,7 +160,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `98ea475` | 2026-08-02 | 117 |
+| `develop` | `534afa1` | 2026-08-02 | 119 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -174,6 +176,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `534afa1` | commit | — | Jeremi Alcala | 2026-08-02 | refactor(web-spa): fuera el pie de aclaracion de la tarjeta de regimen |
+| `b3d95fc` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `98ea475` | commit | — | Jeremi Alcala | 2026-08-02 | refactor(web-spa): la barra a 76 px fijos y «Salir» deja de ser coral |
 | `ee39077` | commit | — | Jeremi Alcala | 2026-08-02 | docs(web-spa): la tabla del shell describia la tira vieja |
 | `e7accd4` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
