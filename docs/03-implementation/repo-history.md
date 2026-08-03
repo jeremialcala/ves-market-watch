@@ -143,6 +143,9 @@ gitGraph
     commit id: "9934d12"
     commit id: "166c528"
     commit id: "b533588"
+    commit id: "8023c36"
+    commit id: "6aab1bf"
+    commit id: "c4f2630"
 ```
 
 ### Estado actual de las ramas
@@ -150,7 +153,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `b533588` | 2026-08-02 | 109 |
+| `develop` | `c4f2630` | 2026-08-02 | 112 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -166,6 +169,9 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `c4f2630` | commit | — | Jeremi Alcala | 2026-08-02 | feat(signals): resultado observado por senal, sin tasa de acierto |
+| `6aab1bf` | commit | — | Jeremi Alcala | 2026-08-02 | feat(analysis): la cuota del movimiento que puso la tasa oficial |
+| `8023c36` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `b533588` | commit | — | Jeremi Alcala | 2026-08-02 | feat(web-spa): bloque 2 — variacion por moneda y procedencia completa |
 | `166c528` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `9934d12` | commit | — | Jeremi Alcala | 2026-08-02 | feat(web-spa): resto del bloque 1 — disposicion del prototipo |
