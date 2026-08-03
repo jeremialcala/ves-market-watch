@@ -146,6 +146,8 @@ gitGraph
     commit id: "8023c36"
     commit id: "6aab1bf"
     commit id: "c4f2630"
+    commit id: "172f794"
+    commit id: "7d0d712"
 ```
 
 ### Estado actual de las ramas
@@ -153,7 +155,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `c4f2630` | 2026-08-02 | 112 |
+| `develop` | `7d0d712` | 2026-08-02 | 114 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -169,6 +171,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `7d0d712` | commit | — | Jeremi Alcala | 2026-08-02 | refactor(web-spa): la tira de estado vuelve a ser estado, no diagnostico |
+| `172f794` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `c4f2630` | commit | — | Jeremi Alcala | 2026-08-02 | feat(signals): resultado observado por senal, sin tasa de acierto |
 | `6aab1bf` | commit | — | Jeremi Alcala | 2026-08-02 | feat(analysis): la cuota del movimiento que puso la tasa oficial |
 | `8023c36` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
