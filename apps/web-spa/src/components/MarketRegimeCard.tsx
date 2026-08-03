@@ -142,7 +142,18 @@ export function HeadlineStats() {
   const contra30 = contraMedia30(analisis);
 
   return (
-    <div className="vmw-grid" style={{ "--min": "300px" } as CSSProperties}>
+    /*
+     * `--min: 240px` para que los dos quepan EN LA MISMA FILA dentro de su
+     * columna: ésta mide la mitad del contenedor (554 de 1180), así que dos por
+     * fila dejan cada mini en ~1/4 del ancho de la vista. Con los 300 px de
+     * antes solo cabía uno y se apilaban, ocupando el doble de alto para dos
+     * cifras de un vistazo.
+     *
+     * Sigue siendo `auto-fit`, no dos columnas fijas: cuando la columna se
+     * estrecha —móvil, o la vista partida— vuelven a apilarse en vez de
+     * estrujarse hasta que la cifra no quepa.
+     */
+    <div className="vmw-grid" style={{ "--min": "240px" } as CSSProperties}>
       <div className="vmw-tarjeta--sm vmw-tarjeta">
         <div className="vmw-eyebrow">{t("minis.brecha30")}</div>
         <Stat

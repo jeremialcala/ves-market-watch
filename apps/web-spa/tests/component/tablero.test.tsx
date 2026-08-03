@@ -134,6 +134,22 @@ describe("MarketRegimeCard", () => {
     expect(screen.getByText(/contra su promedio de 12 d \(de 30\)/)).toBeTruthy();
   });
 
+  it("los dos minis caben EN LA MISMA FILA de su columna", () => {
+    /*
+     * jsdom no resuelve layout, así que esto fija la INTENCIÓN: el ancho mínimo
+     * de la rejilla. Con los 300 px de antes solo cabía un mini en la columna
+     * —que mide la mitad del contenedor— y se apilaban, gastando el doble de
+     * alto para dos cifras de un vistazo. Con 240 caben los dos, cada uno en
+     * ~1/4 del ancho de la vista (medido: 268 de 1180).
+     */
+    marketStore.resync({ analisis: FIXTURE_ANALISIS });
+    const { container } = render(<HeadlineStats />);
+
+    const rejilla = container.querySelector(".vmw-grid") as HTMLElement;
+    expect(rejilla.style.getPropertyValue("--min")).toBe("240px");
+    expect(container.querySelectorAll(".vmw-tarjeta--sm")).toHaveLength(2);
+  });
+
   it("la mediana del ratio sale del corte p50, no de un «backtest»", () => {
     /*
      * El prototipo rotula «p50 backtest 0,47». No hay backtest ninguno: es el
