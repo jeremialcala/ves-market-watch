@@ -148,7 +148,14 @@ login y el estado de salud son visibles sin sesión.
   - no recalcula nada: las referencias llegan del contrato (`gap_history`).
 
   El **mapa de calor** pasa a mirar el lado **venta**, que es el que tiene historia
-  real; con el de compra las primeras filas quedaban vacías. Cada vista que muestre
+  real; con el de compra las primeras filas quedaban vacías. Codifica **dos cosas
+  distintas de dos maneras distintas**: la magnitud, con una rampa secuencial de un
+  solo tono hasta el p90 —se lee de tenue a intensa—; y el **exceso** sobre ese p90,
+  con coral, que no es la continuación de la rampa sino una **categoría**. Sus
+  percentiles son de los 14 días que se están pintando y el subtítulo lo dice:
+  el lado venta **no es medidor del panel** y no tiene percentiles publicados que
+  citar. Las horas sin bucket quedan vacías y **se distinguen por forma** (un filete
+  interior), no por color: no se interpola para rellenar bonito. Cada vista que muestre
   una serie de brecha **declara qué lado mira**: con dos series en la app, callarlo
   es ambiguo. La **sparkline de 24 h** pinta los dos lados,
   con **escala Y compartida** —sin ella cada serie se normaliza sola y la más baja

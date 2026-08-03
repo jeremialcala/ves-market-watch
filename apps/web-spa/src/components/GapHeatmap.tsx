@@ -51,16 +51,19 @@ export function GapHeatmap() {
               <div className="vmw-calor__parrilla">
                 <div className="vmw-calor__horas" aria-hidden="true">
                   {Array.from({ length: 24 }, (_, hora) => (
-                    <div key={hora}>{hora % 3 === 0 ? hora : ""}</div>
+                    <div key={hora}>
+                      {hora % 3 === 0 ? t("calor.hora", { hora }) : ""}
+                    </div>
                   ))}
                 </div>
-                <div style={{ display: "grid", gap: "4px" }}>
+                <div className="vmw-calor__filas">
                   {parrillaCalor(horario, DIAS_CALOR).map((fila) => (
                     <div className="vmw-calor__fila" key={fila.dia}>
                       {fila.celdas.map((celda) => (
                         <div
                           key={celda.hora}
                           className="vmw-calor__celda"
+                          data-vacia={celda.valor === null ? "si" : undefined}
                           title={
                             celda.valor === null
                               ? t("calor.sinDato", {
@@ -93,6 +96,10 @@ export function GapHeatmap() {
                 </div>
               </div>
             </div>
+            {/* Barra continua con sus dos extremos rotulados, alineada a la
+                izquierda bajo la retícula. El coral se explica aparte porque no
+                es la continuación del degradado: es la categoría «por encima del
+                p90». */}
             <div className="vmw-calor__leyenda">
               <span>
                 {t("calor.p10", { valor: formatPct(escala.p10, 2, idioma) })}
@@ -105,7 +112,6 @@ export function GapHeatmap() {
                 <i className="vmw-calor__muestra" aria-hidden="true" />
                 {t("calor.exceso")}
               </span>
-              <span>{t("calor.leyenda")}</span>
             </div>
           </>
         )}

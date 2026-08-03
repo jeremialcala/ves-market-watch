@@ -359,9 +359,13 @@ describe("GapHeatmap", () => {
 
     await waitFor(() => expect(screen.getByText(/p10 12,20/)).toBeTruthy());
     expect(screen.getByText(/p90 14,60/)).toBeTruthy();
-    // Y dice de dónde salen esos percentiles: de los 14 días pintados, no de
-    // una escala publicada — el lado venta no es medidor del panel.
-    expect(screen.getByText(/percentiles de estos 14 días/)).toBeTruthy();
+    /*
+     * De qué ventana salen esos percentiles lo dice ahora el SUBTÍTULO —«últimos
+     * 14 días»—, no una nota bajo la leyenda. La honestidad sigue: son de los 14
+     * días pintados y no de una escala publicada, porque el lado venta no es
+     * medidor del panel y no tiene percentiles que citar.
+     */
+    expect(screen.getByText(/últimos 14 días · bucket 1 h · VET/)).toBeTruthy();
   });
 
   it("el coral marca SOLO lo que supera el p90", async () => {

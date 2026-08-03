@@ -128,6 +128,29 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **El mapa de calor deja de ser divergente: rampa secuencial + coral como
+  categoría (2026-08-03).** Celdas a 2 px de gap y radio 3 px, para que **la
+  mancha domine sobre la retícula**. La escala pasa a cinco pasos del teal de
+  marca por alfa (8, 22, 40, 65 y 100 %) y el coral queda reservado a un único
+  caso: **por encima del p90**. Son dos preguntas distintas —cuánta brecha y si
+  se salió del rango habitual— y ahora se codifican distinto.
+  - **Los huecos sin dato se distinguen por forma, no por color.** Medidos a
+    1,13:1 del fondo y 1,06:1 de la celda más floja, ningún valor de blanco los
+    separaba; llevan filete interior, que no compite por ese tramo de luminosidad.
+  - El primer escalón queda a 1,19:1 sobre la superficie, por debajo del piso de
+    2:1 del proyecto. **Se acepta a propósito**: en un mapa lo que hay que
+    distinguir es una celda de su vecina, y los saltos entre escalones (1,39 →
+    1,85) sí separan. Queda escrito en `plan-de-pruebas.md`, no difuminado.
+  - Eje X rotulado cada 3 h con sufijo «h»; título «Mapa de calor de la brecha» y
+    subtítulo «lado venta · últimos 14 días · bucket 1 h · VET». La leyenda pasa a
+    barra continua de degradado con p10 y p90 en sus extremos, 13 px, alineada a
+    la izquierda. La nota que declaraba de qué ventana salen los percentiles **no
+    se pierde: se muda al subtítulo**, que es donde ya se lee la ventana.
+  - La columna de días llevaba `align-content` implícito: el grid repartía el
+    sobrante entre sus 14 pistas y cada etiqueta se despegaba 0,25 px de su fila,
+    3,6 px acumulados arriba. Fijado, junto con el alto de la cabecera de horas,
+    que el `padding-top` de esa columna compensa a mano.
+
 - **El panel de instrumentos pierde su banda de cabecera (2026-08-03).** Queda en
   una línea: `h3` + bajada de 13,5 px con cuántos medidores hay y cómo se ordenan.
   La banda «Qué dice el panel» decía lo mismo que «Distancia al disparo».

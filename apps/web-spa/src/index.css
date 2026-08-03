@@ -37,15 +37,21 @@
   --series-sell: #f97171;
   --series-aqua: var(--text-muted);
 
-  /* Rampa secuencial del mapa de calor: UN tono, luminosidad monótona
-     (magnitud ⇒ secuencial, dice el skill). Índice 1 = brecha menor. Cubre
-     hasta el p90; derivada igualando escalón por escalón el contraste de la
-     rampa coral que validó el skill (2,52 · 3,49 · 4,83 · 6,47 · 8,61). */
-  --calor-1: #1e796d;
-  --calor-2: #259385;
-  --calor-3: #2caf9d;
-  --calor-4: #33cbb6;
-  --calor-5: #88e1d6;
+  /* Rampa secuencial del mapa: UN tono (el teal de marca) a cinco alfas.
+     Índice 1 = brecha menor. Contra la tarjeta da 1,19 · 1,66 · 2,53 · 4,25 ·
+     7,85, con saltos crecientes de 1,39 → 1,85 entre escalones: lo que importa
+     en un mapa es distinguir una celda de su VECINA, no del fondo. */
+  --calor-1: rgb(138 214 204 / 8%);
+  --calor-2: rgb(138 214 204 / 22%);
+  --calor-3: rgb(138 214 204 / 40%);
+  --calor-4: rgb(138 214 204 / 65%);
+  --calor-5: rgb(138 214 204 / 100%);
+  /* Hueco sin dato. El blanco al 4 % queda a 1,13:1 del fondo y a 1,06:1 de la
+     celda más floja — o sea, indistinguible de ambas. Por eso la ausencia se
+     marca además con FORMA (un filete interior), que no compite por ese tramo
+     estrechísimo de luminosidad. */
+  --calor-hueco: rgb(255 255 255 / 4%);
+  --calor-hueco-filete: rgb(255 255 255 / 10%);
 
   /* Exceso: por encima del p90. NO es la continuación de la rampa, es otra
      categoría — y por eso cambia de tono. Son los dos escalones más marcados
@@ -76,12 +82,14 @@
   --series-sell: #cf4946;
   --series-aqua: var(--text-muted);
 
-  /* Contrastes 2,29 · 3,30 · 4,97 · 7,59 · 11,57 sobre blanco. */
-  --calor-1: #30bfad;
-  --calor-2: #279e8e;
-  --calor-3: #1f7d70;
-  --calor-4: #175e54;
-  --calor-5: #104039;
+  /* Mismas alfas sobre el teal del tema claro: 1,11 · 1,35 · 1,77 · 2,68 · 5,15. */
+  --calor-1: rgb(31 122 112 / 8%);
+  --calor-2: rgb(31 122 112 / 22%);
+  --calor-3: rgb(31 122 112 / 40%);
+  --calor-4: rgb(31 122 112 / 65%);
+  --calor-5: rgb(31 122 112 / 100%);
+  --calor-hueco: rgb(45 49 52 / 4%);
+  --calor-hueco-filete: rgb(45 49 52 / 12%);
 
   --calor-alto-1: #972e30;
   --calor-alto-2: #760715;
@@ -1031,7 +1039,13 @@ body {
 
 .vmw-calor__dias {
   display: grid;
-  gap: 4px;
+  /* El MISMO gap que las filas: esta columna es un grid paralelo, y con 4 aquí y
+     2 allá cada día se despega un poco de su fila hasta desfasar 28 px abajo. */
+  gap: 2px;
+  /* Sin esto el grid estira sus pistas para llenar el alto de la parrilla y cada
+     etiqueta se despega ~0,25 px de su fila (3,6 px al llegar arriba del todo). */
+  align-content: start;
+  /* Exactamente el alto de la cabecera de horas: 14 de línea + 4 de margen. */
   padding-top: 18px;
   flex: none;
   font-size: var(--fs-tiny);
@@ -1054,11 +1068,21 @@ body {
 .vmw-calor__fila {
   display: grid;
   grid-template-columns: repeat(24, 1fr);
-  gap: 4px;
+  /* 2 px: la retícula deja de competir con la mancha, que es lo que se lee. */
+  gap: 2px;
+}
+
+/* Las filas del mapa, con el mismo gap que las celdas dentro de cada fila: el
+   espaciado es isótropo y la mancha no se estira en un eje. */
+.vmw-calor__filas {
+  display: grid;
+  gap: 2px;
 }
 
 .vmw-calor__horas {
   font-size: 11px;
+  /* Fijo, no `normal`: es lo que la columna de días compensa con su padding. */
+  line-height: 14px;
   color: var(--text-dim);
   margin-bottom: 4px;
   text-align: center;
@@ -1066,22 +1090,31 @@ body {
 
 .vmw-calor__celda {
   height: 18px;
-  border-radius: var(--radius-sm);
-  background: var(--overlay-soft);
+  border-radius: 3px;
+  background: var(--calor-hueco);
 }
 
+/* La ausencia de dato se marca por FORMA además de por color: el hueco y la
+   celda más floja se diferencian en 1,06:1, que no es diferencia ninguna. */
+.vmw-calor__celda[data-vacia="si"] {
+  box-shadow: inset 0 0 0 1px var(--calor-hueco-filete);
+}
+
+/* Leyenda a la IZQUIERDA bajo la retícula: una barra continua con sus dos
+   extremos rotulados, a 13 px. */
 .vmw-calor__leyenda {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-start;
   gap: 10px;
-  margin-top: 20px;
-  font-size: var(--fs-caption);
+  margin-top: 18px;
+  font-size: var(--fs-micro);
   color: var(--text-dim);
 }
 
 .vmw-calor__escala {
-  width: 180px;
+  width: 200px;
   height: 8px;
   border-radius: var(--radius-pill);
   background: linear-gradient(

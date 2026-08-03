@@ -53,20 +53,23 @@ describe("slots categóricos (compra ↔ venta)", () => {
 });
 
 /*
- * La rampa teal NO pasó por el validador del skill (no está instalado en esta
- * máquina). Se derivó igualando **escalón por escalón** el contraste de la
- * rampa coral que sí validó —de ahí que los ratios coincidan con los suyos— y
- * se midió aparte lo que el cambio ponía en riesgo:
+ * La rampa es el teal de marca a cinco alfas (8, 22, 40, 65 y 100 %). Medido
+ * contra la superficie de la tarjeta:
  *
- *   contraste sobre su superficie   oscuro 2,51 3,49 4,83 6,47 8,61
- *                                   claro  2,29 3,30 4,97 7,59 11,57
- *   ΔE2000 mínimo entre escalones   oscuro 7,32 · claro 8,56   (protan/deutan)
- *   ΔE2000 del salto teal→coral     protan 14,0 · deutan 26,7  (el peor caso)
+ *   contraste       oscuro 1,19 · 1,66 · 2,53 · 4,25 · 7,85
+ *                   claro  1,11 · 1,35 · 1,77 · 2,68 · 5,15
+ *   salto a salto   oscuro 1,39 → 1,85   (creciente y monótono)
  *
- * Ese último número es el que sostiene el diseño: el coral es una CATEGORÍA
- * («por encima del p90»), y solo vale si sobrevive al daltonismo — 14,0 contra
- * los ~7 que separan escalones dentro de la rampa. Aun así el exceso se dice
- * también en el tooltip, porque una categoría no debe vivir solo en el tono.
+ * El primer escalón queda por debajo del 2:1 que el proyecto usa como piso para
+ * una marca sobre su fondo. Aquí se acepta a propósito: **en un mapa lo que hay
+ * que distinguir es una celda de su VECINA**, no del fondo, y esos saltos sí
+ * separan. Lo que NO se distinguía era el hueco sin dato —1,06:1 contra la celda
+ * más floja—, y por eso lleva filete: una pista de forma, que no compite por
+ * ese tramo de luminosidad.
+ *
+ * El coral es aparte: es la CATEGORÍA «por encima del p90», con ΔE 14,0 bajo
+ * protanopia contra el extremo de la rampa. Aun así el exceso se dice también en
+ * el tooltip, porque una categoría no debe vivir solo en el tono.
  */
 describe("rampa secuencial del mapa de calor", () => {
   const rampa = (bloque: string) =>
@@ -76,24 +79,38 @@ describe("rampa secuencial del mapa de calor", () => {
       token(bloque, `--calor-alto-${i + 1}`),
     );
 
-  it("tema claro conserva la rampa validada", () => {
-    expect(rampa(CLARO)).toEqual([
-      "#30bfad",
-      "#279e8e",
-      "#1f7d70",
-      "#175e54",
-      "#104039",
+  it("tema oscuro: el teal de marca a cinco alfas", () => {
+    expect(rampa(OSCURO)).toEqual([
+      "rgb(138 214 204 / 8%)",
+      "rgb(138 214 204 / 22%)",
+      "rgb(138 214 204 / 40%)",
+      "rgb(138 214 204 / 65%)",
+      "rgb(138 214 204 / 100%)",
     ]);
   });
 
-  it("tema oscuro conserva la rampa validada", () => {
-    expect(rampa(OSCURO)).toEqual([
-      "#1e796d",
-      "#259385",
-      "#2caf9d",
-      "#33cbb6",
-      "#88e1d6",
+  it("tema claro: las MISMAS alfas sobre su teal", () => {
+    expect(rampa(CLARO)).toEqual([
+      "rgb(31 122 112 / 8%)",
+      "rgb(31 122 112 / 22%)",
+      "rgb(31 122 112 / 40%)",
+      "rgb(31 122 112 / 65%)",
+      "rgb(31 122 112 / 100%)",
     ]);
+  });
+
+  it("el hueco sin dato NO se distingue por color, y por eso lleva filete", () => {
+    /*
+     * Medido: el blanco al 4 % queda a 1,13:1 del fondo de la tarjeta y a 1,06:1
+     * de la celda más floja de la rampa — o sea, indistinguible de ambas. La
+     * ausencia se marca además con FORMA (un filete interior), que no compite
+     * por ese tramo estrechísimo de luminosidad.
+     */
+    for (const bloque of [OSCURO, CLARO]) {
+      expect(token(bloque, "--calor-hueco")).not.toBe("");
+      expect(token(bloque, "--calor-hueco-filete")).not.toBe("");
+    }
+    expect(CSS).toMatch(/\.vmw-calor__celda\[data-vacia="si"\]\s*\{[^}]*box-shadow/);
   });
 
   it("el exceso reutiliza el coral ya validado, sin retocarlo", () => {
@@ -132,9 +149,13 @@ function distanciaTono(a: number, b: number): number {
   return d > 180 ? 360 - d : d;
 }
 
-/** Tono HSL en grados. */
-function tono(hex: string): number {
-  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+/** Tono HSL en grados. Acepta `#rrggbb` y `rgb(r g b / a%)`: la rampa se declara
+ *  con alfa y el coral en hexadecimal, y aquí se comparan entre sí. */
+function tono(color: string): number {
+  const canales = color.startsWith("#")
+    ? [1, 3, 5].map((i) => parseInt(color.slice(i, i + 2), 16) / 255)
+    : (color.match(/\d+/g) ?? []).slice(0, 3).map((n) => Number(n) / 255);
+  const [r, g, b] = canales;
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   if (max === min) {

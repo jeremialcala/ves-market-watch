@@ -416,15 +416,20 @@ cierre de la columna «Verificación fase 04-testing».
   fija los valores medidos para que un cambio de color no pase en silencio.
   Sigue abierto, como asunto de diseño: subir el par del tema oscuro a la banda
   de luminosidad y al piso de croma (hoy pasa CVD pero queda fuera en esas dos).
-- **La rampa teal del mapa de calor NO pasó por el validador (2026-08-02).** El
-  script del skill dataviz no está instalado en la máquina donde se hizo el
-  cambio, así que la rampa se derivó igualando escalón por escalón el contraste
-  de la coral que sí validó, y se midieron aparte contraste, monotonía de
-  luminosidad y ΔE2000 bajo protanopia/deuteranopia (mín. entre escalones
-  7,32 oscuro / 8,56 claro; salto teal→coral 14,0 protan). Los números quedan
-  escritos en `tests/unit/paleta.test.ts`. **Pendiente:** volver a pasarla por el
-  validador cuando el skill esté disponible — es la misma distancia entre «medido»
-  y «validado» que este apartado existe para no dejar difuminar.
+- **La rampa teal del mapa de calor NO pasó por el validador (2026-08-02, rampa
+  sustituida el 2026-08-03).** El script del skill dataviz no está instalado en la
+  máquina donde se hizo el cambio. La rampa vigente es el **teal de marca a cinco
+  alfas** (8, 22, 40, 65 y 100 %), y de ella se midió aparte lo que estaba en
+  juego: contraste sobre la superficie (oscuro 1,19 · 1,66 · 2,53 · 4,25 · 7,85;
+  claro 1,11 · 1,35 · 1,77 · 2,68 · 5,15), monotonía de luminosidad y ΔE2000 del
+  salto teal→coral (14,0 protan). **Su primer escalón queda por debajo del 2:1**
+  que el proyecto exige a una marca sobre su fondo, y se acepta a propósito: en un
+  mapa lo que hay que distinguir es una celda de su **vecina**, no del fondo. Lo
+  que sí quedó indistinguible fue el hueco sin dato (1,06:1 contra la celda más
+  floja), resuelto con **forma** —un filete interior— y no con más color. Los
+  números están en `tests/unit/paleta.test.ts`. **Pendiente:** volver a pasarla por
+  el validador cuando el skill esté disponible — es la misma distancia entre
+  «medido» y «validado» que este apartado existe para no dejar difuminar.
 
 ---
 
