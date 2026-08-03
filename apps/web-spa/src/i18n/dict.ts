@@ -80,6 +80,8 @@ export const ES = {
   // El delta contra la media de 7 d; el signo va en el número, no en el texto.
   "brecha.contra7": "{delta} pts vs. 7 días",
   "brecha.contra7Parcial": "{delta} pts vs. {dias} d (de 7)",
+  "brecha.minAlas": "mín {valor} a las {hora}",
+  "brecha.maxAlas": "máx {valor} a las {hora}",
   "brecha.rangoCompra": "compra {min}–{max}",
   "brecha.rangoVenta": "venta {min}–{max}",
   "brecha.sinSerie": "Sin serie de las últimas 24 h.",
@@ -664,6 +666,8 @@ export const EN: Record<Clave, string> = {
   "brecha.minMax": "min {min} · max {max}",
   "brecha.contra7": "{delta} pts vs. 7 days",
   "brecha.contra7Parcial": "{delta} pts vs. {dias} d (of 7)",
+  "brecha.minAlas": "min {valor} at {hora}",
+  "brecha.maxAlas": "max {valor} at {hora}",
   "brecha.rangoCompra": "buy {min}–{max}",
   "brecha.rangoVenta": "sell {min}–{max}",
   "brecha.sinSerie": "No series for the last 24 h.",

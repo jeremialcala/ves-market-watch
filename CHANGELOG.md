@@ -128,6 +128,19 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **La tarjeta de brecha, como bloque rector (2026-08-03).** Radio 28, degradado
+  neutro, hairline al 8 % y halo radial teal al 13 % desbordado por la esquina
+  superior derecha. No contradice la regla de una sola superficie con tinte:
+  «Lectura de hoy» tiene el FONDO teñido, ésta un acento sobre fondo neutro.
+  - Eje Y de **tres marcas rotuladas**, fuera del SVG (el `preserveAspectRatio`
+    que lo estira deformaría cualquier texto de dentro), banda de rango al 12 % y
+    mín/máx **con su hora** bajo el eje.
+  - **La venta pasa de coral a teal al 45 %**: el coral queda reservado para el
+    disparo. Medido antes de cambiarlo — separa ΔE 30–34 bajo protan/deutan, a la
+    altura del par validado en protanopia, porque separa por **luminosidad**
+    (7,85:1 contra 2,82:1), que es lo que el daltonismo no altera; y conserva el
+    trazo discontinuo como tercera pista. Hay test que prohíbe el coral ahí.
+  - El delta a 7 días se colorea por sentido: salvia si comprime, coral si abre.
 - **«Lectura de hoy» pasa a ser la ÚNICA superficie con tinte (2026-08-02).**
   Radio 28, degradado teal, borde `--teal-line`, padding 24/28. Se retiró el
   brillo teal de `GapPanel` —conserva su degradado neutro— porque dos superficies

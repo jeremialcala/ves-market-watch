@@ -271,3 +271,48 @@ export function porcentajeDeMaximo(valor: string, max: string): string {
   }
   return `${Math.max(0, Math.min(100, (v / m) * 100)).toFixed(1)}%`;
 }
+
+/**
+ * Extremos de una serie **con el instante en que ocurrieron**.
+ *
+ * `extremos()` devuelve solo los valores, que basta para escalar un dibujo. Aquí
+ * hace falta además CUÁNDO: un mínimo de las 03:00 y uno de hace diez minutos
+ * dicen cosas distintas, y el pie del gráfico los rotula con su hora.
+ *
+ * Empates: se queda con el PRIMERO, que es el más antiguo — «el mínimo del día»
+ * es cuando se tocó por primera vez, no la última.
+ */
+export function extremosConHora(
+  puntos: readonly Punto[],
+): { min: Punto; max: Punto } | null {
+  if (puntos.length === 0) {
+    return null;
+  }
+  let min = puntos[0];
+  let max = puntos[0];
+  for (const punto of puntos) {
+    if (compararDecimales(punto.valor, min.valor) === -1) {
+      min = punto;
+    }
+    if (compararDecimales(punto.valor, max.valor) === 1) {
+      max = punto;
+    }
+  }
+  return { min, max };
+}
+
+/**
+ * Las tres marcas del eje Y: mínimo, medio y máximo de la escala DIBUJADA.
+ *
+ * El medio se interpola —no es un valor observado— y por eso el eje es una guía
+ * de lectura y no una cifra citable; las cifras citables van en el pie, que sí
+ * salen de la serie.
+ */
+export function marcasEjeY(escala: EscalaY): { valor: number; fraccion: number }[] {
+  const medio = (escala.min + escala.max) / 2;
+  return [
+    { valor: escala.max, fraccion: 0 },
+    { valor: medio, fraccion: 0.5 },
+    { valor: escala.min, fraccion: 1 },
+  ];
+}

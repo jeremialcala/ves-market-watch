@@ -1,16 +1,18 @@
 import { Pill } from "../ds/components";
 import { useI18n } from "../i18n/contexto";
-import { formatDecimal, formatPct, restarDecimales } from "../lib/decimal";
-import { relativo, UMBRAL_P2P_MS } from "../lib/freshness";
+import { formatDecimal, formatPct, restarDecimales, signo } from "../lib/decimal";
+import { relativo } from "../lib/freshness";
+import { VET_OFFSET_MIN } from "../lib/intradia";
 import {
   areaPolilinea,
   escalaComun,
   extremos,
+  extremosConHora,
+  marcasEjeY,
   puntosPolilinea,
 } from "../lib/series";
 import { useMarket } from "../state/marketStore";
 import { useHistorialBrecha } from "../state/useHistorialBrecha";
-import { FreshnessBadge } from "./FreshnessBadge";
 import { NoDataState } from "./NoDataState";
 
 /**
@@ -78,15 +80,17 @@ export function GapPanel() {
   const escala = escalaComun(ventanaCompra, ventanaVenta);
   const lineaCompra = puntosPolilinea(ventanaCompra, ANCHO, ALTO, 8, escala);
   const lineaVenta = puntosPolilinea(ventanaVenta, ANCHO, ALTO, 8, escala);
-  const rangoCompra = extremos(ventanaCompra);
   const rangoVenta = extremos(ventanaVenta);
+  const horasCompra = extremosConHora(ventanaCompra);
   const oficialUsd = tasas["USD"];
 
   return (
-    // Sin el brillo teal: ese tinte es de «Lectura de hoy» y solo funciona
-    // mientras sea el ÚNICO. Esta tarjeta conserva su degradado neutro, que es
-    // superficie y no acento.
-    <section className="vmw-hero" aria-label={t("brecha.titulo")}>
+    // El halo teal desborda por la esquina superior derecha y lo recorta el
+    // `overflow: hidden` de la tarjeta. Es un ACENTO sobre fondo neutro, no un
+    // tinte de superficie: el fondo teñido sigue siendo exclusivo de «Lectura de
+    // hoy», y por eso este halo va más flojo (13 % contra el 14 % de aquella).
+    <section className="vmw-hero vmw-rector" aria-label={t("brecha.titulo")}>
+      <div className="vmw-rector__halo" aria-hidden="true" />
       <div className="vmw-eyebrow">
         <span>{t("brecha.titulo")}</span>
         {official_stale ? (
@@ -109,8 +113,10 @@ export function GapPanel() {
           <div className="vmw-cifra vmw-hero__cifra">
             {formatPct(gap_pct, 2, idioma)}
           </div>
-          <div style={{ paddingBottom: "8px" }}>
-            <div style={{ fontSize: "15px", color: "var(--text-muted)" }}>
+          {/* Alineado a la LÍNEA DE BASE de la cifra, no a su caja: con una cifra
+              de 78 px cualquier otro anclaje deja el texto flotando. */}
+          <div className="vmw-hero__contexto">
+            <div className="vmw-hero__equivalente">
               {gap_abs !== null && gap_abs !== undefined
                 ? t("brecha.sobreOficial", {
                     valor: formatDecimal(gap_abs, {
@@ -121,7 +127,15 @@ export function GapPanel() {
                 : "—"}
             </div>
             {contra7 !== null && (
-              <div className="vmw-hero__contra">
+              /* Salvia si la brecha comprime, coral si abre. El signo va escrito
+                 en el propio número, así que el color refuerza y no codifica
+                 solo. */
+              <div
+                className="vmw-hero__contra"
+                data-sentido={
+                  signo(contra7.delta) < 0 ? "comprime" : "abre"
+                }
+              >
                 {t(
                   contra7.completa
                     ? "brecha.contra7"
@@ -136,12 +150,6 @@ export function GapPanel() {
                 )}
               </div>
             )}
-            <div style={{ marginTop: "6px" }}>
-              <FreshnessBadge
-                asOf={indicadores.as_of}
-                umbralMs={UMBRAL_P2P_MS}
-              />
-            </div>
           </div>
         </div>
       )}
@@ -152,7 +160,22 @@ export function GapPanel() {
             detalle={cargando ? t("generico.cargando") : t("brecha.sinSerie")}
           />
         ) : (
-          <>
+          <div className="vmw-spark__marco">
+            {/* El eje va FUERA del SVG: el gráfico usa
+                `preserveAspectRatio="none"` para estirarse al ancho de la
+                tarjeta, y cualquier texto dentro saldría deformado con él. */}
+            {escala !== null && (
+              <div className="vmw-spark__eje" aria-hidden="true">
+                {marcasEjeY(escala).map((marca) => (
+                  <span
+                    key={marca.fraccion}
+                    style={{ top: `${(marca.fraccion * 100).toFixed(1)}%` }}
+                  >
+                    {formatPct(marca.valor.toFixed(2), 2, idioma)}
+                  </span>
+                ))}
+              </div>
+            )}
             <svg
               viewBox={`0 0 ${ANCHO} ${ALTO}`}
               preserveAspectRatio="none"
@@ -160,20 +183,28 @@ export function GapPanel() {
               role="img"
               aria-label={t("brecha.ventana24h")}
             >
+              {/* Banda de rango: el tramo que la brecha ha ocupado en 24 h. */}
               {lineaCompra !== "" && (
                 <polyline
                   points={areaPolilinea(lineaCompra, ANCHO, ALTO)}
-                  fill="var(--teal-tint)"
+                  fill="var(--banda-rango)"
                   stroke="none"
                 />
               )}
               {/* Venta primero: va detrás, para que la de compra —la del
-                  titular— quede encima si se cruzan. */}
+                  titular— quede encima si se cruzan.
+
+                  En TEAL al 45 %, no en coral: el coral queda reservado para el
+                  disparo. Las dos series se separan por LUMINOSIDAD (7,85:1
+                  contra 2,82:1 sobre la tarjeta), que es lo que el daltonismo no
+                  altera — medido ΔE 30-34 bajo protan/deutan, a la altura del par
+                  teal/coral en protanopia. Y sigue discontinua: una tercera pista
+                  que no depende del color en absoluto. */}
               {lineaVenta !== "" && (
                 <polyline
                   points={lineaVenta}
                   fill="none"
-                  stroke="var(--series-sell)"
+                  stroke="var(--serie-venta-suave)"
                   strokeWidth="1.8"
                   strokeDasharray="5 4"
                   strokeLinejoin="round"
@@ -184,8 +215,8 @@ export function GapPanel() {
                 <polyline
                   points={lineaCompra}
                   fill="none"
-                  stroke="var(--series-buy)"
-                  strokeWidth="2.2"
+                  stroke="var(--teal)"
+                  strokeWidth="2"
                   strokeLinejoin="round"
                   strokeLinecap="round"
                 />
@@ -193,14 +224,24 @@ export function GapPanel() {
             </svg>
             <div className="vmw-spark__pie">
               <span>{t("brecha.ventana24h")}</span>
-              {rangoCompra !== null ? (
-                <span className="vmw-spark__serie vmw-spark__serie--compra">
-                  {t("brecha.rangoCompra", {
-                    min: formatPct(rangoCompra.min, 2, idioma),
-                    max: formatPct(rangoCompra.max, 2, idioma),
-                  })}
-                </span>
-              ) : null}
+              {/* Mín y máx CON SU HORA: un mínimo de las 03:00 y uno de hace diez
+                  minutos dicen cosas distintas, y el valor solo no lo distingue. */}
+              {horasCompra !== null && (
+                <>
+                  <span className="vmw-spark__serie vmw-spark__serie--compra">
+                    {t("brecha.minAlas", {
+                      valor: formatPct(horasCompra.min.valor, 2, idioma),
+                      hora: horaVET(horasCompra.min.t),
+                    })}
+                  </span>
+                  <span>
+                    {t("brecha.maxAlas", {
+                      valor: formatPct(horasCompra.max.valor, 2, idioma),
+                      hora: horaVET(horasCompra.max.t),
+                    })}
+                  </span>
+                </>
+              )}
               {rangoVenta !== null ? (
                 <span className="vmw-spark__serie vmw-spark__serie--venta">
                   {t("brecha.rangoVenta", {
@@ -210,7 +251,7 @@ export function GapPanel() {
                 </span>
               ) : null}
             </div>
-          </>
+          </div>
         )}
       </div>
 
@@ -243,4 +284,14 @@ export function GapPanel() {
       </div>
     </section>
   );
+}
+
+/** La hora del instante en Venezuela, «14:32». Se desplaza y se lee en UTC —el
+ *  mismo criterio que la parrilla del mapa de calor— para no depender de que el
+ *  runtime traiga la base de zonas IANA. */
+function horaVET(t: number): string {
+  const enVET = new Date(t + VET_OFFSET_MIN * 60_000);
+  const hh = String(enVET.getUTCHours()).padStart(2, "0");
+  const mm = String(enVET.getUTCMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
 }

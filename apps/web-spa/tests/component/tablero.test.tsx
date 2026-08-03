@@ -206,7 +206,10 @@ describe("GapPanel · sparkline", () => {
       expect(document.querySelectorAll(".vmw-spark polyline").length).toBe(3),
     );
     // Área + línea de venta + línea de compra.
-    expect(screen.getByText("compra 14,25 %–14,25 %")).toBeTruthy();
+    // El pie rotula mín y máx CON SU HORA: un mínimo de las 03:00 y uno de hace
+    // diez minutos dicen cosas distintas, y el valor solo no los distingue.
+    expect(screen.getByText(/mín 14,25 % a las \d{2}:\d{2}/)).toBeTruthy();
+    expect(screen.getByText(/máx 14,25 % a las \d{2}:\d{2}/)).toBeTruthy();
     expect(screen.getByText("venta 12,75 %–12,75 %")).toBeTruthy();
   });
 
@@ -241,8 +244,47 @@ describe("GapPanel · sparkline", () => {
     marketStore.resync({ indicadores: FIXTURE_INDICADORES });
     render(<GapPanel />);
 
-    await waitFor(() => expect(screen.getByText(/compra 14,25/)).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByText(/mín 14,25 % a las/)).toBeTruthy(),
+    );
     expect(screen.queryByText(/venta /)).toBeNull();
+  });
+});
+
+describe("GapPanel · el coral es del disparo", () => {
+  it("ninguna de las dos series usa coral", async () => {
+    /*
+     * La venta pasó de coral a teal al 45 %: el coral queda para el disparo. Las
+     * dos series se separan por LUMINOSIDAD (7,85:1 contra 2,82:1 sobre la
+     * tarjeta), que es lo que el daltonismo no altera, y la de venta sigue
+     * discontinua — una tercera pista que no depende del color en absoluto.
+     */
+    conHistorialPorLado("14.25", "12.75");
+    marketStore.resync({ indicadores: FIXTURE_INDICADORES });
+    render(<GapPanel />);
+
+    await waitFor(() =>
+      expect(document.querySelectorAll(".vmw-spark polyline").length).toBe(3),
+    );
+    const trazos = [...document.querySelectorAll(".vmw-spark polyline")];
+    for (const trazo of trazos) {
+      expect(trazo.getAttribute("stroke") ?? "").not.toContain("coral");
+      expect(trazo.getAttribute("stroke") ?? "").not.toContain("sell");
+    }
+    // Y la de venta conserva su forma discontinua.
+    expect(
+      trazos.some((t) => t.getAttribute("stroke-dasharray") !== null),
+    ).toBe(true);
+  });
+
+  it("el eje Y lleva sus tres marcas rotuladas", async () => {
+    conHistorialPorLado("14.25", "12.75");
+    marketStore.resync({ indicadores: FIXTURE_INDICADORES });
+    render(<GapPanel />);
+
+    await waitFor(() =>
+      expect(document.querySelectorAll(".vmw-spark__eje > span").length).toBe(3),
+    );
   });
 });
 

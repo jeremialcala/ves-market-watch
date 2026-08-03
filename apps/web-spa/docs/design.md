@@ -93,6 +93,40 @@ El canario `tests/unit/paleta.test.ts` fija estos valores: si alguien cambia un
 slot, el test falla y pide volver a pasar el validador. Lo que se rompió esta
 vez fue precisamente que el color cambió y la palabra «validada» se quedó.
 
+## La tarjeta de brecha como bloque rector (2026-08-03)
+Radio 28, `linear-gradient(160deg, --dark-3, --dark-2)`, hairline al 8 % y un
+**halo radial teal al 13 %** desbordado por la esquina superior derecha, que
+recorta el `overflow: hidden` de la tarjeta.
+
+**El halo no contradice la regla de una sola superficie con tinte**: «Lectura de
+hoy» tiene el FONDO teñido (`--teal-tint-strong`), esta tiene fondo neutro con un
+acento encima, y por eso va más flojo (13 % contra 14 %).
+
+Cifra en Space Grotesk `clamp(46px, 8.5vw, 78px)`, `line-height .9`, −0,035em,
+blanca; a su derecha y anclados a la **línea de base**, el equivalente en VES y
+el delta a 7 días — **salvia si comprime, coral si abre**. El signo va escrito en
+el número, así que el color refuerza y no codifica solo.
+
+Gráfico de 24 h con **eje Y de tres marcas rotuladas**, fuera del SVG: el
+`preserveAspectRatio="none"` que lo estira al ancho deformaría cualquier texto de
+dentro. Banda de rango en teal al 12 %, compra en teal 2 px y **venta en teal al
+45 % — el coral queda reservado para el disparo**. Bajo el eje, mín y máx **con su
+hora**: un mínimo de las 03:00 y uno de hace diez minutos dicen cosas distintas.
+Cierra una regla al 8 % y tres metadatos a 13,5 px.
+
+**La venta deja de ser coral, y eso toca el par validado.** Se midió antes de
+cambiarlo: teal 100 % contra teal 45 % separa ΔE 30–34 bajo protan/deutan —a la
+altura del par teal/coral en protanopia (29,7)— porque separa por **luminosidad**
+(7,85:1 contra 2,82:1 sobre la tarjeta), que es justo lo que el daltonismo no
+altera. Y la venta conserva su trazo discontinuo: una tercera pista que no
+depende del color en absoluto. Hay test que prohíbe el coral en las series.
+
+**Dos defectos propios, cazados verificando en pantalla:** el halo heredaba
+`position: relative` de `.vmw-hero > *:not(.vmw-hero__brillo)` —la lista de
+excluidos no lo nombraba—, entraba en el flujo y empujaba la tarjeta 380 px; y el
+pie del gráfico, con cuatro rótulos repartidos a los extremos, se solapaba consigo
+mismo.
+
 ## «Lectura de hoy»: la única superficie con tinte (2026-08-02)
 Radio 28 px, `linear-gradient(160deg, --teal-tint-strong, --dark-2)`, borde
 `--teal-line`, padding 24/28. **Que sea la única es lo que la hace funcionar**:

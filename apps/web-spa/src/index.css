@@ -53,6 +53,17 @@
   --calor-alto-1: #fe9b96;
   --calor-alto-2: #fec3bf;
 
+  /* Banda de rango del gráfico de 24 h y serie de venta atenuada. La venta va
+     en TEAL, no en coral: el coral queda reservado para el disparo. Las dos
+     series se separan por LUMINOSIDAD —7,85:1 contra 2,82:1 sobre la tarjeta—,
+     que es lo que el daltonismo no altera, y la de venta sigue discontinua. */
+  --banda-rango: rgb(138 214 204 / 12%);
+  --serie-venta-suave: rgb(138 214 204 / 45%);
+  /* Halo de la tarjeta rectora: ACENTO sobre fondo neutro. Va más flojo que el
+     tinte de «Lectura de hoy» (14 %), que es superficie teñida y sigue siendo
+     la única. */
+  --halo-rector: rgb(138 214 204 / 13%);
+
   /* Dirección de señal: es ESTADO, no serie — siempre con su texto al lado. */
   --dir-alcista: var(--teal);
   --dir-bajista: var(--coral);
@@ -74,6 +85,10 @@
 
   --calor-alto-1: #972e30;
   --calor-alto-2: #760715;
+
+  --banda-rango: rgb(31 122 112 / 12%);
+  --serie-venta-suave: rgb(31 122 112 / 45%);
+  --halo-rector: rgb(31 122 112 / 13%);
 }
 
 @keyframes vmw-pulso {
@@ -610,7 +625,10 @@ body {
   pointer-events: none;
 }
 
-.vmw-hero > *:not(.vmw-hero__brillo) {
+/* Los hijos suben sobre el halo. La lista de EXCLUIDOS tiene que nombrar todos
+   los adornos absolutos: al añadir `__halo` sin ponerlo aquí, heredó
+   `position: relative`, entró en el flujo y empujó la tarjeta entera 380 px. */
+.vmw-hero > *:not(.vmw-hero__brillo, .vmw-rector__halo) {
   position: relative;
 }
 
@@ -640,16 +658,78 @@ body {
   color: var(--text-muted);
 }
 
+/* Halo de la tarjeta rectora: desborda por la esquina superior derecha y lo
+   recorta el `overflow: hidden` de `.vmw-hero`. */
+.vmw-rector__halo {
+  position: absolute;
+  inset: -38% -26% auto auto;
+  width: 380px;
+  height: 380px;
+  border-radius: 100%;
+  background: radial-gradient(circle, var(--halo-rector), transparent 68%);
+  pointer-events: none;
+}
+
+/* El contexto de la cifra, anclado a su LÍNEA DE BASE. */
+.vmw-hero__contexto {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 10px;
+}
+
+.vmw-hero__equivalente {
+  font-size: var(--fs-body);
+  color: var(--text-muted);
+}
+
+/* Salvia si la brecha comprime, coral si abre. El signo ya va en el número: el
+   color refuerza, no codifica solo. */
+.vmw-hero__contra[data-sentido="comprime"] {
+  color: var(--sage);
+}
+
+.vmw-hero__contra[data-sentido="abre"] {
+  color: var(--coral);
+}
+
+/* El eje vive FUERA del SVG, que se estira con `preserveAspectRatio="none"` y
+   deformaría cualquier texto de dentro. */
+.vmw-spark__marco {
+  position: relative;
+  padding-left: 54px;
+}
+
+.vmw-spark__eje {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 48px;
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-spark__eje > span {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
 .vmw-spark {
   width: 100%;
   height: 110px;
   display: block;
 }
 
+/* Cuatro rótulos no caben repartidos a los extremos: se apilaban unos sobre
+   otros. Fluyen con separación fija y envuelven cuando toca. */
 .vmw-spark__pie {
   display: flex;
-  justify-content: space-between;
-  margin-top: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+  margin-top: 10px;
+  padding-left: 54px;
   font-size: var(--fs-caption);
   color: var(--text-dim);
 }
