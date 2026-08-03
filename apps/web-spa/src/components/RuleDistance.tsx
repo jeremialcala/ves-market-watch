@@ -59,9 +59,6 @@ export function RuleDistance() {
                 })}
               </p>
             )}
-            <p className="vmw-medidor__aclaracion vmw-al-fondo">
-              {t("disparo.aclaracion")}
-            </p>
           </>
         )}
       </div>

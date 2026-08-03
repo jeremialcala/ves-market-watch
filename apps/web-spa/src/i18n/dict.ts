@@ -286,8 +286,6 @@ export const ES = {
     "Solo {evaluables} de {totales} avisos se pueden evaluar: a los demás les falta algún dato actualizado.",
   "medidores.sintesis.confianzaBaja":
     "Datos poco confiables ({outliers} de anuncios con precio raro): los avisos están desactivados en esta lectura.",
-  "medidores.sintesis.aclaracion":
-    "Describe qué tan cerca están los avisos de activarse con los datos de ahora. No es una predicción de lo que va a pasar.",
 
   // Bandas, para el detalle y la etiqueta accesible de la barra.
   "medidores.banda.muyBajo": "de los más bajos",
@@ -334,8 +332,6 @@ export const ES = {
   "disparo.bloquea": "El que falta por moverse es {indicador}.",
   "disparo.sinRegla":
     "Ninguna regla es evaluable ahora mismo, así que no hay distancia que medir.",
-  "disparo.aclaracion":
-    "Dice a qué distancia está una regla ya definida, con los datos de ahora. No es una predicción de que vaya a dispararse.",
 
   // --- Calidad y procedencia del dato --------------------------------------
   "procedencia.titulo": "Calidad y procedencia del dato",
@@ -362,8 +358,6 @@ export const ES = {
   "procedencia.cuota": "Cuota API (ventana)",
   "procedencia.motor": "Motor",
   "procedencia.motorValor": "calc v{calc} · ruleset v{ruleset}",
-  "procedencia.nota":
-    "Nada de esto es dato nuevo: es lo que cada panel usó para afirmar lo que afirma, reunido en un sitio.",
 
   "descomposicion.titulo": "Descomposición de la brecha",
   "descomposicion.bajada": "qué pierna mueve el número",
@@ -841,8 +835,6 @@ export const EN: Record<Clave, string> = {
     "Only {evaluables} of {totales} alerts can be evaluated: the rest are missing up-to-date data.",
   "medidores.sintesis.confianzaBaja":
     "Unreliable data ({outliers} of listings with odd prices): alerts are switched off for this reading.",
-  "medidores.sintesis.aclaracion":
-    "Describes how close the alerts are to firing with current data. It is not a prediction of what will happen.",
 
   "medidores.banda.muyBajo": "among the lowest",
   "medidores.banda.bajo": "below normal",
@@ -884,8 +876,6 @@ export const EN: Record<Clave, string> = {
   "disparo.bloquea": "The one still to move is {indicador}.",
   "disparo.sinRegla":
     "No rule is evaluable right now, so there is no distance to measure.",
-  "disparo.aclaracion":
-    "It states how far an already-defined rule is, with today's data. It is not a prediction that it will fire.",
 
   // --- Data quality and provenance -------------------------------------------
   "procedencia.titulo": "Data quality and provenance",
@@ -911,8 +901,6 @@ export const EN: Record<Clave, string> = {
   "procedencia.cuota": "API quota (window)",
   "procedencia.motor": "Engine",
   "procedencia.motorValor": "calc v{calc} · ruleset v{ruleset}",
-  "procedencia.nota":
-    "None of this is new data: it is what each panel used to assert what it asserts, gathered in one place.",
 
   "descomposicion.titulo": "Gap decomposition",
   "descomposicion.bajada": "which leg moves the number",

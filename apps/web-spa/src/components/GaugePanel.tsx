@@ -426,9 +426,6 @@ function SintesisPanel({ analisis }: { analisis: Analisis | null }) {
     <div className="vmw-panel__sintesis">
       <div className="vmw-eyebrow">{t("medidores.sintesis.titulo")}</div>
       <p className="vmw-nota">{linea}</p>
-      <p className="vmw-medidor__aclaracion">
-        {t("medidores.sintesis.aclaracion")}
-      </p>
     </div>
   );
 }

@@ -122,6 +122,21 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **Fuera las descripciones del control: la interfaz describe el mercado, no se
+  describe a sí misma (2026-08-02).** Se retiran los tres pies de aclaración —el
+  de la tarjeta de régimen, el de la síntesis del panel y el de la distancia al
+  disparo— y la nota de «Calidad y procedencia».
+  - Motivo de producto: la lectura debe ser **descriptiva del presente y en
+    lenguaje llano**. La misma advertencia salía tres veces en la misma pantalla
+    y repetida tres veces deja de leerse.
+  - **El control no se relaja, cambia de sitio**: pasa a ser el registro mismo,
+    verificado contra el texto renderizado con la batería de expresiones
+    prohibidas — ahora en los **dos idiomas** (el test en inglés solo comprobaba
+    que el pie estuviera, así que sin este cambio se habría quedado sin
+    vigilancia) y sin el apaño de recortar el pie antes de buscar dentro de él.
+  - Toca **requisitos**, no solo estilo: RF-6 y RF-12 declaraban la aclaración
+    «obligatoria en la UI». Enmendados los dos PRD, ADR-0019, ADR-0021, el
+    knowledge y `design.md`, con la fecha y el motivo.
 - **La barra de navegación a 76 px fijos, y «Salir» deja de ser coral
   (2026-08-02).** Casi toda la forma ya salía de los tokens de ADR-0018; lo que
   se desviaba eran tres cosas:

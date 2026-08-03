@@ -210,10 +210,11 @@ Cada medidor pinta lo que trae `analysis.updated` / `GET /analysis/current`
   el color nunca es la única codificación.
 - **Síntesis** donde estaba el sello: regla más cercana e indicador bloqueante,
   con precedencia deliberada —confianza baja gana a todo, porque si los avisos
-  están suprimidos hablar de proximidad engaña— y la aclaración de que no es una
-  predicción, siempre presente. Esta es una de las **dos** que quedan: la de la
-  tarjeta de régimen se retiró el 2026-08-02 porque la misma advertencia salía
-  tres veces en la misma pantalla y repetida tres veces deja de leerse.
+  están suprimidos hablar de proximidad engaña—. **Sin pie de aclaración**: se
+  retiró de las tres tarjetas el 2026-08-02, porque la misma advertencia repetida
+  tres veces deja de leerse y porque el panel describe el mercado, no se explica a
+  sí mismo. El control pasa a ser el registro, verificado contra el texto
+  renderizado en los dos idiomas.
 
 `src/lib/escala.ts` es el **único punto de aritmética** del panel: convierte la
 fracción [0,1] del contrato a un ancho CSS. Banda, posición, posición de umbral,

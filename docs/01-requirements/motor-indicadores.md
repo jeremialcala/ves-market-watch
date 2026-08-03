@@ -107,7 +107,8 @@ forma reactiva: cada nuevo dato recalcula y publica los indicadores afectados.
     respaldo, la frase orientativa sería falsa aunque suene bien.
   - El motor **clasifica** en códigos neutros de idioma; la prosa ES/EN la redacta el
     cliente, sin decidir nada sobre el orden.
-  - La aclaración de que no es consejo ni pronóstico es **obligatoria** en la UI.
+  - La aclaración de que no es consejo ni pronóstico era **obligatoria** en la UI.
+    **Enmienda 2026-08-02:** la aclaración deja de ESCRIBIRSE en la interfaz. La misma advertencia salía tres veces en el mismo dashboard y repetida tres veces deja de leerse; además la tarjeta debe describir el mercado en lenguaje llano, no describirse a sí misma. Lo que el requisito protege —que la prosa no aconseje ni prediga— **no se relaja**: sigue vigilado por la batería de expresiones prohibidas contra el texto renderizado, ahora en los dos idiomas y sin el apaño de recortar el pie antes de buscar dentro de él.
 
   **Ampliación 2026-08-01 — la brecha contra su propia historia.** Cada revisión
   publica además, por lado (compra y venta), la media y los extremos de la brecha en

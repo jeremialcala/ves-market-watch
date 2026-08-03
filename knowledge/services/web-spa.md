@@ -63,8 +63,10 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
 - 67 claves nuevas × 2 idiomas en registro **didáctico**, no de mesa de
   operaciones: describen el presente, nunca el futuro; ninguna dice «percentil X»
   (una sola cadena, en el desplegable, enseña a leer la escala); «señal» se dice
-  **aviso**. La síntesis del panel lleva siempre la aclaración de que no es una
-  predicción.
+  **aviso**. Hasta 2026-08-02 la síntesis llevaba además una aclaración escrita
+  («no es una predicción»); se retiró por triplicada y porque el panel describe el
+  mercado, no se explica a sí mismo. El control pasa a ser el registro, verificado
+  contra el texto renderizado.
 - Estados degradados explícitos: sin análisis, medidor sin lectura en la
   revisión, sin valor vigente, escala en respaldo (`unscaled`, con el contador de
   muestras), confianza baja y tasa oficial rancia. Ninguno inventa una barra.
@@ -80,8 +82,9 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   valor real — la maqueta además decía «Confianza media», que no existe en el
   contrato.
 - Registro acotado y **verificado por test**: `lectura.test.tsx` comprueba contra
-  el texto renderizado que no hay nada imperativo ni predictivo, y que la
-  aclaración está presente. Lo que orienta va en condicional.
+  el texto renderizado que no hay nada imperativo ni predictivo, en los dos
+  idiomas. Lo que orienta va en condicional. (El pie de aclaración se retiró el
+  2026-08-02; el control es esta batería, no la frase.)
 - Estados degradados: sin lectura, sin régimen resoluble, confianza baja
   (encabeza y desplaza al régimen), oficial rancia (sin atribución) y escala en
   respaldo (sin frase de banda).

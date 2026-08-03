@@ -55,7 +55,6 @@ export function DataProvenance() {
                 </li>
               ))}
             </ul>
-            <p className="vmw-nota vmw-proc__nota">{t("procedencia.nota")}</p>
           </>
         )}
       </div>

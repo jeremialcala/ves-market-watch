@@ -119,15 +119,26 @@ describe("Distancia al disparo", () => {
     expect(screen.getByText(/Ninguna regla es evaluable/)).toBeTruthy();
   });
 
-  it("no predice: dice a qué distancia está, y lo aclara", () => {
+  it("no predice — y ya no necesita decirlo", () => {
+    /*
+     * El pie que explicaba el panel salió (2026-08-02): la tarjeta describe el
+     * mercado, no se describe a sí misma. El control no era esa frase sino ESTO:
+     * que en el texto renderizado no aparezca nada predictivo. Al quitar el pie,
+     * además, la comprobación deja de necesitar el apaño de recortarlo antes de
+     * buscar «va a dispararse» dentro de él.
+     */
     conAnalisis();
     render(<RuleDistance />);
     const texto = document.body.textContent ?? "";
-    expect(texto).toMatch(/No es una predicción de que vaya a dispararse/);
-    for (const prohibido of [/va a dispararse/i, /se espera/i, /probabilidad/i]) {
-      expect(texto.replace(/No es una predicción de que vaya a dispararse\./, "")).not.toMatch(
-        prohibido,
-      );
+
+    expect(texto).not.toMatch(/No es una predicción/);
+    for (const prohibido of [
+      /va a dispararse/i,
+      /se espera/i,
+      /probabilidad/i,
+      /deber[íi]as/i,
+    ]) {
+      expect(texto).not.toMatch(prohibido);
     }
   });
 

@@ -139,9 +139,12 @@ calcula (RF-5), y esta entrega no cruza esa línea: la respeta.
   inventada del sistema. Existe solo para cerrar los extremos de una barra sin
   percentiles: vive en config versionada, viaja en `scale.domain`, aplica solo
   con `source: ruleset` (que la UI declara) y **nunca clasifica**.
-- (−) `summary` invita a leerse como predicción. Mitigado con la aclaración
-  siempre presente en la UI, la descripción del schema y el naming de
-  `rules_met`.
+- (−) `summary` invita a leerse como predicción. Se mitigaba con una aclaración
+  escrita al pie del panel; **desde 2026-08-02 la mitigación es el registro
+  mismo** — ninguna frase del panel es predictiva, y hay tests que lo comprueban
+  contra el texto renderizado en ES y EN. La advertencia salía tres veces en la
+  misma pantalla, y repetida tres veces dejaba de leerse. Lo que sigue en pie es
+  la descripción del schema y el naming de `rules_met`.
 - (−) La distribución cacheada envejece hasta el TTL: la ventana se desliza a
   saltos, no continuamente. Se declara con `scale.computed_at`.
 - (−) `indicator_analysis` crece ~260 k filas y 1-2 GB en 90 d; si aprieta,

@@ -110,7 +110,7 @@ login y el estado de salud son visibles sin sesión.
   - Registro **didáctico**, no de mesa de operaciones: las frases describen el
     presente y nunca el futuro, ninguna dice «percentil X» (una sola cadena, en
     el desplegable, explica cómo se lee la escala) y «señal» se dice **aviso**.
-    La síntesis del panel lleva siempre la aclaración de que no es una predicción.
+    **Enmienda 2026-08-02:** la aclaración deja de ESCRIBIRSE en la interfaz. La misma advertencia salía tres veces en el mismo dashboard y repetida tres veces deja de leerse; además la tarjeta debe describir el mercado en lenguaje llano, no describirse a sí misma. Lo que el requisito protege —que la prosa no aconseje ni prediga— **no se relaja**: sigue vigilado por la batería de expresiones prohibidas contra el texto renderizado, ahora en los dos idiomas y sin el apaño de recortar el pie antes de buscar dentro de él.
   - Estados degradados explícitos y distinguibles entre sí: sin análisis, medidor
     sin lectura en esta revisión, sin valor vigente, escala en respaldo,
     confianza baja y tasa oficial rancia.
@@ -126,8 +126,8 @@ login y el estado de salud son visibles sin sesión.
     verdad sobre la lectura.
   - **Describe, no aconseja ni predice.** Nada imperativo («deberías», «hoy no hay
     nada que ejecutar») ni predictivo («va a subir», «se espera»). Lo que orienta
-    va en **condicional** («si tienes que comprar, hoy…»). La aclaración de que no
-    es consejo ni pronóstico es **obligatoria** y no se retira por limpieza visual.
+    va en **condicional** («si tienes que comprar, hoy…»).
+    **Enmienda 2026-08-02:** la aclaración deja de ESCRIBIRSE en la interfaz. La misma advertencia salía tres veces en el mismo dashboard y repetida tres veces deja de leerse; además la tarjeta debe describir el mercado en lenguaje llano, no describirse a sí misma. Lo que el requisito protege —que la prosa no aconseje ni prediga— **no se relaja**: sigue vigilado por la batería de expresiones prohibidas contra el texto renderizado, ahora en los dos idiomas y sin el apaño de recortar el pie antes de buscar dentro de él.
   - Los **chips** salen del análisis: frescura, reglas disparadas, medidores cerca
     de su umbral y confianza con su valor real. No hay barra de confianza: el
     contrato la da binaria (`normal|low`) y una barra continua fingiría precisión.

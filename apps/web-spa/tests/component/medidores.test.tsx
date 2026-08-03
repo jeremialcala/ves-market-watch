@@ -158,7 +158,7 @@ describe("GaugePanel con análisis", () => {
     expect(screen.getByText(/solo se queda por debajo 1 de cada 10 veces/)).toBeTruthy();
   });
 
-  it("la síntesis nombra la regla más cercana, la bloqueante y la aclaración", () => {
+  it("la síntesis nombra la regla más cercana y la bloqueante, sin predecir", () => {
     marketStore.resync({ analisis: FIXTURE_ANALISIS });
     render(<GaugePanel />);
 
@@ -167,10 +167,14 @@ describe("GaugePanel con análisis", () => {
         /El aviso más cerca de activarse es techo inminente@v1: cumple 1 de 3 condiciones\. Falta que se mueva p2p momentum bid 3h pct\./,
       ),
     ).toBeTruthy();
-    // La frontera con el pronóstico va SIEMPRE.
-    expect(
-      screen.getByText(/No es una predicción de lo que va a pasar\./),
-    ).toBeTruthy();
+    // La frontera con el pronóstico ya no se ESCRIBE —el panel describe el
+    // mercado, no se explica a sí mismo—, pero se sigue vigilando: lo que no
+    // puede aparecer es lenguaje predictivo.
+    const texto = document.body.textContent ?? "";
+    expect(texto).not.toMatch(/No es una predicción/);
+    for (const prohibido of [/va a pasar/i, /se espera/i, /probabilidad/i]) {
+      expect(texto).not.toMatch(prohibido);
+    }
   });
 
   it("sin reglas evaluables lo dice en vez de callarlo", () => {
@@ -320,9 +324,12 @@ describe("GaugePanel en inglés", () => {
         /The alert closest to firing is techo inminente@v1: 1 of 3 conditions met\./,
       ),
     ).toBeTruthy();
-    expect(
-      screen.getByText(/It is not a prediction of what will happen\./),
-    ).toBeTruthy();
+    // El pie de aclaración salió; el registro acotado se sigue vigilando.
+    const texto = document.body.textContent ?? "";
+    expect(texto).not.toMatch(/It is not a prediction/);
+    for (const prohibido of [/should/i, /will rise/i, /expected to/i]) {
+      expect(texto).not.toMatch(prohibido);
+    }
 
     await userEvent.click(desplegableDe("Gap buy", /Show explanation/));
     expect(
