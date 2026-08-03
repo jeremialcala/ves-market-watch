@@ -148,6 +148,49 @@ body {
   );
 }
 
+/*
+ * Reparto vertical dentro de una tarjeta que la rejilla estira.
+ *
+ * `.vmw-grid` alinea a `stretch`, así que en una fila con una tarjeta alta y
+ * otra corta la corta CRECE pero su contenido se queda amontonado arriba: queda
+ * un bloque muerto al pie (medidos 160 px en la descomposición y 161 en la
+ * referencia P2P). Se resolvió repartiendo y no recortando —`align-items:start`
+ * dejaría las tarjetas desiguales, que es peor— ni rellenando con contenido
+ * inventado, que en este proyecto no es una opción.
+ *
+ * `--al-fondo` ancla un elemento al pie; `--crece` reparte el sobrante entre los
+ * hijos que lo pidan.
+ */
+.vmw-tarjeta--reparte {
+  display: flex;
+  flex-direction: column;
+}
+
+.vmw-tarjeta--reparte > .vmw-al-fondo {
+  margin-top: auto;
+}
+
+.vmw-tarjeta--reparte > .vmw-crece {
+  flex: 1;
+}
+
+/* Un contenedor que crece también reparte: su propio pie baja al fondo. */
+.vmw-tarjeta--reparte > .vmw-crece:not(.vmw-grid) {
+  display: flex;
+  flex-direction: column;
+}
+
+.vmw-tarjeta--reparte > .vmw-crece > .vmw-al-fondo {
+  margin-top: auto;
+}
+
+/* Los hijos de una rejilla que crece se estiran con ella y reparten lo suyo. */
+.vmw-crece.vmw-grid > .vmw-tarjeta {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
 /* -- superficies ----------------------------------------------------------- */
 
 .vmw-tarjeta {

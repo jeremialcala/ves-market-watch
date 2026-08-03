@@ -73,10 +73,10 @@ export function P2PReferencePanel() {
   const { t } = useI18n();
   const { p2p } = useMarket();
   return (
-    <div className="vmw-tarjeta" aria-label={t("p2p.titulo")}>
+    <div className="vmw-tarjeta vmw-tarjeta--reparte" aria-label={t("p2p.titulo")}>
       <div className="vmw-eyebrow">{t("p2p.titulo")}</div>
       <div
-        className="vmw-grid"
+        className="vmw-grid vmw-crece"
         style={{ "--min": "180px", marginTop: "18px" } as CSSProperties}
       >
         <Lado titulo="p2p.compra" ref_={p2p.buy} />

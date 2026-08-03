@@ -221,6 +221,14 @@ export const FIXTURE_ANALISIS = {
       },
     ],
   },
+  // Las dos piernas del movimiento (ADR-0023). Viajan SIEMPRE que sean medibles,
+  // con `responsible` aparte: las deltas son hechos y el responsable, afirmación.
+  gap_legs: {
+    hours: 6,
+    official: "0",
+    parallel: "-8.40",
+    responsible: "paralelo",
+  },
   // La brecha de cada lado contra su propia historia (RF-7). El caso REAL
   // medido en vivo: compra con 12 días de serie —así que sus ventanas de 30 y
   // 90 declaran su alcance— y venta con 242, completas.

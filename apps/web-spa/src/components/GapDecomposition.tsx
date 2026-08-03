@@ -19,6 +19,7 @@ type GapHistory = NonNullable<PayloadAnalisis["gap_history"]>;
 type LadoHistoria = GapHistory["sides"][number];
 type Referencia = LadoHistoria["references"][number];
 type Claim = NonNullable<PayloadAnalisis["reading"]>["claims"][number];
+type GapLegs = NonNullable<PayloadAnalisis["gap_legs"]>;
 
 /**
  * Descomposición de la brecha + comparativa contra la historia.
@@ -58,11 +59,12 @@ export function GapDecomposition() {
 
   // Las dos piernas del movimiento, tal como las midió el MOTOR.
   //
-  // La ventana sale del claim `brecha` y no del de atribución: el motor calcula
-  // las tres cifras de un mismo `Variaciones`, con una sola `ventana_horas` de
-  // config, así que no pueden discrepar. `atribucion` no la repite.
-  const atribucion = claims.find((claim) => claim.code === "atribucion") ?? null;
-  const horas = claims.find((claim) => claim.code === "brecha")?.data.horas;
+  // Vienen de `gap_legs` y NO del claim `atribucion` (ADR-0023). Cuando vivían
+  // dentro del claim desaparecían con él: con la brecha estable o la oficial
+  // rancia la tarjeta se quedaba en blanco, justo cuando el usuario quiere
+  // comprobar que no está pasando nada. Las deltas son hechos; el responsable
+  // es la afirmación, y ese sí puede faltar.
+  const piernas = analisis?.gap_legs ?? null;
 
   return (
     <section className="vmw-seccion" aria-label={t("descomposicion.titulo")}>
@@ -72,7 +74,7 @@ export function GapDecomposition() {
       </div>
 
       <div className="vmw-grid" style={{ "--min": "360px" } as CSSProperties}>
-        <div className="vmw-tarjeta">
+        <div className="vmw-tarjeta vmw-tarjeta--reparte">
           {anchoOficial === null ? (
             <NoDataState detalle={t("descomposicion.sinPiernas")} />
           ) : (
@@ -103,18 +105,17 @@ export function GapDecomposition() {
                   {t("descomposicion.brecha")}
                 </div>
               </div>
-              {atribucion === null ? (
-                // Sin atribución NO se rellena con una explicación genérica: el
-                // motor la calla a propósito —oficial rancia, o brecha que no se
-                // movió— y decir por qué se movió sería afirmar de más.
+              {piernas === null ? (
+                // Sin ninguna pierna medible NO se rellena con una explicación
+                // genérica: hubo hueco de captura y no hay reparto que contar.
                 <p className="vmw-nota" style={{ marginTop: "20px" }}>
-                  {t("descomposicion.sinAtribucion")}
+                  {t("descomposicion.sinPiernasMedibles")}
                 </p>
               ) : (
-                <Piernas atribucion={atribucion} horas={horas} />
+                <Piernas piernas={piernas} />
               )}
               {frases.length > 0 && (
-                <p className="vmw-nota vmw-descomp__interpretacion">
+                <p className="vmw-nota vmw-descomp__interpretacion vmw-al-fondo">
                   {frases.join(" ")}
                 </p>
               )}
@@ -152,55 +153,51 @@ export function GapDecomposition() {
  * (`responsable`), no este panel: recalcularla sería la misma doble fuente de
  * verdad que ya obligó a `RuleDistance` a usar `summary.closest_rule`.
  */
-function Piernas({
-  atribucion,
-  horas,
-}: {
-  atribucion: Claim;
-  horas: string | undefined;
-}) {
+function Piernas({ piernas }: { piernas: GapLegs }) {
   const { t, idioma } = useI18n();
 
-  const oficial = atribucion.data.oficial;
-  const paralelo = atribucion.data.paralelo;
-  const responsable = atribucion.data.responsable;
+  const { official: oficial, parallel: paralelo, responsible, hours } = piernas;
+  const horas = String(hours);
 
-  const piernas = [
+  // El NETO es la identidad `Δparalelo − Δoficial`, no una tercera medición: por
+  // eso el contrato no lo trae y se deriva aquí con BigInt. Si una de las dos
+  // piernas no se pudo medir, tampoco hay neto — restar contra un hueco daría
+  // una cifra falsa con toda la pinta de ser buena.
+  const neto =
+    oficial === null || paralelo === null
+      ? null
+      : restarDecimales(paralelo, oficial);
+
+  const filas = [
     {
-      etiqueta:
-        horas === undefined
-          ? t("descomposicion.movOficialSinVentana")
-          : t("descomposicion.movOficial", { horas }),
+      etiqueta: t("descomposicion.movOficial", { horas }),
       valor: oficial,
-      culpable: responsable === "oficial" || responsable === "ambos",
+      culpable: responsible === "oficial" || responsible === "ambos",
     },
     {
-      etiqueta:
-        horas === undefined
-          ? t("descomposicion.movP2PSinVentana")
-          : t("descomposicion.movP2P", { horas }),
+      etiqueta: t("descomposicion.movP2P", { horas }),
       valor: paralelo,
-      culpable: responsable === "paralelo" || responsable === "ambos",
+      culpable: responsible === "paralelo" || responsible === "ambos",
     },
-    {
-      etiqueta: t("descomposicion.movNeto"),
-      valor: restarDecimales(paralelo, oficial),
-      culpable: false,
-    },
+    { etiqueta: t("descomposicion.movNeto"), valor: neto, culpable: false },
   ];
 
   return (
     <div className="vmw-descomp__piernas">
-      {piernas.map((pierna) => (
-        <div key={pierna.etiqueta}>
-          <span className="vmw-descomp__pierna-et">{pierna.etiqueta}</span>
+      {filas.map((fila) => (
+        <div key={fila.etiqueta}>
+          <span className="vmw-descomp__pierna-et">{fila.etiqueta}</span>
           <span
             className="vmw-descomp__pierna-val"
-            data-responsable={pierna.culpable ? "si" : undefined}
+            data-responsable={fila.culpable ? "si" : undefined}
           >
-            {t("descomposicion.movValor", {
-              valor: conSigno(pierna.valor, idioma),
-            })}
+            {/* Una pierna no medible sale como «—», jamás rellenada con cero:
+                cero significa que NO se movió, que es otra cosa. */}
+            {fila.valor === null
+              ? "—"
+              : t("descomposicion.movValor", {
+                  valor: conSigno(fila.valor, idioma),
+                })}
           </span>
         </div>
       ))}

@@ -660,6 +660,40 @@ export interface components {
             summary: components["schemas"]["AnalysisSummary"];
             reading?: components["schemas"]["MarketReading"];
             gap_history?: components["schemas"]["GapHistory"];
+            gap_legs?: components["schemas"]["GapLegs"];
+        };
+        /**
+         * @description Las dos piernas que explican el movimiento de la brecha sobre la ventana
+         *     de lectura (ADR-0023). Se publica SIEMPRE que las variaciones sean
+         *     medibles, aunque no haya atribución: las deltas son hechos, mientras que
+         *     decir QUIÉN movió la brecha necesita que la brecha se haya movido y que
+         *     la tasa oficial esté vigente (ADR-0022). Por eso `responsible` puede ser
+         *     null con `official` y `parallel` presentes.
+         *
+         *     En VES ABSOLUTOS: es la única unidad donde `Δbrecha = Δparalelo −
+         *     Δoficial` es exacta. El neto NO viaja — el consumidor lo deriva de esa
+         *     identidad, en vez de recibir una tercera medición que podría no cuadrar
+         *     con las otras dos en pantalla.
+         */
+        GapLegs: {
+            /** @description Ventana medida, en horas. La misma del claim `brecha`. */
+            hours: number;
+            /**
+             * @description Δ de la tasa oficial en VES. `0` es un dato, no un hueco: el BCV
+             *     publica por tramos y una meseta significa que no cambió.
+             */
+            official: components["schemas"]["SignedDecimal"] | null;
+            /**
+             * @description Δ del paralelo (VWAP buy) en VES. null si hubo hueco de captura: ahí
+             *     la variación no es comparable y no se estira.
+             */
+            parallel: components["schemas"]["SignedDecimal"] | null;
+            /**
+             * @description Qué pierna movió la brecha, o null si no se puede afirmar. La decide
+             *     el motor: recalcularla en el cliente crearía una segunda fuente de
+             *     verdad.
+             */
+            responsible: ("paralelo" | "oficial" | "ambos") | null;
         };
         /**
          * @description Una ventana de comparación. `days_covered` es el mecanismo de honestidad:

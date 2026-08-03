@@ -471,3 +471,80 @@ def test_ninguna_afirmacion_lleva_prosa_solo_codigos_y_cifras(config):
             # Las cifras y los códigos no llevan espacios; los nombres de regla
             # tampoco (`techo_inminente@v1`).
             assert " " not in valor, (afirmacion.codigo, clave)
+
+
+# --------------------------------------------------------------------------- #
+# Las piernas del movimiento (ADR-0023)                                        #
+# --------------------------------------------------------------------------- #
+
+
+def test_las_piernas_viajan_AUNQUE_no_haya_atribucion(config):
+    """El defecto que ADR-0023 corrige.
+
+    Con la brecha estable no hay nada que atribuir —y así debe seguir siendo—,
+    pero las dos deltas son hechos medidos. Antes viajaban DENTRO del claim de
+    atribución, así que desaparecían con él y la tarjeta se quedaba en blanco
+    justo cuando el mercado estaba quieto: el caso en que el usuario quiere
+    comprobar precisamente que no pasa nada.
+    """
+    lectura = lectura_completa(config, variaciones=var("0.10", "-0.40", "0"))
+
+    assert CLAIM_ATRIBUCION not in codigos(lectura)
+    assert lectura.piernas is not None
+    assert lectura.piernas.paralelo == Decimal("-0.40")
+    assert lectura.piernas.oficial == Decimal("0")
+    assert lectura.piernas.responsable is None  # no se afirma lo que no se puede
+
+
+def test_con_la_oficial_rancia_las_piernas_siguen_pero_sin_responsable(config):
+    """La honestidad de ADR-0021 se conserva donde estaba: en el RESPONSABLE.
+
+    Las deltas se midieron igual; lo que no se sostiene con una tasa vencida es
+    decir cuál de las dos movió la brecha.
+    """
+    lectura = lectura_completa(config, official_stale=True)
+
+    assert lectura.piernas is not None
+    assert lectura.piernas.paralelo == Decimal("-8.40")
+    assert lectura.piernas.responsable is None
+
+
+def test_con_atribucion_el_responsable_viaja_en_las_piernas_y_en_el_claim(config):
+    """Una sola fuente: el claim redacta la prosa y las piernas pintan la fila,
+    pero los dos citan al MISMO responsable."""
+    lectura = lectura_completa(config)
+
+    claim = next(a for a in lectura.afirmaciones if a.codigo == CLAIM_ATRIBUCION)
+    assert lectura.piernas.responsable == claim.datos["responsable"]
+
+
+def test_la_identidad_se_conserva_en_las_piernas_publicadas(config):
+    """`Δbrecha_abs = Δparalelo − Δoficial`: el neto NO se publica porque el
+    consumidor lo deriva. Lo que sí tiene que cuadrar es lo que se publica."""
+    lectura = lectura_completa(config, variaciones=var("-1.03", "-8.40", "2.50"))
+
+    p = lectura.piernas
+    assert p.paralelo - p.oficial == Decimal("-10.90")
+
+
+def test_una_pierna_no_medible_no_enmudece_a_la_otra(config):
+    lectura = lectura_completa(config, variaciones=var("-1.03", None, "0"))
+
+    assert lectura.piernas is not None
+    assert lectura.piernas.paralelo is None
+    assert lectura.piernas.oficial == Decimal("0")
+
+
+def test_sin_ninguna_pierna_medible_no_se_publican(config):
+    lectura = lectura_completa(config, variaciones=var("-1.03", None, None))
+
+    assert lectura.piernas is None
+
+
+def test_la_ventana_de_las_piernas_es_la_MISMA_que_la_del_claim_de_brecha(config):
+    """Las dos salen de un solo `Variaciones` y de una sola `ventana_horas`: si
+    pudieran discrepar, la fila diría «6 h» sobre una medición de otra ventana."""
+    lectura = lectura_completa(config)
+
+    brecha = next(a for a in lectura.afirmaciones if a.codigo == CLAIM_BRECHA)
+    assert str(lectura.piernas.ventana_horas) == brecha.datos["horas"]

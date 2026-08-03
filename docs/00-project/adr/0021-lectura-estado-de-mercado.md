@@ -1,6 +1,10 @@
 # ADR-0021: Lectura del estado de mercado — régimen descriptivo por revisión
 
-- **Estado:** accepted
+- **Estado:** accepted — **enmendado por
+  [ADR-0023](0023-piernas-de-la-brecha-siempre-publicadas.md)** el 2026-08-02:
+  las dos deltas del movimiento (`paralelo`, `oficial`) salen del claim
+  `atribucion` y pasan a `gap_legs`, que se publica siempre. La atribución en sí
+  —el `responsable`— se sigue callando cuando no se puede sostener.
 - **Fecha:** 2026-08-01
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 03-implementation

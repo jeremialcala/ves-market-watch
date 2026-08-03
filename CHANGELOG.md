@@ -106,6 +106,22 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **Las piernas de la brecha se publican SIEMPRE (2026-08-02, ADR-0023).** Las
+  dos deltas viajaban dentro del claim `atribucion` y desaparecían con él, así
+  que la tarjeta de descomposición se quedaba con **160 px vacíos** cada vez que
+  el mercado estaba quieto — justo cuando se mira para comprobar que no pasa
+  nada. Ahora van en `gap_legs`, con `responsible` aparte y anulable: las deltas
+  son hechos, decir quién movió la brecha es una afirmación.
+  - `0` y `null` NO se colapsan: `0` es «no se movió» y `null` «no se pudo
+    medir». El neto no viaja — es la identidad `Δparalelo − Δoficial` y se deriva.
+  - Desplegado gateway → motor → SPA (`additionalProperties: false`), con cero
+    descartes en el log; verificado en vivo con `responsible: null`.
+- **Reparto vertical en las tarjetas que la rejilla estira.** `.vmw-grid` alinea
+  a `stretch`: en una fila con una tarjeta alta y otra corta, la corta crecía y
+  su contenido se amontonaba arriba. Medidos 160 px muertos en la descomposición
+  y 161 en la referencia P2P; ahora los cuatro paneles quedan en 27 px, que es el
+  padding. Se repartió el contenido en vez de recortar la tarjeta o rellenarla
+  con dato inventado.
 - **La vigencia de la tasa oficial la manda la FECHA-VALOR, no la antigüedad
   (2026-08-02, ADR-0022).** El BCV publica por la tarde la tasa del siguiente día
   hábil: el viernes 31/07 a las 16:36 publicó la del lunes 03/08. Los cuatro

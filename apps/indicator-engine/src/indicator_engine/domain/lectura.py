@@ -141,6 +141,28 @@ class HistoriaLado:
 
 
 @dataclass(frozen=True, slots=True)
+class Piernas:
+    """Las dos piernas del movimiento, listas para publicar (ADR-0023).
+
+    Se separan de `Afirmacion` a propósito. Las deltas son HECHOS y viajan
+    siempre que sean medibles; `responsable` es una AFIRMACIÓN y solo se llena
+    cuando se puede sostener —brecha que se movió y tasa oficial vigente—. Antes
+    las tres cosas vivían dentro del claim `atribucion` y desaparecían juntas,
+    así que la tarjeta se quedaba en blanco cada vez que el mercado estaba
+    quieto, que es justo cuando el usuario quiere comprobar que no pasa nada.
+
+    El neto NO se guarda: es la identidad `paralelo − oficial` y el consumidor la
+    deriva. Una tercera cifra medida aparte podría no cuadrar con las otras dos
+    en la misma pantalla.
+    """
+
+    ventana_horas: int
+    paralelo: Decimal | None
+    oficial: Decimal | None
+    responsable: str | None
+
+
+@dataclass(frozen=True, slots=True)
 class Lectura:
     regimen: str | None
     eje_movimiento: str | None
@@ -152,6 +174,8 @@ class Lectura:
     # Vacío si el motor no pudo medir la historia: la comparativa se omite
     # entera antes que publicarse a medias.
     historia: tuple[HistoriaLado, ...] = ()
+    # None solo si NINGUNA de las dos piernas fue medible.
+    piernas: Piernas | None = None
 
 
 # --------------------------------------------------------------------------- #
@@ -430,7 +454,9 @@ def construir_lectura(
         )
 
     # La atribución se calla con la oficial rancia: la brecha se calculó contra
-    # una tasa vencida, así que decir quién la movió sería afirmar de más.
+    # una tasa vencida, así que decir quién la movió sería afirmar de más. Y con
+    # la brecha estable no hay movimiento que atribuir.
+    responsable: str | None = None
     if not official_stale and eje_brecha in (BRECHA_AMPLIANDO, BRECHA_COMPRIMIENDO):
         responsable = atribuir(variaciones, config)
         if responsable is not None:
@@ -494,6 +520,27 @@ def construir_lectura(
         ventana_horas=config.ventana_horas,
         lectura_version=config.version,
         historia=tuple(historia),
+        piernas=_piernas(variaciones, config.ventana_horas, responsable),
+    )
+
+
+def _piernas(
+    variaciones: Variaciones, ventana_horas: int, responsable: str | None
+) -> Piernas | None:
+    """Las piernas viajan aunque no haya atribución (ADR-0023).
+
+    Solo se omiten si NINGUNA fue medible: ahí no hay nada que decir. Que una
+    sola sea `None` sí se publica —el consumidor pinta «—» en esa y la otra
+    sigue siendo un hecho—, porque enmudecer las dos por un hueco en una sería
+    perder dato bueno.
+    """
+    if variaciones.paralelo is None and variaciones.oficial is None:
+        return None
+    return Piernas(
+        ventana_horas=ventana_horas,
+        paralelo=variaciones.paralelo,
+        oficial=variaciones.oficial,
+        responsable=responsable,
     )
 
 

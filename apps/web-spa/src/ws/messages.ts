@@ -200,6 +200,22 @@ export interface PayloadAnalisis {
       }[];
     }[];
   };
+  /**
+   * Las dos piernas que explican el movimiento de la brecha (ADR-0023), en VES
+   * absolutos — la única unidad donde `Δbrecha = Δparalelo − Δoficial` es
+   * exacta. El neto NO viaja: se deriva de esa identidad.
+   *
+   * `responsible` puede ser null con las dos deltas presentes: las deltas son
+   * HECHOS y viajan siempre que sean medibles, mientras que decir quién movió la
+   * brecha exige que se haya movido y que la tasa oficial esté vigente.
+   */
+  gap_legs?: {
+    hours: number;
+    /** `0` = no se movió (dato). `null` = no se pudo medir. No son lo mismo. */
+    official: string | null;
+    parallel: string | null;
+    responsible: "paralelo" | "oficial" | "ambos" | null;
+  };
 }
 
 // Cierres del contrato.

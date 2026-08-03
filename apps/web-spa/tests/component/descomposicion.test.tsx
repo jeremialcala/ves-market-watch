@@ -238,18 +238,26 @@ describe("Descomposición de la brecha", () => {
   });
 });
 
-/** El claim de atribución con las dos piernas que quiera el caso. */
-function conAtribucion(oficial: string, paralelo: string, responsable: string) {
-  conHistoria(LADOS, [
-    { code: "brecha", data: { direccion: "ampliando", delta_pp: "2.30", horas: "6" } },
-    { code: "atribucion", data: { responsable, paralelo, oficial } },
-  ]);
+/** Las piernas del contrato (`gap_legs`), no el claim de atribución. */
+function conPiernas(
+  official: string | null,
+  parallel: string | null,
+  responsible: string | null = "oficial",
+) {
+  marketStore.resync({
+    ...PIERNAS,
+    analisis: {
+      ...FIXTURE_ANALISIS,
+      gap_legs: { hours: 6, official, parallel, responsible },
+      gap_history: { sides: LADOS },
+    },
+  });
 }
 
 describe("Las piernas del movimiento", () => {
   it("muestra las dos piernas y su neto, en VES y con signo", () => {
     // Las cifras del prototipo: la oficial sube 26,90 y el paralelo 7,60.
-    conAtribucion("26.90", "7.60", "oficial");
+    conPiernas("26.90", "7.60", "oficial");
     render(<GapDecomposition />);
 
     expect(screen.getByText("Oficial 6 h")).toBeTruthy();
@@ -267,20 +275,20 @@ describe("Las piernas del movimiento", () => {
      * Y va en VES porque es la única unidad donde la identidad es exacta — en
      * puntos porcentuales las dos piernas no suman la brecha.
      */
-    conAtribucion("26.90", "7.60", "oficial");
+    conPiernas("26.90", "7.60", "oficial");
     render(<GapDecomposition />);
     expect(screen.getByText("-19,30 VES")).toBeTruthy();
   });
 
   it("resta sin pasar por float", () => {
     // 0,1 − 0,3 da −0.19999999999999998 en float64; el neto tiene que ser exacto.
-    conAtribucion("0.3", "0.1", "ambos");
+    conPiernas("0.3", "0.1", "ambos");
     render(<GapDecomposition />);
     expect(screen.getByText("-0,2 VES")).toBeTruthy();
   });
 
   it("destaca la pierna que el MOTOR señala como responsable", () => {
-    conAtribucion("26.90", "7.60", "oficial");
+    conPiernas("26.90", "7.60", "oficial");
     render(<GapDecomposition />);
 
     const destacadas = [
@@ -290,7 +298,7 @@ describe("Las piernas del movimiento", () => {
   });
 
   it("con responsable «ambos» destaca las dos piernas, no el neto", () => {
-    conAtribucion("26.90", "7.60", "ambos");
+    conPiernas("26.90", "7.60", "ambos");
     render(<GapDecomposition />);
 
     const destacadas = [
@@ -299,20 +307,46 @@ describe("Las piernas del movimiento", () => {
     expect(destacadas).toEqual(["+26,90 VES", "+7,60 VES"]);
   });
 
-  it("sin claim de atribución NO inventa piernas: dice qué falta", () => {
+  it("SIN atribución las piernas siguen ahí: es el defecto que ADR-0023 corrige", () => {
     /*
-     * El motor calla la atribución a propósito cuando la oficial está rancia o
-     * la brecha no se movió (ADR-0021). Rellenar ese hueco con la explicación
-     * genérica de antes daba a entender que el reparto seguía vigente.
+     * Antes las tres cifras viajaban dentro del claim `atribucion` y
+     * desaparecían con él: con la brecha estable o la oficial rancia la tarjeta
+     * se quedaba en blanco —160 px de hueco medidos— justo cuando el usuario
+     * quiere comprobar que NO está pasando nada. Las deltas son hechos.
      */
-    conHistoria(LADOS, [{ code: "oficial_rancia", data: {} }]);
+    conPiernas("0", "-0.40", null);
     render(<GapDecomposition />);
 
-    expect(screen.queryByText(/Neto brecha/)).toBeNull();
-    expect(
-      screen.getByText(/Qué pierna la movió no se puede decir ahora mismo/),
-    ).toBeTruthy();
-    // Y la barra NO se queda sin explicar: el respaldo sigue diciendo qué es.
+    expect(screen.getByText("Neto brecha")).toBeTruthy();
+    // Con la oficial quieta, el neto ES la pierna P2P: −0,40 − 0. Que la cifra
+    // aparezca DOS veces es la identidad cuadrando en pantalla.
+    expect(screen.getAllByText("-0,40 VES")).toHaveLength(2);
+    expect(screen.getByText("0 VES")).toBeTruthy();
+    // Sin responsable no se destaca ninguna: no se afirma lo que no se puede.
+    expect(document.querySelectorAll("[data-responsable='si']")).toHaveLength(0);
+  });
+
+  it("una pierna no medible sale como «—», no rellenada con cero", () => {
+    // `0` significa que NO se movió; `null`, que no se pudo medir. Colapsarlos
+    // haría que un hueco de captura se leyera como una meseta real.
+    conPiernas("0", null, null);
+    render(<GapDecomposition />);
+
+    expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(2); // pierna y neto
+  });
+
+  it("sin ninguna pierna medible lo dice en vez de dejar el hueco", () => {
+    marketStore.resync({
+      ...PIERNAS,
+      analisis: {
+        ...FIXTURE_ANALISIS,
+        gap_legs: undefined,
+        gap_history: { sides: LADOS },
+      },
+    });
+    render(<GapDecomposition />);
+
+    expect(screen.queryByText("Neto brecha")).toBeNull();
     expect(
       screen.getByText(/reparte el precio P2P de compra entre su pierna oficial/),
     ).toBeTruthy();
@@ -320,7 +354,7 @@ describe("Las piernas del movimiento", () => {
 
   it("declara el LADO del VWAP que reparte", () => {
     // Con dos lados en la app, «P2P VWAP» a secas dejaba la cifra ambigua.
-    conAtribucion("26.90", "7.60", "oficial");
+    conPiernas("26.90", "7.60", "oficial");
     render(<GapDecomposition />);
     expect(screen.getByText(/P2P buy VWAP/)).toBeTruthy();
   });
@@ -341,7 +375,7 @@ describe("Las piernas del movimiento", () => {
   });
 
   it("en inglés", () => {
-    conAtribucion("26.90", "7.60", "oficial");
+    conPiernas("26.90", "7.60", "oficial");
     render(<GapDecomposition />, { idioma: "en" });
     expect(screen.getByText("Official 6 h")).toBeTruthy();
     expect(screen.getByText("Net gap")).toBeTruthy();

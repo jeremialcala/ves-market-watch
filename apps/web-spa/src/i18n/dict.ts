@@ -354,8 +354,6 @@ export const ES = {
   // `Δbrecha = Δparalelo − Δoficial` es exacta. La ventana la fija el motor.
   "descomposicion.movOficial": "Oficial {horas} h",
   "descomposicion.movP2P": "P2P {horas} h",
-  "descomposicion.movOficialSinVentana": "Oficial",
-  "descomposicion.movP2PSinVentana": "P2P",
   "descomposicion.movNeto": "Neto brecha",
   "descomposicion.movValor": "{valor} VES",
   "descomposicion.comparativas": "Brecha hoy vs. historia",
@@ -497,8 +495,8 @@ export const ES = {
   "regimen.ejemploConfianza": "media",
   "micro.ratioNota": "insumo de las reglas de señal",
   "micro.outliersNota": "por encima de 30 % la confianza baja",
-  "descomposicion.sinAtribucion":
-    "La barra reparte el precio P2P de compra entre su pierna oficial y la brecha. Qué pierna la movió no se puede decir ahora mismo: hace falta que la brecha se haya movido y que la tasa oficial esté vigente.",
+  "descomposicion.sinPiernasMedibles":
+    "La barra reparte el precio P2P de compra entre su pierna oficial y la brecha. El movimiento de las últimas horas no se puede repartir: falta el punto histórico con el que compararlo.",
   "descomposicion.sinPiernas":
     "Hacen falta la tasa oficial y el VWAP de compra para repartir el precio.",
   "calor.fallo": "No se pudo cargar la serie horaria de la brecha de venta.",
@@ -874,8 +872,6 @@ export const EN: Record<Clave, string> = {
   "descomposicion.brecha": "gap",
   "descomposicion.movOficial": "Official {horas} h",
   "descomposicion.movP2P": "P2P {horas} h",
-  "descomposicion.movOficialSinVentana": "Official",
-  "descomposicion.movP2PSinVentana": "P2P",
   "descomposicion.movNeto": "Net gap",
   "descomposicion.movValor": "{valor} VES",
   "descomposicion.comparativas": "Gap today vs. history",
@@ -1002,8 +998,8 @@ export const EN: Record<Clave, string> = {
   "regimen.ejemploConfianza": "medium",
   "micro.ratioNota": "input of the signal rules",
   "micro.outliersNota": "above 30 % confidence drops",
-  "descomposicion.sinAtribucion":
-    "The bar splits the P2P buy price between its official leg and the gap. Which leg moved it cannot be said right now: the gap has to have moved, and the official rate has to be current.",
+  "descomposicion.sinPiernasMedibles":
+    "The bar splits the P2P buy price between its official leg and the gap. The last few hours cannot be broken down: the historical point to compare against is missing.",
   "descomposicion.sinPiernas":
     "The official rate and the buy VWAP are needed to split the price.",
   "calor.fallo": "Could not load the hourly sell gap series.",

@@ -695,6 +695,63 @@
               }
             }
           }
+        },
+        "gap_legs": {
+          "type": "object",
+          "description": "Las dos piernas que explican el movimiento de la brecha sobre la ventana de lectura (ADR-0021, ADR-0023). OPCIONAL y aditivo. Se publica SIEMPRE que las variaciones sean medibles, aunque no haya atribución: las deltas son hechos, mientras que decir QUIÉN movió la brecha es una afirmación que necesita que la brecha se haya movido y que la tasa oficial esté vigente. Por eso `responsible` puede ser null con `official` y `parallel` presentes — antes las tres cifras viajaban dentro del claim `atribucion` y desaparecían juntas, dejando la tarjeta vacía. En VES ABSOLUTOS, la única unidad donde `Δbrecha = Δparalelo − Δoficial` es exacta; el consumidor deriva el neto de esa identidad en vez de recibir una tercera medición que podría no cuadrar.",
+          "required": [
+            "hours",
+            "official",
+            "parallel",
+            "responsible"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "hours": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Ventana medida, en horas (`lectura.v1.yaml`). La misma que la del claim `brecha`: ambas salen de un solo `Variaciones`."
+            },
+            "official": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Δ de la tasa oficial en VES sobre la ventana. `0` es un dato, no un hueco: el BCV publica por tramos y una meseta significa que no cambió. null si no hay punto histórico con el que comparar."
+            },
+            "parallel": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Δ del paralelo (VWAP buy) en VES sobre la ventana. null si hubo hueco de captura: ahí la variación no es comparable y no se estira."
+            },
+            "responsible": {
+              "oneOf": [
+                {
+                  "enum": [
+                    "paralelo",
+                    "oficial",
+                    "ambos"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Qué pierna movió la brecha, o null si no se puede afirmar — brecha estable, tasa oficial rancia (ADR-0022) o piernas no medibles. La decide el motor: recalcularla en el cliente crearía una segunda fuente de verdad."
+            }
+          }
         }
       }
     }

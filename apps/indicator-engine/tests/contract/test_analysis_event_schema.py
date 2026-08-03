@@ -19,6 +19,7 @@ from pathlib import Path
 import pytest
 import yaml
 from jsonschema import Draft202012Validator
+from jsonschema.exceptions import ValidationError
 
 from indicator_engine.adapters.amqp.publisher import construir_evento_analisis
 from indicator_engine.domain.analisis import (
@@ -548,3 +549,54 @@ def test_variantes_invalidas_de_gap_history_son_rechazadas(mutacion):
     evento = _con_historia({"buy": COMPLETA})
     mutacion(evento)
     assert not _validador().is_valid(evento)
+
+
+# -- gap_legs: las piernas del movimiento (ADR-0023) -------------------------
+
+
+def test_el_evento_con_gap_legs_cumple_el_schema():
+    evento = _evento(con_lectura=True, vista=VISTA_LECTURA)
+    _validador().validate(evento)
+    piernas = evento["payload"]["gap_legs"]
+    assert set(piernas) == {"hours", "official", "parallel", "responsible"}
+
+
+def test_las_piernas_viajan_CON_responsible_null_y_el_schema_lo_acepta():
+    """El punto entero de ADR-0023: las deltas son hechos y viajan siempre; el
+    responsable es una afirmación y puede faltar. Si el schema exigiera un
+    responsable no nulo, la fila volvería a desaparecer con el mercado quieto."""
+    evento = _evento(con_lectura=True, vista=VISTA_LECTURA)
+    evento["payload"]["gap_legs"]["responsible"] = None
+    _validador().validate(evento)
+
+
+def test_una_pierna_null_es_valida_y_NO_es_lo_mismo_que_cero():
+    """`0` = la pierna no se movió (dato). `null` = no se pudo medir. Colapsar
+    los dos haría que un hueco de captura se leyera como una meseta real."""
+    evento = _evento(con_lectura=True, vista=VISTA_LECTURA)
+    evento["payload"]["gap_legs"]["parallel"] = None
+    _validador().validate(evento)
+    evento["payload"]["gap_legs"]["parallel"] = "0"
+    _validador().validate(evento)
+
+
+def test_gap_legs_es_ADITIVO_el_evento_sin_el_tambien_vale():
+    """Lo que permite desplegar el gateway por delante del motor."""
+    evento = _evento(con_lectura=True, vista=VISTA_LECTURA)
+    del evento["payload"]["gap_legs"]
+    _validador().validate(evento)
+
+
+def test_un_responsable_fuera_del_enum_se_rechaza():
+    evento = _evento(con_lectura=True, vista=VISTA_LECTURA)
+    evento["payload"]["gap_legs"]["responsible"] = "el_bcv"
+    with pytest.raises(ValidationError):
+        _validador().validate(evento)
+
+
+def test_las_piernas_van_en_punto_fijo_como_el_resto_del_contrato():
+    evento = _evento(con_lectura=True, vista=VISTA_LECTURA)
+    for clave in ("official", "parallel"):
+        valor = evento["payload"]["gap_legs"][clave]
+        if valor is not None:
+            assert "E" not in valor and "e" not in valor

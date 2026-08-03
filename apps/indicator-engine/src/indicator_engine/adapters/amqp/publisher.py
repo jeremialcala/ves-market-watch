@@ -253,7 +253,24 @@ def construir_evento_analisis(
         historia = _historia_a_dict(lectura)
         if historia is not None:
             evento["payload"]["gap_history"] = historia
+        if lectura.piernas is not None:
+            evento["payload"]["gap_legs"] = _piernas_a_dict(lectura.piernas)
     return evento
+
+
+def _piernas_a_dict(piernas) -> dict:
+    """Las piernas del movimiento (ADR-0023).
+
+    `null` y `"0"` NO son lo mismo y por eso no se colapsan: `0` significa que la
+    pierna no se movió —dato— y `null` que no se pudo medir. `_fmt` mapea None a
+    cero, así que aquí se formatea a mano.
+    """
+    return {
+        "hours": piernas.ventana_horas,
+        "official": None if piernas.oficial is None else format(piernas.oficial, "f"),
+        "parallel": None if piernas.paralelo is None else format(piernas.paralelo, "f"),
+        "responsible": piernas.responsable,
+    }
 
 
 class AmqpEventPublisher:

@@ -25,11 +25,11 @@ export function RuleDistance() {
   const cercana = reglaMasCercana(analisis);
 
   return (
-    <div className="vmw-tarjeta" aria-label={t("disparo.titulo")}>
+    <div className="vmw-tarjeta vmw-tarjeta--reparte" aria-label={t("disparo.titulo")}>
       <div className="vmw-eyebrow">
         <span>{t("disparo.titulo")}</span>
       </div>
-      <div className="vmw-disparo">
+      <div className="vmw-disparo vmw-crece">
         {cercana === null ? (
           <NoDataState detalle={t("disparo.sinRegla")} />
         ) : (
@@ -59,7 +59,9 @@ export function RuleDistance() {
                 })}
               </p>
             )}
-            <p className="vmw-medidor__aclaracion">{t("disparo.aclaracion")}</p>
+            <p className="vmw-medidor__aclaracion vmw-al-fondo">
+              {t("disparo.aclaracion")}
+            </p>
           </>
         )}
       </div>
