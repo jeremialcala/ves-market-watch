@@ -163,6 +163,8 @@ gitGraph
     commit id: "834d032"
     commit id: "2a4fbef"
     commit id: "c742332"
+    commit id: "5c61be8"
+    commit id: "10349eb"
 ```
 
 ### Estado actual de las ramas
@@ -170,7 +172,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `c742332` | 2026-08-03 | 129 |
+| `develop` | `10349eb` | 2026-08-03 | 131 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -186,6 +188,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `10349eb` | commit | — | Jeremi Alcala | 2026-08-03 | fix(web-spa): separacion uniforme de 24 px entre bloques de la vista |
+| `5c61be8` | commit | — | Jeremi Alcala | 2026-08-03 | docs(repo-history): regenerar |
 | `c742332` | commit | — | Jeremi Alcala | 2026-08-03 | feat(web-spa): la tarjeta de brecha como bloque rector |
 | `2a4fbef` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `834d032` | commit | — | Jeremi Alcala | 2026-08-02 | feat(web-spa): «Lectura de hoy» como unica superficie con tinte |
