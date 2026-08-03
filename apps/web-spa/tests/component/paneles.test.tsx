@@ -132,11 +132,47 @@ describe("SignalsFeed", () => {
     expect(evidencia?.textContent).toContain("p2p_ratio_oferta_demanda");
     expect(evidencia?.textContent).toContain("2,4");
     expect(evidencia?.textContent).toContain(FIXTURE_SENAL.triggered_by);
-    // La regla versionada vive en la cabecera de la señal, siempre visible.
-    expect(screen.getByText("correccion_inminente@v1")).toBeTruthy();
+    // La regla VERSIONADA vive en el pie del grupo, siempre visible.
+    expect(
+      screen.getByText(/correccion_inminente@v1 · última:/),
+    ).toBeTruthy();
 
     await usuario.click(boton); // vuelve a plegarse
     expect(screen.queryByText("p2p_ratio_oferta_demanda")).toBeNull();
+  });
+
+  it("AGRUPA por regla y cuenta los disparos", async () => {
+    /*
+     * La cronología plana repetía la misma regla una vez por disparo. Agrupada
+     * responde antes la pregunta real: qué avisos existen y cuántas veces han
+     * saltado.
+     */
+    const otro = {
+      ...FIXTURE_SENAL,
+      emitted_at: new Date(Date.parse(FIXTURE_SENAL.emitted_at) - 3_600_000)
+        .toISOString(),
+    };
+    marketStore.resync({ senales: [FIXTURE_SENAL, otro] });
+    render(<SignalsFeed />);
+
+    expect(document.querySelectorAll(".vmw-senal")).toHaveLength(1);
+    expect(screen.getByText("2 disparos")).toBeTruthy();
+  });
+
+  it("NO funde dos versiones de la misma regla", async () => {
+    /*
+     * Dos versiones son disparadores distintos —umbrales distintos—, así que
+     * fundirlas contaría disparos de criterios que no son el mismo.
+     */
+    const v2 = {
+      ...FIXTURE_SENAL,
+      evidence: { ...FIXTURE_SENAL.evidence, rule: "correccion_inminente@v2" },
+    };
+    marketStore.resync({ senales: [FIXTURE_SENAL, v2] });
+    render(<SignalsFeed />);
+
+    expect(document.querySelectorAll(".vmw-senal")).toHaveLength(2);
+    expect(screen.getAllByText("1 disparo")).toHaveLength(2);
   });
 });
 

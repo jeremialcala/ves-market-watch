@@ -129,15 +129,17 @@ export function GaugePanel() {
 
   return (
     <section className="vmw-seccion" aria-label={t("medidores.titulo")}>
-      <div className="vmw-tarjeta vmw-tarjeta--panel">
-        <div className="vmw-eyebrow">
-          <span className="vmw-seccion__titulo">{t("medidores.titulo")}</span>
-        </div>
-        <p className="vmw-nota" style={{ marginTop: "10px" }}>
-          {t("medidores.bajada")}
-        </p>
-        <SintesisPanel analisis={analisis} />
+      {/* Cabecera como la del resto de secciones: título y una bajada de una
+          línea. El bloque-tarjeta anterior repetía en prosa lo que la propia
+          rejilla enseña, y encima duplicaba la síntesis. */}
+      <div className="vmw-seccion__cabecera">
+        <h3 className="vmw-seccion__titulo">{t("medidores.titulo")}</h3>
+        <span className="vmw-seccion__bajada">
+          {t("medidores.bajada", { n: MEDIDORES.length })}
+        </span>
       </div>
+
+      <SintesisPanel analisis={analisis} />
 
       <div
         className="vmw-grid"
@@ -391,9 +393,9 @@ function SintesisPanel({ analisis }: { analisis: Analisis | null }) {
   const { t, idioma } = useI18n();
   if (analisis === null) {
     return (
-      <p className="vmw-nota" style={{ marginTop: "10px" }}>
-        {t("medidores.sinAnalisis")}
-      </p>
+      <div className="vmw-panel__sintesis">
+        <p className="vmw-nota">{t("medidores.sinAnalisis")}</p>
+      </div>
     );
   }
   const s = analisis.summary;
@@ -421,15 +423,13 @@ function SintesisPanel({ analisis }: { analisis: Analisis | null }) {
             : t("medidores.sintesis.ninguna");
 
   return (
-    <>
-      <div className="vmw-eyebrow" style={{ marginTop: "14px" }}>
-        {t("medidores.sintesis.titulo")}
-      </div>
+    <div className="vmw-panel__sintesis">
+      <div className="vmw-eyebrow">{t("medidores.sintesis.titulo")}</div>
       <p className="vmw-nota">{linea}</p>
       <p className="vmw-medidor__aclaracion">
         {t("medidores.sintesis.aclaracion")}
       </p>
-    </>
+    </div>
   );
 }
 

@@ -148,7 +148,7 @@ export const ES = {
   // se interpolan crudos · «señal» se dice **aviso**.
   "medidores.titulo": "Panel de instrumentos",
   "medidores.bajada":
-    "Cada medidor comparado con su propia historia de 90 días: qué significa el número y qué tan cerca está de disparar un aviso, en cada lectura.",
+    "{n} medidores sobre su escala de 90 días · primero el más cerca de su umbral",
   "medidores.sinValor": "sin valor vigente",
   "medidores.brecha": "Brecha buy",
 
@@ -443,7 +443,10 @@ export const ES = {
 
   // -- señales ---------------------------------------------------------------
   "senales.titulo": "Cronología de señales",
-  "senales.bajada": "ruleset v1 · pulsa para abrir la evidencia",
+  "senales.bajada": "ruleset v1 · agrupadas por regla · pulsa para abrir la evidencia",
+  "senales.disparos": "{n} disparos",
+  "senales.disparoUno": "1 disparo",
+  "senales.ultima": "última: {cuando}",
   "senales.sinDatos":
     "Sin señales en las últimas horas — el mercado no ha disparado ninguna regla.",
   "senales.evidencia": "Evidencia · insumos al as_of",
@@ -698,7 +701,7 @@ export const EN: Record<Clave, string> = {
   // `tests/unit/i18n.test.tsx` falla.
   "medidores.titulo": "Instrument panel",
   "medidores.bajada":
-    "Each gauge compared with its own 90-day history: what the number means and how close it is to triggering an alert, on every reading.",
+    "{n} gauges on their 90-day scale · closest to its threshold first",
   "medidores.sinValor": "no current value",
   "medidores.brecha": "Gap buy",
 
@@ -964,7 +967,10 @@ export const EN: Record<Clave, string> = {
   "oficial.vigente": "value date {fecha}",
 
   "senales.titulo": "Signal timeline",
-  "senales.bajada": "ruleset v1 · click to open the evidence",
+  "senales.bajada": "ruleset v1 · grouped by rule · click to open the evidence",
+  "senales.disparos": "{n} firings",
+  "senales.disparoUno": "1 firing",
+  "senales.ultima": "last: {cuando}",
   "senales.sinDatos":
     "No signals in the last hours — the market has not fired any rule.",
   "senales.evidencia": "Evidence · inputs at as_of",

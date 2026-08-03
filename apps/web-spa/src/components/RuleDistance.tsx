@@ -74,29 +74,36 @@ function Fila({ condicion }: { condicion: CondicionRegla }) {
   const num = (v: string) => formatDecimal(v, { maxDecimales: 2, idioma });
 
   return (
+    // Dos bloques, no cuatro columnas: a la izquierda QUÉ mide y cuánto vale; a
+    // la derecha CUÁNTO le falta y contra qué. Así cada mitad se lee de un
+    // vistazo en vez de recorrer una fila de cuatro celdas.
     <li className="vmw-disparo__fila" data-cumple={condicion.met ? "si" : "no"}>
-      <span className="vmw-disparo__nombre">
-        {nombrePropio(condicion.indicator)}
+      <span className="vmw-disparo__que">
+        <span className="vmw-disparo__nombre">
+          {nombrePropio(condicion.indicator)}
+        </span>
+        <span className="vmw-disparo__valor">
+          {/* Un indicador sin valor vigente viaja como `null`: se dice, jamás se
+              rellena con el último conocido rancio. */}
+          {condicion.value === null ? "—" : num(condicion.value)}
+        </span>
       </span>
-      <span className="vmw-disparo__valor">
-        {/* Un indicador sin valor vigente viaja como `null`: se dice, jamás se
-            rellena con el último conocido rancio. */}
-        {condicion.value === null ? "—" : num(condicion.value)}
-      </span>
-      <span className="vmw-disparo__umbral">
-        {t(
-          condicion.op === "gt" || condicion.op === "gte"
-            ? "disparo.necesitaPorEncima"
-            : "disparo.necesitaPorDebajo",
-          { umbral: num(condicion.threshold) },
-        )}
-      </span>
-      <span className="vmw-disparo__falta">
-        {condicion.met
-          ? t("disparo.cumple")
-          : condicion.distance === null
-            ? "—"
-            : t("disparo.falta", { distancia: num(condicion.distance) })}
+      <span className="vmw-disparo__cuanto">
+        <span className="vmw-disparo__falta">
+          {condicion.met
+            ? t("disparo.cumple")
+            : condicion.distance === null
+              ? "—"
+              : t("disparo.falta", { distancia: num(condicion.distance) })}
+        </span>
+        <span className="vmw-disparo__umbral">
+          {t(
+            condicion.op === "gt" || condicion.op === "gte"
+              ? "disparo.necesitaPorEncima"
+              : "disparo.necesitaPorDebajo",
+            { umbral: num(condicion.threshold) },
+          )}
+        </span>
       </span>
     </li>
   );

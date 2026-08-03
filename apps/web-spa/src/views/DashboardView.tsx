@@ -37,10 +37,14 @@ export function DashboardView() {
           style={{ "--min": "400px", gap: "24px" } as CSSProperties}
         >
           <GapPanel />
-          <RuleDistance />
+          {/* Los dos minis van DENTRO de esta columna, bajo la distancia al
+              disparo: son el contexto de esa lectura, no una fila aparte. De
+              paso, la columna deja de quedarse corta frente a la brecha. */}
+          <div className="vmw-columna">
+            <RuleDistance />
+            <HeadlineStats />
+          </div>
         </section>
-
-        <HeadlineStats />
 
         <GaugePanel />
         <GapDecomposition />

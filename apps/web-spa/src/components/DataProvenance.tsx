@@ -33,7 +33,17 @@ export function DataProvenance() {
             <ul className="vmw-proc__lista">
               {filas(analisis, t).map((fila) => (
                 <li key={fila.etiqueta} className="vmw-proc__fila">
-                  <span className="vmw-proc__etiqueta">{fila.etiqueta}</span>
+                  <span className="vmw-proc__etiqueta">
+                    {/* El punto REPITE lo que ya dice el valor en coral: es
+                        refuerzo, no la única codificación. Quien no distinga el
+                        color sigue leyendo el estado en el texto de la derecha. */}
+                    <i
+                      className="vmw-proc__punto"
+                      data-tono={fila.alerta ? "coral" : undefined}
+                      aria-hidden="true"
+                    />
+                    {fila.etiqueta}
+                  </span>
                   <span
                     className="vmw-proc__valor"
                     data-tono={fila.alerta ? "coral" : undefined}

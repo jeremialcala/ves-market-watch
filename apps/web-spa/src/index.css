@@ -661,6 +661,14 @@ body {
   background: var(--teal);
 }
 
+/* La síntesis del panel, ya sin la tarjeta-marco que la envolvía. */
+.vmw-panel__sintesis {
+  padding: 16px 18px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-panel);
+  border: var(--border-width) solid var(--border);
+}
+
 .vmw-medidor__cabecera {
   display: flex;
   justify-content: space-between;
@@ -912,6 +920,27 @@ body {
   gap: 8px 16px;
   padding: 18px 0;
   border-bottom: var(--border-width) solid var(--border);
+}
+
+/* Pie del grupo: la regla versionada y cuándo disparó por última vez. */
+.vmw-senal__pie {
+  margin-top: 4px;
+  font-size: var(--fs-micro);
+  color: var(--text-dim);
+}
+
+/* Cada disparo dentro del grupo desplegado. */
+.vmw-evidencia__una + .vmw-evidencia__una {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: var(--border-width) solid var(--border);
+}
+
+.vmw-evidencia__traza {
+  margin-top: 14px;
+  font-size: var(--fs-meta);
+  color: var(--text-muted);
+  word-break: break-word;
 }
 
 .vmw-senal__cuando {
@@ -1319,18 +1348,33 @@ body {
    el nombre del indicador deja de caber al lado del umbral. */
 .vmw-disparo__fila {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 4px 12px;
-  align-items: baseline;
+  align-items: start;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
   font-size: var(--fs-body-xs);
 }
 
-@media (min-width: 620px) {
-  .vmw-disparo__fila {
-    grid-template-columns: minmax(0, 1.6fr) auto minmax(0, 1fr) auto;
-  }
+/* Cada mitad apila su par: nombre sobre valor · falta sobre umbral. */
+.vmw-disparo__que,
+.vmw-disparo__cuanto {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.vmw-disparo__cuanto {
+  text-align: right;
+}
+
+/* Una columna de la rejilla que apila tarjetas y NO las estira: si se
+   estiraran, la de abajo heredaría el hueco que acabamos de quitar. */
+.vmw-columna {
+  display: grid;
+  gap: 24px;
+  align-content: start;
 }
 
 .vmw-disparo__fila:last-child {
@@ -1343,10 +1387,13 @@ body {
   overflow-wrap: anywhere;
 }
 
+/* El valor va BAJO su nombre, no alineado a la derecha: el `text-align: right`
+   venía de la fila de cuatro columnas y aquí lo empujaba al otro extremo de la
+   tarjeta, lejos del indicador que describe. */
 .vmw-disparo__valor {
   font-variant-numeric: tabular-nums;
   color: var(--text);
-  text-align: right;
+  font-size: var(--fs-body-sm);
 }
 
 .vmw-disparo__umbral,
@@ -1388,6 +1435,30 @@ body {
 .vmw-proc__fila:last-child {
   border-bottom: none;
   padding-bottom: 0;
+}
+
+/* Las bandas de precio reparten el alto de la columna. Los dos lados no tienen
+   el mismo número de bandas —el libro no es simétrico—, así que el corto dejaba
+   162 px muertos al pie en vez de espaciar sus filas. */
+.vmw-profundidad__filas {
+  display: grid;
+  gap: 7px;
+  margin-top: 18px;
+  align-content: space-between;
+}
+
+.vmw-proc__punto {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 9px;
+  border-radius: 50%;
+  background: var(--teal);
+  vertical-align: middle;
+}
+
+.vmw-proc__punto[data-tono="coral"] {
+  background: var(--coral);
 }
 
 .vmw-proc__etiqueta {

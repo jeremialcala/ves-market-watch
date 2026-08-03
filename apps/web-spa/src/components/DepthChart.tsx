@@ -38,7 +38,7 @@ function LadoProfundidad({
     niveles.length === 0 ? null : niveles[niveles.length - 1].cum_volume;
 
   return (
-    <div className="vmw-tarjeta vmw-profundidad">
+    <div className="vmw-tarjeta vmw-profundidad vmw-tarjeta--reparte">
       <div
         style={{
           display: "flex",
@@ -57,7 +57,7 @@ function LadoProfundidad({
       {total === null ? (
         <NoDataState detalle={t("profundidad.sinDatos")} />
       ) : (
-        <div style={{ display: "grid", gap: "7px", marginTop: "18px" }}>
+        <div className="vmw-profundidad__filas vmw-crece">
           {niveles.map((nivel) => (
             <div className="vmw-profundidad__fila" key={nivel.price_band}>
               <span className="vmw-profundidad__precio">
