@@ -141,6 +141,8 @@ gitGraph
     commit id: "28c75b9"
     commit id: "0b42533"
     commit id: "9934d12"
+    commit id: "166c528"
+    commit id: "b533588"
 ```
 
 ### Estado actual de las ramas
@@ -148,7 +150,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `9934d12` | 2026-08-02 | 107 |
+| `develop` | `b533588` | 2026-08-02 | 109 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -164,6 +166,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `b533588` | commit | — | Jeremi Alcala | 2026-08-02 | feat(web-spa): bloque 2 — variacion por moneda y procedencia completa |
+| `166c528` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `9934d12` | commit | — | Jeremi Alcala | 2026-08-02 | feat(web-spa): resto del bloque 1 — disposicion del prototipo |
 | `0b42533` | commit | — | Jeremi Alcala | 2026-08-02 | feat(web-spa): las tarjetas de medidor adoptan la estructura del prototipo |
 | `28c75b9` | commit | — | Jeremi Alcala | 2026-08-02 | feat(analysis): las piernas de la brecha se publican siempre (ADR-0023) |
