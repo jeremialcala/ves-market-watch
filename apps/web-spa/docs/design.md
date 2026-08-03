@@ -93,6 +93,24 @@ El canario `tests/unit/paleta.test.ts` fija estos valores: si alguien cambia un
 slot, el test falla y pide volver a pasar el validador. Lo que se rompió esta
 vez fue precisamente que el color cambió y la palabra «validada» se quedó.
 
+## Separación entre bloques: 24 px uniformes (2026-08-03)
+`.vmw-vista > .vmw-contenedor > * + * { margin-top: 24px }`.
+
+Lo que había era `.vmw-seccion + .vmw-seccion { 46px }`, y esa regla **solo
+aplicaba entre dos `.vmw-seccion` adyacentes**: bastaba con que se colara un
+`.vmw-grid` entre medias —la fila de la brecha, la de referencia P2P— para que
+la cadena se rompiera y los bloques quedaran **pegados**. Medido en el dashboard
+antes del cambio, la escalera real era `0 · 0 · 46 · 46 · 0 · 0 · 46`.
+
+El selector va por **hijo directo del contenedor**, así que abarca todo bloque de
+primer nivel —sección, rejilla o tarjeta— sin depender de que lleve una clase
+concreta. Verificado en vivo: los 8 saltos del dashboard a 24 px exactos.
+
+Las vistas de Análisis e Intradía conservan algunos márgenes **en línea** (14, 18,
+40 y 12 px) que ganan a la regla. Son deliberados de sus propios bloques y se
+dejan; unificarlos es una decisión aparte. `tests/unit/separacion.test.ts` fija la
+regla —no los píxeles, que jsdom no resuelve—.
+
 ## La tarjeta de brecha como bloque rector (2026-08-03)
 Radio 28, `linear-gradient(160deg, --dark-3, --dark-2)`, hairline al 8 % y un
 **halo radial teal al 13 %** desbordado por la esquina superior derecha, que

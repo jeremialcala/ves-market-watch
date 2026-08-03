@@ -128,8 +128,21 @@ body {
   padding: clamp(24px, 4vw, 44px) 0 96px;
 }
 
-.vmw-seccion + .vmw-seccion {
-  margin-top: 46px;
+/*
+ * Separación uniforme entre los bloques de una vista: 24 px.
+ *
+ * Antes era `.vmw-seccion + .vmw-seccion { 46px }`, y esa regla **solo aplicaba
+ * entre dos `.vmw-seccion` adyacentes**: bastaba con que se colara un
+ * `.vmw-grid` entre medias —la fila de brecha, la de referencia P2P— para que
+ * la cadena se rompiera y los bloques quedaran PEGADOS. Medido en el dashboard:
+ * la escalera real era 0 · 0 · 46 · 46 · 0 · 0 · 46, no una separación.
+ *
+ * El selector va por hijo directo del contenedor de la vista, así que abarca
+ * todo lo que sea un bloque de primer nivel —sección, rejilla o tarjeta— sin
+ * depender de que lleve una clase concreta.
+ */
+.vmw-vista > .vmw-contenedor > * + * {
+  margin-top: 24px;
 }
 
 .vmw-seccion__cabecera {

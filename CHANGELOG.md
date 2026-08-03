@@ -126,6 +126,15 @@ Convención de mantenimiento (inventario por ejecución):
   los decimales EXACTOS del contrato (sin `toFixed` ni `Number`), con CRLF y BOM
   porque es lo que Excel espera. Sale del dato que ya está en el cliente.
 
+### Fixed
+
+- **Los bloques del dashboard estaban PEGADOS en cuatro sitios (2026-08-03).** La
+  separación era `.vmw-seccion + .vmw-seccion { 46px }`, que solo aplica entre
+  dos secciones adyacentes: con un `.vmw-grid` entre medias la cadena se rompía y
+  el margen quedaba en 0. Medido: `0 · 0 · 46 · 46 · 0 · 0 · 46`. Pasa a
+  `.vmw-vista > .vmw-contenedor > * + * { margin-top: 24px }`, por hijo directo,
+  que no depende de qué clase lleve el bloque. Verificado: los 8 saltos a 24 px.
+
 ### Changed
 
 - **La tarjeta de brecha, como bloque rector (2026-08-03).** Radio 28, degradado
