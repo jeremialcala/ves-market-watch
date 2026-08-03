@@ -137,6 +137,10 @@ gitGraph
     commit id: "e0f5f8b"
     commit id: "1383830"
     commit id: "abef31d"
+    commit id: "25cd440"
+    commit id: "28c75b9"
+    commit id: "0b42533"
+    commit id: "9934d12"
 ```
 
 ### Estado actual de las ramas
@@ -144,7 +148,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `abef31d` | 2026-08-02 | 103 |
+| `develop` | `9934d12` | 2026-08-02 | 107 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -160,6 +164,10 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `9934d12` | commit | — | Jeremi Alcala | 2026-08-02 | feat(web-spa): resto del bloque 1 — disposicion del prototipo |
+| `0b42533` | commit | — | Jeremi Alcala | 2026-08-02 | feat(web-spa): las tarjetas de medidor adoptan la estructura del prototipo |
+| `28c75b9` | commit | — | Jeremi Alcala | 2026-08-02 | feat(analysis): las piernas de la brecha se publican siempre (ADR-0023) |
+| `25cd440` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `abef31d` | commit | — | Jeremi Alcala | 2026-08-02 | docs: barrido de coherencia tras ADR-0022 y el mapa de calor |
 | `1383830` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `e0f5f8b` | commit | — | Jeremi Alcala | 2026-08-02 | fix(vigencia): la tasa oficial rige por fecha-valor, no por antiguedad (ADR-0022) |
