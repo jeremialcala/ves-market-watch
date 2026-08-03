@@ -16,7 +16,7 @@ legible. **Todo está implementado**: el api-gateway sirve REST/WSS y consume lo
 eventos (`signals.emitted` se emite desde RF-4/ADR-0015 y se sirve por `GET /signals`
 y push WSS — ADR-0016; `analysis.updated` desde RF-6/ADR-0019, servido por
 `GET /analysis/current` y el tópico `analysis`, y **ampliado de forma aditiva** con el
-objeto `reading` en RF-7/ADR-0021).
+objeto `reading` en RF-7/ADR-0021 y con `gap_legs` en ADR-0023).
 
 ## Autenticación (OIDC con Auth0 — ADR-0012)
 El gateway **no emite tokens**: es Resource Server. El login y la emisión ocurren en Auth0
@@ -45,7 +45,7 @@ todo token ya emitido. Scopes/permisos: `read:rates`, `read:indicators`, `read:s
 | `/rates/p2p/current` | GET | `side=buy\|sell` | `{best_price, median, vwap, volume, as_of, confidence}` | read:rates |
 | `/indicators/current` | GET | — | brecha abs/%, spreads, volúmenes, `official_stale` | read:indicators |
 | `/indicators/history` | GET | `from, to, interval=5m\|1h\|1d, page` | serie agregada paginada (rango máx. 90 días/request) | read:indicators |
-| `/analysis/current` | GET | `currency` (def. `VES`) | lectura de los medidores (banda, escala con sus cortes, posición y proximidad a cada regla) más `reading`: régimen, ejes y afirmaciones ordenadas del mercado | read:indicators |
+| `/analysis/current` | GET | `currency` (def. `VES`) | lectura de los medidores (banda, escala con sus cortes, posición y proximidad a cada regla) más `reading`: régimen, ejes y afirmaciones ordenadas del mercado; y `gap_legs`: las dos deltas del movimiento con su neto, que se publican **siempre** aunque la atribución se calle (ADR-0023) | read:indicators |
 | `/market/depth` | GET | `side` | niveles `{price_band, cum_volume}` | read:depth |
 | `/signals` | GET | `from, to, type, page` | señales con evidencia (`inputs`, `rule`, `calc_version`) | read:signals |
 | `/health` | GET | — | estado por componente (sin detalles internos) | público |
@@ -86,7 +86,7 @@ Límites: ≤ 5 conexiones y ≤ 10 suscripciones por usuario (`sub`); ping del 
 | `official.rate.updated` | ingestor-bcv | indicator-engine · api-gateway (push) | `schemas/official-rate.v1.json` |
 | `indicators.updated` | indicator-engine | api-gateway (push WSS) | `schemas/indicators.v1.json` |
 | `signals.emitted` | indicator-engine | api-gateway (`GET /signals` + push WSS) | `schemas/signal.v1.json` (emitido RF-4/ADR-0015 · consumido 2026-07-26, ADR-0016) |
-| `analysis.updated` | indicator-engine | api-gateway (`GET /analysis/current` + push WSS) | `schemas/analysis.v1.json` (RF-6/ADR-0019, ambos lados 2026-08-01; campo `reading` **aditivo** desde RF-7/ADR-0021) |
+| `analysis.updated` | indicator-engine | api-gateway (`GET /analysis/current` + push WSS) | `schemas/analysis.v1.json` (RF-6/ADR-0019, ambos lados 2026-08-01; campos `reading` y `gap_legs` **aditivos** desde RF-7/ADR-0021 y ADR-0023 — con `additionalProperties: false` en `payload`, el gateway despliega **antes** que el motor) |
 
 Todos los eventos llevan sobre: `{event_id, event_type, schema_version, occurred_at,
 producer}` para idempotencia y trazabilidad (implementado así en ingestor-bcv e

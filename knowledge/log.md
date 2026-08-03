@@ -2,10 +2,120 @@
 type: Log
 title: Historia del knowledge bundle
 description: Registro cronológico de cambios en el contexto del proyecto (más reciente primero).
-timestamp: 2026-08-01T12:00:00Z
+timestamp: 2026-08-03T12:00:00Z
 ---
 
 # Log
+
+## 2026-08-03 — Barrido de coherencia: siete cifras desfasadas y un `<TODO>` que ya estaba resuelto
+- **La cobertura de ramas de los servicios Python nunca se había medido.** El plan
+  la arrastraba como «confirmar ≥ 80 %» en cuatro filas desde Gate 2. Medida:
+  bcv 98 %, binance 98 %, motor 96 %, histórico 96 %, gateway 96 %, SPA 87,43 %.
+  Todos cumplen con holgura. **Lo que falta no era el número, era medirlo** — y lo
+  que sigue faltando es que lo mida el pipeline y no una ejecución a mano.
+- Siete conteos de tests habían quedado atrás (motor 302→335, gateway 90/103→108,
+  SPA 339→348). Se corrigieron en el plan y en el bundle. El patrón se repite cada
+  barrido: **el conteo envejece cada entrega y nadie lo actualiza al pasar**.
+- **`ADR-0009` pedía definir la fuente del calendario de feriados bancarios, y
+  ADR-0022 ya había contestado que ese calendario no hace falta.** El emisor
+  publica la fecha valor; derivarla era el problema equivocado. El `<TODO>` llevaba
+  un día abierto sobre una pregunta que ya no existía: cerrarlo importa porque un
+  pendiente muerto compite por atención con los vivos.
+- Gate 1 listaba «ADR-0001…0018» y hay 24. Añadidas 0019–0024. **Su único pendiente
+  de diseño sigue siendo el mismo: ratificar el DREAD de T15** (la puntuación
+  existe y está en el quadrant chart; falta la firma HITL, como se hizo con
+  T13/T14).
+- El bundle no conocía ADR-0023 ni ADR-0024, y el índice de servicios daba el SPA
+  como «pendiente client_id del tenant» — aprovisionado el 2026-07-27.
+
+## 2026-08-03 — El producto se llama Criterio (ADR-0024)
+- «VES Market Watch» describía un *tracker*. La app hoy enseña una **lectura**, que
+  es hacia donde han ido las últimas entregas, así que el nombre dejó de describirla.
+- **La clasificación que resolvió el barrido no es «dentro o fuera del repositorio»,
+  es si algo APUNTA a ese texto.** Un nombre en el dashboard de Auth0 es tan
+  etiqueta como un `H1`; el `audience` de un token es una clave aunque parezca un
+  nombre. Con esa línea, las 27 apariciones se separan solas.
+- Cambian las etiquetas —27 sitios, más las tres del tenant—. No cambian los
+  identificadores (`audience`, `client_id`, `id` del Resource Server) ni los
+  internos (repositorio, paquetes, contenedores, prefijo `vmw-`).
+- El tenant se renombró con `PATCH` de un solo campo sobre la Management API, **no
+  con `auth0 apis update --name`**: ese subcomando expone `--enforce-policies` y
+  `--offline-access` como booleanos, y una bandera ausente que viaje en falso apaga
+  el RBAC sin que nadie lo pida. Snapshot previo y diff posterior: `name` fue el
+  único campo modificado en los tres.
+- **El `audience` seguirá diciendo `vesmarketwatch` para siempre**: es inmutable en
+  Auth0 y viaja dentro de cada access token emitido. Queda como discordancia
+  deliberada, escrita para que nadie la lea como trabajo a medias.
+- De paso: el `<title>` de la pestaña decía `web-spa` desde ADR-0017 —el valor con
+  el que Vite crea el andamiaje— y la barra compacta pintaba el nombre a mano en
+  vez de traducirlo. Las dos ramas decían lo mismo, así que el literal llevaba ahí
+  sin que nadie lo notara; con el renombrado una se habría quedado en el nombre
+  viejo.
+
+## 2026-08-03 — El e2e del motor llevaba un día en rojo y la suite del SPA no lo iba a decir
+- ADR-0022 pasó a medir vigencia por fecha valor, y el fixture de eventos del motor
+  traía `value_date: "2026-07-06"` congelado. Desde ese commit **todo evento del
+  fixture nacía rancio** y el e2e afirmaba `official_stale is False` sobre una tasa
+  que el motor consideraba —con razón— caducada.
+- **La causa no es el literal: la entrega de ADR-0022 se verificó corriendo la suite
+  del SPA y las cinco suites de Python no se corrieron.** El cambio era de dominio
+  Python y la verificación fue de front.
+- El fixture pasa a emitir el día operativo de hoy, que es lo que significa «una
+  tasa publicada»; quien necesite una rancia la pide explícita.
+
+## 2026-08-03 — El mapa de calor deja de ser divergente
+- Escala secuencial de cinco alfas del teal de marca (8/22/40/65/100 %) hasta el
+  p90, y el coral **solo** por encima. Dos preguntas distintas, dos codificaciones.
+- **El primer escalón queda a 1,19:1 sobre la tarjeta, por debajo del piso de 2:1
+  del proyecto, y se acepta a propósito**: en un mapa lo que hay que distinguir es
+  una celda de su vecina, no del fondo, y los saltos (1,39 → 1,85) sí separan. Lo
+  que se acepta se escribe en el plan de pruebas; difuminarlo sería el fallo.
+- Lo que de verdad no se distinguía era el **hueco sin dato**: 1,13:1 contra el
+  fondo y 1,06:1 contra la celda más floja. Ningún valor de blanco lo separaba, así
+  que se separa por **forma** —filete interior—, que no compite por ese tramo de
+  luminosidad.
+- La nota que declaraba de qué ventana salen los percentiles se mudó al subtítulo
+  al simplificar la leyenda. **No se perdió la honestidad, cambió de sitio** — y la
+  guarda del test se movió con ella en vez de borrarse.
+- Un defecto que solo vio la medición: la columna de días es un grid paralelo y
+  repartía el sobrante de altura entre sus 14 pistas, despegando cada etiqueta
+  0,25 px de su fila (3,6 px acumulados arriba). Con el gap a 2 px se habría notado.
+
+## 2026-08-02/03 — El dashboard se acerca al prototipo, bloque a bloque
+- Serie de reespecificaciones del dueño del producto: tira de estado a una línea,
+  navbar de 76 px pegajosa, «Lectura de hoy» como única superficie con tinte, la
+  brecha como bloque rector con halo, medidores a radio 22 con tres tratamientos
+  en la barra, y el mapa de calor.
+- **La corrección que cambió el rumbo:** al pedir quitar la aclaración de una
+  tarjeta, la intención no era esa tarjeta sino el registro entero — «la decisión
+  tiene que ver con el análisis del mercado, debe ser descriptivo del presente, no
+  la descripción del control». Se retiraron las cuatro descripciones de control y
+  se enmendaron RF-6, RF-12, ADR-0019 y ADR-0021. *Una petición puntual puede ser
+  el síntoma de un criterio de producto; conviene preguntar cuál.*
+- Defectos que solo aparecieron midiendo en el navegador: las pestañas desbordaban
+  la navbar de alto fijo entre 760 y 1050 px; `.vmw-rector__halo` heredaba
+  `position: relative` y empujaba la tarjeta 380 px; un `replace` de CSS no casó
+  porque usé el orden de propiedades minificado y el botón se quedó como estaba.
+  **El eyeballing no los habría encontrado y el test tampoco: hubo que medir.**
+
+
+## 2026-08-02 — Las piernas de la brecha se publican siempre; la atribución no (ADR-0023)
+- Las dos deltas (`paralelo`, `oficial`) y el claim de atribución **viajaban
+  juntos**. El motor calla la atribución cuando no hay nada que atribuir —
+  correcto, decirlo sería afirmar de más—, pero al callarse arrastraba consigo dos
+  **mediciones** que se calculan en cada revisión.
+- Efecto medido: 160 px vacíos en la tarjeta de descomposición siempre que el
+  mercado estaba quieto, que es justo cuando el usuario mira para comprobar que no
+  pasa nada.
+- **La lección es de modelado, no de UI: una medición y una afirmación no comparten
+  condición de publicación.** Ahora las piernas van en `gap_legs`, fuera del claim.
+- `payload.additionalProperties: false` obliga a **desplegar el gateway antes que
+  el motor** (ADR-0021 pt 4): si el motor publica un campo que el gateway aún no
+  conoce, el evento se rechaza entero.
+- Se publica también `official_share` —cuota del **movimiento**, no del cierre—.
+  El prototipo decía «78 % del cierre» y sus propios números lo desmentían: con
+  las dos piernas positivas el paralelo *ensanchó* la brecha, y del cierre el
+  oficial aporta el 100 %.
 
 ## 2026-08-02 — La vigencia de la tasa oficial no era una antigüedad (ADR-0022)
 - Lo trajo el usuario como regla de negocio: **el BCV publica por la tarde la tasa

@@ -73,12 +73,12 @@ Estado observado en el repo (conteo de funciones `test_`):
 
 | Servicio | Estado código | Tests actuales | Huecos de prueba |
 |---|---|---|---|
-| `ingestor-bcv` | Implementado | **54** (unit, integration, contract, e2e) | Confirmar cobertura de ramas ≥ 80 %; añadir marcador `security` para escenarios T1 (HTML alterado + tasa fuera de rango) |
-| `ingestor-binance` | Implementado | **48** (unit, integration, contract, e2e) | Igual que arriba; escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local |
-| `indicator-engine` | Fases 1, 2, señales (RF-4/RF-5, ADR-0015), análisis de la revisión (RF-6, ADR-0019) y lectura del estado de mercado (RF-7, ADR-0021) | **335** (unit, contract, integration, e2e) | Confirmar cobertura de ramas ≥ 80 %; recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) y de los dos ejes del régimen (`config/lectura.v1.yaml`); contrastar en vivo la atribución con responsable `oficial` o `ambos` — hace falta un día en que la tasa del BCV cambie de verdad, no solo que esté vigente (ADR-0022 destapó que este hueco se venía describiendo mal: se decía que el fin de semana la suprimía «por diseño», cuando lo que la suprimía era la rancidez mal medida) |
-| `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) — más el histórico de tasas oficiales del BCV (RF-6) y la brecha derivada del lado venta (RF-7), 2026-08-01 | **98** (unit + integración contra TimescaleDB real) | Confirmar cobertura de ramas ≥ 80 %; integración del cargador de oficiales contra TimescaleDB real (hoy cubierto en unit + verificado sobre la carga real de 31.078 filas) |
-| `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **108** (unit incl. CORS y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura ≥ 80 % |
-| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **339** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores y lectura del mercado con dato real en ES/EN, shell responsive y canarios de paleta, punto de corte y cabeceras CSP) — **87,1 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
+| `ingestor-bcv` | Implementado | **54** (unit, integration, contract, e2e) | ~~Confirmar cobertura de ramas ≥ 80 %~~ **98 %** (medida 2026-08-03); añadir marcador `security` para escenarios T1 (HTML alterado + tasa fuera de rango) |
+| `ingestor-binance` | Implementado | **48** (unit, integration, contract, e2e) | Cobertura **98 %** (medida 2026-08-03); escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local |
+| `indicator-engine` | Fases 1, 2, señales (RF-4/RF-5, ADR-0015), análisis de la revisión (RF-6, ADR-0019) y lectura del estado de mercado (RF-7, ADR-0021) | **335** (unit, contract, integration, e2e) | ~~Confirmar cobertura de ramas ≥ 80 %~~ **96 %** (medida 2026-08-03); recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) y de los dos ejes del régimen (`config/lectura.v1.yaml`); contrastar en vivo la atribución con responsable `oficial` o `ambos` — hace falta un día en que la tasa del BCV cambie de verdad, no solo que esté vigente (ADR-0022 destapó que este hueco se venía describiendo mal: se decía que el fin de semana la suprimía «por diseño», cuando lo que la suprimía era la rancidez mal medida) |
+| `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) — más el histórico de tasas oficiales del BCV (RF-6) y la brecha derivada del lado venta (RF-7), 2026-08-01 | **98** (unit + integración contra TimescaleDB real) | ~~Confirmar cobertura de ramas ≥ 80 %~~ **96 %** (medida 2026-08-03); integración del cargador de oficiales contra TimescaleDB real (hoy cubierto en unit + verificado sobre la carga real de 31.078 filas) |
+| `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **108** (unit incl. CORS y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; ~~cobertura ≥ 80 %~~ **96 %** (medida 2026-08-03) |
+| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **348** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores y lectura del mercado con dato real en ES/EN, shell responsive y canarios de paleta, punto de corte y cabeceras CSP) — **87,43 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
 
 > El plan cubre tanto la **consolidación** de lo existente como la **especificación** de los casos
 > que deben acompañar el código pendiente, para que se escriban junto con la implementación (no
@@ -134,7 +134,7 @@ Notación: `[U]` unit · `[I]` integration · `[C]` contract · `[E]` e2e · `[S
 - `[I]` Consumidor AMQP real; `[E]` flujo `official.rate.updated` → `indicators.updated`.
 
 **Fase 2 y señales (implementadas y verificadas e2e, 2026-07-22 — RF-4/RF-5, ADR-0015) —
-casos cubiertos por la suite actual (302 tests):**
+casos cubiertos por la suite actual (335 tests):**
 - `[U]` Precio de referencia P2P: **mediana y VWAP** del top-N filtrado por lado — cubierto
   (`unit/test_referencia_p2p.py`).
 - `[U]` **Brecha BCV↔P2P** (abs y %), spreads compra/venta, volúmenes agregados, profundidad por
@@ -252,7 +252,7 @@ casos cubiertos por la suite actual (302 tests):**
 > fixtures no sustituye mirar el payload que sale en vivo**, sobre todo en distribuciones
 > con moda en un extremo.
 
-### 5.4 api-gateway (implementado 2026-07-26 — 103 tests; ✔ = cubierto por la suite)
+### 5.4 api-gateway (implementado 2026-07-26 — 108 tests; ✔ = cubierto por la suite)
 - `[U]` ✔ Validación estricta de inputs (fechas, `interval`, `side`, tópicos); políticas de
   **scopes/permisos**; validación del **access token de Auth0** (RS256 vía JWKS; `iss`/`aud`/`exp`)
   con par RSA/JWKS local de test (`tests/soporte_auth.py`). El gateway **no emite** tokens (ADR-0012).
@@ -381,7 +381,11 @@ cierre de la columna «Verificación fase 04-testing».
 - `docker-compose.yml` levanta y las suites `integration`/`e2e` corren en verde localmente.
 
 **Salida (cierre de Gate 2):**
-1. Cobertura de ramas **≥ 80 %** por servicio con código.
+1. Cobertura de ramas **≥ 80 %** por servicio con código. **Medido 2026-08-03 y
+   cumplido en los seis**: `ingestor-bcv` 98 %, `ingestor-binance` 98 %,
+   `indicator-engine` 96 %, `ingestor-historico` 96 %, `api-gateway` 96 %,
+   `web-spa` 87,43 %. Lo que sigue faltando no es el número: es que **lo mida el
+   pipeline** y no una ejecución a mano (punto 5 y §11).
 2. Todos los casos de las secciones 5–7 aplicables al alcance entregado, en verde.
 3. Cada amenaza T1–T15 con su verificación satisfecha (tests o gate de CI).
 4. Contract tests en verde en **productor y consumidor** para cada evento con schema.
@@ -404,7 +408,7 @@ cierre de la columna «Verificación fase 04-testing».
   contract tests del productor en verde (`contract/test_signal_event_schema.py`).
 - **Umbrales de señales (HITL):** los valores iniciales están fijados en `config/senales.v1.yaml`;
   su recalibración requiere decisión humana con datos de producción.
-- ~~`api-gateway` sin código~~ **Resuelto:** implementado 2026-07-26 con 90 tests, hoy 103 (§5.4);
+- ~~`api-gateway` sin código~~ **Resuelto:** implementado 2026-07-26 con 90 tests, hoy 108 (§5.4);
   queda el e2e autenticado en vivo (client M2M de prueba — HITL).
 - **Secret store concreto:** definido para fase 05; los tests de rotación (T6) se afinan entonces.
 - **Pipeline CI aún no presente en el repo:** los gates T6/T8 y la matriz de la sección 11 son

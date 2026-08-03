@@ -51,6 +51,18 @@ la fuente de verdad (los documentos AI-DLC y el código).
   propio `auth.higerotech.com` + desarrollo por túneles de Cloudflare. Entrar es
   un redirect silencioso sin clics y la sesión sobrevive al F5, con los tokens
   **solo en memoria** (T12 intacto).
+- **La tasa oficial rige por fecha valor, no por antigüedad** (2026-08-02,
+  ADR-0022): el BCV publica por la tarde la tasa del siguiente día hábil, así que
+  medir rancidez en horas marcaba `official_stale` tres días de cada semana sobre
+  una tasa vigente —y con esa bandera el motor suprime la atribución—. La regla es
+  transversal: motor y gateway.
+- **Una medición y una afirmación no comparten condición de publicación**
+  (2026-08-02, ADR-0023): las dos deltas del movimiento salen del claim de
+  atribución al campo `gap_legs` y se publican siempre; la atribución sigue
+  callándose cuando no hay nada que atribuir.
+- **El producto se llama Criterio** (2026-08-03, ADR-0024): cambian las etiquetas
+  —incluidas las tres del tenant de Auth0—, no los identificadores. El `audience`
+  conserva `vesmarketwatch` porque es una clave, no un nombre pendiente.
 - Siguiente paso natural: decidir la topología de despliegue real (los túneles
   son de desarrollo) y preparar la fase 04 (Gate 2).
 - Historia de cambios: [log.md](log.md) y `../CHANGELOG.md`.
@@ -68,7 +80,7 @@ la fuente de verdad (los documentos AI-DLC y el código).
 
 - Requisitos: `../docs/01-requirements/` (6 PRDs con escenarios de abuso y ASVS).
 - Diseño: `../docs/02-design/` (arquitectura, threat model STRIDE/DREAD, contratos API).
-- Decisiones: `../docs/00-project/adr/` (ADR-0001…0018; una decisión = una ADR).
+- Decisiones: `../docs/00-project/adr/` (ADR-0001…0024; una decisión = una ADR).
 - Gates: `../.ai-dlc/gates/`.
 
 ## Convenciones del bundle

@@ -37,5 +37,6 @@ Persistir la tasa oficial de forma bitemporal y append-only en `official_rates`:
 
 ## Consecuencias
 - Positivas: cumple RF-3 del motor (reproducibilidad con `calc_version` + as-of); auditoría regulatoria-grade de la referencia oficial.
-- Negativas / deuda asumida: vista o función `current_official_rate(value_date)` a mantener; feriados bancarios venezolanos afectan qué `value_date` está vigente — `<TODO: definir fuente del calendario de feriados (HITL)>`.
+- Negativas / deuda asumida: vista o función `current_official_rate(value_date)` a mantener.
+- ~~Feriados bancarios venezolanos afectan qué `value_date` está vigente — `<TODO: definir fuente del calendario de feriados (HITL)>`~~ **Resuelto por ADR-0022 (2026-08-02), y la respuesta fue que ese calendario no hace falta.** El BCV publica la fecha valor junto con la tasa, así que la vigencia se lee del propio emisor en vez de derivarse. Lo demostró el feriado del 24/07: el jueves 23 el BCV publicó con fecha valor del lunes 27, cosa que ningún calendario de «siguiente día hábil» derivable acierta. Buscar la fuente del calendario habría sido resolver el problema equivocado.
 - Impacto en threat model: refuerza T1 (una tasa falsa detectada después es corregible sin borrar evidencia) y T10 (trazabilidad).

@@ -138,6 +138,32 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **Barrido de coherencia documental y revisión de gates (2026-08-03).**
+  - **La cobertura de ramas de los servicios Python nunca se había medido**: el
+    plan la arrastraba como «confirmar ≥ 80 %» en cuatro filas desde Gate 2.
+    Medida y cumplida con holgura — `ingestor-bcv` 98 %, `ingestor-binance` 98 %,
+    `indicator-engine` 96 %, `ingestor-historico` 96 %, `api-gateway` 96 %,
+    `web-spa` 87,43 %. Lo que sigue faltando no es el número: es que lo mida el
+    pipeline y no una ejecución a mano.
+  - **`ADR-0009` pedía definir la fuente del calendario de feriados bancarios y
+    ADR-0022 ya había contestado que ese calendario no hace falta** — el emisor
+    publica la fecha valor. `<TODO>` cerrado: un pendiente muerto compite por
+    atención con los vivos.
+  - Siete conteos de tests desfasados corregidos (motor 302→335, gateway
+    90/103→108, SPA 339→348 y 87,1→87,43 % de ramas) en el plan de pruebas y en
+    el bundle de conocimiento.
+  - **Gate 1** listaba «ADR-0001…0018» y hay 24: añadidas 0019–0024, con ADR-0021
+    marcada como enmendada por ADR-0023. Su único pendiente de diseño sigue
+    siendo la **ratificación HITL del DREAD de T15** (la puntuación existe y está
+    en el quadrant chart; falta la firma).
+  - `gap_legs` no estaba en `api-contracts.md` pese a viajar en el contrato desde
+    ADR-0023, con su regla de orden de despliegue (gateway antes que motor).
+  - El bundle no conocía ADR-0023 ni ADR-0024, daba el SPA como «pendiente
+    client_id del tenant» (aprovisionado el 2026-07-27) y describía la rampa del
+    mapa de calor anterior. Seis entradas nuevas en `knowledge/log.md`.
+  - Verificado: 12 diagramas Mermaid válidos y 991 tests en verde en las seis
+    suites.
+
 - **El producto pasa a llamarse «Criterio» (2026-08-03, ADR-0024).** «VES Market
   Watch» describía un tracker; la app hoy enseña una **lectura** —régimen,
   distancia al disparo, atribución, calidad del dato—, que es hacia donde han ido

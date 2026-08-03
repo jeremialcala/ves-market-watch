@@ -215,15 +215,24 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   valores observados.
 - Corte **estricto** (`> p90`): con serie plana el p90 es el valor de todas las
   celdas y `>=` habría pintado el mapa entero como exceso.
-- La rampa teal **no pasó por el validador** (no está instalado): se derivó
-  igualando escalón por escalón el contraste de la coral ya validada, y se midió
-  lo que el cambio arriesgaba — ΔE mín entre escalones 7,32/8,56 (contra
-  6,96/8,86 de la coral) y, lo que sostiene el diseño, **ΔE 14,0 bajo protanopia
-  en el salto teal→coral**: el doble de lo que separa dos escalones, así que la
+- La rampa teal **no pasó por el validador** (no está instalado). Desde el
+  2026-08-03 es el teal de marca a **cinco alfas** (8, 22, 40, 65 y 100 %), y de
+  ella se midió lo que estaba en juego: contraste sobre la tarjeta 1,19 · 1,66 ·
+  2,53 · 4,25 · 7,85 en oscuro, con saltos crecientes de 1,39 a 1,85; y **ΔE 14,0
+  bajo protanopia en el salto teal→coral**, que es lo que sostiene el diseño —la
   categoría sobrevive al daltonismo. Aun así el exceso va también en el tooltip.
+- **El primer escalón queda a 1,19:1, por debajo del piso de 2:1 del proyecto, y
+  se acepta a propósito**: en un mapa lo que hay que distinguir es una celda de su
+  VECINA, no del fondo. Lo que sí quedaba indistinguible era el hueco sin dato
+  (1,06:1 contra la celda más floja): se separa por **forma** —un filete
+  interior—, que no compite por ese tramo estrechísimo de luminosidad.
+- Retícula de 2 px de gap y radio 3 px para que **la mancha domine sobre la
+  rejilla**; eje X cada 3 h y leyenda como barra de degradado con p10 y p90 en sus
+  extremos. De qué ventana salen esos percentiles lo dice el subtítulo («últimos
+  14 días»), no una nota bajo la leyenda.
 
 ## Verificación
-- **339 tests** (unit/component/contract con MSW y WS mock) — **87,1 % de ramas**
+- **348 tests** (unit/component/contract con MSW y WS mock) — **87,43 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba
@@ -239,7 +248,9 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
 ## Referencias
 - PRD: `../../docs/01-requirements/web-spa-dashboard.md` · ADR-0017 · ADR-0012 ·
   ADR-0016 · ADR-0018 (sistema de diseño e i18n) · ADR-0019 (medidores) ·
-  ADR-0020 (login) · ADR-0021 (lectura del mercado) · Amenazas T12/T15.
+  ADR-0020 (login) · ADR-0021 (lectura del mercado) · ADR-0022 (vigencia por
+  fecha valor) · ADR-0023 (piernas siempre publicadas) · ADR-0024 (el producto se
+  llama **Criterio**) · Amenazas T12/T15.
 
 ## Pendiente
 - Topología de despliegue real: los túneles de Cloudflare son de desarrollo
