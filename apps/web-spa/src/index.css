@@ -295,13 +295,17 @@ body {
   flex: 1;
 }
 
+/* 76 px FIJOS y sin envolver. Con `min-height` + `wrap` la barra crecía a dos
+   filas en cuanto el nombre de usuario era largo, y una barra pegajosa que
+   cambia de alto mueve todo el contenido bajo ella. Lo que no cabe se repliega
+   por punto de corte (la variante compacta), no apilándose. */
 .vmw-nav {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 10px 24px;
-  min-height: var(--nav-height);
-  padding: 12px var(--container-pad);
+  height: var(--nav-height);
+  padding: 0 var(--container-pad);
   background: var(--nav-bg);
   backdrop-filter: var(--blur-nav);
   border-bottom: var(--border-width) solid var(--border);
@@ -344,9 +348,13 @@ body {
 }
 
 .vmw-nav__usuario {
+  flex: none;
   font-size: var(--fs-body-xs);
   color: var(--text-muted);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 22ch;
 }
 
 .vmw-tab {
@@ -361,8 +369,11 @@ body {
   transition: color var(--dur-fast) ease, border-color var(--dur-fast) ease;
 }
 
+/* Hover a teal, nunca subrayado: la pestaña activa ya se distingue por su
+   pastilla, así que el hover solo tiene que insinuar el destino. */
 .vmw-tab:hover {
-  color: var(--text);
+  color: var(--teal);
+  text-decoration: none;
 }
 
 .vmw-tab[aria-selected="true"] {

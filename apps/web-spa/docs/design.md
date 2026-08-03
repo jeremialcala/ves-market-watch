@@ -93,6 +93,28 @@ El canario `tests/unit/paleta.test.ts` fija estos valores: si alguien cambia un
 slot, el test falla y pide volver a pasar el validador. Lo que se rompió esta
 vez fue precisamente que el color cambió y la palabra «validada» se quedó.
 
+## La barra de navegación (2026-08-02)
+76 px **fijos**, pegajosa, `rgb(21 24 27 / 82%)` con `blur(16px)` y hairline
+inferior al 8 %. Marca con isotipo de 26 px y nombre en Space Grotesk 18/700 a
+−0,02em en blanco; pestañas en Inter 14,5 px, la activa con pastilla
+`--teal-tint` + `--teal-line` y texto teal a radio 100 px, las inactivas en
+`--text-muted` sin fondo y hover a teal sin subrayado.
+
+Casi todo eso ya salía de los tokens portados en ADR-0018 (`--nav-height`,
+`--nav-bg`, `--blur-nav`, `--border`, `--fs-body-sm`). Lo que se desviaba era:
+
+- **`min-height` + `flex-wrap: wrap`**, o sea 76 px de mínimo, no de alto. Con un
+  nombre de usuario largo la barra crecía a dos filas — y una barra pegajosa que
+  cambia de alto mueve todo el contenido bajo ella. Ahora `height` fijo,
+  `nowrap`, y el nombre con elipsis a 22 ch.
+- **El hover de la pestaña iba a `--text`**, no a teal.
+- **`Button variant="nav"` era coral SÓLIDO con sombra**, que es el tratamiento
+  del CTA. En la barra ese peso convertía «Salir» —la acción que menos se quiere
+  pulsar— en lo más llamativo de la pantalla, y gastaba el coral, que en este
+  producto significa alerta. Ahora comparte tratamiento con el conmutador de
+  idioma y el botón de tema: pastilla sobre `--overlay-soft` que se aclara al
+  pasar por encima. Hay dos tests que impiden que el coral vuelva.
+
 ## La tira de estado es estado, no diagnóstico (2026-08-02)
 Una sola línea (`7px 24px` sobre `--dark`, Inter 12,5 px, `letter-spacing .06em`,
 mayúsculas por CSS, `--text-muted`) con lo que responde **«¿puedo fiarme de lo

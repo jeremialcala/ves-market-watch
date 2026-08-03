@@ -17,11 +17,20 @@ import {
 afterEach(cleanup);
 
 describe("Button", () => {
-  it("la variante nav usa el coral de marca y su tinta", () => {
+  it("la variante nav NO es coral: el coral es del CTA de la vista", () => {
+    /*
+     * Era coral sólido con sombra —el tratamiento del CTA— y eso convertía
+     * «Salir», la acción que menos se quiere pulsar, en lo más llamativo de la
+     * pantalla. Además gasta el coral, que en este producto significa alerta.
+     * Ahora comparte tratamiento con el conmutador de idioma y el de tema.
+     */
     render(<Button variant="nav">Salir</Button>);
     const boton = screen.getByRole("button", { name: "Salir" });
-    expect(boton.style.background).toBe("var(--coral)");
-    expect(boton.style.color).toBe("var(--coral-ink)");
+
+    expect(boton.style.background).toBe("var(--overlay-soft)");
+    expect(boton.style.color).toBe("var(--text-muted)");
+    expect(boton.style.background).not.toContain("coral");
+    expect(boton.style.boxShadow).toBe("");
   });
 
   it("al pasar el ratón cambia al color de hover y vuelve al salir", async () => {

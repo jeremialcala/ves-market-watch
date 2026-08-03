@@ -52,17 +52,26 @@ const VARIANTES: Record<
       transform: "var(--lift-sm)",
     },
   },
+  /*
+   * `nav`: los controles de la barra, no una llamada a la acción.
+   *
+   * Era **coral sólido con sombra**, que es el tratamiento del CTA de la vista.
+   * En la barra ese peso convertía «Salir» —la acción que menos se quiere
+   * pulsar— en lo más llamativo de la pantalla, y gastaba el coral, que en este
+   * producto significa alerta. Ahora comparte tratamiento con el conmutador de
+   * idioma y el botón de tema: pastilla discreta sobre `--overlay-soft` que se
+   * aclara al pasar por encima.
+   */
   nav: {
     reposo: {
-      background: "var(--coral)",
-      color: "var(--coral-ink)",
+      background: "var(--overlay-soft)",
+      color: "var(--text-muted)",
       fontSize: "14px",
-      fontWeight: 700,
-      padding: "10px 20px",
-      border: "none",
-      boxShadow: "var(--shadow-coral)",
+      fontWeight: 600,
+      padding: "8px 18px",
+      border: "1px solid var(--border)",
     },
-    hover: { background: "var(--coral-hover)", transform: "translateY(-1px)" },
+    hover: { color: "var(--text)", borderColor: "var(--border-2)" },
   },
 };
 

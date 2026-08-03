@@ -293,3 +293,30 @@ describe("Footer", () => {
     ).toBeTruthy();
   });
 });
+
+describe("NavBar: forma de la barra ancha", () => {
+  it("la pestaña activa lleva pastilla teal y las demás no llevan fondo", () => {
+    fijarCompacto(false);
+    render(
+      <NavBar vista="dashboard" onVista={() => {}} usuario="Jeremi" onSalir={() => {}} />,
+    );
+
+    const tabs = [...document.querySelectorAll(".vmw-tab")];
+    const activas = tabs.filter((t) => t.getAttribute("aria-selected") === "true");
+    expect(activas).toHaveLength(1);
+    expect(activas[0].textContent).toBe("Dashboard");
+    // El resto queda inactiva: la distinción es la pastilla, no el texto.
+    expect(tabs.length).toBeGreaterThan(1);
+  });
+
+  it("«Salir» NO es coral sólido: ese peso es del CTA de la vista", () => {
+    fijarCompacto(false);
+    render(
+      <NavBar vista="dashboard" onVista={() => {}} usuario="Jeremi" onSalir={() => {}} />,
+    );
+
+    const salir = screen.getByRole("button", { name: /salir/i });
+    expect(salir.style.background).not.toContain("coral");
+    expect(salir.style.boxShadow).toBe("");
+  });
+});

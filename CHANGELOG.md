@@ -122,6 +122,18 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **La barra de navegación a 76 px fijos, y «Salir» deja de ser coral
+  (2026-08-02).** Casi toda la forma ya salía de los tokens de ADR-0018; lo que
+  se desviaba eran tres cosas:
+  - `min-height` + `flex-wrap: wrap` daban 76 px de **mínimo**: con un nombre de
+    usuario largo la barra crecía a dos filas, y una barra pegajosa que cambia de
+    alto mueve todo el contenido bajo ella. Ahora `height` fijo y `nowrap`.
+  - El hover de las pestañas iba a `--text` en vez de a teal.
+  - **`Button variant="nav"` era coral sólido con sombra** — el tratamiento del
+    CTA. Eso hacía de «Salir», la acción que menos se quiere pulsar, lo más
+    llamativo de la pantalla, y gastaba el coral, que aquí significa alerta.
+    Pasa a pastilla sobre `--overlay-soft`, como el conmutador de idioma y el
+    botón de tema. Dos tests impiden que el coral vuelva.
 - **La tira de estado vuelve a ser estado, no diagnóstico (2026-08-02).** Una
   sola línea con el Tag del stream, el último evento, las suscripciones vivas y,
   a la derecha, el sello «datos al 2 ago · 22:50 VET» (del `as_of` del análisis:
