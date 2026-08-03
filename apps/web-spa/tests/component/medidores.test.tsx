@@ -68,8 +68,25 @@ describe("GaugePanel con análisis", () => {
     marketStore.resync({ analisis: FIXTURE_ANALISIS });
     render(<GaugePanel />);
 
-    // Pie de escala: los cortes REALES publicados, no una cadena fija.
-    expect(screen.getByText(/bajo 10,55 · normal 15,90 · alto 24,18 · 90 d/)).toBeTruthy();
+    // Los cortes REALES publicados, cada uno BAJO su posición en la barra.
+    // Antes iban como una cadena en la cabecera: el número estaba, pero no
+    // dónde caía, que es justo lo que una escala tiene que enseñar.
+    const cortes = [...document.querySelectorAll(".vmw-medidor__cortes > span")];
+    const brechaCortes = cortes.filter((c) =>
+      ["10,55", "15,90", "24,18"].includes(c.textContent ?? ""),
+    );
+    expect(brechaCortes.map((c) => (c as HTMLElement).style.left)).toEqual([
+      "10%",
+      "50%",
+      "90%",
+    ]);
+    // La palabra sigue estando: el proyecto rotula bajo/normal/alto, no p10.
+    expect(brechaCortes.map((c) => c.getAttribute("title"))).toEqual([
+      "bajo",
+      "normal",
+      "alto",
+    ]);
+    expect(screen.getAllByText("90 d").length).toBeGreaterThan(0);
     // Relleno = position del contrato (0.2996 → 29.96 %), no un ancho inventado.
     const barra = screen.getByLabelText(/Brecha buy: 13,22 %/);
     const relleno = barra.querySelector(".vmw-barra__relleno") as HTMLElement;
@@ -223,12 +240,80 @@ describe("GaugePanel sin análisis", () => {
   });
 });
 
+describe("Distintivo y pie de la tarjeta", () => {
+  it("el distintivo dice la BANDA, nunca un percentil", () => {
+    /*
+     * ADR-0019: la interfaz rotula bajo/normal/alto y ninguna cadena dice
+     * «percentil X». El prototipo pedía «p3 · 90 d» y se descartó a propósito.
+     */
+    marketStore.resync({ analisis: FIXTURE_ANALISIS });
+    render(<GaugePanel />);
+
+    const badges = [...document.querySelectorAll(".vmw-medidor__badge")].map(
+      (b) => b.textContent ?? "",
+    );
+    expect(badges.length).toBeGreaterThan(0);
+    for (const badge of badges) {
+      expect(badge).not.toMatch(/^p\d/);
+      expect(badge).not.toMatch(/percentil/i);
+    }
+  });
+
+  it("el distintivo coral lo decide el MOTOR, no el panel", () => {
+    // `summary.blocked_by` nombra el medidor que frena el aviso más cercano.
+    const bloqueado = FIXTURE_ANALISIS.indicators[0].indicator;
+    marketStore.resync({
+      analisis: {
+        ...FIXTURE_ANALISIS,
+        summary: { ...FIXTURE_ANALISIS.summary, blocked_by: bloqueado },
+      },
+    });
+    render(<GaugePanel />);
+
+    const coral = [...document.querySelectorAll('[data-tono="coral"]')];
+    expect(coral).toHaveLength(1);
+    expect(coral[0].textContent).toBe("Falta por moverse");
+  });
+
+  it("sin lectura del medidor que bloquea, no se pinta distintivo alguno", () => {
+    /*
+     * El fixture bloquea con `p2p_momentum_bid_3h_pct`, que NO tiene lectura en
+     * esa revisión: sin lectura no hay banda que rotular, y una tarjeta vacía no
+     * puede llevar distintivo. Se dice callando, no inventando.
+     */
+    marketStore.resync({ analisis: FIXTURE_ANALISIS });
+    render(<GaugePanel />);
+
+    expect(document.querySelectorAll('[data-tono="coral"]')).toHaveLength(0);
+  });
+
+  it("dice a qué aviso alimenta cada medidor, y cuándo a ninguno", () => {
+    marketStore.resync({ analisis: FIXTURE_ANALISIS });
+    render(<GaugePanel />);
+
+    const pies = [...document.querySelectorAll(".vmw-medidor__reglas-pie")].map(
+      (n) => n.textContent ?? "",
+    );
+    expect(pies.length).toBe(FIXTURE_ANALISIS.indicators.length);
+    // «Ninguna» también informa: ese número no puede disparar nada por sí solo.
+    expect(
+      pies.some((p) => /@v1/.test(p) || /ninguna regla la usa/.test(p)),
+    ).toBe(true);
+  });
+});
+
 describe("GaugePanel en inglés", () => {
   it("redacta la misma lectura sin dejar cadenas en español", async () => {
     marketStore.resync({ analisis: FIXTURE_ANALISIS });
     render(<GaugePanel />, { idioma: "en" });
 
-    expect(screen.getByText(/low 10.55 · normal 15.90 · high 24.18 · 90 d/)).toBeTruthy();
+    const cortesEn = [...document.querySelectorAll(".vmw-medidor__cortes > span")]
+      .filter((c) => ["10.55", "15.90", "24.18"].includes(c.textContent ?? ""));
+    expect(cortesEn.map((c) => c.getAttribute("title"))).toEqual([
+      "low",
+      "normal",
+      "high",
+    ]);
     expect(screen.getByText(/The gap is narrower than usual/)).toBeTruthy();
     expect(
       screen.getByText(

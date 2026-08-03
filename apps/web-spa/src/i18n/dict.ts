@@ -237,6 +237,20 @@ export const ES = {
   // Pie de la escala y su glosa. `explicacion` es la ÚNICA cadena que enseña a
   // leer la escala, y va solo en el desplegable para que el pie siga corto.
   "medidores.escala.percentiles": "bajo {p10} · normal {p50} · alto {p90} · {dias} d",
+  // La ventana, ahora que los cortes se rotulan bajo la barra en su posición.
+  "medidores.escala.ventana": "{dias} d",
+  // Distintivo de la tarjeta: la banda en corto. NUNCA un percentil (ADR-0019).
+  "medidores.badge.muyBajo": "Muy bajo",
+  "medidores.badge.bajo": "Bajo",
+  "medidores.badge.alto": "Alto",
+  "medidores.badge.muyAlto": "Muy alto",
+  "medidores.badge.sinEscala": "Sin escala",
+  "medidores.badge.bloquea": "Falta por moverse",
+  // Los cortes: la palabra va en el `title`, el número bajo la barra.
+  "medidores.corte.p10": "bajo",
+  "medidores.corte.p50": "normal",
+  "medidores.corte.p90": "alto",
+  "medidores.regla.sinDisparador": "ninguna regla la usa como disparador",
   "medidores.escala.ruleset":
     "comparando con los umbrales de aviso · {muestras}/{minimo} lecturas en {dias} d",
   "medidores.escala.explicacion":
@@ -767,6 +781,17 @@ export const EN: Record<Clave, string> = {
     "Not enough history to compare yet; it is checked against the 30 % limit beyond which the reading stops being reliable.",
 
   "medidores.escala.percentiles": "low {p10} · normal {p50} · high {p90} · {dias} d",
+  "medidores.escala.ventana": "{dias} d",
+  "medidores.badge.muyBajo": "Very low",
+  "medidores.badge.bajo": "Low",
+  "medidores.badge.alto": "High",
+  "medidores.badge.muyAlto": "Very high",
+  "medidores.badge.sinEscala": "No scale",
+  "medidores.badge.bloquea": "Yet to move",
+  "medidores.corte.p10": "low",
+  "medidores.corte.p50": "normal",
+  "medidores.corte.p90": "high",
+  "medidores.regla.sinDisparador": "no rule uses it as a trigger",
   "medidores.escala.ruleset":
     "compared against alert thresholds · {muestras}/{minimo} readings in {dias} d",
   "medidores.escala.explicacion":

@@ -669,9 +669,57 @@ body {
 }
 
 .vmw-medidor__escala {
+  margin-top: 4px;
   font-size: var(--fs-caption);
   color: var(--text-dim);
   text-align: right;
+}
+
+/* Distintivo de banda. Es ESTADO, no serie: por eso va con su texto, nunca
+   codificado solo por color. */
+.vmw-medidor__badge {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid var(--border);
+  background: var(--overlay-soft);
+  color: var(--text-muted);
+  font-size: var(--fs-tiny);
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.vmw-medidor__badge[data-tono="coral"] {
+  border-color: var(--coral-line);
+  background: var(--coral-tint);
+  color: var(--coral);
+}
+
+/* Los cortes bajo la barra, cada uno en su posición real. `translateX(-50%)`
+   los centra sobre la marca; los de los extremos se sujetan con `clamp` para
+   que no se salgan de la tarjeta. */
+.vmw-medidor__cortes {
+  position: relative;
+  height: 16px;
+  margin-top: 6px;
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-medidor__cortes > span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* A qué aviso alimenta el medidor: vocabulario del contrato, sin traducir. */
+.vmw-medidor__reglas-pie {
+  margin-top: 12px;
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+  word-break: break-word;
 }
 
 .vmw-medidor__valor {

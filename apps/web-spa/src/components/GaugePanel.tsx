@@ -150,6 +150,7 @@ export function GaugePanel() {
             lectura={lecturas.get(medidor.indicador)}
             vigente={vigentes[medidor.indicador]}
             oficialStale={analisis?.official_stale ?? false}
+            bloquea={analisis?.summary.blocked_by === medidor.indicador}
           />
         ))}
       </div>
@@ -162,6 +163,8 @@ interface PropsMedidor {
   lectura: LecturaMedidor | undefined;
   vigente: { value: string; as_of: string } | undefined;
   oficialStale: boolean;
+  /** El motor lo señala como el que bloquea el aviso más cercano. */
+  bloquea: boolean;
 }
 
 function MedidorTarjeta({
@@ -169,6 +172,7 @@ function MedidorTarjeta({
   lectura,
   vigente,
   oficialStale,
+  bloquea,
 }: PropsMedidor) {
   const { t, idioma } = useI18n();
   const [abierto, setAbierto] = useState(false);
@@ -190,12 +194,7 @@ function MedidorTarjeta({
     escala === undefined
       ? null
       : escala.source === "percentiles"
-        ? t("medidores.escala.percentiles", {
-            p10: fmt(escala.cuts[0]?.value ?? "0"),
-            p50: fmt(escala.cuts[1]?.value ?? "0"),
-            p90: fmt(escala.cuts[2]?.value ?? "0"),
-            dias: escala.window_days,
-          })
+        ? t("medidores.escala.ventana", { dias: escala.window_days })
         : t("medidores.escala.ruleset", {
             muestras: escala.samples,
             minimo: escala.min_samples,
@@ -206,10 +205,21 @@ function MedidorTarjeta({
     <div className="vmw-tarjeta">
       <div className="vmw-medidor__cabecera">
         <span className="vmw-eyebrow">{t(medidor.etiqueta)}</span>
-        {/* Sin escala no hay pie: el porqué lo dice la nota de abajo (sin valor
-            o sin lectura) y, si falta el análisis entero, la síntesis del panel.
-            Repetirlo seis veces sería ruido, no honestidad. */}
-        <span className="vmw-medidor__escala">{pie}</span>
+        {/* El distintivo dice la BANDA que publicó el motor, en el vocabulario
+            bajo/normal/alto del proyecto — nunca un percentil (ADR-0019). El
+            tono coral queda para el medidor que el motor señala como el que
+            bloquea el aviso más cercano (`summary.blocked_by`): esa también la
+            decide él, no este panel. */}
+        {lectura !== undefined && (
+          <span
+            className="vmw-medidor__badge"
+            data-tono={bloquea ? "coral" : undefined}
+          >
+            {bloquea
+              ? t("medidores.badge.bloquea")
+              : t(`medidores.badge.${CLAVE_BANDA[lectura.band]}` as Clave)}
+          </span>
+        )}
       </div>
 
       <div className="vmw-cifra vmw-medidor__valor">{texto}</div>
@@ -253,6 +263,25 @@ function MedidorTarjeta({
         />
       )}
 
+      {/* Los cortes de la escala, cada uno BAJO su posición en la barra. Antes
+          iban como una cadena en la cabecera («bajo 10,55 · normal 15,90 …»):
+          el número estaba, pero no dónde caía. La palabra sigue en el `title`,
+          porque el proyecto rotula bajo/normal/alto y no percentiles. */}
+      {escala !== undefined && escala.source === "percentiles" ? (
+        <div className="vmw-medidor__cortes" aria-hidden="true">
+          {escala.cuts.map((corte) => (
+            <span
+              key={corte.key}
+              title={t(`medidores.corte.${corte.key}` as Clave)}
+              style={{ left: pctDesdeFraccion(corte.position) }}
+            >
+              {fmt(corte.value)}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {pie !== null && <div className="vmw-medidor__escala">{pie}</div>}
+
       <p className="vmw-nota" style={{ marginTop: "12px" }}>
         {crudo === undefined
           ? t("medidores.sinValor")
@@ -264,6 +293,17 @@ function MedidorTarjeta({
       {oficialStale && medidor.indicador === INDICADOR_BRECHA ? (
         <p className="vmw-medidor__aviso">{t("medidores.oficialStale")}</p>
       ) : null}
+
+      {/* A qué aviso alimenta este medidor. Sale de `rules[]` del contrato; sin
+          reglas se DICE, porque «ninguna» también informa: significa que este
+          número no puede disparar nada por sí solo. */}
+      {lectura !== undefined && (
+        <div className="vmw-medidor__reglas-pie">
+          {lectura.rules.length === 0
+            ? t("medidores.regla.sinDisparador")
+            : [...new Set(lectura.rules.map((r) => r.rule))].join(" · ")}
+        </div>
+      )}
 
       {lectura !== undefined && escala !== undefined ? (
         <>
