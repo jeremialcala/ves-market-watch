@@ -157,6 +157,8 @@ gitGraph
     commit id: "f0961fd"
     commit id: "b8b625a"
     commit id: "90d9100"
+    commit id: "43f00b6"
+    commit id: "ce5560b"
 ```
 
 ### Estado actual de las ramas
@@ -164,7 +166,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `90d9100` | 2026-08-02 | 123 |
+| `develop` | `ce5560b` | 2026-08-02 | 125 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -180,6 +182,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `ce5560b` | commit | — | Jeremi Alcala | 2026-08-02 | fix(web-spa): las pestañas se salian de la barra entre 760 y 1050 px |
+| `43f00b6` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `90d9100` | commit | — | Jeremi Alcala | 2026-08-02 | docs: barrido de coherencia tras el bloque 3, la barra y las aclaraciones |
 | `b8b625a` | commit | — | Jeremi Alcala | 2026-08-02 | docs(repo-history): regenerar |
 | `f0961fd` | commit | — | Jeremi Alcala | 2026-08-02 | refactor(web-spa): la interfaz describe el mercado, no se describe a si misma |
