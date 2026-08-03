@@ -315,6 +315,8 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  /* No cede ancho: lo que cede es el desplazamiento de las pestañas. */
+  flex: none;
 }
 
 .vmw-nav__marca img {
@@ -331,9 +333,17 @@ body {
   white-space: nowrap;
 }
 
+/* Las pestañas NO envuelven: la barra pasó a alto fijo (76 px), así que una
+   segunda fila ya no la hace crecer — se sale de ella. Medido entre el punto de
+   corte compacto (760 px) y ~1050: a 820 px eran tres filas desbordando la
+   barra. Si no caben, la tira de pestañas se desplaza en horizontal, que las
+   deja todas alcanzables sin romper el alto. */
 .vmw-nav__tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  min-width: 0;
+  scrollbar-width: none;
   gap: 4px;
 }
 
@@ -355,6 +365,15 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 22ch;
+}
+
+.vmw-nav__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* Cada pestaña conserva su ancho; lo que cede es el desplazamiento. */
+.vmw-nav__tabs > .vmw-tab {
+  flex: none;
 }
 
 .vmw-tab {

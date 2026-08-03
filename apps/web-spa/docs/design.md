@@ -107,6 +107,13 @@ Casi todo eso ya salía de los tokens portados en ADR-0018 (`--nav-height`,
   nombre de usuario largo la barra crecía a dos filas — y una barra pegajosa que
   cambia de alto mueve todo el contenido bajo ella. Ahora `height` fijo,
   `nowrap`, y el nombre con elipsis a 22 ch.
+  - **Efecto colateral, detectado y corregido en el despliegue del 2026-08-02:**
+    con la barra ya fija, la tira de pestañas —que sí envolvía— dejó de hacer
+    crecer la barra y pasó a **salirse** de ella. Medido en la escalera: a
+    1000 px eran dos filas y a 820 px tres, desbordando. Las pestañas pasan a
+    `nowrap` con desplazamiento horizontal (sin barra visible) y ni la marca ni
+    cada pestaña ceden ancho. Verificado a 1400/1200/1000/900/820/780 px: una
+    fila y sin desborde en todas.
 - **El hover de la pestaña iba a `--text`**, no a teal.
 - **`Button variant="nav"` era coral SÓLIDO con sombra**, que es el tratamiento
   del CTA. En la barra ese peso convertía «Salir» —la acción que menos se quiere
