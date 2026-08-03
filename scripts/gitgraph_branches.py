@@ -219,7 +219,7 @@ def render(repo, branches):
     tags = tags_ordenados(repo)
     version = tags[-1][0].lstrip("v") if tags else "0.0.0"
     hoy = datetime.date.today().isoformat()
-    return f"""# Historial de implementación — VES Market Watch
+    return f"""# Historial de implementación — Criterio
 
 * **Estado:** review (documentación viva — regenerada por script, no editar a mano)
 * **Fecha:** {hoy}

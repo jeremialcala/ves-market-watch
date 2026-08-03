@@ -1,4 +1,4 @@
-"""Motor reactivo de indicadores de VES Market Watch.
+"""Motor reactivo de indicadores de Criterio.
 
 Fase 1: consume `official.rate.updated` (validado contra `schemas/official-rate.v1.json`),
 calcula los indicadores derivados de la tasa oficial y publica `indicators.updated`.

@@ -1,12 +1,12 @@
 ---
 type: OKF Bundle
-title: VES Market Watch — Knowledge Bundle
+title: Criterio — Knowledge Bundle
 description: Contexto curado del proyecto en Open Knowledge Format (OKF v0.1) para consumo por agentes y humanos.
 tags: [okf, contexto, ves, fx]
 timestamp: 2026-08-01T00:00:00Z
 ---
 
-# VES Market Watch — Knowledge Bundle
+# Criterio — Knowledge Bundle
 
 Plataforma que trackea la brecha entre la tasa oficial VES/USD (BCV) y el mercado P2P
 VES/USDT (Binance), con motor de indicadores y salida REST/WSS. Este bundle es la

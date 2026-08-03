@@ -7,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useCompacto } from "../../src/lib/useCompacto";
 
+import { ES } from "../../src/i18n/dict";
+
 import { Footer } from "../../src/components/shell/Footer";
 import { NavBar } from "../../src/components/shell/NavBar";
 import { StatusStrip } from "../../src/components/shell/StatusStrip";
@@ -207,6 +209,23 @@ describe("NavBar (compacta)", () => {
   };
 
   beforeEach(() => fijarCompacto(true));
+
+  it("la marca sale del diccionario, no de un literal", () => {
+    /*
+     * Las dos variantes de la barra compartían el componente de marca pero la
+     * compacta pintaba el nombre a mano: `compacta ? "VES Market Watch" :
+     * t("app.titulo")`. Las dos ramas decían lo mismo, así que nadie lo notó —
+     * hasta que el producto se renombró a Criterio (ADR-0024) y una de las dos
+     * se habría quedado con el nombre viejo. Aquí se fija que ninguna variante
+     * se salta la traducción.
+     */
+    render(<NavBar {...props} />);
+    expect(screen.getByText(ES["app.titulo"])).toBeTruthy();
+    cleanup();
+    fijarCompacto(false);
+    render(<NavBar {...props} />);
+    expect(screen.getByText(ES["app.titulo"])).toBeTruthy();
+  });
 
   it("esconde las pestañas tras el menú y las abre al pulsarlo", async () => {
     const usuario = userEvent.setup();

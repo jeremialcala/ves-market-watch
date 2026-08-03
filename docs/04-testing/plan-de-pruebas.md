@@ -1,4 +1,4 @@
-# Plan de Pruebas — VES Market Watch
+# Plan de Pruebas — Criterio
 
 - **Fase AI-DLC:** 04-testing
 - **Estado:** draft — para revisión y aprobación (Gate 2)

@@ -1,4 +1,4 @@
-# Threat Model — VES Market Watch (sistema completo)
+# Threat Model — Criterio (sistema completo)
 
 - **Estado:** approved (Gate 1, HITL 2026-07-11)
 - **Fecha:** 2026-07-26

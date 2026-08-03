@@ -1,4 +1,4 @@
-# Project Charter — VES Market Watch
+# Project Charter — Criterio
 
 - **Estado:** approved (Gate 0, HITL 2026-07-11) — residual en seguimiento: ratificación
   del marco legal cambiario (HITL). El de «nombrar apps consumidoras» quedó cerrado por
@@ -45,7 +45,7 @@ indicadores financieros que apoyen la administración eficiente del presupuesto 
 
 ```mermaid
 mindmap
-  root((VES Market Watch))
+  root((Criterio))
     Incluye
       Ingesta P2P Binance
       Tasa oficial BCV

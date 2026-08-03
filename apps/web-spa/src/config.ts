@@ -14,6 +14,8 @@ export const config = {
   // valida issuer de forma estricta, así que ambos se mueven juntos o es 401.
   auth0Domain: import.meta.env.VITE_AUTH0_DOMAIN ?? "auth.higerotech.com",
   // App «VES Market Watch SPA» del tenant (aprovisionada 2026-07-27, ADR-0017 F1).
+  // Conserva el nombre viejo a propósito: es el registro del tenant, no la marca
+  // (ADR-0024). Renombrarlo allí es cosmético; el `audience` de abajo, no.
   auth0ClientId:
     import.meta.env.VITE_AUTH0_CLIENT_ID ?? "8CpfA64FlGTmuyF8w07rDFlrZHEeuRER",
   auth0Audience:

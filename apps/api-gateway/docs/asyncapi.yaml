@@ -14,7 +14,7 @@ asyncapi: 3.0.0
 # ---------------------------------------------------------------------------
 
 info:
-  title: VES Market Watch — Streaming WSS
+  title: Criterio — Streaming WSS
   version: 0.5.0
   description: |
     Canal de streaming en tiempo casi real sobre WebSocket.

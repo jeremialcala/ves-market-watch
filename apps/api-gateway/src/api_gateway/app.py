@@ -104,7 +104,7 @@ def create_app(
                 await app.state.repositorio.close()
 
     app = FastAPI(
-        title="VES Market Watch API",
+        title="Criterio API",
         lifespan=lifespan,
         docs_url=None,
         redoc_url=None,

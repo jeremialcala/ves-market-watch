@@ -1,7 +1,7 @@
 ---
 type: Index
 title: Servicios
-description: Las seis apps de VES Market Watch (5 servicios + web-spa) y su estado de implementación.
+description: Las seis apps de Criterio (5 servicios + web-spa) y su estado de implementación.
 timestamp: 2026-07-30T00:00:00Z
 ---
 

@@ -10,7 +10,7 @@
 
 ```mermaid
 C4Container
-  title Contenedores — VES Market Watch
+  title Contenedores — Criterio
 
   Person(consumerDev, "Usuario consumidor", "Usa el dashboard web-spa en su browser")
   Container(spa, "web-spa", "React/TypeScript (estático en nginx; corre en el browser)", "Dashboard: brecha, P2P, señales, histórico — ADR-0017")
@@ -19,7 +19,7 @@ C4Container
   System_Ext(bcv, "Sitio web BCV", "Tasa oficial VES/USD")
   System_Ext(legacy, "Sistema previo (exports CSV)", "Históricos de precio USDT/VES")
 
-  System_Boundary(vmw, "VES Market Watch (zona de confianza interna)") {
+  System_Boundary(vmw, "Criterio (zona de confianza interna)") {
     Container(ingBin, "ingestor-binance", "Python asyncio", "Polling P2P, normaliza y publica p2p.snapshot")
     Container(ingBcv, "ingestor-bcv", "Python asyncio", "Scraping BCV 2x/h, valida y publica official.rate.updated")
     Container(ingHist, "ingestor-historico", "Python (CLI batch)", "Carga exports CSV en historical_market_snapshots; sin bus (ADR-0013)")

@@ -1,4 +1,4 @@
-# Diseño del Sistema — VES Market Watch
+# Diseño del Sistema — Criterio
 
 - **Estado:** approved (Gate 1, HITL 2026-07-11)
 - **Fecha:** 2026-07-26

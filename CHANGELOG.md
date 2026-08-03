@@ -138,6 +138,27 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **El producto pasa a llamarse «Criterio» (2026-08-03, ADR-0024).** «VES Market
+  Watch» describía un tracker; la app hoy enseña una **lectura** —régimen,
+  distancia al disparo, atribución, calidad del dato—, que es hacia donde han ido
+  las últimas entregas. Cambia el nombre en las **27 superficies que alguien
+  lee**: `app.titulo` en los dos idiomas, la barra, los `H1` de los documentos,
+  los diagramas C4, el bundle de conocimiento y el título de OpenAPI/AsyncAPI.
+  - **De paso, el `<title>` de la pestaña dejaba de decir `web-spa`** — el valor
+    con el que Vite crea el andamiaje, que llevaba ahí desde ADR-0017.
+  - **El tenant de Auth0 conserva el nombre viejo, a propósito.** Esa tabla
+    describe lo que hay registrado, no cómo se llama el producto; alinearla sin
+    tocar el tenant la volvería ficción. Y el `audience`
+    `https://api.vesmarketwatch/` **no se mueve nunca**: viaja dentro de cada
+    access token emitido, no es un nombre pendiente de actualizar.
+  - Los identificadores internos (repositorio, paquetes, contenedores, prefijo
+    `vmw-`) tampoco cambian: no se leen en pantalla y el refactor no le da nada
+    al usuario.
+  - La barra compacta pintaba el nombre a mano (`compacta ? "VES Market Watch" :
+    t("app.titulo")`): las dos ramas decían lo mismo, así que el literal pasaba
+    inadvertido saltándose la traducción. Colapsado, con guarda en
+    `tests/component/shell.test.tsx` verificada por mutación.
+
 - **El mapa de calor deja de ser divergente: rampa secuencial + coral como
   categoría (2026-08-03).** Celdas a 2 px de gap y radio 3 px, para que **la
   mancha domine sobre la retícula**. La escala pasa a cinco pasos del teal de

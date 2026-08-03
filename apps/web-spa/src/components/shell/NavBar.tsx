@@ -28,15 +28,13 @@ const CLAVE_ESTADO: Record<string, Clave> = {
   detenido: "estado.detenido",
 };
 
-function Marca({ compacta = false }: { compacta?: boolean }) {
+function Marca() {
   const { tema } = useTema();
   const { t } = useI18n();
   return (
     <div className="vmw-nav__marca">
       <img src={tema === "light" ? isotipoClaro : isotipoOscuro} alt="" />
-      <span className="vmw-nav__titulo">
-        {compacta ? "VES Market Watch" : t("app.titulo")}
-      </span>
+      <span className="vmw-nav__titulo">{t("app.titulo")}</span>
     </div>
   );
 }
@@ -147,7 +145,7 @@ export function NavBar({ vista, onVista, usuario, onSalir }: Props) {
   return (
     <>
       <div className="vmw-nav-compacta">
-        <Marca compacta />
+        <Marca />
         <span className="vmw-nav-compacta__vista">{etiquetaVista}</span>
         <span className="vmw-nav__relleno" />
         {/* El color del punto no basta: el estado va también en el texto

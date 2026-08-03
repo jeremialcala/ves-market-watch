@@ -1,4 +1,4 @@
-# VES Market Watch
+# Criterio
 
 Plataforma de seguimiento en tiempo casi real de la diferencia cambiaria en Venezuela:
 tasa oficial **VES/USD (BCV)** vs. mercado P2P **VES/USDT (Binance)**, con motor de

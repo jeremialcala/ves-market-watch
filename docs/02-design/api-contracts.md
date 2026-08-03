@@ -1,4 +1,4 @@
-# Contratos de API — VES Market Watch
+# Contratos de API — Criterio
 
 - **Estado:** approved (Gate 1, HITL 2026-07-11) — eventos formales (5/5), REST con
   OpenAPI 3.1 y WSS con AsyncAPI 3.0; todo implementado por el api-gateway

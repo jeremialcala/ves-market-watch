@@ -14,7 +14,7 @@ import type { Idioma } from "./idioma";
 
 export const ES = {
   // -- shell -----------------------------------------------------------------
-  "app.titulo": "VES Market Watch",
+  "app.titulo": "Criterio",
   "nav.dashboard": "Dashboard",
   "nav.analisis": "Análisis",
   "nav.intradia": "Intradía",
@@ -615,7 +615,7 @@ export const ES = {
 export type Clave = keyof typeof ES;
 
 export const EN: Record<Clave, string> = {
-  "app.titulo": "VES Market Watch",
+  "app.titulo": "Criterio",
   "nav.dashboard": "Dashboard",
   "nav.analisis": "Analysis",
   "nav.intradia": "Intraday",

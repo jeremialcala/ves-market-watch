@@ -1,6 +1,6 @@
 # web-spa
 
-Dashboard web de VES Market Watch (React + Vite + TypeScript — ADR-0017): brecha
+Dashboard web de Criterio (React + Vite + TypeScript — ADR-0017): brecha
 cambiaria, referencia P2P, microestructura, profundidad y señales en tiempo casi
 real, autenticado contra Auth0 (Auth Code + PKCE) y alimentado por el api-gateway
 (REST `/api/v1` + WSS `/ws/v1`).

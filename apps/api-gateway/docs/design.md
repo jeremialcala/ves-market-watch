@@ -79,6 +79,14 @@ diseño (ADR-0012): no hay secretos de firma del lado del gateway.
 |---|---|
 | API (Resource Server) | `VES Market Watch API` — id `6a56683fbcee12f7916916ae` |
 | Audience | `https://api.vesmarketwatch/` |
+
+**El tenant sigue diciendo «VES Market Watch» y así se queda** (ADR-0024). El
+producto se llama Criterio desde 2026-08-03, pero estas dos filas describen lo
+que hay registrado en Auth0, no cómo se llama el producto: cambiarlas aquí sin
+tocar el tenant convertiría la tabla en ficción. El **audience** además no se
+mueve ni queriendo — viaja dentro de cada access token emitido y está en la
+config del SPA y del gateway; cambiarlo es invalidar todo lo que haya en vuelo.
+
 | Firma / vigencia | RS256; access token 900 s (también `token_lifetime_for_web`); **offline access habilitado** (corregido 2026-08-01: esta tabla decía «sin offline access» y el tenant lo tenía activo — la doc describía un tenant que no era el real) |
 | RBAC | `enforce_policies: true`, `token_dialect: access_token_authz` (permisos viajan en el claim `permissions`) |
 | Permisos | `read:rates`, `read:indicators`, `read:signals`, `read:depth`, `stream:events` |
