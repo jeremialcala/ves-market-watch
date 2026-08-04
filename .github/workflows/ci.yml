@@ -34,32 +34,31 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # `piso` es un TRINQUETE, no el criterio de Gate 2. Es la cobertura de
-          # ramas medida el 2026-08-04 sobre `src/`, menos dos puntos de holgura:
-          # la medición es en Windows y CI corre en Linux, y ya se vio que el
-          # margen real de `ingestor-historico` era de 0,71 pts (71,71 % contra
-          # un piso de 71). Sirve para que nada retroceda mientras se sube hasta
-          # el 80 % que exige Gate 2.
+          # `piso` es un TRINQUETE, no el criterio de Gate 2: es la cobertura de
+          # ramas sobre `src/` que da esta misma pipeline, truncada al entero.
+          # Sirve para que nada retroceda mientras se sube al 80 % que exige
+          # Gate 2.
           #
-          #   servicio            medido    Gate 2
-          #   api-gateway          91 %       ✔
-          #   indicator-engine     86 %       ✔
-          #   ingestor-bcv         76 %       ✘  faltan 4 pts
-          #   ingestor-binance     76 %       ✘  faltan 4 pts
-          #   ingestor-historico   72 %       ✘  faltan 8 pts
+          #   servicio            2026-08-04   Gate 2
+          #   api-gateway           90,72 %      ✔
+          #   indicator-engine      85,88 %      ✔
+          #   ingestor-bcv          76,44 %      ✘  faltan ~4 pts
+          #   ingestor-binance      75,92 %      ✘  faltan ~4 pts
+          #   ingestor-historico    71,71 %      ✘  faltan ~8 pts
           #
-          # Tras la primera ejecución verde, apretar los pisos con el número
-          # que dé CI. Subirlos según se cubra; NUNCA bajarlos.
+          # Margen deliberadamente estrecho (< 1 pt): se comprobó que Linux da lo
+          # mismo que la medición local en Windows, así que no hace falta holgura
+          # por plataforma. Subirlos según se cubra; NUNCA bajarlos.
           - servicio: api-gateway
-            piso: 89
+            piso: 90
           - servicio: indicator-engine
-            piso: 84
+            piso: 85
           - servicio: ingestor-bcv
-            piso: 74
+            piso: 76
           - servicio: ingestor-binance
-            piso: 74
+            piso: 75
           - servicio: ingestor-historico
-            piso: 70
+            piso: 71
 
     services:
       # `latest-pg16` es un tag móvil: reproducibilidad pendiente de fijar por

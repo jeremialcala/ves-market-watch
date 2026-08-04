@@ -389,12 +389,15 @@ cierre de la columna «Verificación fase 04-testing».
 
    | Servicio | Ramas (solo fuente) | ≥ 80 % |
    |---|---|---|
-   | `api-gateway` | 91 % | ✔ |
+   | `api-gateway` | 90,72 % | ✔ |
    | `web-spa` | 87,43 % | ✔ |
-   | `indicator-engine` | 86 % | ✔ |
-   | `ingestor-bcv` | 76 % | ✘ faltan 4 pts |
-   | `ingestor-binance` | 76 % | ✘ faltan 4 pts |
-   | `ingestor-historico` | 72 % | ✘ faltan 8 pts |
+   | `indicator-engine` | 85,88 % | ✔ |
+   | `ingestor-bcv` | 76,44 % | ✘ faltan ~4 pts |
+   | `ingestor-binance` | 75,92 % | ✘ faltan ~4 pts |
+   | `ingestor-historico` | 71,71 % | ✘ faltan ~8 pts |
+
+   Cifras de la propia pipeline (2026-08-04), no de una ejecución a mano: **el
+   punto 5 de esta lista deja de estar pendiente para la cobertura**.
 
    La pipeline no impone el 80 % de golpe —dejaría tres servicios en rojo desde
    el primer día— sino un **trinquete** por servicio en su valor actual, para que
