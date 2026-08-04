@@ -1,0 +1,162 @@
+# Pruebas y cobertura de los seis proyectos del monorepo.
+#
+# Corre la suite COMPLETA —incluidas `integration` y `e2e`— contra TimescaleDB y
+# RabbitMQ reales. Se puede porque los `conftest.py` ya estaban escritos para
+# ello: leen `TEST_DATABASE_URL`/`TEST_AMQP_URL` del entorno y, si no están,
+# caen a `127.0.0.1:5433` y `:5672`, que es justo lo que publica el mapeo de
+# puertos de abajo. CI usa la misma configuración que el desarrollo local, sin
+# una variante propia que se desincronice.
+#
+# No hay filtros por ruta a propósito: 991 tests son baratos y un filtro mal
+# puesto da verdes que no significan nada.
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+# Un push nuevo sobre la misma rama cancela el anterior: lo que importa es el
+# último commit, no la cola.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: ${{ matrix.servicio }}
+    runs-on: ubuntu-latest
+    strategy:
+      # Sin fail-fast: si dos servicios se rompen, interesa ver los dos.
+      fail-fast: false
+      matrix:
+        include:
+          # `piso` es un TRINQUETE, no el criterio de Gate 2. Es la cobertura de
+          # ramas medida el 2026-08-04 sobre `src/`, menos dos puntos de holgura:
+          # la medición es en Windows y CI corre en Linux, y ya se vio que el
+          # margen real de `ingestor-historico` era de 0,71 pts (71,71 % contra
+          # un piso de 71). Sirve para que nada retroceda mientras se sube hasta
+          # el 80 % que exige Gate 2.
+          #
+          #   servicio            medido    Gate 2
+          #   api-gateway          91 %       ✔
+          #   indicator-engine     86 %       ✔
+          #   ingestor-bcv         76 %       ✘  faltan 4 pts
+          #   ingestor-binance     76 %       ✘  faltan 4 pts
+          #   ingestor-historico   72 %       ✘  faltan 8 pts
+          #
+          # Tras la primera ejecución verde, apretar los pisos con el número
+          # que dé CI. Subirlos según se cubra; NUNCA bajarlos.
+          - servicio: api-gateway
+            piso: 89
+          - servicio: indicator-engine
+            piso: 84
+          - servicio: ingestor-bcv
+            piso: 74
+          - servicio: ingestor-binance
+            piso: 74
+          - servicio: ingestor-historico
+            piso: 70
+
+    services:
+      # `latest-pg16` es un tag móvil: reproducibilidad pendiente de fijar por
+      # digest junto con las imágenes base (control de T8).
+      timescaledb:
+        image: timescale/timescaledb:latest-pg16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+      rabbitmq:
+        image: rabbitmq:4-management
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 12
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: apps/${{ matrix.servicio }}/pyproject.toml
+
+      - name: Instalar el servicio con sus extras de desarrollo
+        working-directory: apps/${{ matrix.servicio }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Suite completa con cobertura de ramas
+        working-directory: apps/${{ matrix.servicio }}
+        run: >-
+          pytest -q
+          --cov=src --cov-branch
+          --cov-report=term --cov-report=xml
+          --cov-fail-under=${{ matrix.piso }}
+
+      - name: Publicar el reporte de cobertura
+        # También cuando la suite falla: el reporte de una ejecución roja es
+        # justo el que hace falta para saber qué se descubrió.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura-${{ matrix.servicio }}
+          path: apps/${{ matrix.servicio }}/coverage.xml
+          if-no-files-found: warn
+
+  web-spa:
+    name: web-spa
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web-spa
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: apps/web-spa/package-lock.json
+
+      - run: npm ci
+
+      - name: Tipos
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      # `npm test` encadena `check:api-types` —que detecta si los tipos
+      # generados se han quedado atrás respecto al openapi.yaml— y vitest con el
+      # umbral de ramas al 80 % ya declarado en vite.config.ts.
+      - name: Tests y cobertura
+        run: npm test
+
+      # El build usa `tsc -b`, que es MÁS estricto que `tsc --noEmit` del
+      # typecheck: ya se coló una vez un campo ausente del contrato que solo
+      # detuvo al build de la imagen.
+      - name: Build
+        run: npm run build
+
+      - name: Publicar el reporte de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura-web-spa
+          path: apps/web-spa/coverage/
+          if-no-files-found: warn

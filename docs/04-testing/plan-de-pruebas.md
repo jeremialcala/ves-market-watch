@@ -73,11 +73,11 @@ Estado observado en el repo (conteo de funciones `test_`):
 
 | Servicio | Estado código | Tests actuales | Huecos de prueba |
 |---|---|---|---|
-| `ingestor-bcv` | Implementado | **54** (unit, integration, contract, e2e) | ~~Confirmar cobertura de ramas ≥ 80 %~~ **98 %** (medida 2026-08-03); añadir marcador `security` para escenarios T1 (HTML alterado + tasa fuera de rango) |
-| `ingestor-binance` | Implementado | **48** (unit, integration, contract, e2e) | Cobertura **98 %** (medida 2026-08-03); escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local |
-| `indicator-engine` | Fases 1, 2, señales (RF-4/RF-5, ADR-0015), análisis de la revisión (RF-6, ADR-0019) y lectura del estado de mercado (RF-7, ADR-0021) | **335** (unit, contract, integration, e2e) | ~~Confirmar cobertura de ramas ≥ 80 %~~ **96 %** (medida 2026-08-03); recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) y de los dos ejes del régimen (`config/lectura.v1.yaml`); contrastar en vivo la atribución con responsable `oficial` o `ambos` — hace falta un día en que la tasa del BCV cambie de verdad, no solo que esté vigente (ADR-0022 destapó que este hueco se venía describiendo mal: se decía que el fin de semana la suprimía «por diseño», cuando lo que la suprimía era la rancidez mal medida) |
-| `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) — más el histórico de tasas oficiales del BCV (RF-6) y la brecha derivada del lado venta (RF-7), 2026-08-01 | **98** (unit + integración contra TimescaleDB real) | ~~Confirmar cobertura de ramas ≥ 80 %~~ **96 %** (medida 2026-08-03); integración del cargador de oficiales contra TimescaleDB real (hoy cubierto en unit + verificado sobre la carga real de 31.078 filas) |
-| `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **108** (unit incl. CORS y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; ~~cobertura ≥ 80 %~~ **96 %** (medida 2026-08-03) |
+| `ingestor-bcv` | Implementado | **54** (unit, integration, contract, e2e) | Cobertura de ramas **76 %** (medida 2026-08-04 sobre `src/`); añadir marcador `security` para escenarios T1 (HTML alterado + tasa fuera de rango) |
+| `ingestor-binance` | Implementado | **48** (unit, integration, contract, e2e) | Cobertura de ramas **76 %** (medida 2026-08-04 sobre `src/`); escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local |
+| `indicator-engine` | Fases 1, 2, señales (RF-4/RF-5, ADR-0015), análisis de la revisión (RF-6, ADR-0019) y lectura del estado de mercado (RF-7, ADR-0021) | **335** (unit, contract, integration, e2e) | Cobertura de ramas **86 %** (medida 2026-08-04 sobre `src/`); recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) y de los dos ejes del régimen (`config/lectura.v1.yaml`); contrastar en vivo la atribución con responsable `oficial` o `ambos` — hace falta un día en que la tasa del BCV cambie de verdad, no solo que esté vigente (ADR-0022 destapó que este hueco se venía describiendo mal: se decía que el fin de semana la suprimía «por diseño», cuando lo que la suprimía era la rancidez mal medida) |
+| `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) — más el histórico de tasas oficiales del BCV (RF-6) y la brecha derivada del lado venta (RF-7), 2026-08-01 | **98** (unit + integración contra TimescaleDB real) | Cobertura de ramas **72 %** (medida 2026-08-04 sobre `src/`); integración del cargador de oficiales contra TimescaleDB real (hoy cubierto en unit + verificado sobre la carga real de 31.078 filas) |
+| `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **108** (unit incl. CORS y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura de ramas **91 %** (medida 2026-08-04 sobre `src/`) |
 | `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **348** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores y lectura del mercado con dato real en ES/EN, shell responsive y canarios de paleta, punto de corte y cabeceras CSP) — **87,43 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
 
 > El plan cubre tanto la **consolidación** de lo existente como la **especificación** de los casos
@@ -381,11 +381,24 @@ cierre de la columna «Verificación fase 04-testing».
 - `docker-compose.yml` levanta y las suites `integration`/`e2e` corren en verde localmente.
 
 **Salida (cierre de Gate 2):**
-1. Cobertura de ramas **≥ 80 %** por servicio con código. **Medido 2026-08-03 y
-   cumplido en los seis**: `ingestor-bcv` 98 %, `ingestor-binance` 98 %,
-   `indicator-engine` 96 %, `ingestor-historico` 96 %, `api-gateway` 96 %,
-   `web-spa` 87,43 %. Lo que sigue faltando no es el número: es que **lo mida el
-   pipeline** y no una ejecución a mano (punto 5 y §11).
+1. Cobertura de ramas **≥ 80 %** por servicio con código. **NO cumplido en tres
+   de los seis.** La medición del 2026-08-03 se hizo con `--cov` a secas, que
+   mete los propios ficheros de test en el denominador; como los tests se
+   ejecutan enteros, inflaba el total. Medido de nuevo el 2026-08-04 sobre
+   `src/`, que es lo que el SPA ya venía midiendo (`include: ["src/**"]`):
+
+   | Servicio | Ramas (solo fuente) | ≥ 80 % |
+   |---|---|---|
+   | `api-gateway` | 91 % | ✔ |
+   | `web-spa` | 87,43 % | ✔ |
+   | `indicator-engine` | 86 % | ✔ |
+   | `ingestor-bcv` | 76 % | ✘ faltan 4 pts |
+   | `ingestor-binance` | 76 % | ✘ faltan 4 pts |
+   | `ingestor-historico` | 72 % | ✘ faltan 8 pts |
+
+   La pipeline no impone el 80 % de golpe —dejaría tres servicios en rojo desde
+   el primer día— sino un **trinquete** por servicio en su valor actual, para que
+   nada retroceda mientras se sube. El criterio de salida sigue siendo el 80 %.
 2. Todos los casos de las secciones 5–7 aplicables al alcance entregado, en verde.
 3. Cada amenaza T1–T15 con su verificación satisfecha (tests o gate de CI).
 4. Contract tests en verde en **productor y consumidor** para cada evento con schema.
@@ -394,11 +407,40 @@ cierre de la columna «Verificación fase 04-testing».
 
 ## 11. Automatización y CI
 
-- **Matriz por app:** cada servicio corre `pytest -m "not integration and not e2e"` en cada push, y
-  la suite completa con `docker compose` en el pipeline de integración.
-- **Gates de seguridad en CI (Gate 2):** SAST (T9), SCA con umbral de severidad (T8), secrets
-  scanning (T6). Imágenes fijadas por digest.
-- **Reporte de cobertura** por servicio publicado como artefacto del pipeline.
+**Implementada el 2026-08-04** en `.github/workflows/` (GitHub Actions; el repo es
+público, así que los minutos son gratis).
+
+- **`ci.yml` — matriz por app:** los cinco servicios Python y el `web-spa`, en
+  paralelo y sin `fail-fast`. Corre la **suite completa, integration y e2e
+  incluidas**, contra TimescaleDB y RabbitMQ como `services:` del trabajo — no
+  hace falta variante de configuración porque los `conftest.py` ya caían a
+  `127.0.0.1:5433` y `:5672`, que es lo que publica el mapeo de puertos. El SPA
+  suma `typecheck`, `lint`, `check:api-types` y `build` (que usa `tsc -b`, más
+  estricto que el typecheck: ya dejó pasar una vez un campo ausente del contrato).
+  Sin filtros por ruta: 991 tests son baratos y un filtro mal puesto da verdes
+  vacíos.
+- **`seguridad.yml` — los gates de Gate 2, rompiendo el build:**
+  - **T6:** `gitleaks` sobre la **historia completa** (`fetch-depth: 0`) — en un
+    repo público, un secreto borrado al commit siguiente sigue ahí. Con
+    `--redact`, para que el hallazgo no sea una segunda fuga en unos logs
+    públicos.
+  - **T8:** `pip-audit` en un venv por servicio (`--skip-editable --strict`) y
+    `npm audit --audit-level=high` en el SPA. Umbral de Python: **cero
+    vulnerabilidades conocidas**, con excepciones explícitas si hace falta — más
+    estricto que un corte por severidad, y con mejor rastro de auditoría.
+  - **T9:** CodeQL (`security-and-quality`) para Python y TypeScript. **CodeQL por
+    sí solo no rompe el build**: deja una alerta y sigue. Un paso posterior lee el
+    SARIF y falla ante hallazgos de nivel `error` — ese es el umbral de severidad;
+    `warning` y `note` se quedan en la pestaña Security.
+  - Pasada semanal por `schedule`: una dependencia no cambia, pero lo que se
+    **sabe** de ella sí.
+- **Reporte de cobertura** por servicio como artefacto, **también en ejecuciones
+  rojas** — que es cuando hace falta.
+- **Pendiente del control de T8: fijar.** Los cinco servicios Python declaran
+  rangos (`fastapi>=0.111`) sin lockfile, y las imágenes van por tag —incluida
+  `timescale/timescaledb:latest-pg16`, un `latest` moviéndose bajo los tests—. El
+  SCA audita lo instalado, que es lo más honesto sin fijar, pero el control dice
+  «lockfiles + SCA + imágenes por digest» y de los tres solo está el del medio.
 - **Fuente de convenciones de marcadores:** `[tool.pytest.ini_options]` en cada `pyproject.toml`
   (`asyncio_mode = "auto"`, marcadores `integration` y `e2e`; añadir `security` en api-gateway).
 

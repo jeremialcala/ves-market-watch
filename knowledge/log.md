@@ -7,6 +7,47 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-04 — Pipeline de CI, y la cobertura de ayer estaba inflada
+- Montada la pipeline en GitHub Actions: `ci.yml` (matriz de los seis proyectos,
+  suite completa contra Timescale y RabbitMQ reales, artefacto de cobertura) y
+  `seguridad.yml` (gitleaks, pip-audit + npm audit, CodeQL) **rompiendo el build**,
+  no avisando.
+- **Al fijar el umbral apareció que la medición de ayer era mala.** `--cov` a secas
+  mete los propios ficheros de test en el denominador, y como los tests se ejecutan
+  enteros están al ~100 %: inflan el total. Medido sobre `src/`, que es lo que el
+  SPA ya venía haciendo (`include: ["src/**"]`), **tres de los seis servicios están
+  por debajo del 80 % de Gate 2**:
+
+  | | ayer (`--cov`) | hoy (`--cov=src`) |
+  |---|---|---|
+  | api-gateway | 96 % | **91 %** ✔ |
+  | indicator-engine | 96 % | **86 %** ✔ |
+  | web-spa | 87,43 % | 87,43 % ✔ (ya era solo-fuente) |
+  | ingestor-bcv | 98 % | **76 %** ✘ |
+  | ingestor-binance | 98 % | **76 %** ✘ |
+  | ingestor-historico | 96 % | **72 %** ✘ |
+
+  *La lección: una métrica agregada sin declarar su denominador no es una medición,
+  es una impresión.* Y el criterio de salida de Gate 2 se dio por cumplido un día
+  entero sobre ella.
+- La pipeline no impone el 80 % de golpe —tres servicios en rojo desde el minuto
+  cero— sino un **trinquete** por servicio en su valor actual menos dos puntos de
+  holgura por plataforma. Nada retrocede mientras se sube.
+- **CodeQL por sí solo no rompe el build**: deja una alerta y sigue. Como Gate 2
+  pide un gate y no un aviso, un paso lee el SARIF y falla ante hallazgos de nivel
+  `error`. Es la diferencia entre tener seguridad y tener paneles de seguridad.
+- `npm audit` encontró **3 vulnerabilidades high** ya presentes, transitivas de
+  `openapi-typescript` (generador de tipos, no llega al bundle). `npm audit fix` las
+  cerró tocando solo el lockfile; suite y build siguen verdes. La pipeline nace
+  verde en vez de nacer roja.
+- Las suites ya estaban escritas para CI sin saberlo: los `conftest.py` leen
+  `TEST_DATABASE_URL`/`TEST_AMQP_URL` y caen a `127.0.0.1:5433` y `:5672`, que es
+  justo lo que publica el mapeo de puertos de los `services:`. **Cero cambios de
+  código para meter integration y e2e en el pipeline.**
+- Deuda que queda escrita: el control de T8 promete «lockfiles + SCA + imágenes por
+  digest» y solo está el del medio. Los cinco servicios declaran rangos sin
+  lockfile y `timescaledb:latest-pg16` es un `latest` moviéndose bajo los tests.
+
 ## 2026-08-04 — Ratificado el DREAD de T15, y la ficha estaba contando mal la defensa
 - Último pendiente de diseño del Gate 1. Se ratifica **2/2/2/2/2 = 10** (Jeremi
   Alcalá), pero verificando la mitigación **contra el código y no contra la ficha**:
@@ -35,10 +76,8 @@ timestamp: 2026-08-03T12:00:00Z
 
 ## 2026-08-03 — Barrido de coherencia: siete cifras desfasadas y un `<TODO>` que ya estaba resuelto
 - **La cobertura de ramas de los servicios Python nunca se había medido.** El plan
-  la arrastraba como «confirmar ≥ 80 %» en cuatro filas desde Gate 2. Medida:
-  bcv 98 %, binance 98 %, motor 96 %, histórico 96 %, gateway 96 %, SPA 87,43 %.
-  Todos cumplen con holgura. **Lo que falta no era el número, era medirlo** — y lo
-  que sigue faltando es que lo mida el pipeline y no una ejecución a mano.
+  la arrastraba como «confirmar ≥ 80 %» en cuatro filas desde Gate 2. Se midió, y
+  **se midió mal** (ver la entrada del 2026-08-04): con `--cov` a secas.
 - Siete conteos de tests habían quedado atrás (motor 302→335, gateway 90/103→108,
   SPA 339→348). Se corrigieron en el plan y en el bundle. El patrón se repite cada
   barrido: **el conteo envejece cada entrega y nadie lo actualiza al pasar**.

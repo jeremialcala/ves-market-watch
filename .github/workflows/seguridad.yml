@@ -1,0 +1,173 @@
+# Gates de seguridad de Gate 2: T6 (fuga de secretos), T8 (compromiso de
+# dependencia) y T9 (SQL injection y demás, vía SAST).
+#
+# Van como PASOS QUE ROMPEN EL BUILD, no como avisos. GitHub ofrece gratis en
+# repos públicos secret scanning, Dependabot y CodeQL, pero esos avisan sin
+# detener nada, y Gate 2 pide un gate: algo que impida seguir. Las funciones
+# nativas se dejan encendidas como red de seguridad; lo que decide es esto.
+name: Seguridad
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  schedule:
+    # Una pasada semanal: una dependencia no cambia, pero lo que se SABE de ella
+    # sí. Un repo sin commits puede volverse vulnerable un martes cualquiera.
+    - cron: "0 6 * * 1"
+
+concurrency:
+  group: seguridad-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  secretos:
+    name: T6 · fuga de secretos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Historia completa: un secreto borrado en el commit siguiente sigue
+          # estando en el repo, y este es un repositorio PÚBLICO.
+          fetch-depth: 0
+
+      - name: Instalar gitleaks
+        env:
+          VERSION: 8.28.0
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
+
+      - name: Escanear la historia completa
+        # `--redact` para que un hallazgo no se convierta en una segunda fuga:
+        # los logs de Actions son públicos en un repo público.
+        run: gitleaks detect --source . --redact --exit-code 1 --verbose
+
+  dependencias:
+    name: T8 · SCA (${{ matrix.ecosistema }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ecosistema: python
+          - ecosistema: npm
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        if: matrix.ecosistema == 'python'
+        with:
+          python-version: "3.12"
+
+      # Auditar lo INSTALADO, no lo declarado: los cinco servicios declaran
+      # rangos (`fastapi>=0.111`) y no hay lockfiles, así que «la versión con la
+      # vulnerabilidad» solo existe una vez resuelta. Es lo más honesto que se
+      # puede hacer sin fijar; fijar es el paso siguiente y está anotado como
+      # deuda del control de T8.
+      - name: Auditar los cinco servicios Python
+        if: matrix.ecosistema == 'python'
+        run: |
+          fallos=0
+          for servicio in api-gateway indicator-engine ingestor-bcv ingestor-binance ingestor-historico; do
+            echo "::group::${servicio}"
+            # Un venv por servicio: auditar el entorno compartido mezclaría las
+            # dependencias de los cinco y un hallazgo no diría de quién es.
+            python -m venv "/tmp/venv-${servicio}"
+            venv="/tmp/venv-${servicio}/bin"
+            "${venv}/pip" install --upgrade --quiet pip pip-audit
+            "${venv}/pip" install --quiet -e "apps/${servicio}[dev]"
+            # --skip-editable salta el propio paquete del servicio, que no está
+            # en PyPI; --strict falla si algo NO se pudo auditar, para que un
+            # hueco del escáner no pase por «sin hallazgos».
+            "${venv}/python" -m pip_audit \
+              --progress-spinner off \
+              --skip-editable \
+              --strict || fallos=1
+            echo "::endgroup::"
+          done
+          exit $fallos
+
+      - uses: actions/setup-node@v4
+        if: matrix.ecosistema == 'npm'
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: apps/web-spa/package-lock.json
+
+      # Aquí SÍ hay lockfile, así que se audita exactamente lo que se instala.
+      # Umbral en `high`: por debajo hay ruido de herramientas de desarrollo que
+      # no llega al bundle, y un gate que se ignora deja de ser un gate.
+      - name: Auditar el web-spa
+        if: matrix.ecosistema == 'npm'
+        working-directory: apps/web-spa
+        run: |
+          npm ci
+          npm audit --audit-level=high
+
+  sast:
+    name: T9 · SAST (${{ matrix.lenguaje }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        lenguaje: [python, javascript-typescript]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.lenguaje }}
+          queries: security-and-quality
+
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.lenguaje }}
+          # El SARIF también en disco, para poder decidir aquí. Sube igual a la
+          # pestaña Security, que es donde vive la historia del hallazgo.
+          output: sarif-${{ matrix.lenguaje }}
+          upload: always
+
+      # CodeQL por sí solo NO rompe el build: deja una alerta y sigue. Eso vale
+      # como aviso, no como gate — y Gate 2 pide un gate. Este paso es el umbral
+      # de severidad: `error` en SARIF son los hallazgos de seguridad graves;
+      # `warning` y `note` (la mitad de `security-and-quality` es calidad) se
+      # quedan en la pestaña Security sin detener a nadie.
+      - name: Umbral de severidad sobre el SARIF
+        run: |
+          python3 - "sarif-${{ matrix.lenguaje }}" <<'PY'
+          import json, pathlib, sys
+
+          graves = []
+          for archivo in pathlib.Path(sys.argv[1]).glob("*.sarif"):
+              sarif = json.loads(archivo.read_text(encoding="utf-8"))
+              for corrida in sarif.get("runs", []):
+                  # El nivel efectivo puede venir en el resultado o heredarse de
+                  # la configuración por defecto de la regla.
+                  reglas = {
+                      r.get("id"): r.get("defaultConfiguration", {}).get("level")
+                      for r in corrida.get("tool", {}).get("driver", {}).get("rules", [])
+                  }
+                  for hallazgo in corrida.get("results", []):
+                      nivel = hallazgo.get("level") or reglas.get(hallazgo.get("ruleId"))
+                      if nivel == "error":
+                          sitio = hallazgo["locations"][0]["physicalLocation"]
+                          graves.append(
+                              f'{sitio["artifactLocation"]["uri"]}'
+                              f':{sitio.get("region", {}).get("startLine", "?")}'
+                              f' [{hallazgo.get("ruleId")}] '
+                              f'{hallazgo.get("message", {}).get("text", "")}'
+                          )
+
+          for linea in graves:
+              print(linea)
+          print(f"{len(graves)} hallazgos de severidad error")
+          sys.exit(1 if graves else 0)
+          PY

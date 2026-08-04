@@ -57,6 +57,21 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Fixed
 
+- **La cobertura de ramas medida el 2026-08-03 estaba inflada (2026-08-04).** Se
+  midió con `--cov` a secas, que mete los propios ficheros de test en el
+  denominador; como los tests se ejecutan enteros, tiran del total hacia arriba.
+  Medido sobre `src/` —lo que el SPA ya hacía con `include: ["src/**"]`—, **tres de
+  los seis servicios están por debajo del 80 % de Gate 2**: `ingestor-bcv` 76 %,
+  `ingestor-binance` 76 % e `ingestor-historico` 72 %. Los otros tres cumplen
+  (`api-gateway` 91 %, `web-spa` 87,43 %, `indicator-engine` 86 %). El criterio de
+  salida 1 de Gate 2 pasa de «cumplido» a **abierto en tres servicios**.
+  *Una métrica agregada sin declarar su denominador no es una medición.*
+- **3 vulnerabilidades `high` en las dependencias del `web-spa`**, transitivas de
+  `openapi-typescript` (`js-yaml`, `brace-expansion`): DoS por consumo de CPU o
+  memoria al parsear. Es tooling de generación de tipos y no llega al bundle, pero
+  el gate de T8 las habría marcado igual. Cerradas con `npm audit fix` —solo cambia
+  el lockfile, `package.json` intacto—; suite y build verificados después.
+
 - **El e2e del motor llevaba rojo desde `e0f5f8b` y nadie lo vio (2026-08-03).**
   ADR-0022 pasó a medir la vigencia por **fecha valor**, y el fixture de eventos
   del `indicator-engine` traía `value_date: "2026-07-06"` congelado: desde ese
@@ -134,6 +149,25 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Pipeline de CI en GitHub Actions (2026-08-04).** `ci.yml` corre la matriz de
+  los seis proyectos —suite **completa**, integration y e2e incluidas— contra
+  TimescaleDB y RabbitMQ como `services:`, con umbral de cobertura por servicio y
+  el reporte como artefacto (también en rojo). `seguridad.yml` pone los tres gates
+  de Gate 2 **rompiendo el build**, no avisando: gitleaks sobre la historia
+  completa (T6), `pip-audit` por servicio y `npm audit --audit-level=high` (T8), y
+  CodeQL (T9).
+  - **Cero cambios de código para meter integration y e2e:** los `conftest.py` ya
+    leían `TEST_DATABASE_URL`/`TEST_AMQP_URL` y caían a `127.0.0.1:5433` y `:5672`,
+    que es lo que publica el mapeo de puertos.
+  - **CodeQL por sí solo no rompe el build** — deja una alerta y sigue. Un paso lee
+    el SARIF y falla ante hallazgos de nivel `error`: ese es el umbral de
+    severidad que pide Gate 2.
+  - Los umbrales de cobertura son un **trinquete** en el valor actual de cada
+    servicio, no el 80 % de Gate 2: imponerlo de golpe dejaría tres servicios en
+    rojo desde el primer día. Nada retrocede mientras se sube.
+  - `pytest-cov` pasa a los extras `dev` de los cinco servicios: `pip install -e
+    ".[dev]"` tiene que dar un entorno que pueda correr lo que corre CI.
+
 - **Resultado observado de cada señal (2026-08-02).** El gateway publica, por
   señal, cuánto se movió la brecha en las 12 h siguientes (`Signal.outcome`).
   Los dos extremos se resuelven as-of (ADR-0009); si la ventana no se ha
@@ -159,10 +193,9 @@ Convención de mantenimiento (inventario por ejecución):
 - **Barrido de coherencia documental y revisión de gates (2026-08-03).**
   - **La cobertura de ramas de los servicios Python nunca se había medido**: el
     plan la arrastraba como «confirmar ≥ 80 %» en cuatro filas desde Gate 2.
-    Medida y cumplida con holgura — `ingestor-bcv` 98 %, `ingestor-binance` 98 %,
-    `indicator-engine` 96 %, `ingestor-historico` 96 %, `api-gateway` 96 %,
-    `web-spa` 87,43 %. Lo que sigue faltando no es el número: es que lo mida el
-    pipeline y no una ejecución a mano.
+    Medida — y **mal**: con `--cov` a secas, que mete los ficheros de test en el
+    denominador. Corregido el 2026-08-04 midiendo sobre `src/`; ver la entrada de
+    ese día.
   - **`ADR-0009` pedía definir la fuente del calendario de feriados bancarios y
     ADR-0022 ya había contestado que ese calendario no hace falta** — el emisor
     publica la fecha valor. `<TODO>` cerrado: un pendiente muerto compite por

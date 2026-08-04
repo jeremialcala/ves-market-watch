@@ -65,7 +65,7 @@ Python 3.12, hexagonal, mismas convenciones que [ingestor-bcv](ingestor-bcv.md).
   hora**: la serie derivada y la del motor tienen densidades distintas y un `avg()`
   plano se inclina 5,4 pp hacia el tramo más muestreado.
 - CLI: `python -m indicator_engine [--drain]`. 335 tests (unit/contract/integration/e2e),
-  96 % de ramas (medido 2026-08-03; umbral Gate 2: 80 %);
+  86 % de ramas sobre `src/` (medido 2026-08-04; umbral Gate 2: 80 %);
   RF-4, RF-6 y RF-7 verificados e2e en vivo (snapshot → `signals.emitted` y
   `analysis.updated` al bus y a sus tablas).
 
