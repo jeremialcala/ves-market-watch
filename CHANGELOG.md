@@ -167,6 +167,15 @@ Convención de mantenimiento (inventario por ejecución):
     rojo desde el primer día. Nada retrocede mientras se sube.
   - `pytest-cov` pasa a los extras `dev` de los cinco servicios: `pip install -e
     ".[dev]"` tiene que dar un entorno que pueda correr lo que corre CI.
+  - **La primera ejecución destapó una dependencia oculta del entorno local:** el
+    e2e del motor hace `from tests.conftest import …` sin `tests/__init__.py`, que
+    solo resuelve si el CWD está en `sys.path` — cosa que hace `python -m pytest`
+    y no el script `pytest`. Como en local siempre se usa el primero, nadie lo
+    había visto.
+  - **gitleaks encontró dos secretos, ambos falsos positivos**: el `theme_token` de
+    Drupal en los fixtures de la portada del BCV (capturas de una web pública) y el
+    `client_id` de la SPA en Auth0, público por diseño (ADR-0012). Quedan en
+    `.gitleaks.toml` caso por caso y con su motivo, **no apagando la regla**.
 
 - **Resultado observado de cada señal (2026-08-02).** El gateway publica, por
   señal, cuánto se movió la brecha en las 12 h siguientes (`Signal.outcome`).

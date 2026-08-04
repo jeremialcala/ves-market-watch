@@ -44,6 +44,24 @@ timestamp: 2026-08-03T12:00:00Z
   `TEST_DATABASE_URL`/`TEST_AMQP_URL` y caen a `127.0.0.1:5433` y `:5672`, que es
   justo lo que publica el mapeo de puertos de los `services:`. **Cero cambios de
   código para meter integration y e2e en el pipeline.**
+- **La primera ejecución salió roja por tres cosas, y las tres enseñan algo:**
+  - `pytest` a secas no pone el CWD en `sys.path` y el script de consola tampoco;
+    el e2e del motor hace `from tests.conftest import …` sin `tests/__init__.py`.
+    En local siempre se corre `python -m pytest`, que sí lo pone — **por eso nadie
+    lo había visto**. CI encontró en un minuto una dependencia oculta del entorno.
+  - `--skip-editable` y `--strict` de `pip-audit` se contradicen: saltar el paquete
+    del servicio produce justo la condición que `--strict` rechaza. Se pasa a
+    auditar el árbol congelado (`pip freeze --exclude-editable`).
+  - **gitleaks encontró dos secretos, ambos falsos positivos**: el `theme_token` de
+    Drupal en los fixtures de la portada del BCV —capturas de una web pública— y el
+    `client_id` de la SPA en Auth0, público por diseño (ADR-0012). Van a
+    `.gitleaks.toml` caso por caso con su motivo escrito, **no apagando la regla**:
+    un `generic-api-key` desactivado dejaría de ver el secreto de verdad el día que
+    aparezca. El `client_id` se lista por valor exacto y no por ruta, para que el
+    Dockerfile siga vigilado.
+- Segunda ejecución verde en 1m22s (CI) y 2m02s (Seguridad). Los pisos se apretaron
+  después con las cifras de la propia pipeline: Linux dio lo mismo que Windows, así
+  que la holgura por plataforma sobraba.
 - Deuda que queda escrita: el control de T8 promete «lockfiles + SCA + imágenes por
   digest» y solo está el del medio. Los cinco servicios declaran rangos sin
   lockfile y `timescaledb:latest-pg16` es un `latest` moviéndose bajo los tests.
