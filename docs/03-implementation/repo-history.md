@@ -187,6 +187,8 @@ gitGraph
     commit id: "8b15755"
     commit id: "536f7c8"
     commit id: "d4d05c7"
+    commit id: "58324b4"
+    commit id: "4c568cc"
 ```
 
 ### Estado actual de las ramas
@@ -194,7 +196,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `d4d05c7` | 2026-08-04 | 153 |
+| `develop` | `4c568cc` | 2026-08-04 | 155 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -210,6 +212,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `4c568cc` | commit | — | Jeremi Alcala | 2026-08-04 | test(ingestor-binance): cobertura de 76 % a 99 %, y una prueba que no probaba |
+| `58324b4` | commit | — | Jeremi Alcala | 2026-08-04 | docs(repo-history): regenerar |
 | `d4d05c7` | commit | — | Jeremi Alcala | 2026-08-04 | test(ingestor-bcv): cobertura de 76 % a 99 %, y lo que escondia |
 | `536f7c8` | commit | — | Jeremi Alcala | 2026-08-04 | docs: registrar los tres fallos de la primera ejecucion de CI |
 | `8b15755` | commit | — | Jeremi Alcala | 2026-08-04 | ci: apretar el trinquete con las cifras de la propia pipeline |
