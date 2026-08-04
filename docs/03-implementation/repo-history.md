@@ -180,6 +180,8 @@ gitGraph
     commit id: "f8faa89"
     commit id: "c7a2b32"
     commit id: "f508c30"
+    commit id: "5207199"
+    commit id: "1b7b272"
 ```
 
 ### Estado actual de las ramas
@@ -187,7 +189,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `f508c30` | 2026-08-04 | 146 |
+| `develop` | `1b7b272` | 2026-08-04 | 148 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -203,6 +205,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `1b7b272` | commit | — | Jeremi Alcala | 2026-08-04 | ci: pipeline con los gates de Gate 2, y la cobertura de ayer estaba inflada |
+| `5207199` | commit | — | Jeremi Alcala | 2026-08-04 | docs(repo-history): regenerar |
 | `f508c30` | commit | — | Jeremi Alcala | 2026-08-04 | security(threat-model): ratificado el DREAD de T15 (HITL 2026-08-04) |
 | `c7a2b32` | commit | — | Jeremi Alcala | 2026-08-03 | docs(repo-history): regenerar |
 | `f8faa89` | commit | — | Jeremi Alcala | 2026-08-03 | docs: barrido de coherencia y revision de gates |
