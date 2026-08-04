@@ -40,9 +40,9 @@ jobs:
           # Gate 2.
           #
           #   servicio            2026-08-04   Gate 2
+          #   ingestor-bcv          99,36 %      ✔  (era 76,44 %)
           #   api-gateway           90,72 %      ✔
           #   indicator-engine      85,88 %      ✔
-          #   ingestor-bcv          76,44 %      ✘  faltan ~4 pts
           #   ingestor-binance      75,92 %      ✘  faltan ~4 pts
           #   ingestor-historico    71,71 %      ✘  faltan ~8 pts
           #
@@ -54,7 +54,7 @@ jobs:
           - servicio: indicator-engine
             piso: 85
           - servicio: ingestor-bcv
-            piso: 76
+            piso: 99
           - servicio: ingestor-binance
             piso: 75
           - servicio: ingestor-historico

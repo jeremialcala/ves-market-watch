@@ -149,6 +149,33 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **`ingestor-bcv` pasa de 76,44 % a 99,36 % de cobertura de ramas (2026-08-04),
+  y cierra el primero de los tres servicios que no llegaban al 80 % de Gate 2.**
+  54 → 80 tests. Todo el hueco estaba en dos ficheros al **0 %** —`__main__.py` y
+  `scheduler.py`—, que parecían cableado y no lo eran.
+  - **`scheduler.py`:** el `max(espera, 60)` es un suelo antimartilleo. Con
+    `FETCH_INTERVAL_SECONDS=0` —o cualquier intervalo por debajo del jitter de
+    ±60 s— la espera calculada sale negativa; sin el suelo el bucle consultaría al
+    BCV tan rápido como le respondiera, desde una IP que el BCV puede bloquear. El
+    test fija el **peor caso** del jitter, no uno al azar. También queda fijado que
+    un fallo no deja en el log la línea «sincronización OK».
+  - **`__main__.py`:** que `--dry-run` **no monte ningún adaptador de
+    infraestructura** (el test hace explotar los reales: si se tocan, falla), que
+    el `finally` cierre repositorio y publisher aunque la sincronización reviente,
+    que `--nota` sea obligatoria en `aprobar`/`rechazar` —la justificación
+    auditable que ADR-0007 exige— y que los códigos de salida lleguen a la shell.
+  - **`TimescaleRateRepository.connect()`/`close()` no los tocaba ningún test:**
+    el fixture de integración construía el pool a mano, así que el camino que usa
+    producción (`__main__.run`) estaba sin ejercitar. Añadido a la suite de
+    integración.
+- **Marcador `security` con seis escenarios T1 (HTML alterado), pedido por el plan
+  de pruebas.** El parser sube de 88 % a **100 %** y cada rama defensiva pasa a
+  tener su caso: bloque mutilado, código que no es ISO 4217, valor no numérico,
+  moneda duplicada en el camino degradado por regex —la inyección más fácil— y dos
+  de fecha-valor corrupta, incluida `2026-13-45`, que pasa el patrón y no existe.
+  La regla que fijan es una: **ante un dato dudoso, ninguno** — vale más un
+  `ErrorDeParseo` que deje la tasa anterior vigente que una cifra improvisada.
+
 - **Pipeline de CI en GitHub Actions (2026-08-04).** `ci.yml` corre la matriz de
   los seis proyectos —suite **completa**, integration y e2e incluidas— contra
   TimescaleDB y RabbitMQ como `services:`, con umbral de cobertura por servicio y

@@ -23,7 +23,8 @@ TRY, RUB) con descubrimiento dinámico de monedas nuevas.
   publica [official.rate.updated](../events/official-rate-updated.md) **solo si cambió** (ADR-0008).
 - Salud de fuente en [official_rate_source_health](../tables/official_rate_source_health.md):
   3 fallos consecutivos → alerta + `stale_since`.
-- CLI daemon: `python -m ingestor_bcv [--once] [--dry-run]`. 54 tests
+- CLI daemon: `python -m ingestor_bcv [--once] [--dry-run]`. 80 tests
+  (99,36 % de ramas sobre `src/`; umbral Gate 2: 80 %)
   (unit/contract sin infra + integration/e2e contra RabbitMQ/TimescaleDB del
   `docker-compose.yml` raíz, con skip elegante sin infra).
 

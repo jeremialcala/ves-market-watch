@@ -73,8 +73,8 @@ Estado observado en el repo (conteo de funciones `test_`):
 
 | Servicio | Estado código | Tests actuales | Huecos de prueba |
 |---|---|---|---|
-| `ingestor-bcv` | Implementado | **54** (unit, integration, contract, e2e) | Cobertura de ramas **76 %** (medida 2026-08-04 sobre `src/`); añadir marcador `security` para escenarios T1 (HTML alterado + tasa fuera de rango) |
-| `ingestor-binance` | Implementado | **48** (unit, integration, contract, e2e) | Cobertura de ramas **76 %** (medida 2026-08-04 sobre `src/`); escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local |
+| `ingestor-bcv` | Implementado | **80** (unit, integration, contract, e2e, `security`) | ~~Cobertura de ramas 76 %~~ **99,36 %** (2026-08-04); ~~añadir marcador `security` para escenarios T1~~ **añadido**: seis casos de HTML alterado en `unit/test_parser_html_alterado.py`, corren con `-m security` |
+| `ingestor-binance` | Implementado | **48** (unit, integration, contract, e2e) | Cobertura de ramas **75,92 %** — **por debajo del 80 % de Gate 2**; escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local |
 | `indicator-engine` | Fases 1, 2, señales (RF-4/RF-5, ADR-0015), análisis de la revisión (RF-6, ADR-0019) y lectura del estado de mercado (RF-7, ADR-0021) | **335** (unit, contract, integration, e2e) | Cobertura de ramas **86 %** (medida 2026-08-04 sobre `src/`); recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) y de los dos ejes del régimen (`config/lectura.v1.yaml`); contrastar en vivo la atribución con responsable `oficial` o `ambos` — hace falta un día en que la tasa del BCV cambie de verdad, no solo que esté vigente (ADR-0022 destapó que este hueco se venía describiendo mal: se decía que el fin de semana la suprimía «por diseño», cuando lo que la suprimía era la rancidez mal medida) |
 | `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) — más el histórico de tasas oficiales del BCV (RF-6) y la brecha derivada del lado venta (RF-7), 2026-08-01 | **98** (unit + integración contra TimescaleDB real) | Cobertura de ramas **72 %** (medida 2026-08-04 sobre `src/`); integración del cargador de oficiales contra TimescaleDB real (hoy cubierto en unit + verificado sobre la carga real de 31.078 filas) |
 | `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **108** (unit incl. CORS y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura de ramas **91 %** (medida 2026-08-04 sobre `src/`) |
@@ -389,10 +389,11 @@ cierre de la columna «Verificación fase 04-testing».
 
    | Servicio | Ramas (solo fuente) | ≥ 80 % |
    |---|---|---|
+   | `ingestor-bcv` | 99,36 % | ✔ |
    | `api-gateway` | 90,72 % | ✔ |
    | `web-spa` | 87,43 % | ✔ |
    | `indicator-engine` | 85,88 % | ✔ |
-   | `ingestor-bcv` | 76,44 % | ✘ faltan ~4 pts |
+   | `ingestor-bcv` | 99,36 % | ✔ |
    | `ingestor-binance` | 75,92 % | ✘ faltan ~4 pts |
    | `ingestor-historico` | 71,71 % | ✘ faltan ~8 pts |
 

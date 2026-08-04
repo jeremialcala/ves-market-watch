@@ -33,6 +33,22 @@ async def repositorio(pool) -> TimescaleRateRepository:
     return TimescaleRateRepository(pool)
 
 
+async def test_connect_arma_el_repositorio_igual_que_en_produccion(timescale_listo):
+    """El resto de esta suite recibe el pool ya hecho; el entrypoint no.
+
+    `connect()` y `close()` son el camino que usa el servicio de verdad
+    (`__main__.run`) y no los tocaba ningún test: el pool se construía a mano en
+    el fixture. Si `create_pool` cambiara de firma o `close()` dejara de liberar,
+    la suite seguía en verde y el daemon arrancaba roto.
+    """
+    repositorio = await TimescaleRateRepository.connect(timescale_listo)
+    try:
+        await repositorio.guardar(_tasa(moneda="CHF"))
+        assert await repositorio.ultima_tasa_valida("CHF") is not None
+    finally:
+        await repositorio.close()
+
+
 async def test_round_trip_con_fidelidad_de_tipos(repositorio):
     original = _tasa()
     await repositorio.guardar(original)

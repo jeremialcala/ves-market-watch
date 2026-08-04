@@ -7,6 +7,34 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-04 — La cobertura de `ingestor-bcv`: 76 % → 99 %, y lo que escondía
+- Todo el hueco estaba en **dos ficheros al 0 %**: `__main__.py` (90 sentencias) y
+  `scheduler.py` (19). El resto del servicio ya iba del 88 % al 100 %.
+- **Parecían cableado y no lo eran**, que es justo por lo que nadie los había
+  tocado. Lo que había dentro sin una sola prueba:
+  - el **suelo antimartilleo** del bucle (`max(espera, 60)`): con
+    `FETCH_INTERVAL_SECONDS=0`, o cualquier intervalo por debajo del jitter de
+    ±60 s, la espera sale negativa y sin el suelo se consultaría al BCV tan rápido
+    como respondiera — desde una IP que el BCV puede bloquear;
+  - la garantía de `--dry-run`: **no montar ningún adaptador real**. Si alguien
+    invirtiera la condición, un «ensayo» escribiría en la base y publicaría al bus;
+  - el `finally` que cierra repositorio y publisher, sin el cual un operador que se
+    equivoca de moneda deja abiertas una conexión y un canal;
+  - que `--nota` sea obligatoria: sin ella el registro de auditoría de ADR-0007
+    tendría filas sin justificación.
+- **`TimescaleRateRepository.connect()`/`close()` tampoco los tocaba nadie**: el
+  fixture de integración construía el pool a mano, así que el camino que usa
+  producción estaba sin ejercitar. *Un fixture cómodo puede dejar fuera la única
+  forma en que el código se usa de verdad.*
+- Se añadió el marcador **`security`** que el plan pedía, con seis escenarios T1 de
+  HTML alterado; el parser pasa de 88 % a 100 %. Todos fijan la misma regla: **ante
+  un dato dudoso, ninguno**. El más interesante es la moneda duplicada en el camino
+  degradado por regex —al que se cae si cambian las clases CSS—, que es la
+  inyección más barata: basta con colar un segundo bloque. Gana el primero.
+- Queda sin cubrir el `if __name__ == "__main__"` y dos ramas de los dobles en
+  memoria. **No se persigue el 100 %**: lo que se buscaba era que ningún
+  comportamiento con consecuencias quedara sin fijar.
+
 ## 2026-08-04 — Pipeline de CI, y la cobertura de ayer estaba inflada
 - Montada la pipeline en GitHub Actions: `ci.yml` (matriz de los seis proyectos,
   suite completa contra Timescale y RabbitMQ reales, artefacto de cobertura) y
