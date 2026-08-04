@@ -64,3 +64,14 @@ async def test_publica_y_el_mensaje_llega_integro(amqp_listo):
         await publisher.close()
         await canal.exchange_delete(nombre_exchange)
         await conexion.close()
+
+
+async def test_cerrar_sin_haber_publicado_no_falla(amqp_listo):
+    """El `finally` del entrypoint cierra el publisher siempre, también cuando el
+    ciclo revienta antes del primer publish y la conexión nunca llegó a abrirse.
+    Si `close()` no tolerara ese caso, un fallo temprano se convertiría en dos.
+    """
+    publisher = AmqpEventPublisher(amqp_listo, "exchange.que.no.se.usa")
+
+    await publisher.close()  # sin conexión previa
+    await publisher.close()  # y es idempotente

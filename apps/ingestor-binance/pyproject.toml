@@ -34,4 +34,5 @@ pythonpath = ["src", "tests"]
 markers = [
     "integration: adaptadores contra infraestructura real o red local (docker compose up -d --wait)",
     "e2e: flujo completo contra RabbitMQ y TimescaleDB reales (docker compose up -d --wait)",
+    "security: escenarios de amenaza del threat model (T7: 429 sostenido, endpoint hostil)",
 ]

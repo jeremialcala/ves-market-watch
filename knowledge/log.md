@@ -7,6 +7,35 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-04 — Cobertura de `ingestor-binance`: 76 % → 99 %, y una prueba que no probaba
+- Mismo patrón que en `ingestor-bcv` —`__main__.py` y `scheduler.py` al 0 %— más
+  uno nuevo: **`config.py` también al 0 %**, y ahí vive el fail-fast de ADR-0011.
+  Sin `MERCHANT_HMAC_KEY` el servicio publicaría snapshots sin `merchant_ref`,
+  que el schema acepta porque el campo es opcional: la degradación no se notaría
+  hasta intentar correlacionar anunciantes semanas después.
+- **T7 elevado a integración**, como pedía el plan. Lo que el unit test no podía
+  ver: que un 429 REAL por HTTP se traduzca a reintentable y llegue al contador
+  del breaker. Y sobre todo que, una vez abierto, **el ciclo siguiente no
+  consulte** — sin eso, un breaker que abre no protege de nada.
+- **Una prueba que decía cubrir una rama y cubría otra.** Para el `except
+  httpx.TransportError` probé primero un puerto cerrado del loopback y luego un
+  dominio `.invalid`. Las dos pasaban… y las dos dejaban la línea sin cubrir: en
+  ambos casos httpx lanza `ConnectTimeout`, que hereda de `TimeoutException` y
+  entra por el `except` ANTERIOR. Lo destapó la medición, no la prueba. El
+  escenario que sí llega es **el servidor que acepta y cuelga la conexión**
+  (`ReadError`), que además es lo que hace un rate limiter agresivo de verdad.
+  *Una prueba en verde no demuestra que esté ejercitando lo que su nombre dice.*
+- Otro hallazgo repetido: **`connect()`/`close()` del repositorio sin cubrir**,
+  por el mismo motivo que en bcv — el fixture de integración construía el pool a
+  mano. Y `close()` del publisher sin conexión previa, que es lo que ocurre
+  cuando el `finally` del entrypoint corre tras un fallo temprano.
+- Añadida la equivalencia clave-en-texto ↔ clave-en-bytes del pseudonimizador: si
+  el día que la clave llegue como `bytes` el HMAC cambiara, la correlación
+  histórica se rompería **en silencio** — los eventos seguirían siendo válidos,
+  solo dejarían de casar con los anteriores.
+- Queda fuera el `if __name__ == "__main__"` y un `raise AssertionError(
+  "unreachable")` que es inalcanzable de verdad. **No se persigue el 100 %.**
+
 ## 2026-08-04 — La cobertura de `ingestor-bcv`: 76 % → 99 %, y lo que escondía
 - Todo el hueco estaba en **dos ficheros al 0 %**: `__main__.py` (90 sentencias) y
   `scheduler.py` (19). El resto del servicio ya iba del 88 % al 100 %.

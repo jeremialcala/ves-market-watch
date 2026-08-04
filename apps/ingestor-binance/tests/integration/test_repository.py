@@ -14,6 +14,20 @@ from conftest import cargar_fixture  # type: ignore[import-not-found]
 pytestmark = pytest.mark.integration
 
 
+async def test_connect_arma_el_repositorio_igual_que_en_produccion(timescale_listo):
+    """El resto de esta suite recibe el pool ya hecho; el entrypoint no.
+
+    `connect()` y `close()` son el camino de `__main__.run` y no los tocaba
+    ningún test: el fixture construía el pool a mano. Un fixture cómodo puede
+    dejar fuera la única forma en que el código se usa de verdad.
+    """
+    repositorio = await TimescaleSnapshotRepository.connect(timescale_listo)
+    try:
+        assert repositorio is not None
+    finally:
+        await repositorio.close()
+
+
 async def test_round_trip_del_crudo_jsonb(pool):
     repo = TimescaleSnapshotRepository(pool)
     crudo = cargar_fixture("buy")["data"]

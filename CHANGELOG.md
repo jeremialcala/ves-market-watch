@@ -149,6 +149,34 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **`ingestor-binance` pasa de 75,92 % a 99,26 % de cobertura de ramas
+  (2026-08-04): segundo de los tres servicios por debajo del umbral, cerrado.**
+  48 → 79 tests. El patrón se repitió —`__main__.py` y `scheduler.py` al **0 %**—
+  y apareció uno nuevo: **`config.py` también al 0 %**, con el fail-fast de
+  ADR-0011 dentro.
+  - **`config.py`:** sin `MERCHANT_HMAC_KEY` el servicio no arranca. Si el
+    arranque fuera tolerante, publicaría snapshots sin `merchant_ref` —forma
+    válida para el schema, porque el campo es opcional— y la degradación solo se
+    notaría al intentar correlacionar anunciantes semanas después. También queda
+    fijado que **una clave vacía cuenta como ausente** y que los defaults del
+    polling educado (ADR-0005) son los que dicen ser.
+  - **`scheduler.py`:** el suelo `max(espera, 10)`, y que las tres ramas del
+    ciclo se distingan — **un salto del breaker no es un fallo ni un éxito**:
+    contarlo como fallo dispara alarmas por un comportamiento correcto, contarlo
+    como éxito esconde que no se capturó nada. Además, que un lado fallido no se
+    lleve por delante al otro.
+  - **`__main__.py`:** que `--dry-run` no monte infraestructura **pero sí consulte
+    a Binance de verdad**, que es lo que promete su docstring y lo único que
+    comprueba que el endpoint sigue respondiendo lo que el schema espera.
+- **T7 elevado a integración, como pedía el plan.** `unit/test_resilience.py`
+  probaba el breaker contra una operación falsa; `integration/test_client_errores.py`
+  lleva un **429 real por HTTP** hasta el contador del breaker y comprueba que,
+  una vez abierto, **el ciclo siguiente ni siquiera consulta** — sin ese último
+  paso, un breaker que abre no protege de nada. Con él, el cliente llega al
+  **100 %**: 429 se reintenta y se cede, 404 no se reintenta y solo pierde su
+  página, un 200 con HTML es esquema inválido (portal cautivo), y la conexión
+  colgada por el otro extremo es error de red.
+
 - **`ingestor-bcv` pasa de 76,44 % a 99,36 % de cobertura de ramas (2026-08-04),
   y cierra el primero de los tres servicios que no llegaban al 80 % de Gate 2.**
   54 → 80 tests. Todo el hueco estaba en dos ficheros al **0 %** —`__main__.py` y

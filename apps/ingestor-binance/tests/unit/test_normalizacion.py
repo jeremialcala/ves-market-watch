@@ -130,3 +130,27 @@ def test_metodos_de_pago_maliciosos_quedan_sanitizados():
     anuncio = normalizar_anuncio(crudo, PSEUDO)
 
     assert anuncio.metodos_pago == ("Banco[31mRojo", "Zelle")
+
+
+def test_la_clave_en_texto_y_en_bytes_dan_el_MISMO_pseudonimo():
+    """Las dos formas admitidas tienen que coincidir, y no es cosmético.
+
+    `merchant_ref` solo sirve si un mismo anunciante da el mismo pseudónimo hoy y
+    dentro de seis meses (ADR-0011). Si el día que la clave llegue como `bytes`
+    —desde un secret store que las devuelve así— el HMAC cambiara, la correlación
+    histórica se rompería **en silencio**: los eventos seguirían siendo válidos,
+    solo dejarían de casar con los anteriores.
+    """
+    clave = "clave-de-prueba-suficientemente-larga"
+
+    desde_texto = Pseudonimizador(clave).referencia("anunciante-42")
+    desde_bytes = Pseudonimizador(clave.encode("utf-8")).referencia("anunciante-42")
+
+    assert desde_texto == desde_bytes
+
+
+def test_una_clave_corta_se_rechaza_al_construir():
+    """16 bytes mínimo (ADR-0011): una clave corta hace el HMAC adivinable y
+    convierte el pseudónimo en un identificador reversible por fuerza bruta."""
+    with pytest.raises(ValueError, match="demasiado corta"):
+        Pseudonimizador("corta")
