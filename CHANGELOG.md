@@ -19,6 +19,24 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Security
 
+- **Ratificado el DREAD de T15, último pendiente de diseño del Gate 1
+  (2026-08-04).** Puntuación 2/2/2/2/2 = **10** (Jeremi Alcalá), verificada contra
+  el código y no contra la ficha: 14 endpoints, todos `GET`, `allow_methods=["GET"]`,
+  **sin `allow_credentials`**, y el WSS con el token en la query.
+  - **La ficha atribuía la mitigación a CORS, y CORS es la segunda línea.** La
+    primera es que **no hay autoridad ambiental que secuestrar**: cada endpoint
+    pide bearer, no hay cookie hacia la API y el token vive en memoria del contexto
+    JS del propio SPA (T12). Una página ajena no falla al *leer* la respuesta:
+    falla al *autenticarse*. Corregida la fila del threat model.
+  - Consecuencia: validar `Origin` en el handshake WSS es **defensa en profundidad,
+    no un hueco** — sin token no hay handshake que validar.
+  - **Disparador de recálculo escrito:** que la API acepte cookies. Ahí un origen
+    ajeno ganaría autoridad ambiental y T15 subiría de golpe; es la misma clase de
+    presión que T12 documenta con `localStorage`.
+  - Reserva anotada: **Discoverability es el factor más flojo** — un
+    `curl -H "Origin: …"` revela la política, lo que argumenta 3 (score 11). Se
+    mantiene en 2 por consistencia con T11 y porque no cambia la banda de prioridad.
+
 - **El login estaba roto en el contenedor y la CSP era la causa (2026-08-01,
   ADR-0020).** Faltaba `worker-src 'self' blob:`. Con `useRefreshTokens` y caché
   en memoria, `auth0-spa-js` canjea el código en un Web Worker creado desde un

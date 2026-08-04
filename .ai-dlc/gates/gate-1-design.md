@@ -4,7 +4,7 @@
 |---|---|---|
 | Arquitectura C4 (Context + Container) con trust boundaries | ✅ | `docs/architecture/c4-context.md`, `c4-container.md` |
 | Threat model STRIDE del sistema | ✅ | `docs/02-design/threat-model.md` (9 componentes: 5 servicios + web-spa + RabbitMQ + TimescaleDB + Auth0) |
-| Amenazas priorizadas con DREAD y trazadas a controles | ✅ | T1–T15 → controles OWASP/ADR + verificación en fase 04 (T11/T12 por ADR-0012; T13/T14 añadidas en adenda 2026-07-26 — DREAD ratificada HITL 2026-07-26; **T15** —origen web no autorizado— añadida en adenda 2026-07-27 con ADR-0017, **DREAD pendiente de ratificación HITL**) |
+| Amenazas priorizadas con DREAD y trazadas a controles | ✅ | T1–T15 → controles OWASP/ADR + verificación en fase 04 (T11/T12 por ADR-0012; T13/T14 añadidas en adenda 2026-07-26 — DREAD ratificada HITL 2026-07-26; **T15** —origen web no autorizado— añadida en adenda 2026-07-27 con ADR-0017, **DREAD ratificada HITL 2026-08-04**) |
 | ADRs de decisiones clave (una decisión = una ADR) | ✅ | ADR-0001…0024 en `docs/00-project/adr/` (0007–0009 y 0011 *accepted* e implementadas en fase 03; 0010 *accepted* (2026-07-11) — implementada de facto; **ADR-0012** *accepted* — auth OIDC con Auth0, supersede a ADR-0003, implementada en el gateway (2026-07-26) y en el SPA (2026-07-27); **ADR-0013** — ingesta batch de históricos, implementada; **ADR-0014** — microestructura P2P, implementada; **ADR-0015** — motor de reglas de señales, implementada y verificada e2e; **ADR-0016** — implementación del api-gateway, implementada; **ADR-0017** — front-end SPA en el monorepo, implementada; **ADR-0018** — sistema de diseño Higerotech, i18n y sello de bloque sin fuente, implementada; **ADR-0019** — módulo de análisis de la revisión, implementada; **ADR-0020** — dominio propio de Auth0 y desarrollo por túneles, implementada; **ADR-0021** — lectura del estado de mercado, implementada y **enmendada por ADR-0023**; **ADR-0022** — vigencia de la tasa oficial por fecha valor, implementada en motor y gateway; **ADR-0023** — las piernas de la brecha se publican siempre, implementada; **ADR-0024** — el producto se llama **Criterio**, aplicada en el repo y en el tenant) |
 | Contratos de API (REST + eventos) | ✅ | Eventos: JSON Schema formal en `schemas/` (4 de 4, todos con productor y contract tests; `signal.v1` emitido por el motor de reglas RF-4/ADR-0015, 2026-07-22); REST: OpenAPI 3.1 en `apps/api-gateway/docs/openapi.yaml` (2026-07-17); WSS: AsyncAPI 3.0 en `apps/api-gateway/docs/asyncapi.yaml` (2026-07-26) |
 | Patrones de seguridad por amenaza priorizada | ✅ | Tabla en `docs/02-design/architecture.md` |
@@ -14,18 +14,23 @@
 entradas de la fase 03, no huecos de diseño. **Aprobado (HITL).**
 **Aprobado por:** Jeremi Alcalá · **Fecha:** 2026-07-11
 
+> Adenda 2026-08-04 (ratificación de T15, sin cambio de veredicto): **el último
+> pendiente de diseño del Gate 1 queda cerrado.** El DREAD de T15 se ratifica en
+> 2/2/2/2/2 = 10 (Jeremi Alcalá), tras verificar la mitigación contra el código:
+> 14 endpoints, todos `GET`, sin `allow_credentials`, y el token solo en memoria
+> del SPA. La ficha se corrigió al hacerlo — atribuía la mitigación a CORS, que es
+> la segunda línea; la primera es que no hay autoridad ambiental que secuestrar.
+> Detalle y reserva sobre Discoverability en la adenda del threat model.
+
 > Adenda 2026-08-03 (barrido de coherencia, sin cambio de veredicto): la fila de
 > ADRs se quedaba en la 0018 y hay 24 — añadidas 0019–0024, con ADR-0021 marcada
-> como enmendada por ADR-0023. **Sigue abierto el mismo y único pendiente de
-> diseño: la ratificación HITL del DREAD de T15** (la puntuación existe —2/2/2/2/2,
-> DREAD 10— y está en el quadrant chart; lo que falta es que Jeremi la ratifique,
-> como se hizo con T13/T14 el 2026-07-26).
+> como enmendada por ADR-0023.
 
 > Adenda 2026-07-30 (barrido de coherencia, sin cambio de veredicto): las filas de
 > evidencia se pusieron al día con el repo — ADR-0016/0017 añadidas, ADR-0012 ya
 > implementada (el gateway dejó de estar «sin código» el 2026-07-26), AsyncAPI del WSS
-> publicada y T15 incorporada. Único pendiente de diseño abierto: ratificación HITL del
-> DREAD de T15.
+> publicada y T15 incorporada. ~~Único pendiente de diseño abierto: ratificación HITL del
+> DREAD de T15~~ — **cerrado el 2026-08-04**.
 
 > Adenda 2026-07-14 (post-aprobación, sin cambio de veredicto): evidencia diagramática del
 > gate completada — sequenceDiagram del flujo crítico, stateDiagram-v2 de TasaOficial

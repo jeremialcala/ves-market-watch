@@ -4,7 +4,7 @@
 - **Fecha:** 2026-07-26
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
-- **Versión:** 0.4.0
+- **Versión:** 0.4.1
 - **Alcance:** sistema completo (5 servicios + web-spa + RabbitMQ + TimescaleDB)
 - **Metodología:** STRIDE + DREAD
 - **Clasificación de datos:** ver `docs/00-project/data-classification.md`
@@ -17,8 +17,36 @@
 > Adenda 2026-07-27 (post-aprobación, ADR-0017): el front-end **`web-spa`** entra al
 > alcance del repo — **T12 pasa de control externo a implementación verificada aquí**
 > (tokens en memoria + rotation + CSP), y se añade **T15** (origen web no autorizado)
-> mitigada por la allowlist CORS del gateway. Puntuación DREAD de T15 **pendiente de
-> ratificación HITL**.
+> mitigada por la allowlist CORS del gateway. Puntuación DREAD de T15 **ratificada
+> HITL 2026-08-04** (Jeremi Alcalá) — ver la adenda de abajo.
+
+> Adenda 2026-08-04 (ratificación de T15, sin cambio del veredicto del Gate 1): la
+> puntuación 2/2/2/2/2 = **10** se ratifica tras verificarla contra el código y no
+> contra la ficha. El gateway expone **14 endpoints, todos `GET`**, con
+> `allow_methods=["GET"]`, `allow_headers=["Authorization"]` y **sin
+> `allow_credentials`** (defecto `False`); el WSS exige el access token en la query
+> porque el navegador no puede fijar `Authorization` en el handshake.
+>
+> **La ficha atribuía la mitigación a CORS, y CORS es la segunda línea.** La primera
+> es que **no hay autoridad ambiental que secuestrar**: cada endpoint pide un bearer,
+> no hay cookie de sesión hacia la API y el token vive en memoria del contexto JS del
+> propio SPA (T12), inalcanzable desde otro origen. Una página ajena no falla al
+> *leer* la respuesta: falla al *autenticarse*. Por eso validar `Origin` en el
+> handshake WSS es defensa en profundidad y no un hueco — sin token no hay handshake
+> que validar.
+>
+> **Lo que dispararía revisar esta puntuación es un cambio del modelo de
+> autenticación**: si la API pasara a aceptar cookies, un origen ajeno ganaría
+> autoridad ambiental y T15 subiría de golpe. No es hipotético — ADR-0020 dejó una
+> cookie SSO de primera parte *hacia Auth0*, y extender ese patrón *hacia la API* es
+> la misma clase de presión que T12 documenta con `localStorage`.
+>
+> Reserva honesta sobre un factor: **Discoverability se ratifica en 2, pero es el más
+> débil de los cinco.** La política CORS se revela con un solo
+> `curl -H "Origin: https://evil.com"`, lo que argumenta un 3 (score 11). Se mantiene
+> en 2 por consistencia con T11 —confused deputy, misma clase de control de
+> configuración— y porque 10 u 11 caen en la misma banda de prioridad y no cambian el
+> tratamiento. Queda escrito para que la próxima recalibración lo mire.
 
 ## Diagrama de flujo de datos
 
@@ -80,9 +108,8 @@ Escala 1–3 por factor (Damage, Reproducibility, Exploitability, Affected users
 | T12 | Robo de token en el navegador (XSS) del front-end/SPA | 3 | 1 | 2 | 2 | 2 | 10 | Token en memoria (nunca localStorage), access token de vida corta, refresh con rotación — **implementado en `apps/web-spa`** (`cacheLocation: memory`, rotation, CSP del nginx sin unsafe-inline) — ADR-0012/ADR-0017, A03/A07. **Reforzado 2026-08-01 (ADR-0020)**: con dominio propio la cookie SSO es de PRIMERA parte, así que la sesión persiste sin guardar nada en el navegador — desaparece la presión de relajar `cacheLocation` a `localstorage` para ganar comodidad, que era el riesgo real que acechaba a este control |
 | T13 | Ruleset de señales manipulado (YAML) → señales arbitrarias a consumidores | 3 | 3 | 1 | 3 | 1 | 11 | Ruleset versionado en repo (cambio = commit auditable), carga estricta al arranque (mal formado ⇒ aborta), no editable en runtime, regla `<type>@v<n>` en la evidencia — ADR-0015, A02/A08, ASVS V14 |
 | T14 | Export CSV malicioso envenena el histórico (varianza/backtests sesgados) | 2 | 2 | 2 | 1 | 2 | 9 | Parseo adaptativo con rechazo completo sin columna de precio y descarte contado por fila; histórico inmutable e idempotente (PK + ON CONFLICT DO NOTHING); sin publicación al bus (no dispara el pipeline reactivo) — ADR-0013, A05/A08 |
-| T15 | Página web de un origen no autorizado consume la API desde el browser de un usuario | 2 | 2 | 2 | 2 | 2 | 10* | CORS por allowlist (`ALLOWED_ORIGINS`, solo GET, sin credentials) en el gateway — ADR-0017, A01/A05. El WSS queda fuera de CORS por diseño del browser (el token explícito en la URL mitiga CSWSH); hardening futuro: validar `Origin` en el handshake |
+| T15 | Página web de un origen no autorizado consume la API desde el browser de un usuario | 2 | 2 | 2 | 2 | 2 | 10 | **Primera línea: no hay autoridad ambiental.** Todo endpoint pide bearer; sin cookie hacia la API (`allow_credentials` no se activa) y con el token solo en memoria del SPA (T12), un origen ajeno no puede autenticarse. **Segunda línea:** CORS por allowlist (`ALLOWED_ORIGINS`, `allow_methods=["GET"]`) — ADR-0017, A01/A05. El WSS queda fuera de CORS por diseño del browser, pero exige el token en la query (mitiga CSWSH); validar `Origin` en el handshake es hardening en profundidad, no un hueco. **Ratificada HITL 2026-08-04** |
 
-\* Puntuación propuesta en la adenda 2026-07-27, pendiente de ratificación HITL.
 
 ```mermaid
 quadrantChart

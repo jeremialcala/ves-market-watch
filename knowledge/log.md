@@ -7,6 +7,32 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-04 — Ratificado el DREAD de T15, y la ficha estaba contando mal la defensa
+- Último pendiente de diseño del Gate 1. Se ratifica **2/2/2/2/2 = 10** (Jeremi
+  Alcalá), pero verificando la mitigación **contra el código y no contra la ficha**:
+  14 endpoints, todos `GET`, `allow_methods=["GET"]`, **sin `allow_credentials`**, y
+  el WSS con el token en la query porque el navegador no puede fijar `Authorization`
+  en un handshake.
+- **La ficha atribuía la mitigación a CORS, y CORS es la segunda línea.** La primera
+  es que **no hay autoridad ambiental que secuestrar**: cada endpoint pide un bearer,
+  no hay cookie hacia la API y el token vive en memoria del contexto JS del propio
+  SPA (T12). Una página ajena no falla al *leer* la respuesta — falla al
+  *autenticarse*. Es la diferencia entre «el navegador te bloquea» y «no tienes con
+  qué entrar».
+- Consecuencia práctica: validar `Origin` en el handshake WSS, que figuraba como
+  hardening pendiente, es **defensa en profundidad y no un hueco** — sin token no
+  hay handshake que validar. Baja de prioridad sin dejar de ser deseable.
+- **El disparador que obligaría a recalcular queda escrito: que la API acepte
+  cookies.** Ahí un origen ajeno ganaría autoridad ambiental y T15 subiría de golpe.
+  No es hipotético: ADR-0020 dejó una cookie SSO de primera parte *hacia Auth0*, y
+  extender ese patrón *hacia la API* es la misma clase de presión que T12 documenta
+  con `localStorage`.
+- Reserva anotada: **Discoverability es el factor más débil de los cinco.** Un
+  `curl -H "Origin: …"` revela la política, lo que argumenta 3 en vez de 2 (score
+  11). Se mantiene en 2 por consistencia con T11 y porque no cambia la banda de
+  prioridad — pero ratificar sin dejar dicho lo que no convence sería firmar en
+  falso.
+
 ## 2026-08-03 — Barrido de coherencia: siete cifras desfasadas y un `<TODO>` que ya estaba resuelto
 - **La cobertura de ramas de los servicios Python nunca se había medido.** El plan
   la arrastraba como «confirmar ≥ 80 %» en cuatro filas desde Gate 2. Medida:
@@ -21,10 +47,8 @@ timestamp: 2026-08-03T12:00:00Z
   publica la fecha valor; derivarla era el problema equivocado. El `<TODO>` llevaba
   un día abierto sobre una pregunta que ya no existía: cerrarlo importa porque un
   pendiente muerto compite por atención con los vivos.
-- Gate 1 listaba «ADR-0001…0018» y hay 24. Añadidas 0019–0024. **Su único pendiente
-  de diseño sigue siendo el mismo: ratificar el DREAD de T15** (la puntuación
-  existe y está en el quadrant chart; falta la firma HITL, como se hizo con
-  T13/T14).
+- Gate 1 listaba «ADR-0001…0018» y hay 24. Añadidas 0019–0024. Su único pendiente
+  de diseño era ratificar el DREAD de T15 — **cerrado al día siguiente**.
 - El bundle no conocía ADR-0023 ni ADR-0024, y el índice de servicios daba el SPA
   como «pendiente client_id del tenant» — aprovisionado el 2026-07-27.
 
