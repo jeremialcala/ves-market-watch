@@ -42,7 +42,7 @@ jobs:
           #   servicio            2026-08-04   Gate 2
           #   ingestor-bcv          99,36 %      ✔  (era 76,44 %)
           #   ingestor-binance      99,26 %      ✔  (era 75,92 %)
-          #   ingestor-historico    97,40 %      ✔  (era 71,71 %)
+          #   ingestor-historico    97,22 %      ✔  (era 71,71 %)
           #   api-gateway           90,72 %      ✔
           #   indicator-engine      85,88 %      ✔
           #

@@ -189,6 +189,8 @@ gitGraph
     commit id: "d4d05c7"
     commit id: "58324b4"
     commit id: "4c568cc"
+    commit id: "bd690bc"
+    commit id: "14b7282"
 ```
 
 ### Estado actual de las ramas
@@ -196,7 +198,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `4c568cc` | 2026-08-04 | 155 |
+| `develop` | `14b7282` | 2026-08-04 | 157 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -212,6 +214,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `14b7282` | commit | — | Jeremi Alcala | 2026-08-04 | test(ingestor-historico): 72 % a 97 % y el criterio de cobertura de Gate 2 cerrado |
+| `bd690bc` | commit | — | Jeremi Alcala | 2026-08-04 | docs(repo-history): regenerar |
 | `4c568cc` | commit | — | Jeremi Alcala | 2026-08-04 | test(ingestor-binance): cobertura de 76 % a 99 %, y una prueba que no probaba |
 | `58324b4` | commit | — | Jeremi Alcala | 2026-08-04 | docs(repo-history): regenerar |
 | `d4d05c7` | commit | — | Jeremi Alcala | 2026-08-04 | test(ingestor-bcv): cobertura de 76 % a 99 %, y lo que escondia |

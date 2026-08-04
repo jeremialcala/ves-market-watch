@@ -51,7 +51,7 @@ motor de indicadores como si fueran cambios de hoy.
   zona de Venezuela. `source` distingue la procedencia; las jornadas sin hora en el XLS
   van marcadas aparte. Filtro opcional `--monedas`.
 - 138 tests (unit + integración contra TimescaleDB real, incluidas las tablas de
-  los servicios vecinos), 97,40 % de ramas sobre `src/` (medido 2026-08-04;
+  los servicios vecinos), 97,22 % de ramas sobre `src/` (medido 2026-08-04;
   umbral Gate 2: 80 %).
 
 ## Pendientes

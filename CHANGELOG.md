@@ -149,7 +149,7 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
-- **`ingestor-historico` pasa de 71,71 % a 97,40 % (2026-08-04): el criterio de
+- **`ingestor-historico` pasa de 71,71 % a 97,22 % (2026-08-04): el criterio de
   salida 1 de Gate 2 queda CUMPLIDO en los seis servicios.** 98 → 138 tests.
   - **`__main__.py` era el fichero más grande del servicio y estaba al 0 %** (178
     sentencias). Dentro: que `--dry-run` **no significa lo mismo en los tres
