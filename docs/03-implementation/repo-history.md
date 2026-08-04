@@ -1,7 +1,7 @@
 # Historial de implementación — Criterio
 
 * **Estado:** review (documentación viva — regenerada por script, no editar a mano)
-* **Fecha:** 2026-08-03
+* **Fecha:** 2026-08-04
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
 * **Versión:** 0.4.0
@@ -178,6 +178,8 @@ gitGraph
     commit id: "5581471"
     commit id: "c293b1d"
     commit id: "f8faa89"
+    commit id: "c7a2b32"
+    commit id: "f508c30"
 ```
 
 ### Estado actual de las ramas
@@ -185,7 +187,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `f8faa89` | 2026-08-03 | 144 |
+| `develop` | `f508c30` | 2026-08-04 | 146 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -201,6 +203,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `f508c30` | commit | — | Jeremi Alcala | 2026-08-04 | security(threat-model): ratificado el DREAD de T15 (HITL 2026-08-04) |
+| `c7a2b32` | commit | — | Jeremi Alcala | 2026-08-03 | docs(repo-history): regenerar |
 | `f8faa89` | commit | — | Jeremi Alcala | 2026-08-03 | docs: barrido de coherencia y revision de gates |
 | `c293b1d` | commit | — | Jeremi Alcala | 2026-08-03 | docs(repo-history): regenerar |
 | `5581471` | commit | — | Jeremi Alcala | 2026-08-03 | chore(auth0): las etiquetas del tenant siguen al producto (ADR-0024 enmienda) |
