@@ -86,9 +86,9 @@ jobs:
           --health-retries 12
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -100,10 +100,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
+      # `python -m pytest`, no `pytest` a secas: el módulo pone el directorio
+      # actual en `sys.path` y el script de consola no. El e2e del motor hace
+      # `from tests.conftest import …` y no hay `tests/__init__.py`, así que sin
+      # el CWD en la ruta falla la colección. Además es como se corre en local,
+      # que es la razón por la que nadie lo había visto.
       - name: Suite completa con cobertura de ramas
         working-directory: apps/${{ matrix.servicio }}
         run: >-
-          pytest -q
+          python -m pytest -q
           --cov=src --cov-branch
           --cov-report=term --cov-report=xml
           --cov-fail-under=${{ matrix.piso }}
@@ -112,7 +117,7 @@ jobs:
         # También cuando la suite falla: el reporte de una ejecución roja es
         # justo el que hace falta para saber qué se descubrió.
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cobertura-${{ matrix.servicio }}
           path: apps/${{ matrix.servicio }}/coverage.xml
@@ -125,9 +130,9 @@ jobs:
       run:
         working-directory: apps/web-spa
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
           cache: npm
@@ -155,7 +160,7 @@ jobs:
 
       - name: Publicar el reporte de cobertura
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cobertura-web-spa
           path: apps/web-spa/coverage/

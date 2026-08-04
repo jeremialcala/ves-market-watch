@@ -28,7 +28,7 @@ jobs:
     name: T6 · fuga de secretos
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Historia completa: un secreto borrado en el commit siguiente sigue
           # estando en el repo, y este es un repositorio PÚBLICO.
@@ -44,8 +44,13 @@ jobs:
 
       - name: Escanear la historia completa
         # `--redact` para que un hallazgo no se convierta en una segunda fuga:
-        # los logs de Actions son públicos en un repo público.
-        run: gitleaks detect --source . --redact --exit-code 1 --verbose
+        # los logs de Actions son públicos en un repo público. Las excepciones
+        # —dos, ambas comprobadas como públicas— viven en `.gitleaks.toml` con su
+        # motivo escrito, no como reglas apagadas.
+        run: >-
+          gitleaks detect --source .
+          --config .gitleaks.toml
+          --redact --exit-code 1 --verbose
 
   dependencias:
     name: T8 · SCA (${{ matrix.ecosistema }})
@@ -57,9 +62,9 @@ jobs:
           - ecosistema: python
           - ecosistema: npm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         if: matrix.ecosistema == 'python'
         with:
           python-version: "3.12"
@@ -81,18 +86,23 @@ jobs:
             venv="/tmp/venv-${servicio}/bin"
             "${venv}/pip" install --upgrade --quiet pip pip-audit
             "${venv}/pip" install --quiet -e "apps/${servicio}[dev]"
-            # --skip-editable salta el propio paquete del servicio, que no está
-            # en PyPI; --strict falla si algo NO se pudo auditar, para que un
-            # hueco del escáner no pase por «sin hallazgos».
+            # Se audita el árbol CONGELADO, no el entorno. `--skip-editable` y
+            # `--strict` se contradicen: saltar el paquete del servicio —que no
+            # está en PyPI y no se puede auditar— produce justo la condición que
+            # `--strict` rechaza. `pip freeze --exclude-editable` deja fuera ese
+            # paquete y da el árbol real de dependencias, ya fijado, así que
+            # `--strict` puede exigir que TODO se haya auditado sin excepciones.
+            "${venv}/pip" freeze --exclude-editable > "/tmp/req-${servicio}.txt"
             "${venv}/python" -m pip_audit \
               --progress-spinner off \
-              --skip-editable \
+              --requirement "/tmp/req-${servicio}.txt" \
+              --no-deps \
               --strict || fallos=1
             echo "::endgroup::"
           done
           exit $fallos
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: matrix.ecosistema == 'npm'
         with:
           node-version: "24"
@@ -120,14 +130,14 @@ jobs:
       matrix:
         lenguaje: [python, javascript-typescript]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.lenguaje }}
           queries: security-and-quality
 
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/analyze@v4
         with:
           category: /language:${{ matrix.lenguaje }}
           # El SARIF también en disco, para poder decidir aquí. Sube igual a la
