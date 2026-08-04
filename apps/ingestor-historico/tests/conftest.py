@@ -17,6 +17,17 @@ import pytest
 FIXTURES = Path(__file__).parent / "fixtures"
 MIGRACIONES = Path(__file__).parents[1] / "db" / "migrations"
 
+# Este servicio escribe en tablas que NO son suyas, y eso es el diseño (ADR-0013):
+# el histórico de tasas va a `official_rates`, la misma que alimenta el
+# ingestor-bcv en vivo, y la brecha derivada a `indicators`, la del motor. Sus
+# migraciones hacen falta aquí para poder probar esos dos adaptadores contra la
+# base real; si el esquema de un vecino cambia, esta suite se entera.
+_RAIZ_APPS = Path(__file__).parents[2]
+MIGRACIONES_VECINAS = (
+    _RAIZ_APPS / "ingestor-bcv" / "db" / "migrations" / "001_official_rates.sql",
+    _RAIZ_APPS / "indicator-engine" / "db" / "migrations" / "001_indicators.sql",
+)
+
 TZ_CARACAS = timezone(timedelta(hours=-4))
 
 DSN_TEST_POR_DEFECTO = "postgresql://postgres:postgres@127.0.0.1:5433/ves_market_test"
@@ -64,7 +75,7 @@ def timescale_listo() -> str:
                     "la base de test no tiene la extensión timescaledb; recrear la "
                     "infraestructura: docker compose down && docker compose up -d --wait"
                 )
-            for migracion in sorted(MIGRACIONES.glob("*.sql")):
+            for migracion in (*MIGRACIONES_VECINAS, *sorted(MIGRACIONES.glob("*.sql"))):
                 for sentencia in migracion.read_text(encoding="utf-8").split(";"):
                     if (
                         _tiene_comando_sql(sentencia)
@@ -74,9 +85,20 @@ def timescale_listo() -> str:
         finally:
             await conexion.close()
 
+    # Un fichero de migración que no está NO es «no hay infraestructura»: es la
+    # suite rota. Si se tratara igual, renombrar una migración dejaría todos los
+    # tests de integración en skip y el pipeline en verde.
+    for migracion in MIGRACIONES_VECINAS:
+        if not migracion.is_file():
+            raise FileNotFoundError(
+                f"falta la migración del servicio vecino: {migracion}. "
+                "Este servicio escribe en sus tablas (ADR-0013)."
+            )
+
     try:
         asyncio.run(asyncio.wait_for(_preparar(), timeout=30))
-    except Exception as exc:
+    except (OSError, asyncio.TimeoutError) as exc:
+        # Solo los fallos de CONEXIÓN justifican saltar.
         pytest.skip(f"TimescaleDB no disponible ({exc}); {_SUGERENCIA}")
     return dsn
 
@@ -87,5 +109,20 @@ async def pool(timescale_listo: str):
 
     pool = await asyncpg.create_pool(timescale_listo, min_size=1, max_size=4)
     await pool.execute("TRUNCATE historical_market_snapshots")
+    yield pool
+    await pool.close()
+
+
+@pytest.fixture
+async def pool_vecinas(timescale_listo: str):
+    """Pool con las tablas de los servicios vecinos vacías.
+
+    Aparte del `pool` de siempre porque truncar `official_rates` o `indicators`
+    en cada test del repositorio propio sería tocar lo que no toca.
+    """
+    import asyncpg
+
+    pool = await asyncpg.create_pool(timescale_listo, min_size=1, max_size=4)
+    await pool.execute("TRUNCATE official_rates, indicators, historical_market_snapshots")
     yield pool
     await pool.close()

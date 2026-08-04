@@ -7,6 +7,41 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-04 — `ingestor-historico` 72 % → 97 %: cerrado el criterio de cobertura de Gate 2
+- Tercero y último de los servicios por debajo del umbral. **Los seis cumplen ya**
+  el criterio de salida 1.
+- **El patrón se confirmó, y con una pieza nueva.** En los tres servicios lo que
+  faltaba no era código de negocio —dominio y aplicación iban del 94 % al 100 %—
+  sino el entrypoint, el bucle programado y, en dos de tres, la configuración:
+  todo lo que **parece cableado y no lo es**. Aquí el `__main__.py` eran 178
+  sentencias, el fichero más grande del servicio.
+- Lo más valioso que había escondido: **`--dry-run` no significa lo mismo en los
+  tres comandos**. En `cargar` y `cargar-oficiales` es «no toques la base»; en
+  `derivar-brechas` es «lee la base de verdad y no escribas», porque los puntos
+  derivables solo existen ahí y un modo seco que los falseara daría un resumen
+  inútil para decidir. Unificar las tres ramas sería el refactor «obvio» que
+  rompe la única que sirve.
+- **Los dos adaptadores que escriben en tablas ajenas** pasan de 0 % y 51 % a
+  100 % contra la base real. Sus docstrings afirmaban cosas fuertes —«no puede
+  pisar la serie viva», «`calc_version = 0` mantiene lo derivado fuera de las
+  consultas del motor»— y ninguna estaba comprobada. La que más me interesó: la
+  frontera filtra `calc_version <> 0` porque, si contara lo ya derivado, tras la
+  primera pasada el corte se movería al inicio del propio backfill y **una
+  segunda pasada no derivaría nada** — un backfill que se sabotea solo.
+- Para probarlos hubo que aplicar en la suite las migraciones de `ingestor-bcv` e
+  `indicator-engine`. Es coherente con ADR-0013 —este servicio escribe en tablas
+  que no son suyas— y tiene un efecto secundario bueno: si un vecino cambia el
+  esquema, esta suite se entera.
+- **Un fallo del andamiaje, destapado por mi propio error.** Calculé mal la ruta
+  de las migraciones vecinas y toda la integración pasó a *skip* con el mensaje
+  «TimescaleDB no disponible»: el fixture convertía **cualquier** excepción en un
+  skip. Un fichero renombrado habría dejado la suite entera en verde sin ejecutar
+  nada. Ahora solo los fallos de conexión saltan; lo demás es la suite rota.
+- Tercera aparición del mismo hueco: **`connect()`/`close()` de los repositorios
+  sin ejercitar en los tres servicios**, siempre porque el fixture de integración
+  recibe el pool ya construido. *Un fixture cómodo esconde el camino de
+  producción.*
+
 ## 2026-08-04 — Cobertura de `ingestor-binance`: 76 % → 99 %, y una prueba que no probaba
 - Mismo patrón que en `ingestor-bcv` —`__main__.py` y `scheduler.py` al 0 %— más
   uno nuevo: **`config.py` también al 0 %**, y ahí vive el fail-fast de ADR-0011.

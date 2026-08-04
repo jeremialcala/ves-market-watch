@@ -50,7 +50,9 @@ motor de indicadores como si fueran cambios de hoy.
   redenominación del 2021-10-01), con `captured_at` = hora de publicación del BCV en
   zona de Venezuela. `source` distingue la procedencia; las jornadas sin hora en el XLS
   van marcadas aparte. Filtro opcional `--monedas`.
-- 98 tests (unit + integración contra TimescaleDB real).
+- 138 tests (unit + integración contra TimescaleDB real, incluidas las tablas de
+  los servicios vecinos), 97,40 % de ramas sobre `src/` (medido 2026-08-04;
+  umbral Gate 2: 80 %).
 
 ## Pendientes
 - Usar la serie como línea base de varianza para los umbrales de señales: la fase 2 del

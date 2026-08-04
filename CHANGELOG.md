@@ -149,6 +149,37 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **`ingestor-historico` pasa de 71,71 % a 97,40 % (2026-08-04): el criterio de
+  salida 1 de Gate 2 queda CUMPLIDO en los seis servicios.** 98 → 138 tests.
+  - **`__main__.py` era el fichero más grande del servicio y estaba al 0 %** (178
+    sentencias). Dentro: que `--dry-run` **no significa lo mismo en los tres
+    comandos** —`derivar-brechas` abre el repositorio real **como lector** porque
+    los puntos derivables solo existen en la base, y si los falseara el resumen
+    no serviría para decidir nada—; que `--monedas usd, eur` filtre igual que
+    `USD,EUR`; que el día de mercado se agrupe en la zona de origen y no en UTC;
+    y que los resúmenes digan lo que hay que decir, empezando por las ~1 900
+    filas con fecha real y **hora desconocida**.
+  - **Los dos adaptadores que escriben en tablas de otros servicios** pasan de
+    0 % y 51 % a **100 %**, contra TimescaleDB real. Ahora está comprobado que la
+    tasa que usa cada punto derivado es la **vigente en su instante**, que una
+    tasa `suspect` (T1) **no** entra en la serie histórica, que `calc_version = 0`
+    mantiene lo derivado fuera de `WHERE calc_version = 1`, y que la frontera
+    ignora lo que este mismo servicio derivó — sin eso, un backfill se sabotea a
+    sí mismo en la segunda pasada.
+  - Para probarlos, la suite aplica también las migraciones de `ingestor-bcv` e
+    `indicator-engine`: este servicio **escribe en tablas que no son suyas** por
+    diseño (ADR-0013), y ahora si un vecino cambia el esquema esta suite se
+    entera.
+
+### Fixed
+
+- **El fixture de infraestructura convertía cualquier error en «no hay
+  TimescaleDB» (2026-08-04).** Un fichero de migración mal referenciado dejaba
+  toda la suite de integración en *skip* y el pipeline en verde. Ahora solo los
+  fallos de conexión justifican saltar; un fichero que falta es la suite rota y
+  se dice así. Lo destapó una ruta mal calculada al añadir las migraciones
+  vecinas — es decir, el propio fallo que el arreglo previene.
+
 - **`ingestor-binance` pasa de 75,92 % a 99,26 % de cobertura de ramas
   (2026-08-04): segundo de los tres servicios por debajo del umbral, cerrado.**
   48 → 79 tests. El patrón se repitió —`__main__.py` y `scheduler.py` al **0 %**—

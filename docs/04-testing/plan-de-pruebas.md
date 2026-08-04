@@ -76,7 +76,7 @@ Estado observado en el repo (conteo de funciones `test_`):
 | `ingestor-bcv` | Implementado | **80** (unit, integration, contract, e2e, `security`) | ~~Cobertura de ramas 76 %~~ **99,36 %** (2026-08-04); ~~añadir marcador `security` para escenarios T1~~ **añadido**: seis casos de HTML alterado en `unit/test_parser_html_alterado.py`, corren con `-m security` |
 | `ingestor-binance` | Implementado | **79** (unit, integration, contract, e2e, `security`) | ~~Cobertura de ramas 75,92 %~~ **99,26 %** (2026-08-04); ~~escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local~~ **elevado**: `integration/test_client_errores.py` lleva el 429 real por HTTP hasta el breaker y comprueba que el ciclo siguiente **no consulta** |
 | `indicator-engine` | Fases 1, 2, señales (RF-4/RF-5, ADR-0015), análisis de la revisión (RF-6, ADR-0019) y lectura del estado de mercado (RF-7, ADR-0021) | **335** (unit, contract, integration, e2e) | Cobertura de ramas **86 %** (medida 2026-08-04 sobre `src/`); recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) y de los dos ejes del régimen (`config/lectura.v1.yaml`); contrastar en vivo la atribución con responsable `oficial` o `ambos` — hace falta un día en que la tasa del BCV cambie de verdad, no solo que esté vigente (ADR-0022 destapó que este hueco se venía describiendo mal: se decía que el fin de semana la suprimía «por diseño», cuando lo que la suprimía era la rancidez mal medida) |
-| `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) — más el histórico de tasas oficiales del BCV (RF-6) y la brecha derivada del lado venta (RF-7), 2026-08-01 | **98** (unit + integración contra TimescaleDB real) | Cobertura de ramas **72 %** (medida 2026-08-04 sobre `src/`); integración del cargador de oficiales contra TimescaleDB real (hoy cubierto en unit + verificado sobre la carga real de 31.078 filas) |
+| `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) — más el histórico de tasas oficiales del BCV (RF-6) y la brecha derivada del lado venta (RF-7), 2026-08-01 | **138** (unit + integración contra TimescaleDB real, incl. las tablas de los servicios vecinos) | ~~Cobertura de ramas 71,71 %~~ **97,40 %** (2026-08-04); ~~integración del cargador de oficiales contra TimescaleDB real~~ **hecha**: `integration/test_tablas_vecinas.py` prueba contra la base real los dos adaptadores que escriben en `official_rates` e `indicators` |
 | `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **108** (unit incl. CORS y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura de ramas **91 %** (medida 2026-08-04 sobre `src/`) |
 | `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **348** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores y lectura del mercado con dato real en ES/EN, shell responsive y canarios de paleta, punto de corte y cabeceras CSP) — **87,43 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
 
@@ -381,11 +381,12 @@ cierre de la columna «Verificación fase 04-testing».
 - `docker-compose.yml` levanta y las suites `integration`/`e2e` corren en verde localmente.
 
 **Salida (cierre de Gate 2):**
-1. Cobertura de ramas **≥ 80 %** por servicio con código. **NO cumplido en tres
-   de los seis.** La medición del 2026-08-03 se hizo con `--cov` a secas, que
-   mete los propios ficheros de test en el denominador; como los tests se
-   ejecutan enteros, inflaba el total. Medido de nuevo el 2026-08-04 sobre
-   `src/`, que es lo que el SPA ya venía midiendo (`include: ["src/**"]`):
+1. Cobertura de ramas **≥ 80 %** por servicio con código. **CUMPLIDO en los seis
+   (2026-08-04).** Llegó a estar sin cumplir en tres: la medición del 2026-08-03
+   se hizo con `--cov` a secas, que mete los propios ficheros de test en el
+   denominador y por tanto inflaba el total. Remedido sobre `src/` —lo que el SPA
+   ya venía haciendo con `include: ["src/**"]`— aparecieron tres por debajo, y se
+   cubrieron:
 
    | Servicio | Ramas (solo fuente) | ≥ 80 % |
    |---|---|---|
@@ -394,14 +395,24 @@ cierre de la columna «Verificación fase 04-testing».
    | `api-gateway` | 90,72 % | ✔ |
    | `web-spa` | 87,43 % | ✔ |
    | `indicator-engine` | 85,88 % | ✔ |
-   | `ingestor-historico` | 71,71 % | ✘ faltan ~8 pts |
+   | `ingestor-historico` | 97,40 % | ✔ |
 
    Cifras de la propia pipeline (2026-08-04), no de una ejecución a mano: **el
    punto 5 de esta lista deja de estar pendiente para la cobertura**.
 
-   La pipeline no impone el 80 % de golpe —dejaría tres servicios en rojo desde
-   el primer día— sino un **trinquete** por servicio en su valor actual, para que
-   nada retroceda mientras se sube. El criterio de salida sigue siendo el 80 %.
+   La pipeline no impone el 80 % plano sino un **trinquete** por servicio en su
+   valor actual: el criterio de salida es el 80 %, pero lo que rompe el build es
+   cualquier retroceso desde donde está hoy cada uno.
+
+   **El patrón que dejaron los tres:** lo que faltaba no era código de negocio
+   —dominio y aplicación ya iban del 94 % al 100 %— sino el **entrypoint**, el
+   **bucle programado** y, en dos de los tres, la **configuración**. Es decir,
+   todo lo que parece cableado y no lo es: el suelo antimartilleo, la garantía de
+   `--dry-run`, el `finally` que libera conexiones y los fail-fast de arranque. Y
+   en los **tres**, `connect()`/`close()` de los repositorios estaba sin
+   ejercitar por la misma causa: los fixtures de integración reciben el pool ya
+   construido, así que la forma en que el servicio se conecta de verdad no la
+   probaba nadie.
 2. Todos los casos de las secciones 5–7 aplicables al alcance entregado, en verde.
 3. Cada amenaza T1–T15 con su verificación satisfecha (tests o gate de CI).
 4. Contract tests en verde en **productor y consumidor** para cada evento con schema.
