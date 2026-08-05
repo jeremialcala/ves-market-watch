@@ -1,7 +1,7 @@
 # Historial de implementación — Criterio
 
 * **Estado:** review (documentación viva — regenerada por script, no editar a mano)
-* **Fecha:** 2026-08-04
+* **Fecha:** 2026-08-05
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
 * **Versión:** 0.4.0
@@ -191,6 +191,8 @@ gitGraph
     commit id: "4c568cc"
     commit id: "bd690bc"
     commit id: "14b7282"
+    commit id: "4039c07"
+    commit id: "bc638ce"
 ```
 
 ### Estado actual de las ramas
@@ -198,7 +200,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `14b7282` | 2026-08-04 | 157 |
+| `develop` | `bc638ce` | 2026-08-05 | 159 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -214,6 +216,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `bc638ce` | commit | — | Jeremi Alcala | 2026-08-05 | docs: barrido de coherencia, README incluido, y estado real de los gates |
+| `4039c07` | commit | — | Jeremi Alcala | 2026-08-04 | docs: la cifra que manda es la de la pipeline (97,22 %, no 97,40 %) |
 | `14b7282` | commit | — | Jeremi Alcala | 2026-08-04 | test(ingestor-historico): 72 % a 97 % y el criterio de cobertura de Gate 2 cerrado |
 | `bd690bc` | commit | — | Jeremi Alcala | 2026-08-04 | docs(repo-history): regenerar |
 | `4c568cc` | commit | — | Jeremi Alcala | 2026-08-04 | test(ingestor-binance): cobertura de 76 % a 99 %, y una prueba que no probaba |
