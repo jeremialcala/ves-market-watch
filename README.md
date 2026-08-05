@@ -7,10 +7,12 @@ indicadores financieros expuestos vía API REST y WebSocket (WSS).
 ## Estructura (estándar AI-DLC)
 
 ```
-ves-market-watch/
+ves-market-watch/            # el repositorio conserva el nombre viejo (ADR-0024)
 ├── .ai-dlc/                  # Metodología: gates y plantillas
 │   ├── gates/                # Checklists de gates (0 y 1 creados; siguientes al cerrar cada fase)
 │   └── templates/            # prd, adr, threat-model
+├── .github/workflows/        # CI: `ci.yml` (matriz de los 6 proyectos) y `seguridad.yml`
+├── .gitleaks.toml            # Excepciones del escaneo de secretos, una a una y con motivo
 ├── knowledge/                # Contexto del proyecto en Open Knowledge Format (ADR-0010)
 ├── schemas/                  # Contratos de eventos del bus (JSON Schema 2020-12)
 ├── docker-compose.yml        # Infra dev/test (RabbitMQ + TimescaleDB) y las apps: los 3 servicios
@@ -19,6 +21,8 @@ ves-market-watch/
 │   ├── 00-project/           # Charter, glosario, clasificación de datos, ADRs
 │   ├── 01-requirements/      # PRDs por funcionalidad (Gate 0)
 │   ├── 02-design/            # Arquitectura, threat model, contratos API (Gate 1)
+│   ├── 03-implementation/    # Historial del repo (generado por script, no editar a mano)
+│   ├── 04-testing/           # Plan de pruebas y criterios del Gate 2
 │   └── architecture/         # Diagramas C4 (Mermaid)
 └── apps/
     ├── ingestor-binance/     # ✔ Ingesta P2P Binance (USDT/VES) → p2p.snapshot
@@ -53,9 +57,29 @@ el compose lo sirve compilado en http://localhost:8080; `npm test` corre su suit
 
 Cada servicio tiene CLI propio: `python -m ingestor_bcv [--once] [--dry-run]` (más el
 subcomando de operador `revalidar`), `python -m ingestor_binance [--once] [--dry-run]`,
-`python -m indicator_engine [--drain]` y `python -m ingestor_historico cargar|stats`;
+`python -m indicator_engine [--drain]` y
+`python -m ingestor_historico cargar|cargar-oficiales|derivar-brechas|stats`;
 detalles en el README de cada app. Los tests de infraestructura hacen skip elegante
-si el compose no está levantado.
+si el compose no está levantado — y **solo** ante un fallo de conexión: cualquier
+otro error es la suite rota y se dice así.
+
+### Integración continua
+
+Dos workflows en `.github/workflows/`, ambos en cada push y cada PR:
+
+- **`ci.yml`** — matriz de los seis proyectos con la suite **completa**
+  (`integration` y `e2e` incluidas) contra TimescaleDB y RabbitMQ levantados como
+  `services:` del trabajo. Umbral de cobertura por servicio y reporte como
+  artefacto, también cuando falla.
+- **`seguridad.yml`** — los gates de Gate 2 **rompiendo el build**, no avisando:
+  `gitleaks` sobre la historia completa (T6), `pip-audit` por servicio y
+  `npm audit --audit-level=high` (T8), y CodeQL con umbral de severidad sobre el
+  SARIF (T9). Además, una pasada semanal: una dependencia no cambia, pero lo que
+  se sabe de ella sí.
+
+Los umbrales de cobertura son un **trinquete** en el valor actual de cada
+servicio, no el 80 % plano: el criterio de Gate 2 es el 80 %, pero lo que rompe el
+build es cualquier retroceso desde donde está hoy cada uno.
 
 ## Estado
 
@@ -79,8 +103,15 @@ si el compose no está levantado.
   El login quedó operativo el 2026-08-01 con dominio propio de Auth0 y desarrollo
   por túneles de Cloudflare (ADR-0020); el tenant lleva aprovisionado desde el
   2026-07-27.
-- Gate 0 (requisitos): ver `.ai-dlc/gates/gate-0-requirements.md`
-- Gate 1 (diseño): ver `.ai-dlc/gates/gate-1-design.md`
+- **Gate 2 (pruebas) en curso.** Cobertura de ramas **≥ 80 % en los seis**
+  (2026-08-04): `ingestor-bcv` 99,36 · `ingestor-binance` 99,26 · `ingestor-historico`
+  97,22 · `api-gateway` 90,72 · `web-spa` 87,43 · `indicator-engine` 85,88. 1 088
+  tests en total. Quedan abiertos el e2e autenticado en vivo con token real (HITL)
+  y la deuda del control de T8 —lockfiles y digests—; detalle en
+  `docs/04-testing/plan-de-pruebas.md` §10 y §12.
+- Gate 0 (requisitos): aprobado — `.ai-dlc/gates/gate-0-requirements.md`
+- Gate 1 (diseño): aprobado, sin pendientes desde la ratificación del DREAD de T15
+  (2026-08-04) — `.ai-dlc/gates/gate-1-design.md`
 - Inventario de cambios por ejecución: ver `CHANGELOG.md`
 - Contexto curado para agentes y humanos: ver `knowledge/index.md` (OKF v0.1 — punto de
   entrada recomendado para retomar el proyecto)

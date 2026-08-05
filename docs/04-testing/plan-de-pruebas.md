@@ -414,10 +414,33 @@ cierre de la columna «Verificación fase 04-testing».
    construido, así que la forma en que el servicio se conecta de verdad no la
    probaba nadie.
 2. Todos los casos de las secciones 5–7 aplicables al alcance entregado, en verde.
+   **Cumplido**: 1 088 tests en verde, los seis proyectos, en cada push desde el
+   2026-08-04. Lo que la pipeline no ejecuta es el e2e autenticado en vivo, que
+   depende de credenciales del tenant (punto abierto abajo).
 3. Cada amenaza T1–T15 con su verificación satisfecha (tests o gate de CI).
+   **Casi**: T1, T6, T7 y T9 pasaron a cubiertas el 2026-08-04 (marcadores
+   `security` y gates de CI). **T8 queda parcial** —el SCA corre, pero sin
+   lockfiles ni digests audita un árbol que cambia entre ejecuciones— y T3, T4,
+   T13 conservan partes que son revisión humana, no test.
 4. Contract tests en verde en **productor y consumidor** para cada evento con schema.
-5. Gates de CI: **secrets scanning** (T6) y **SCA** (T8) sin hallazgos por encima del umbral.
+   **Cumplido** y verificado en cada push.
+5. Gates de CI: **secrets scanning** (T6) y **SCA** (T8) sin hallazgos por encima
+   del umbral. **Cumplido**: los tres gates rompen el build y están en verde. El
+   SCA cerró de paso 3 vulnerabilidades `high` que ya estaban en el `web-spa`.
 6. Sin tests marcados `xfail`/`skip` salvo los de infraestructura documentados.
+   **Cumplido**: cero `xfail` y cero `skip` incondicionales en el monorepo; los
+   únicos saltos son los de infraestructura ausente, y desde el 2026-08-04 **solo
+   un fallo de conexión** los provoca — antes cualquier error del andamiaje se
+   disfrazaba de «no hay TimescaleDB» y dejaba la suite en verde sin ejecutar.
+
+**Lo que le falta a Gate 2 para cerrarse**, en orden de dependencia:
+
+| Pendiente | Por qué sigue abierto |
+|---|---|
+| e2e autenticado **en vivo** con token real (HITL) | Necesita el client M2M del tenant en el pipeline; hoy corre a mano |
+| Deuda de T8: **lockfiles + imágenes por digest** | Cambio de repositorio, no de pipeline: los cinco servicios declaran rangos y las imágenes van por tag (incluida `timescaledb:latest-pg16`) |
+| Marcador `security` en `api-gateway` | Donde viven T9 y T11; los otros dos servicios ya lo tienen |
+| Recalibración **HITL** de umbrales (ruleset y régimen) | Decisión humana con datos de producción |
 
 ## 11. Automatización y CI
 
@@ -431,7 +454,7 @@ público, así que los minutos son gratis).
   `127.0.0.1:5433` y `:5672`, que es lo que publica el mapeo de puertos. El SPA
   suma `typecheck`, `lint`, `check:api-types` y `build` (que usa `tsc -b`, más
   estricto que el typecheck: ya dejó pasar una vez un campo ausente del contrato).
-  Sin filtros por ruta: 991 tests son baratos y un filtro mal puesto da verdes
+  Sin filtros por ruta: 1 088 tests son baratos y un filtro mal puesto da verdes
   vacíos.
 - **`seguridad.yml` — los gates de Gate 2, rompiendo el build:**
   - **T6:** `gitleaks` sobre la **historia completa** (`fetch-depth: 0`) — en un
@@ -456,7 +479,9 @@ público, así que los minutos son gratis).
   SCA audita lo instalado, que es lo más honesto sin fijar, pero el control dice
   «lockfiles + SCA + imágenes por digest» y de los tres solo está el del medio.
 - **Fuente de convenciones de marcadores:** `[tool.pytest.ini_options]` en cada `pyproject.toml`
-  (`asyncio_mode = "auto"`, marcadores `integration` y `e2e`; añadir `security` en api-gateway).
+  (`asyncio_mode = "auto"`, marcadores `integration` y `e2e`; `security` ya en
+  `ingestor-bcv` —T1, HTML alterado— y en `ingestor-binance` —T7, 429 sostenido—.
+  **Pendiente en `api-gateway`**, que es donde viven T9 y T11.)
 
 ## 12. Riesgos y pendientes
 
@@ -467,8 +492,12 @@ público, así que los minutos son gratis).
 - ~~`api-gateway` sin código~~ **Resuelto:** implementado 2026-07-26 con 90 tests, hoy 108 (§5.4);
   queda el e2e autenticado en vivo (client M2M de prueba — HITL).
 - **Secret store concreto:** definido para fase 05; los tests de rotación (T6) se afinan entonces.
-- **Pipeline CI aún no presente en el repo:** los gates T6/T8 y la matriz de la sección 11 son
-  requisito a materializar como parte de Gate 2.
+- ~~Pipeline CI aún no presente en el repo~~ **Resuelto (2026-08-04):** dos
+  workflows en `.github/workflows/` con la matriz de §11 y los tres gates
+  rompiendo el build. Lo que queda de ese frente es la **deuda del control de
+  T8**: sigue sin haber lockfiles en los cinco servicios Python ni imágenes
+  fijadas por digest, así que el SCA audita lo que se instala en cada ejecución y
+  no un árbol reproducible.
 - ~~Paleta de series del `web-spa` en tema claro~~ **Resuelto (2026-07-31):**
   las marcas de dato tienen slots propios validados (claro ΔE 8,1 · oscuro
   ΔE 13,2) y el mapa de calor pasa a rampa secuencial de un tono por tema. La

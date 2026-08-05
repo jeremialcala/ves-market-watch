@@ -7,6 +7,28 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-05 — Barrido de coherencia: el README no sabía que existe la CI
+- Tres días después de montar la pipeline, el `README.md` —la puerta de entrada
+  del repositorio— no la mencionaba en ninguna parte: ni `.github/workflows/` en
+  el árbol, ni una línea en «Desarrollo». Tampoco `docs/03-implementation/` ni
+  `docs/04-testing/`, que llevan más tiempo existiendo. *Lo que se documenta al
+  hacer un cambio es el fichero que se está tocando; el README no se toca nunca y
+  por eso envejece sin que nadie lo note.*
+- **El plan de pruebas se contradecía consigo mismo**: §11 describía la pipeline
+  implementada y §12 la seguía listando como pendiente. Dos secciones del mismo
+  documento, escritas con dos días de diferencia.
+- **Cuatro verificaciones de amenaza estaban redactadas como plan y ya eran
+  hechos**: T1, T6, T7 y T9. Es el patrón inverso al habitual —no una promesa
+  incumplida, sino trabajo hecho que el documento no reconocía—, y tiene el mismo
+  coste: quien lea la tabla planifica algo que ya está.
+- **T8 se marca parcial a propósito.** Su control promete «lockfiles + SCA +
+  imágenes por digest» y solo está el del medio; darlo por cubierto porque el SCA
+  corre sería justo la clase de aproximación que este proyecto viene evitando.
+- Los seis criterios de salida de Gate 2 quedan anotados con su estado real, y lo
+  que falta en una tabla con el porqué. Gate 1 sigue cerrado desde la ratificación
+  del DREAD de T15; Gate 0 conserva sus dos pendientes, que son decisiones del
+  dueño del producto y no trabajo técnico.
+
 ## 2026-08-04 — `ingestor-historico` 72 % → 97 %: cerrado el criterio de cobertura de Gate 2
 - Tercero y último de los servicios por debajo del umbral. **Los seis cumplen ya**
   el criterio de salida 1.

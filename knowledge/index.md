@@ -63,8 +63,19 @@ la fuente de verdad (los documentos AI-DLC y el código).
 - **El producto se llama Criterio** (2026-08-03, ADR-0024): cambian las etiquetas
   —incluidas las tres del tenant de Auth0—, no los identificadores. El `audience`
   conserva `vesmarketwatch` porque es una clave, no un nombre pendiente.
+- **La plataforma tiene CI desde el 2026-08-04**: dos workflows en
+  `.github/workflows/` con la suite completa de los seis proyectos —integration y
+  e2e incluidas, contra Timescale y RabbitMQ reales— y los tres gates de seguridad
+  **rompiendo el build** en vez de avisando (T6 gitleaks, T8 SCA, T9 CodeQL con
+  umbral sobre el SARIF).
+- **Cobertura de ramas ≥ 80 % en los seis servicios** (2026-08-04), el criterio de
+  salida 1 de Gate 2. Llegó a estar sin cumplir en tres: se había medido con
+  `--cov` a secas, que mete los ficheros de test en el denominador. Lo que faltaba
+  cubrir no era código de negocio sino entrypoints, bucles programados y
+  configuración — todo lo que **parece cableado y no lo es**.
 - Siguiente paso natural: decidir la topología de despliegue real (los túneles
-  son de desarrollo) y preparar la fase 04 (Gate 2).
+  son de desarrollo) y cerrar lo que le queda a Gate 2 (e2e autenticado en vivo y
+  la deuda de T8: lockfiles e imágenes por digest).
 - Historia de cambios: [log.md](log.md) y `../CHANGELOG.md`.
 
 ## Mapa del bundle

@@ -285,6 +285,27 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **Barrido de coherencia documental, README incluido (2026-08-05).**
+  - **El `README.md` no mencionaba la CI en ninguna parte**, tres días después de
+    montarla: ni en el árbol del repositorio (faltaban `.github/workflows/`,
+    `.gitleaks.toml`, `docs/03-implementation/` y `docs/04-testing/`) ni en
+    «Desarrollo». Añadida una sección propia, y el estado ahora abre con Gate 2 y
+    la cobertura de los seis servicios en vez de terminar en Gate 1.
+  - **El plan de pruebas se contradecía consigo mismo:** §11 describía la pipeline
+    implementada y §12 seguía listando «Pipeline CI aún no presente en el repo»
+    como pendiente.
+  - **Cuatro verificaciones de amenaza estaban descritas como plan y ya eran
+    hechos.** T1 (HTML alterado), T6 (secrets scanning), T7 (429 → breaker) y T9
+    (SAST) pasan a ✔ con su evidencia concreta. **T8 se marca explícitamente
+    parcial**: el SCA corre, pero sin lockfiles ni digests audita un árbol que
+    cambia entre ejecuciones — el control promete tres cosas y solo está una.
+  - Los seis criterios de salida de Gate 2 quedan anotados uno a uno con su estado
+    real, y lo que falta para cerrarlo en una tabla con el porqué de cada
+    pendiente.
+  - `python -m ingestor_historico` se documentaba como `cargar|stats`; tiene
+    cuatro subcomandos desde hace dos entregas.
+  - Verificado: 12 diagramas Mermaid válidos y 1 088 tests en verde.
+
 - **Barrido de coherencia documental y revisión de gates (2026-08-03).**
   - **La cobertura de ramas de los servicios Python nunca se había medido**: el
     plan la arrastraba como «confirmar ≥ 80 %» en cuatro filas desde Gate 2.
