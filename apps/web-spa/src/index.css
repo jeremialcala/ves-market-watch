@@ -1028,6 +1028,173 @@ body {
   opacity: 0.85;
 }
 
+/* -- lectura de la sesión (Intradía) --------------------------------------- */
+
+/* Bloque rector de la vista: la ÚNICA superficie con tinte coral aquí, igual
+   que «Lectura de hoy» es la única con tinte teal en el dashboard. El coral es
+   del ruleset —lo que dispara—, no un adorno. */
+.vmw-sesion {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-radius: 28px;
+  padding: 24px 28px;
+  background: linear-gradient(160deg, var(--coral-tint), var(--dark-2));
+  border: 1px solid var(--coral-line);
+}
+
+.vmw-sesion__fila1 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.vmw-sesion__eyebrow {
+  font-size: 12.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--coral);
+  font-weight: 600;
+}
+
+.vmw-sesion__sello {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.vmw-sesion__empuje {
+  flex: 1;
+}
+
+.vmw-sesion__accion {
+  border-radius: 100px;
+  min-height: 40px;
+  padding: 0 18px;
+  font: inherit;
+  font-size: var(--fs-meta);
+  color: var(--text);
+  background: var(--overlay-soft);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.vmw-sesion__accion--coral {
+  background: var(--coral-tint);
+  border-color: var(--coral-line);
+  color: var(--coral);
+}
+
+.vmw-sesion__accion:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.vmw-sesion__fila2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vmw-sesion__punto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--coral);
+  color: var(--coral); /* `currentcolor` del halo */
+  box-shadow: var(--glow-dot);
+}
+
+.vmw-sesion__veredicto {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3.4vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: #fff;
+}
+
+.vmw-sesion__prosa {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text);
+  max-width: 820px;
+}
+
+.vmw-sesion__hechos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vmw-sesion__hecho {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 100px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--overlay-soft);
+  border: 1px solid var(--border);
+}
+
+.vmw-sesion__hecho i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--coral);
+}
+
+/* Las condiciones cierran el bloque tras un hairline: son el detalle que
+   sostiene el titular, no una lista aparte. */
+.vmw-sesion__condiciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.vmw-sesion__condicion {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* snake_case sin retocar: es el nombre del contrato. */
+.vmw-sesion__cond-nombre {
+  font-size: 13px;
+  color: var(--text-muted);
+  word-break: break-word;
+}
+
+.vmw-sesion__cond-valor {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* El color dice si la condición está cumplida; el texto de abajo lo dice
+   también, para que no dependa solo del tono. */
+.vmw-sesion__condicion[data-cumple="si"] .vmw-sesion__cond-valor {
+  color: var(--teal);
+}
+
+.vmw-sesion__condicion[data-cumple="no"] .vmw-sesion__cond-valor {
+  color: var(--coral);
+}
+
+.vmw-sesion__cond-umbral {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
 /* -- mapa de calor --------------------------------------------------------- */
 
 .vmw-calor {

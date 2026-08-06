@@ -29,11 +29,11 @@ import {
 import { historialIntradia, type Intervalo } from "../api/endpoints";
 import { ApiError } from "../api/problem";
 import { NoDataState } from "../components/NoDataState";
+import { SessionReading } from "../components/SessionReading";
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
 import { formatDecimal, toChartNumber } from "../lib/decimal";
 import {
-  etiquetaDiaVET,
   grupoDe,
   horaVET,
   ladoDe,
@@ -278,7 +278,6 @@ export function IntradayView() {
       entradas.push(entrada);
     }
   }
-  const diaVET = etiquetaDiaVET(new Date());
 
   return (
     <main className="vmw-vista">
@@ -324,9 +323,10 @@ export function IntradayView() {
             </span>
           ) : null}
         </section>
-        <p className="vmw-nota" style={{ marginTop: "12px" }}>
-          {t("intradia.dia", { dia: diaVET })}
-        </p>
+        {/* Primer bloque de la vista, justo bajo los controles. Absorbe la
+            frase de día operativo que antes colgaba suelta aquí: la apertura y
+            lo transcurrido son contexto de esta lectura, no una nota al margen. */}
+        <SessionReading series={series} />
         {error !== null ? <p className="vmw-sin-datos">{error}</p> : null}
 
         {series.size === 0 && progreso === null && error === null ? (

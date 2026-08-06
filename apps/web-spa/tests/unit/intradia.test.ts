@@ -55,6 +55,17 @@ describe("horaVET y etiquetaDiaVET", () => {
     // 02:00 UTC del 29 todavía es el 28 en Caracas.
     expect(etiquetaDiaVET(new Date("2026-07-29T02:00:00Z"))).toContain("28");
   });
+
+  it("la etiqueta se escribe en el idioma de la interfaz", () => {
+    // Dentro de una frase en inglés, un «28 de julio» delata que la fecha se
+    // formateó en otro sitio: el idioma es parámetro, no constante.
+    const instante = new Date("2026-07-29T02:00:00Z");
+    expect(etiquetaDiaVET(instante, "es")).toMatch(/jul/i);
+    expect(etiquetaDiaVET(instante, "en")).toMatch(/jul/i);
+    expect(etiquetaDiaVET(instante, "es")).not.toBe(
+      etiquetaDiaVET(instante, "en"),
+    );
+  });
 });
 
 describe("clasificación de indicadores", () => {

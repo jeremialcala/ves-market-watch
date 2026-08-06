@@ -32,12 +32,19 @@ export function horaVET(t: number): string {
   return `${hh}:${mm}`;
 }
 
-/** Fecha del día operativo en curso, escrita en VET. */
-export function etiquetaDiaVET(ahora: Date): string {
+/**
+ * Fecha del día operativo en curso, escrita en VET y en el idioma de la interfaz
+ * («6 ago» / «Aug 6»).
+ *
+ * El idioma es parámetro y no una constante: dentro de una frase en inglés, un
+ * «jueves, 6 de agosto de 2026» delata que la fecha se formateó en otro sitio.
+ */
+export function etiquetaDiaVET(ahora: Date, idioma: "es" | "en" = "es"): string {
   // Se corre el instante a VET y se formatea en UTC: así la fecha impresa es
   // la del día operativo, sin depender de la zona horaria del navegador.
-  return new Intl.DateTimeFormat("es-VE", {
-    dateStyle: "full",
+  return new Intl.DateTimeFormat(idioma === "en" ? "en-GB" : "es-VE", {
+    day: "numeric",
+    month: "short",
     timeZone: "UTC",
   }).format(new Date(ahora.getTime() + VET_OFFSET_MIN * 60_000));
 }

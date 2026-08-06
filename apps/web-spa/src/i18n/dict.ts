@@ -519,6 +519,45 @@ export const ES = {
   "historico.rangoLabel": "{dias} días",
 
   // -- intradía --------------------------------------------------------------
+  // -- Lectura de la sesión (Intradía) ---------------------------------------
+  "sesion.titulo": "Lectura de la sesión",
+  "sesion.sello": "día operativo {dia} · apertura {hora} VET · {transcurrido} transcurridas",
+  "sesion.selloSinSesion": "día operativo {dia} · sin datos todavía",
+  "sesion.transcurridoHm": "{h} h {m} m",
+  "sesion.transcurridoM": "{m} m",
+  "sesion.exportar": "Exportar sesión",
+  "sesion.vigilar": "Vigilar esta regla",
+  "sesion.vigilarNoDisponible":
+    "Vigilar una regla necesita persistencia por usuario, evaluación en el motor y un canal de aviso: es una funcionalidad, no un botón. Queda fuera de alcance (ADR-0021).",
+  "sesion.veredictoSinAnalisis": "Todavía no hay análisis de esta revisión",
+  "sesion.veredictoSinRegla": "Ninguna regla es evaluable ahora mismo",
+  "sesion.veredictoCumple": "Se cumple {regla}",
+  "sesion.veredictoCerca": "{regla} cumple {cumplidas} de {totales} condiciones",
+  "sesion.prosaSinRegla":
+    "Sin una regla evaluable no hay proximidad que contar: alguno de sus indicadores no está vigente, o la confianza del snapshot es baja.",
+  "sesion.prosaSinBloqueo":
+    "Las condiciones de {regla} se cumplen todas; que llegue a emitirse depende del cooldown del ruleset, que vive en la cronología de señales.",
+  "sesion.prosaBloqueoSinDistancia":
+    "La condición de {indicador} no se puede evaluar: su indicador no está vigente, y sin valor no hay distancia que medir.",
+  "sesion.prosaFaltaSubir":
+    "Falta que {indicador} suba {distancia} hasta pasar de {umbral}: mientras no lo haga, la regla no dispara por mucho que el resto se mantenga.",
+  "sesion.prosaFaltaBajar":
+    "Falta que {indicador} baje {distancia} hasta quedar por debajo de {umbral}: mientras no lo haga, la regla no dispara por mucho que el resto se mantenga.",
+  "sesion.hechoCondiciones": "{cumplidas} de {totales} condiciones",
+  "sesion.hechoLiquidez": "liquidez {valor} USDT · {delta} en la sesión",
+  "sesion.hechoMomentum": "momentum bid 3 h {valor} %",
+  "sesion.hechoFrescura": "datos {cuando} · confianza {confianza}",
+  "sesion.confianzaNormal": "normal",
+  "sesion.confianzaBaja": "baja",
+  "sesion.necesitaPorEncima": "necesita > {umbral}",
+  "sesion.necesitaPorDebajo": "necesita < {umbral}",
+  "sesion.condCumple": "cumplida",
+  "sesion.condFalta": "falta {distancia}",
+  "sesion.condSinValor": "sin valor vigente",
+  "sesion.csv.indicador": "indicador",
+  "sesion.csv.instante": "instante_utc",
+  "sesion.csv.horaVet": "hora_vet",
+  "sesion.csv.valor": "valor",
   "intradia.titulo": "Intradía · día operativo VET",
   "intradia.grupoOficial": "Tasa oficial (BCV)",
   "intradia.grupoCompra": "P2P — compra (buy)",
@@ -588,8 +627,6 @@ export const ES = {
   "intradia.bucket5m": "5 min",
   "intradia.actualizar": "Actualizar",
   "intradia.actualizado": "actualizado {hora} VET",
-  "intradia.dia":
-    "Día operativo (VET): {dia} — la Δ de cada panel se mide contra la apertura del día.",
   "intradia.sinDia": "Todavía no hay indicadores para el día operativo en curso.",
   "intradia.sinHoy": "Sin datos hoy.",
   "intradia.apertura": "apertura {valor}",
@@ -1057,6 +1094,45 @@ export const EN: Record<Clave, string> = {
   "historico.sinSerie": "No data in the requested range.",
   "historico.rangoLabel": "{dias} days",
 
+  // -- Session reading (Intraday) --------------------------------------------
+  "sesion.titulo": "Session reading",
+  "sesion.sello": "operating day {dia} · open {hora} VET · {transcurrido} elapsed",
+  "sesion.selloSinSesion": "operating day {dia} · no data yet",
+  "sesion.transcurridoHm": "{h} h {m} m",
+  "sesion.transcurridoM": "{m} m",
+  "sesion.exportar": "Export session",
+  "sesion.vigilar": "Watch this rule",
+  "sesion.vigilarNoDisponible":
+    "Watching a rule needs per-user persistence, engine-side evaluation and a notification channel: it is a feature, not a button. Out of scope (ADR-0021).",
+  "sesion.veredictoSinAnalisis": "No analysis for this revision yet",
+  "sesion.veredictoSinRegla": "No rule is evaluable right now",
+  "sesion.veredictoCumple": "{regla} is met",
+  "sesion.veredictoCerca": "{regla} meets {cumplidas} of {totales} conditions",
+  "sesion.prosaSinRegla":
+    "With no evaluable rule there is no proximity to report: one of its indicators is not current, or the snapshot confidence is low.",
+  "sesion.prosaSinBloqueo":
+    "Every condition of {regla} is met; whether it actually fires depends on the ruleset cooldown, which lives in the signals timeline.",
+  "sesion.prosaBloqueoSinDistancia":
+    "The {indicador} condition cannot be evaluated: its indicator is not current, and without a value there is no distance to measure.",
+  "sesion.prosaFaltaSubir":
+    "{indicador} still has to rise {distancia} to clear {umbral}: until it does, the rule will not fire however steady the rest stays.",
+  "sesion.prosaFaltaBajar":
+    "{indicador} still has to fall {distancia} to drop below {umbral}: until it does, the rule will not fire however steady the rest stays.",
+  "sesion.hechoCondiciones": "{cumplidas} of {totales} conditions",
+  "sesion.hechoLiquidez": "liquidity {valor} USDT · {delta} this session",
+  "sesion.hechoMomentum": "3 h bid momentum {valor} %",
+  "sesion.hechoFrescura": "data {cuando} · {confianza} confidence",
+  "sesion.confianzaNormal": "normal",
+  "sesion.confianzaBaja": "low",
+  "sesion.necesitaPorEncima": "needs > {umbral}",
+  "sesion.necesitaPorDebajo": "needs < {umbral}",
+  "sesion.condCumple": "met",
+  "sesion.condFalta": "{distancia} to go",
+  "sesion.condSinValor": "no current value",
+  "sesion.csv.indicador": "indicator",
+  "sesion.csv.instante": "instant_utc",
+  "sesion.csv.horaVet": "vet_time",
+  "sesion.csv.valor": "value",
   "intradia.titulo": "Intraday · VET operating day",
   "intradia.grupoOficial": "Official rate (BCV)",
   "intradia.grupoCompra": "P2P — buy",
@@ -1122,8 +1198,6 @@ export const EN: Record<Clave, string> = {
   "intradia.bucket5m": "5 min",
   "intradia.actualizar": "Refresh",
   "intradia.actualizado": "updated {hora} VET",
-  "intradia.dia":
-    "Operating day (VET): {dia} — each panel's change is measured against the day's open.",
   "intradia.sinDia": "No indicators for the current operating day yet.",
   "intradia.sinHoy": "No data today.",
   "intradia.apertura": "open {valor}",
