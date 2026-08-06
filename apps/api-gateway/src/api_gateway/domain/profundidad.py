@@ -2,10 +2,16 @@
 
 Proyección de lectura sobre el último snapshot crudo minimizado
 (`p2p_snapshots_raw.raw`, ADR-0011): niveles acumulados en bandas de 0,5 %
-desde el mejor precio del lado. Es una proyección del gateway, no un
-indicador del engine: cuando exista la hypertable `p2p_top_of_book`
-(architecture.md, planificada) esta lógica migra al indicator-engine
-(ADR-0016).
+desde el mejor precio del lado, **excluidos los anuncios marcados como
+outlier** por el ingestor. Es una proyección del gateway, no un indicador del
+engine: cuando exista la hypertable `p2p_top_of_book` (architecture.md,
+planificada) esta lógica migra al indicator-engine (ADR-0016).
+
+Ojo con la asimetría respecto al motor: `p2p_mejor_precio` se publica **sin
+filtrar y a propósito** (`calculos.py`) — es el top of book literal, y ocultarlo
+sería ocultar que alguien pide 920. Aquí es distinto porque ese precio no se
+muestra: se usa como **ancla** de una rejilla, y anclar en un anuncio absurdo no
+enseña un dato incómodo, enseña un libro que no existe.
 
 Semántica de lados (perspectiva del taker, ADR-0005): en BUY el taker compra
 USDT (mejor precio = el más bajo); en SELL el taker vende USDT (mejor precio
@@ -19,8 +25,26 @@ from decimal import Decimal, InvalidOperation
 
 def _precio_y_volumen(item: dict) -> tuple[Decimal, Decimal] | None:
     """Extrae (precio, volumen disponible en USDT) de un item crudo minimizado
-    (`{adv: {...}, advertiser: {...}}`). Item ilegible → se descarta (robustez
-    ante variaciones de la fuente; el crudo es dato no confiable, A08)."""
+    (`{adv: {...}, advertiser: {...}, outlier: bool}`). Item ilegible o marcado
+    como outlier → se descarta.
+
+    **El descarte del outlier es lo que hace útil este panel.** El precio de
+    anclaje es el mejor del lado, así que un solo anuncio absurdo desplaza la
+    rejilla entera: el 2026-08-06 el lado venta se anclaba en 920,00 —ocho
+    anuncios con 2 983 USDT— mientras el libro real vivía entre 841 y 845,5 con
+    ~8,3 M USDT, y las diez bandas del 0,5 % bajaban hasta 874 sin llegar nunca
+    al mercado. Diez barras idénticas de 372 USDT se leían como un libro
+    profundo. Eso es exactamente T2 —anuncios manipulados distorsionan lo que se
+    publica— sobre una superficie donde su control no se estaba aplicando.
+
+    El veredicto lo calcula el `ingestor-binance` (filtro MAD, dueño de la regla)
+    y viaja persistido en el crudo. Aquí solo se obedece: reimplementar el filtro
+    daría dos versiones que tienen que coincidir. Un item **sin** la marca no se
+    filtra — son snapshots anteriores al cambio, y suponerles un veredicto que
+    nadie emitió sería inventarlo.
+    """
+    if item.get("outlier") is True:
+        return None
     adv = item.get("adv") or {}
     try:
         precio = Decimal(str(adv["price"]))

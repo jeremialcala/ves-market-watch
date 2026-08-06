@@ -7,6 +7,37 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-06 — La profundidad se anclaba en un anuncio manipulado
+- Lo trajo el usuario en una captura: diez barras idénticas de 372 USDT en el lado
+  venta. Comprobado contra el crudo con SQL, **las cifras eran correctas**: había
+  un anuncio a 920,00 y nada más hasta 874. Lo que engañaba era el encuadre.
+- **El ancla es el mejor precio del lado**, así que un solo anuncio absurdo
+  desplaza la rejilla entera. El libro real vivía entre 841 y 845,5 con ~8,3 M
+  USDT y las bandas del 0,5 % nunca llegaban hasta ahí.
+- **Es T2 sobre una superficie donde su control no se aplicaba.** El filtro MAD
+  protege mediana, VWAP y liquidez en el motor; la profundidad la calcula el
+  gateway sobre el crudo, y **el crudo no decía qué anuncios eran outliers**: solo
+  traía `adv` y `advertiser`.
+- Se arregla **persistiendo el veredicto** junto a cada anuncio, casado por
+  `advNo`. La regla se queda donde vive: reimplementar el MAD en el gateway habría
+  dado dos versiones obligadas a coincidir. Es el mismo criterio con el que el
+  motor publica `reading` y `gap_legs` en vez de dejar que el SPA los derive.
+- **Lo que NO cambié, y por qué**: `p2p_mejor_precio` del motor sigue sin filtrar.
+  `calculos.py` lo dice desde el primer día —«el mejor precio se conserva sin
+  filtrar, aparte»— y es defendible: es el top of book literal y ocultarlo sería
+  ocultar que alguien pide 920. La diferencia está en el uso: allí el precio **se
+  muestra**, aquí **se usa como ancla**, y anclar en un anuncio absurdo no enseña
+  un dato incómodo, enseña un libro que no existe. *Lo había reportado como
+  descuido del motor; leerlo antes de tocarlo evitó romper una decisión buena.*
+- Segundo defecto del mismo panel: los dos lados se escalaban **cada uno contra su
+  propio total**, así que la última barra siempre llenaba el ancho y 651.963 USDT
+  se dibujaban igual que 372. Pasan a escala compartida. Un *small multiple*
+  invita a comparar las barras; que las cifras exactas estén impresas al lado no
+  arregla la comparación, la contradice.
+- Y un volumen despreciable conserva un filete de 2 px: con escala compartida, 200
+  USDT sobre 3 M redondean a 0,0 % y la barra desaparecía. Misma regla que el
+  hueco sin dato del mapa de calor.
+
 ## 2026-08-06 — El contrato de cierres del WSS era inalcanzable, y los tests no podían verlo
 - Síntoma que trajo el usuario: el stream reconectando en bucle, `403 Forbidden` en
   el log del gateway cada ~25 s.

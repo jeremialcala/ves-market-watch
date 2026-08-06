@@ -316,12 +316,19 @@ def evento_analisis(currency: str = "VES", **kwargs) -> dict:
     }
 
 
-def item_crudo(precio: str, disponible: str) -> dict:
-    """Item minimizado de `p2p_snapshots_raw.raw` (forma del ingestor-binance)."""
-    return {
+def item_crudo(precio: str, disponible: str, outlier: bool | None = False) -> dict:
+    """Item minimizado de `p2p_snapshots_raw.raw` (forma del ingestor-binance).
+
+    `outlier=None` omite la marca: es la forma de los snapshots anteriores a que
+    el ingestor empezara a persistir el veredicto.
+    """
+    item = {
         "adv": {"price": precio, "surplusAmount": disponible},
         "advertiser": {"userType": "user", "merchant_ref": "ab" * 16},
     }
+    if outlier is not None:
+        item["outlier"] = outlier
+    return item
 
 
 # -- eventos del bus (integration/e2e) ---------------------------------------

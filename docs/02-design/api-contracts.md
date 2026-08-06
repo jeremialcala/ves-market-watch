@@ -46,7 +46,7 @@ todo token ya emitido. Scopes/permisos: `read:rates`, `read:indicators`, `read:s
 | `/indicators/current` | GET | — | brecha abs/%, spreads, volúmenes, `official_stale` | read:indicators |
 | `/indicators/history` | GET | `from, to, interval=5m\|1h\|1d, page` | serie agregada paginada (rango máx. 90 días/request) | read:indicators |
 | `/analysis/current` | GET | `currency` (def. `VES`) | lectura de los medidores (banda, escala con sus cortes, posición y proximidad a cada regla) más `reading`: régimen, ejes y afirmaciones ordenadas del mercado; y `gap_legs`: las dos deltas del movimiento con su neto, que se publican **siempre** aunque la atribución se calle (ADR-0023) | read:indicators |
-| `/market/depth` | GET | `side` | niveles `{price_band, cum_volume}` | read:depth |
+| `/market/depth` | GET | `side` | niveles `{price_band, cum_volume}` acumulados desde el mejor precio del lado, **excluidos los anuncios marcados outlier** por el ingestor (T2) | read:depth |
 | `/signals` | GET | `from, to, type, page` | señales con evidencia (`inputs`, `rule`, `calc_version`) | read:signals |
 | `/health` | GET | — | estado por componente (sin detalles internos) | público |
 

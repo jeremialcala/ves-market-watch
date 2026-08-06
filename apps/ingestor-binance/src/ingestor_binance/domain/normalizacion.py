@@ -17,6 +17,7 @@ import unicodedata
 from dataclasses import replace
 from decimal import Decimal, InvalidOperation
 from statistics import median
+from typing import Collection
 
 from ingestor_binance.domain.models import Anuncio
 
@@ -144,11 +145,24 @@ def etiquetar_outliers(
     )
 
 
-def minimizar_crudo(items: list[dict], pseudonimizador: Pseudonimizador) -> list[dict]:
+def minimizar_crudo(
+    items: list[dict],
+    pseudonimizador: Pseudonimizador,
+    adv_no_outliers: Collection[str] = (),
+) -> list[dict]:
     """Versión persistible del crudo: `adv` completo (datos públicos del anuncio)
     y del `advertiser` solo las métricas públicas más el pseudónimo `merchant_ref`
     (ADR-0011) — el alias y los identificadores crudos se redactan antes de
-    tocar disco (minimización de datos)."""
+    tocar disco (minimización de datos).
+
+    Cada item lleva además el **veredicto de outlier** ya calculado. El filtro MAD
+    es el control de T2 y su regla vive aquí, en el servicio que la posee; sin
+    persistir el veredicto, cualquier consumidor del crudo —el gateway calcula la
+    profundidad sobre él— tiene que reimplementarla o quedarse sin ella. Se anota
+    por `advNo` y no por posición: casar dos listas por índice es una invitación a
+    que un cambio de orden marque el anuncio equivocado.
+    """
+    marcados = set(adv_no_outliers)
     return [
         {
             "adv": item.get("adv", {}),
@@ -160,6 +174,7 @@ def minimizar_crudo(items: list[dict], pseudonimizador: Pseudonimizador) -> list
                 },
                 "merchant_ref": _merchant_ref(item.get("advertiser", {}), pseudonimizador),
             },
+            "outlier": str(item.get("adv", {}).get("advNo", "")) in marcados,
         }
         for item in items
     ]

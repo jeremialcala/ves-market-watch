@@ -57,6 +57,35 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Fixed
 
+- **La profundidad P2P se anclaba en un anuncio manipulado y enseñaba un libro
+  que no existía (2026-08-06).** El lado venta se anclaba en 920,00 —ocho
+  anuncios con 2 983 USDT— mientras el libro real vivía entre 841 y 845,5 con
+  ~8,3 M USDT; las diez bandas del 0,5 % bajaban hasta 874 sin llegar nunca al
+  mercado, y el panel dibujaba diez barras idénticas de 372 USDT que se leían
+  como liquidez profunda. **Las cifras eran correctas** —verificadas contra el
+  crudo con SQL—: lo que engañaba era el encuadre.
+  - Es **T2** —anuncios manipulados distorsionan lo que se publica— sobre una
+    superficie donde su control no se aplicaba: el filtro MAD protege mediana,
+    VWAP y liquidez en el motor, pero la profundidad la calcula el gateway sobre
+    el crudo, **y el crudo no decía qué anuncios eran outliers**.
+  - **El ingestor persiste ahora el veredicto** junto a cada anuncio, casado por
+    `advNo` y no por posición. La regla sigue viviendo en el servicio que la
+    posee: reimplementarla en el gateway habría dado dos versiones que tienen que
+    coincidir. Un item **sin** la marca —snapshots anteriores— no se filtra:
+    suponerle un veredicto que nadie emitió sería inventarlo.
+  - No basta con no anclar en el outlier: tampoco suma al acumulado si cae dentro
+    de una banda, que es la cifra que el panel escribe.
+  - **`p2p_mejor_precio` del motor se queda sin filtrar, y está bien así**
+    (`calculos.py` lo dice desde el principio): es el top of book literal y
+    ocultarlo sería ocultar que alguien pide 920. La diferencia es que ahí el
+    precio **se muestra**, y aquí **se usa como ancla** de una rejilla.
+- **Los dos paneles de profundidad se escalaban cada uno contra su propio total**,
+  así que la última barra siempre llenaba el ancho: 651.963 USDT de compra y 372
+  de venta salían con la misma pinta. Pasan a **escala compartida** — un *small
+  multiple* invita a comparar las barras, no a leer los números. Y un volumen
+  despreciable a esa escala conserva un filete de 2 px: «poco» y «nada» tienen
+  que verse distinto, la misma regla que el hueco sin dato del mapa de calor.
+
 - **Un fallo transitorio del JWKS dejaba la autenticación muerta 60 s
   (2026-08-06).** En un arranque en frío, una sola descarga fallida —un
   `ConnectError` sin mensaje, DNS todavía sin resolver— provocó **2 224
