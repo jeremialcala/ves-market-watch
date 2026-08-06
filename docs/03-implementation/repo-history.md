@@ -1,7 +1,7 @@
 # Historial de implementación — Criterio
 
 * **Estado:** review (documentación viva — regenerada por script, no editar a mano)
-* **Fecha:** 2026-08-05
+* **Fecha:** 2026-08-06
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
 * **Versión:** 0.4.0
@@ -193,6 +193,8 @@ gitGraph
     commit id: "14b7282"
     commit id: "4039c07"
     commit id: "bc638ce"
+    commit id: "a0890ae"
+    commit id: "2031daa"
 ```
 
 ### Estado actual de las ramas
@@ -200,7 +202,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `bc638ce` | 2026-08-05 | 159 |
+| `develop` | `2031daa` | 2026-08-06 | 161 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -216,6 +218,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `2031daa` | commit | — | Jeremi Alcala | 2026-08-06 | fix(api-gateway): el contrato de cierres del WSS era inalcanzable |
+| `a0890ae` | commit | — | Jeremi Alcala | 2026-08-05 | docs(repo-history): regenerar |
 | `bc638ce` | commit | — | Jeremi Alcala | 2026-08-05 | docs: barrido de coherencia, README incluido, y estado real de los gates |
 | `4039c07` | commit | — | Jeremi Alcala | 2026-08-04 | docs: la cifra que manda es la de la pipeline (97,22 %, no 97,40 %) |
 | `14b7282` | commit | — | Jeremi Alcala | 2026-08-04 | test(ingestor-historico): 72 % a 97 % y el criterio de cobertura de Gate 2 cerrado |
