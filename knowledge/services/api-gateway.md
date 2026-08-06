@@ -61,7 +61,7 @@ in-memory, profundidad como proyección interim).
   `/health` reporta `broker: down` mientras no haya consumo real.
 
 ## Verificación
-- **108 tests** (unit, contract contra el `openapi.yaml`, integration contra
+- **118 tests** (unit, contract contra el `openapi.yaml`, integration contra
   TimescaleDB/RabbitMQ reales — incl. rechazo de INSERT por el pool read-only —
   y e2e: REST autenticado + evento en el bus → frame por el WSS suscrito). La
   autenticación de tests usa un par RSA/JWKS local (`tests/soporte_auth.py`).

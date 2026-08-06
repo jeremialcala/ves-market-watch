@@ -195,6 +195,8 @@ gitGraph
     commit id: "bc638ce"
     commit id: "a0890ae"
     commit id: "2031daa"
+    commit id: "e19af34"
+    commit id: "8c6ca8e"
 ```
 
 ### Estado actual de las ramas
@@ -202,7 +204,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `2031daa` | 2026-08-06 | 161 |
+| `develop` | `8c6ca8e` | 2026-08-06 | 163 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -218,6 +220,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `8c6ca8e` | commit | — | Jeremi Alcala | 2026-08-06 | fix(api-gateway): un fallo transitorio de JWKS mataba la autenticacion 60 s |
+| `e19af34` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
 | `2031daa` | commit | — | Jeremi Alcala | 2026-08-06 | fix(api-gateway): el contrato de cierres del WSS era inalcanzable |
 | `a0890ae` | commit | — | Jeremi Alcala | 2026-08-05 | docs(repo-history): regenerar |
 | `bc638ce` | commit | — | Jeremi Alcala | 2026-08-05 | docs: barrido de coherencia, README incluido, y estado real de los gates |

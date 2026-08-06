@@ -43,7 +43,7 @@ jobs:
           #   ingestor-bcv          99,36 %      ✔  (era 76,44 %)
           #   ingestor-binance      99,26 %      ✔  (era 75,92 %)
           #   ingestor-historico    97,22 %      ✔  (era 71,71 %)
-          #   api-gateway           90,72 %      ✔
+          #   api-gateway           92,80 %      ✔  (era 90,72 %)
           #   indicator-engine      85,88 %      ✔
           #
           # Los seis cumplen el criterio de salida de Gate 2 desde el 2026-08-04.
@@ -52,7 +52,7 @@ jobs:
           # mismo que la medición local en Windows, así que no hace falta holgura
           # por plataforma. Subirlos según se cubra; NUNCA bajarlos.
           - servicio: api-gateway
-            piso: 90
+            piso: 92
           - servicio: indicator-engine
             piso: 85
           - servicio: ingestor-bcv
