@@ -45,9 +45,14 @@ timestamp: 2026-08-03T12:00:00Z
 - **`/health` dice `auth: ok` durante la caída**, porque la bandera de fallo
   arranca en `False` y una recuperación posterior la limpia. Una caída total de 57
   segundos no deja rastro en el health.
-- Pendiente de arreglar: no consumir el cooldown cuando el fetch falla (reintentar
-  con backoff corto), decir en el log si hubo refresco o no, y que el health
-  distinga «nunca se pudo cargar el JWKS» de «todo bien».
+- **Arreglado el mismo día**: el mínimo entre descargas cuenta solo para las
+  correctas (un fallo reintenta desde 1 s, duplicando hasta el minuto), el JWKS se
+  precarga al arrancar antes de aceptar tráfico, el health reporta `degraded` sin
+  claves cargadas, los tres motivos de rechazo se dicen distintos y una ráfaga
+  dispara una sola descarga gracias a un candado.
+- **Nada de esto estaba cubierto.** 10 pruebas nuevas con reloj y cliente HTTP
+  controlados, ninguna duerme. Verificado en vivo: el reinicio siguiente descargó
+  el JWKS **antes** de «Application startup complete» y no produjo un solo 401.
 
 ## 2026-08-05 — Barrido de coherencia: el README no sabía que existe la CI
 - Tres días después de montar la pipeline, el `README.md` —la puerta de entrada

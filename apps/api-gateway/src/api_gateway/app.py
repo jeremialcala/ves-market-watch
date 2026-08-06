@@ -58,6 +58,10 @@ def create_app(
             issuer=settings.auth0_issuer,
             audience=settings.auth0_audience,
         )
+        # Antes de aceptar tráfico: sin claves, el gateway no puede autenticar a
+        # nadie, y la primera petición no debería ser la que pague el arranque en
+        # frío contra Auth0. Si falla, se arranca igual y /health lo dice.
+        await app.state.validador.precargar()
         repo_propio = repositorio is None
         app.state.repositorio = repositorio or await TimescaleLecturaRepository.connect(
             settings.database_url

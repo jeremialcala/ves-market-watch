@@ -57,6 +57,33 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Fixed
 
+- **Un fallo transitorio del JWKS dejaba la autenticación muerta 60 s
+  (2026-08-06).** En un arranque en frío, una sola descarga fallida —un
+  `ConnectError` sin mensaje, DNS todavía sin resolver— provocó **2 224
+  respuestas 401 durante 57 segundos**, con tokens perfectamente válidos. Pasaba
+  en **cada despliegue**.
+  - **El mínimo entre descargas se le cobraba igual a un intento que falló.** Ese
+    mínimo existe para que tokens con `kid` basura no martilleen a Auth0, pero una
+    descarga que no llegó no ha protegido a nadie: ahora un fallo se reintenta con
+    espera creciente desde 1 s, y solo una descarga **correcta** impone el minuto.
+  - **El JWKS se precarga al arrancar**, antes de aceptar tráfico: la primera
+    petición deja de pagar la resolución DNS y el TLS contra Auth0. Es
+    best-effort — si falla, el servicio levanta igual y `/health` lo dice.
+  - **`/health` decía `auth: ok` durante la caída**, porque la bandera de fallo
+    arranca en `False` y una recuperación posterior la limpiaba: 57 segundos de
+    caída total sin rastro. Ahora, sin ninguna clave cargada, el validador reporta
+    `degraded`.
+  - **El log mandaba a buscar una rotación de claves inexistente.** «kid
+    desconocido tras refrescar» se emitía también cuando el refresco se había
+    saltado por la pausa; los tres casos —refrescado, en pausa, falló— ahora se
+    dicen distintos. Y el aviso nombra el tipo de excepción: `ConnectError("")`
+    se logueaba como «fetch de JWKS falló: » a secas, sin un solo síntoma.
+  - **Una ráfaga con un `kid` nuevo dispara UNA sola descarga** (candado): antes,
+    la primera petición marcaba la pausa y todas las demás la encontraban puesta,
+    fallando sin que nadie hubiera refrescado.
+  - 10 pruebas nuevas con reloj y cliente HTTP controlados —ninguna duerme—;
+    `jwks.py` pasa a 95 % y el gateway de 90,72 % a 93 %.
+
 - **Los códigos de cierre del WSS no llegaban al navegador: el stream se
   reconectaba en bucle sin arreglarse (2026-08-06).** El gateway cerraba la
   conexión **antes** de `accept()` en los tres rechazos —sin token, token

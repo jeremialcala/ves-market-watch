@@ -22,6 +22,13 @@ class TokenValidator(ABC):
     def estado(self) -> str:
         """'ok' | 'degraded' — salud del validador para /health (sin llamar a Auth0)."""
 
+    async def precargar(self) -> None:
+        """Prepara lo que necesite antes de la primera validación (best-effort).
+
+        No es abstracto: un validador que no dependa de la red —los dobles de
+        test— no tiene nada que precargar y no debería verse obligado a decirlo.
+        """
+
 
 class AlertNotifier(Protocol):
     """Canal de alertas de operación — mismo puerto que el indicator-engine.
