@@ -26,9 +26,14 @@ import {
   YAxis,
 } from "recharts";
 
-import { historialIntradia, type Intervalo } from "../api/endpoints";
+import {
+  historialIntradia,
+  seriesDeVentana,
+  type Intervalo,
+} from "../api/endpoints";
 import { ApiError } from "../api/problem";
 import { NoDataState } from "../components/NoDataState";
+import { SessionMovers } from "../components/SessionMovers";
 import { SessionReading } from "../components/SessionReading";
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
@@ -78,6 +83,19 @@ const COLOR_DIRECCION = {
 
 /** El intradía se refresca al ritmo del bucket más fino (5 min). */
 const REFRESCO_MS = 300_000;
+
+/** Ventana con la que «qué se movió» normaliza el movimiento de la sesión. */
+const DIAS_REFERENCIA = 7;
+
+/**
+ * La referencia se pide SIEMPRE en bucket de 1 h, ignorando el selector.
+ *
+ * Con 5 min son ~2 000 buckets por serie y 7 días salen por encima de 40 000
+ * filas: se vio en vivo paginando por la página 33 mientras la sección seguía
+ * sin pintarse. A 1 h son ~170 puntos por serie, de sobra para una σ, y la
+ * consulta cabe en unas pocas páginas.
+ */
+const INTERVALO_REFERENCIA = "1h" as const;
 
 function Chispa({
   puntos,
@@ -222,6 +240,9 @@ export function IntradayView() {
   const [moneda, setMoneda] = useState("USD");
   const [intervalo, setIntervalo] = useState<Intervalo>("5m");
   const [series, setSeries] = useState<Map<string, PuntoIntradia[]>>(new Map());
+  const [referencia, setReferencia] = useState<Map<string, PuntoIntradia[]>>(
+    new Map(),
+  );
   const [progreso, setProgreso] = useState<string | null>(null);
   const [actualizado, setActualizado] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -266,6 +287,42 @@ export function IntradayView() {
       abortRef.current?.abort();
     };
   }, [cargar]);
+
+  /*
+   * La ventana de referencia va en su propio efecto y NO en el refresco de 5
+   * minutos: son ~3 400 filas por moneda y una σ de 7 días no cambia entre un
+   * bucket y el siguiente. Se recarga al cambiar de moneda o de intervalo, que
+   * es cuando deja de valer.
+   *
+   * Si falla, no rompe la vista: sin referencia la sección de movimientos
+   * simplemente no se pinta —no hay con qué normalizar—, y la parrilla sigue.
+   */
+  useEffect(() => {
+    const abort = new AbortController();
+    void (async () => {
+      const hasta = new Date();
+      const desde = new Date(
+        hasta.getTime() - DIAS_REFERENCIA * 24 * 60 * 60 * 1000,
+      );
+      try {
+        const ventana = await seriesDeVentana(
+          moneda,
+          INTERVALO_REFERENCIA,
+          desde,
+          hasta,
+          { signal: abort.signal },
+        );
+        if (!abort.signal.aborted) {
+          setReferencia(ventana);
+        }
+      } catch {
+        if (!abort.signal.aborted) {
+          setReferencia(new Map());
+        }
+      }
+    })();
+    return () => abort.abort();
+  }, [moneda]);
 
   const porGrupo = new Map<Grupo, Array<[string, PuntoIntradia[]]>>();
   for (const nombre of [...series.keys()].sort()) {
@@ -327,6 +384,7 @@ export function IntradayView() {
             frase de día operativo que antes colgaba suelta aquí: la apertura y
             lo transcurrido son contexto de esta lectura, no una nota al margen. */}
         <SessionReading series={series} />
+        <SessionMovers sesion={series} historia={referencia} />
         {error !== null ? <p className="vmw-sin-datos">{error}</p> : null}
 
         {series.size === 0 && progreso === null && error === null ? (

@@ -1028,6 +1028,114 @@ body {
   opacity: 0.85;
 }
 
+/* -- qué se movió desde la apertura (Intradía) ------------------------------ */
+
+/* h3 y bajada en la MISMA línea base: el subtítulo es una aposición del título,
+   no un segundo renglón. */
+.vmw-movio__titulo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(20px, 2.4vw, 24px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #fff;
+}
+
+.vmw-movio__bajada {
+  font-size: 13.5px;
+  color: var(--text-dim);
+}
+
+.vmw-movio__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.vmw-movio__tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 22px;
+  padding: 22px 24px;
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+}
+
+/* El borde coral es del movimiento ADVERSO, con la misma convención que la
+   brecha del dashboard. Donde el proyecto no tiene lectura establecida, la
+   tarjeta va con hairline y no insinúa nada. */
+.vmw-movio__tarjeta[data-adverso="si"] {
+  border-color: var(--coral-line);
+}
+
+.vmw-movio__cabecera-tarjeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.vmw-movio__metrica {
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+/* Pastilla del lado, empujada al extremo de la fila y coloreada por él: el lado
+   es lo ÚNICO que el color codifica en esta vista. */
+.vmw-movio__lado {
+  flex: none;
+  font-size: 12px;
+  border-radius: 100px;
+  padding: 2px 10px;
+  border: 1px solid currentcolor;
+}
+
+.vmw-movio__cifra-fila {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.vmw-movio__cifra {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+/* La Δ en tinta, no en el color de la serie: el signo va escrito. */
+.vmw-movio__delta {
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+
+.vmw-movio__spark {
+  width: 100%;
+  height: 48px;
+  display: block;
+}
+
+.vmw-movio__pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.vmw-movio__nota {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
 /* -- lectura de la sesión (Intradía) --------------------------------------- */
 
 /* Bloque rector de la vista: la ÚNICA superficie con tinte coral aquí, igual

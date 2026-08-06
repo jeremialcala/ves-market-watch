@@ -289,9 +289,32 @@ export async function historialIntradia(
   monedaOficial: string,
   intervalo: Intervalo,
   ahora: Date,
+  opciones: OpcionesPaginado = {},
+): Promise<Map<string, PuntoIntradia[]>> {
+  return seriesDeVentana(
+    monedaOficial,
+    intervalo,
+    inicioDiaVET(ahora),
+    ahora,
+    opciones,
+  );
+}
+
+/**
+ * Las mismas series en una ventana arbitraria.
+ *
+ * La usa el intradía para el día operativo y «qué se movió» para los 7 días con
+ * los que normaliza. Es la misma consulta: no filtra por indicador —una ventana
+ * los devuelve todos de una vez— pero sí por moneda, o se paginarían las cinco
+ * del BCV para dibujar una.
+ */
+export async function seriesDeVentana(
+  monedaOficial: string,
+  intervalo: Intervalo,
+  desde: Date,
+  hasta: Date,
   { signal, alProgresar }: OpcionesPaginado = {},
 ): Promise<Map<string, PuntoIntradia[]>> {
-  const desde = inicioDiaVET(ahora);
   const monedas = [...new Set([MONEDA_P2P, monedaOficial])];
   const avance = monedas.map(() => ({ paginas: 0, items: 0, hayMas: false }));
   const reportar =
@@ -309,7 +332,7 @@ export async function historialIntradia(
     monedas.map((moneda, indice) =>
       historialIndicadores(
         desde,
-        ahora,
+        hasta,
         intervalo,
         { moneda },
         { signal, alProgresar: reportar(indice) },

@@ -519,6 +519,35 @@ export const ES = {
   "historico.rangoLabel": "{dias} días",
 
   // -- intradía --------------------------------------------------------------
+  // -- Qué se movió desde la apertura (Intradía) ------------------------------
+  "movio.titulo": "Qué se movió desde la apertura",
+  "movio.bajada": "{destacadas} de {totales} series explican la sesión",
+  "movio.restoNormal": "el resto se mantuvo dentro de su rango normal",
+  "movio.restoInquieto":
+    "otras {n} también se salieron de su rango normal",
+  "movio.apertura": "apertura {valor}",
+  "movio.ahora": "ahora",
+  "movio.descripcionSpark":
+    "{etiqueta}: de {apertura} en la apertura a {ultimo} ahora.",
+  "movio.magnitud": "Se movió {veces} veces su variación típica de 7 días.",
+  "movio.magnitudQuieta":
+    "No se había movido en los últimos 7 días; hoy sí.",
+  "movio.brechaAbre":
+    "La brecha se abrió: el paralelo se alejó del oficial durante la sesión.",
+  "movio.brechaComprime":
+    "La brecha se comprimió: el paralelo se acercó al oficial.",
+  "movio.liquidezSube":
+    "Hay más volumen ofrecido que al abrir: el libro aguanta órdenes mayores.",
+  "movio.liquidezBaja":
+    "Queda menos volumen ofrecido que al abrir: el libro se vacía.",
+  "movio.spreadSube":
+    "Comprar y vender se separaron: cruzar el mercado cuesta más que al abrir.",
+  "movio.spreadBaja":
+    "Comprar y vender se acercaron: cruzar el mercado cuesta menos que al abrir.",
+  "movio.outliersSube":
+    "Más anuncios quedaron fuera del filtro: el snapshot trae más ruido.",
+  "movio.outliersBaja":
+    "Menos anuncios quedaron fuera del filtro: el snapshot está más limpio.",
   // -- Lectura de la sesión (Intradía) ---------------------------------------
   "sesion.titulo": "Lectura de la sesión",
   "sesion.sello": "día operativo {dia} · apertura {hora} VET · {transcurrido} transcurridas",
@@ -1094,6 +1123,33 @@ export const EN: Record<Clave, string> = {
   "historico.sinSerie": "No data in the requested range.",
   "historico.rangoLabel": "{dias} days",
 
+  // -- What moved since the open (Intraday) -----------------------------------
+  "movio.titulo": "What moved since the open",
+  "movio.bajada": "{destacadas} of {totales} series explain the session",
+  "movio.restoNormal": "the rest stayed within their normal range",
+  "movio.restoInquieto": "another {n} also moved out of their normal range",
+  "movio.apertura": "open {valor}",
+  "movio.ahora": "now",
+  "movio.descripcionSpark":
+    "{etiqueta}: from {apertura} at the open to {ultimo} now.",
+  "movio.magnitud": "It moved {veces} times its typical 7-day variation.",
+  "movio.magnitudQuieta": "It had not moved in the last 7 days; today it did.",
+  "movio.brechaAbre":
+    "The gap widened: the parallel rate pulled away from the official one.",
+  "movio.brechaComprime":
+    "The gap narrowed: the parallel rate moved closer to the official one.",
+  "movio.liquidezSube":
+    "There is more volume on offer than at the open: the book absorbs larger orders.",
+  "movio.liquidezBaja":
+    "There is less volume on offer than at the open: the book is thinning out.",
+  "movio.spreadSube":
+    "Buy and sell drifted apart: crossing the market costs more than at the open.",
+  "movio.spreadBaja":
+    "Buy and sell moved closer: crossing the market costs less than at the open.",
+  "movio.outliersSube":
+    "More ads fell outside the filter: the snapshot carries more noise.",
+  "movio.outliersBaja":
+    "Fewer ads fell outside the filter: the snapshot is cleaner.",
   // -- Session reading (Intraday) --------------------------------------------
   "sesion.titulo": "Session reading",
   "sesion.sello": "operating day {dia} · open {hora} VET · {transcurrido} elapsed",

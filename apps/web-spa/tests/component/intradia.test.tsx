@@ -100,6 +100,35 @@ function conSeries() {
   );
 }
 
+/**
+ * Separa las dos consultas que hace la vista: la del día operativo y la ventana
+ * de referencia de 7 días. Contarlas juntas escondía cuál se estaba repitiendo.
+ */
+function espiarPeticiones() {
+  const monedasDelDia: string[] = [];
+  const ventanas: { ms: number; intervalo: string | null }[] = [];
+  servidor.use(
+    http.get(`${BASE}/indicators/history`, ({ request }) => {
+      const params = new URL(request.url).searchParams;
+      const moneda = params.get("currency");
+      const desde = Date.parse(params.get("from") ?? "");
+      const hasta = Date.parse(params.get("to") ?? "");
+      const ventana = hasta - desde;
+      ventanas.push({ ms: ventana, intervalo: params.get("interval") });
+      // Solo la del día operativo, y solo la moneda oficial (los p2p_* van en VES).
+      if (moneda !== null && moneda !== "VES" && ventana < 2 * 86_400_000) {
+        monedasDelDia.push(moneda);
+      }
+      return HttpResponse.json({
+        data: [],
+        pagination: { page: 1, page_size: 500, total_items: 0, has_more: false },
+        interval: "5m",
+      });
+    }),
+  );
+  return { monedasDelDia, ventanas };
+}
+
 describe("IntradayView", () => {
   it("agrupa por familia y mide la Δ contra la apertura del día", async () => {
     conSeries();
@@ -196,27 +225,37 @@ describe("IntradayView", () => {
   });
 
   it("cambiar la moneda vuelve a pedir el intradía de esa moneda", async () => {
-    const monedas: string[] = [];
-    servidor.use(
-      http.get(`${BASE}/indicators/history`, ({ request }) => {
-        const moneda = new URL(request.url).searchParams.get("currency");
-        if (moneda !== null && moneda !== "VES") {
-          monedas.push(moneda);
-        }
-        return HttpResponse.json({
-          data: [],
-          pagination: { page: 1, page_size: 500, total_items: 0, has_more: false },
-          interval: "5m",
-        });
-      }),
-    );
+    const { monedasDelDia } = espiarPeticiones();
     render(<IntradayView />);
-    await waitFor(() => expect(monedas).toEqual(["USD"]));
+    await waitFor(() => expect(monedasDelDia).toEqual(["USD"]));
 
     await userEvent.selectOptions(
       screen.getByLabelText("Moneda de la tasa oficial"),
       "EUR",
     );
-    await waitFor(() => expect(monedas).toEqual(["USD", "EUR"]));
+    await waitFor(() => expect(monedasDelDia).toEqual(["USD", "EUR"]));
+  });
+
+  it("la ventana de referencia se pide aparte y cubre 7 días", async () => {
+    /*
+     * «Qué se movió» normaliza contra la desviación típica de 7 días, así que
+     * hace falta una segunda consulta con otra ventana: la del día operativo no
+     * sirve para medir qué es normal en esa serie.
+     */
+    const { ventanas } = espiarPeticiones();
+    render(<IntradayView />);
+
+    await waitFor(() => expect(ventanas.length).toBeGreaterThanOrEqual(2));
+    const dias = ventanas.map((v) => Math.round(v.ms / 86_400_000));
+    expect(dias).toContain(7);
+    expect(Math.min(...dias)).toBeLessThanOrEqual(1); // la del día operativo
+
+    /*
+     * Y SIEMPRE en bucket de 1 h, ignore lo que diga el selector: con 5 min son
+     * ~2 000 buckets por serie y 7 días pasan de 40 000 filas. Se vio en vivo
+     * paginando por la 33 mientras la sección seguía sin pintarse.
+     */
+    const referencia = ventanas.find((v) => v.ms > 6 * 86_400_000)!;
+    expect(referencia.intervalo).toBe("1h");
   });
 });
