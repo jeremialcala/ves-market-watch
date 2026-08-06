@@ -7,6 +7,48 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-06 — El contrato de cierres del WSS era inalcanzable, y los tests no podían verlo
+- Síntoma que trajo el usuario: el stream reconectando en bucle, `403 Forbidden` en
+  el log del gateway cada ~25 s.
+- **Causa:** el gateway cerraba antes de `accept()`. Starlette convierte eso en un
+  HTTP 403 de handshake, así que el frame de cierre no llega a existir y el
+  navegador ve `1006`. Los códigos 4401/4403 que especifica el contrato, que el
+  gateway enviaba y para los que el SPA tiene política —refrescar el token /
+  detenerse— **no eran alcanzables para el único cliente que existe**. Con 1006 el
+  SPA caía en el `default`: backoff y reintento con el mismo token caducado.
+- **Lo más instructivo: las tres pruebas afirmaban `code == 4401` y pasaban con el
+  defecto puesto.** El `TestClient` de Starlette es un arnés ASGI en proceso: no
+  hace handshake HTTP y entrega el código de cierre igualmente. *Un test puede
+  verificar la afirmación correcta y aun así no tocar el comportamiento real, si
+  el arnés no reproduce la capa donde vive el defecto.* Reescritas para exigir que
+  el handshake COMPLETE, que es lo que discrimina las dos formas; comprobado por
+  mutación.
+- Descartado por el camino, con evidencia: el rol del usuario tiene los cinco
+  permisos, el RBAC está activo con `access_token_authz`, y con un token del client
+  M2M el WSS conectaba. El problema nunca fue de autorización.
+
+## 2026-08-06 — Un fallo transitorio de JWKS deja la autenticación muerta 60 s
+- Descubierto al reiniciar el gateway para desplegar el arreglo del WSS. La
+  secuencia, medida en el log: proceso arranca a las 03:54:17 · primer rechazo a
+  las 03:54:35 · `fetch de JWKS falló:` con **mensaje vacío** a las 03:54:37
+  (típico de DNS en frío) · **2 224 peticiones con 401 hasta las 03:55:32**, que
+  son exactamente los 60 s de `_MIN_ENTRE_FETCHES_S`.
+- **El mínimo entre fetches se aplica igual cuando el fetch FALLÓ.** Existe para
+  que tokens con `kid` basura no martilleen a Auth0 — un objetivo correcto—, pero
+  un fetch fallido no ha protegido nada y consume la cuota igual. Resultado: una
+  caída de DNS de un segundo se convierte en un minuto de 401 para todo el mundo,
+  con tokens perfectamente válidos.
+- **El log miente mientras dura.** «kid desconocido tras refrescar» se emite
+  también cuando el refresco se saltó por el cooldown; me mandó a buscar una
+  rotación de claves que no existía. Comprobado: el `kid` estaba en el JWKS de
+  ambos dominios y el contenedor lo alcanzaba sin problema.
+- **`/health` dice `auth: ok` durante la caída**, porque la bandera de fallo
+  arranca en `False` y una recuperación posterior la limpia. Una caída total de 57
+  segundos no deja rastro en el health.
+- Pendiente de arreglar: no consumir el cooldown cuando el fetch falla (reintentar
+  con backoff corto), decir en el log si hubo refresco o no, y que el health
+  distinga «nunca se pudo cargar el JWKS» de «todo bien».
+
 ## 2026-08-05 — Barrido de coherencia: el README no sabía que existe la CI
 - Tres días después de montar la pipeline, el `README.md` —la puerta de entrada
   del repositorio— no la mencionaba en ninguna parte: ni `.github/workflows/` en

@@ -76,7 +76,9 @@ fuente de verdad de contratos). Mapeo routing key → tópico:
 | `analysis` | `analysis.updated` | `schemas/analysis.v1.json` |
 
 Límites: ≤ 5 conexiones y ≤ 10 suscripciones por usuario (`sub`); ping del servidor cada
-30 s; cierres 4401 (sin token/inválido/expirado), 4403 (sin `stream:events`), 1008
+30 s; el handshake **se acepta siempre** y el rechazo viaja como frame de cierre
+—cerrar antes de aceptar lo convierte en un HTTP 403 y el código no llega al
+navegador, que solo ve `1006`—; cierres 4401 (sin token/inválido/expirado), 4403 (sin `stream:events`), 1008
 (límite de conexiones).
 
 ## Eventos internos (AMQP `market.events`, topic exchange)

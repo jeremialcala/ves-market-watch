@@ -49,6 +49,23 @@ class _Canal:
 @router.websocket("/ws/v1")
 async def canal_streaming(websocket: WebSocket) -> None:
     estado = websocket.app.state
+
+    # El handshake se ACEPTA antes de validar, y no es un descuido.
+    #
+    # Cerrar un WebSocket de Starlette sin haberlo aceptado no envía un frame de
+    # cierre: aborta el handshake con un HTTP 403, y el código se pierde por el
+    # camino. En el navegador eso llega como `onclose` con 1006 —cierre anormal,
+    # sin motivo—, así que el 4401 y el 4403 de este contrato eran inalcanzables
+    # para el único cliente que existe. El SPA tiene una política por código
+    # (`ws/politicas.ts`): con 4401 refresca el token y reconecta, con 4403 se
+    # detiene porque reintentar no lo va a arreglar. Con 1006 caía en el `default`
+    # y reintentaba con el MISMO token caducado hasta que algo ajeno lo refrescara.
+    #
+    # Aceptar primero no relaja nada: el token se valida antes de registrar la
+    # conexión en el gestor y antes de enviar un solo byte de dato. Lo único que
+    # cambia es que el cierre puede llevar su motivo.
+    await websocket.accept()
+
     token = websocket.query_params.get("token", "")
     if not token:
         await websocket.close(code=CIERRE_NO_AUTENTICADO, reason="token requerido")
@@ -66,7 +83,6 @@ async def canal_streaming(websocket: WebSocket) -> None:
         )
         return
 
-    await websocket.accept()
     canal = _Canal(websocket)
     try:
         estado.gestor.conectar(usuario, canal)

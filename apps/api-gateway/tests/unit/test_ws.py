@@ -36,25 +36,39 @@ def _conectar(cliente: TestClient, token: str):
     return cliente.websocket_connect(f"/ws/v1?token={token}")
 
 
-def test_sin_token_cierra_4401(cliente):
-    with pytest.raises(WebSocketDisconnect) as exc:
-        with cliente.websocket_connect("/ws/v1"):
-            pass
-    assert exc.value.code == 4401
+def _codigo_de_cierre(conexion) -> int:
+    """Código con el que el servidor cierra **una conexión ya establecida**.
+
+    La forma de estas pruebas es el arreglo, no un detalle: el `with` tiene que
+    ENTRAR. Si el handshake no se completa —porque el servidor cierra antes de
+    aceptar— Starlette aborta con un HTTP 403 y el código de cierre no existe
+    para el cliente; en un navegador eso llega como 1006 y el SPA pierde la
+    política por código de `ws/politicas.ts` (4401 → refrescar el token,
+    4403 → detenerse). Con `websocket_connect` levantando la excepción en la
+    entrada, este helper falla, que es justo lo que se quiere.
+
+    Estas tres pruebas ya afirmaban el código correcto y **pasaban con el defecto
+    puesto**: el `TestClient` es un arnés ASGI en proceso, no hace handshake HTTP,
+    y entregaba un código que sobre el cable no llegaba a ninguna parte.
+    """
+    with conexion as ws:
+        with pytest.raises(WebSocketDisconnect) as exc:
+            ws.receive_json()
+    return exc.value.code
 
 
-def test_token_invalido_cierra_4401(cliente):
-    with pytest.raises(WebSocketDisconnect) as exc:
-        with _conectar(cliente, firmar_token(exp_en=timedelta(minutes=-1))):
-            pass
-    assert exc.value.code == 4401
+def test_sin_token_acepta_el_handshake_y_cierra_4401(cliente):
+    assert _codigo_de_cierre(cliente.websocket_connect("/ws/v1")) == 4401
 
 
-def test_sin_permiso_stream_cierra_4403(cliente):
-    with pytest.raises(WebSocketDisconnect) as exc:
-        with _conectar(cliente, firmar_token(permisos=["read:rates"])):
-            pass
-    assert exc.value.code == 4403
+def test_token_invalido_acepta_el_handshake_y_cierra_4401(cliente):
+    conexion = _conectar(cliente, firmar_token(exp_en=timedelta(minutes=-1)))
+    assert _codigo_de_cierre(conexion) == 4401
+
+
+def test_sin_permiso_stream_acepta_el_handshake_y_cierra_4403(cliente):
+    conexion = _conectar(cliente, firmar_token(permisos=["read:rates"]))
+    assert _codigo_de_cierre(conexion) == 4403
 
 
 def test_suscripcion_valida_confirma(cliente):

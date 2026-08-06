@@ -25,6 +25,11 @@ info:
     (RS256/JWKS, `iss`, `aud`, `exp`) y exige el permiso `stream:events`; la
     URL se redacta en los logs del servidor.
 
+    **El handshake se acepta siempre y el rechazo llega como frame de cierre.**
+    Cerrar sin aceptar aborta el handshake con un HTTP 403 y el código se pierde:
+    el navegador solo ve `1006`. Aceptar primero no relaja nada — el token se
+    valida antes de registrar la conexión y antes de enviar un byte de dato.
+
     **Cierres**: `4401` sin token, token inválido o expirado (también a mitad
     de sesión, al vencer `exp`) · `4403` sin permiso `stream:events` · `1008`
     límite de conexiones excedido.

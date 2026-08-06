@@ -57,6 +57,31 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Fixed
 
+- **Los códigos de cierre del WSS no llegaban al navegador: el stream se
+  reconectaba en bucle sin arreglarse (2026-08-06).** El gateway cerraba la
+  conexión **antes** de `accept()` en los tres rechazos —sin token, token
+  inválido, sin `stream:events`—, y Starlette convierte eso en un HTTP 403 de
+  handshake: el frame de cierre no existe y el navegador solo ve `1006`.
+  - **El contrato entero era inalcanzable.** `api-contracts.md` y `asyncapi.yaml`
+    especifican 4401/4403, el gateway los enviaba y el SPA tiene una política por
+    código en `ws/politicas.ts` —4401 refresca el token y reconecta, 4403 se
+    detiene porque reintentar no lo arregla—. Con 1006 todo caía en el `default`:
+    esperar con backoff y reintentar **con el mismo token caducado**. Medido en
+    vivo: 42 rechazos y 24 aceptaciones en 20 minutos, y solo se recuperaba
+    cuando algo ajeno refrescaba el token.
+  - Arreglado aceptando el handshake antes de validar. **No relaja nada**: el
+    token se valida antes de registrar la conexión en el gestor y antes de enviar
+    un solo byte. Lo único que cambia es que el cierre puede llevar su motivo.
+  - **Las tres pruebas que cubrían esto afirmaban el código correcto y pasaban
+    con el defecto puesto.** El `TestClient` de Starlette es un arnés ASGI en
+    proceso: no hace handshake HTTP, así que entregaba un código que sobre el
+    cable no llegaba a ninguna parte. Reescritas para exigir que el `with` del
+    `websocket_connect` **entre** —si alguien devuelve el `accept()` a su sitio,
+    fallan—; verificado por mutación.
+  - Verificado en vivo con un cliente real: `sin token → 4401 «token requerido»`,
+    `token basura → 4401 «token inválido»`, token válido → conecta y recibe. Tras
+    desplegar: 0 rechazos de handshake y el SPA estable en una sola conexión.
+
 - **La cobertura de ramas medida el 2026-08-03 estaba inflada (2026-08-04).** Se
   midió con `--cov` a secas, que mete los propios ficheros de test en el
   denominador; como los tests se ejecutan enteros, tiran del total hacia arriba.
