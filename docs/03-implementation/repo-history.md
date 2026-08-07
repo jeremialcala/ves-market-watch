@@ -223,6 +223,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `8335285` | commit | — | Jeremi Alcala | 2026-08-06 | refactor(intradia): un solo formato para toda variacion |
+| `7f40d03` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
 | `3e71f14` | commit | — | Jeremi Alcala | 2026-08-06 | feat(intradia): la barra de control dice el estado en vez de ofrecer un boton |
 | `80b2d50` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
 | `7ea0705` | commit | — | Jeremi Alcala | 2026-08-06 | feat(web-spa): microestructura como condiciones del ruleset, no cifras del dia |
