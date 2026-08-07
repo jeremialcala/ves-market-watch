@@ -153,7 +153,7 @@ describe("ChispaConTooltip", () => {
 });
 
 describe("la superficie del tooltip", () => {
-  const CSS = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8").replaceAll("\r\n", "\n").replaceAll("\r\n", "\n");
+  const CSS = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8").replaceAll("\r\n", "\n");
   const bloque = CSS.slice(
     CSS.indexOf(".vmw-chispa__tooltip {"),
     CSS.indexOf(".vmw-chispa__hora"),

@@ -17,7 +17,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const CSS = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8").replaceAll("\r\n", "\n").replaceAll("\r\n", "\n");
+const CSS = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8").replaceAll("\r\n", "\n");
 
 /** Colores literales de texto: `color: #fff`, `color: white`, `color: #000`… */
 const LITERALES =

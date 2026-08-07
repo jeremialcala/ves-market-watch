@@ -251,8 +251,6 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
-| `7f5ac52` | commit | — | Jeremi Alcala | 2026-08-07 | fix(intradia): la cronologia resume las repeticiones en vez de listarlas |
-| `1f20118` | commit | — | Jeremi Alcala | 2026-08-07 | docs(repo-history): regenerar |
 | `64ed29f` | commit | — | Jeremi Alcala | 2026-08-07 | feat(engine): el mejor precio se publica en par, sin filtrar y filtrado |
 | `3b6407a` | commit | — | Jeremi Alcala | 2026-08-07 | docs(repo-history): regenerar tras el merge del PR #1 |
 | `ed9f843` | merge | — | Jeremi J. Alcalá M. | 2026-08-07 | Merge pull request #1 from jeremialcala/feat-intraday |

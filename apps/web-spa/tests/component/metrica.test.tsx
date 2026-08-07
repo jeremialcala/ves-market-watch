@@ -105,7 +105,7 @@ describe("MetricCard", () => {
 });
 
 describe("el estilo de la tarjeta es FIJO", () => {
-  const CSS = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8").replaceAll("\r\n", "\n").replaceAll("\r\n", "\n");
+  const CSS = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8").replaceAll("\r\n", "\n");
   const bloque = (selector: string) => {
     const i = CSS.indexOf(`${selector} {`);
     expect(i, selector).toBeGreaterThan(-1);

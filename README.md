@@ -106,8 +106,8 @@ build es cualquier retroceso desde donde está hoy cada uno.
 - **Gate 2 (pruebas) en curso.** Cobertura **≥ 80 % en los seis** con las dos
   métricas —combinada y ramas solas— (medido 2026-08-06). Combinada sobre `src/`:
   `ingestor-bcv` 99,36 · `ingestor-binance` 99,27 · `ingestor-historico`
-  97,22 · `web-spa` 94,90 · `api-gateway` 92,65 · `indicator-engine` 85,88; la más
-  baja en ramas solas es 82,71 (`indicator-engine`). 1 254
+  97,22 · `web-spa` 94,89 · `api-gateway` 92,65 · `indicator-engine` 85,88; la más
+  baja en ramas solas es 82,71 (`indicator-engine`). 1 263
   tests en total. Quedan abiertos el e2e autenticado en vivo con token real (HITL)
   y la deuda del control de T8 —lockfiles, digests y un CVE aceptado por escrito
   (CVE-2026-59870 en `js-yaml`, dependencia de desarrollo, revisión 2026-09-06)—;

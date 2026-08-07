@@ -21,6 +21,9 @@ MONEDA_OFICIAL_REFERENCIA = "USD"
 P2P_MEDIANA = "p2p_mediana"
 P2P_VWAP = "p2p_vwap"
 P2P_MEJOR_PRECIO = "p2p_mejor_precio"
+# El mejor precio que sobrevive al filtro de outliers. Junto al anterior, su
+# diferencia mide cuanto se separa el escaparate del libro real (T2).
+P2P_MEJOR_PRECIO_FILTRADO = "p2p_mejor_precio_filtrado"
 P2P_LIQUIDEZ = "p2p_liquidez"
 P2P_MERCHANTS_PCT = "p2p_merchants_pct"
 P2P_OUTLIERS_PCT = "p2p_outliers_pct"

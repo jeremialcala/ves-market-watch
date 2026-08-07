@@ -251,6 +251,28 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **`p2p_mejor_precio_filtrado`: el mejor precio contaba media verdad
+  (2026-08-07).** `p2p_mejor_precio` va sin filtrar **a propósito** —es el top of
+  book literal y ocultarlo sería ocultar que alguien pide 920—, pero no había con
+  qué compararlo, así que un anuncio manipulado se leía como precio de mercado.
+  Ahora el motor publica también el mejor de los que sobreviven al filtro y **la
+  diferencia entre los dos es el dato**: si coinciden, el escaparate ES el libro;
+  si se separan, mide cuánto se aleja.
+  - **La magnitud la dio el dato.** Sobre 318 snapshots por lado (6 h): en SELL el
+    primer anuncio estaba marcado como outlier en **103 de 318** —un tercio de las
+    lecturas— y en BUY en 1 de 318.
+  - **Verificado reproduciendo el cálculo sobre un snapshot real** (03:40 VET,
+    lado SELL): 871 de escaparate contra 860 de libro, **11 VES** por un anuncio
+    de 141 USDT.
+  - De paso quedó escrito un supuesto que nadie había documentado: los dos
+    dependen de que la fuente ordene «mejor primero» por lado, y **nadie ordena**
+    —ni el ingestor ni el motor—. Se sostiene (el primero fue el mínimo en 318/318
+    BUY y el máximo en 318/318 SELL), pero ahora está dicho.
+  - En el SPA, el sin filtrar **deja de competir** en «qué se movió»: un anuncio
+    manipulado no es movimiento de mercado. El filtrado sí compite.
+  - Ampliación **compatible**: es un indicador nuevo, ningún consumidor anterior
+    se entera.
+
 - **`interval` del historial acepta `15m` (2026-08-06).** Ampliación **compatible**
   del enum del contrato (`5m` / `15m` / `1h` / `1d`), pedida por las tres
   pastillas de granularidad del intradia: sin ella, la del medio se habría ido en
