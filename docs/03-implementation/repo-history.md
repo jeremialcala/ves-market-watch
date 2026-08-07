@@ -240,6 +240,7 @@ gitGraph
     commit id: "4c25643"
     commit id: "0bb8be7"
     commit id: "8ef0624" type: HIGHLIGHT
+    commit id: "ae49831"
 ```
 
 ### Estado actual de las ramas
@@ -247,7 +248,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `8ef0624` | 2026-08-07 | 206 |
+| `develop` | `ae49831` | 2026-08-07 | 207 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -263,6 +264,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `39a3076` | commit | — | Jeremi Alcala | 2026-08-07 | docs(gate-2): el e2e autenticado en vivo queda cumplido |
+| `ae49831` | commit | — | Jeremi Alcala | 2026-08-07 | docs(repo-history): regenerar tras el merge del PR #4 |
 | `8ef0624` | merge | — | Jeremi J. Alcalá M. | 2026-08-07 | Merge pull request #4 from jeremialcala/feat-e2e-autenticado |
 | `0bb8be7` | commit | — | Jeremi Alcala | 2026-08-07 | docs(repo-history): regenerar |
 | `4c25643` | commit | — | Jeremi Alcala | 2026-08-07 | test(e2e): los rechazos en vivo, que no necesitaban credenciales |

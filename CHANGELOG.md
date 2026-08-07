@@ -32,10 +32,13 @@ Convención de mantenimiento (inventario por ejecución):
   - **La suite reportaba PASSED con el gateway apagado.** Cada test hacía
     `if (!arriba) return`: cinco en verde certificando nada. Comprobado apuntando
     a un puerto muerto. Con `skipIf` ahora salen seis «skipped», que es la verdad.
-  - Queda por aprovisionar (HITL) el client M2M con los **cinco** permisos reales
-    del gateway: `read:rates`, `read:indicators`, `read:signals`, `read:depth` y
-    `stream:events`. No hay `read:analysis` —`/analysis/current` reutiliza
-    `read:indicators`—.
+  - **Aprovisionado y verificado el 2026-08-07: 6/6** contra el tenant y el
+    gateway reales. El client M2M es una aplicación **aparte de la del SPA**: el
+    primer intento usó el `client_id` del SPA, que es público por diseño y de tipo
+    *Single Page Application*, y Auth0 no le permite `client_credentials`. Los
+    permisos son los **cinco** reales del gateway: `read:rates`,
+    `read:indicators`, `read:signals`, `read:depth` y `stream:events` —no hay
+    `read:analysis`, `/analysis/current` reutiliza `read:indicators`—.
   - **El gate de secretos cortó el primer intento**, y con razón: el JWT falso
     escrito como literal disparaba `generic-api-key` con entropía 4,65. Se
     resuelve **construyéndolo en tiempo de ejecución** en vez de añadir una
