@@ -223,6 +223,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `9445199` | commit | — | Jeremi Alcala | 2026-08-06 | security(t8): CVE-2026-59870 aceptado por escrito, con caducidad propia |
+| `8e3baf5` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
 | `f508921` | commit | — | Jeremi Alcala | 2026-08-06 | docs: barrido de coherencia y ADR-0025 |
 | `b1bfa63` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
 | `c4149ce` | commit | — | Jeremi Alcala | 2026-08-06 | refactor(intradia): una sola tarjeta de metrica para todos los bloques |
