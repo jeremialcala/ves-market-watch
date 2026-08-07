@@ -1859,6 +1859,90 @@ body {
   border: var(--border-width) solid var(--border);
 }
 
+/* -- barra de control del Intradía ----------------------------------------- */
+
+/* Modificador, no cambio de la base: `.vmw-controles` la comparte Histórico y
+   allí la barra sigue siendo la de antes. */
+.vmw-controles--intradia {
+  padding: 14px 18px;
+  border-radius: 22px;
+  /* El fondo ya es `--dark-2`: `--surface-panel` es su alias semántico y la base
+     lo usa. No se repite el token crudo. */
+}
+
+/* Grupo excluyente. `role="radiogroup"` + `aria-checked` en los botones: para
+   quien navega con lector, tres pastillas sueltas serían tres botones sin
+   relación, y lo que hay es UNA elección con tres opciones. */
+.vmw-bucket {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.vmw-bucket__opcion {
+  min-height: 40px;
+  padding: 9px 18px;
+  border-radius: 100px;
+  background: var(--overlay-soft);
+  border: var(--border-width) solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-xs);
+  cursor: pointer;
+}
+
+.vmw-bucket__opcion[aria-checked="true"] {
+  background: var(--teal-tint);
+  border-color: var(--teal-line);
+  color: var(--teal);
+}
+
+/* Empujado al extremo: es un estado, no un control, y no compite con ellos. */
+.vmw-frescura {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.vmw-frescura__punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--sage);
+  color: var(--sage); /* `currentcolor` del halo */
+  box-shadow: var(--glow-dot);
+  animation: vmw-pulso 2.4s ease-in-out infinite;
+}
+
+/* Sin dato fresco el punto NO late ni va en salvia: un latido verde mientras la
+   carga falla afirma que hay vida donde no la hay. */
+.vmw-frescura__punto[data-vivo="no"] {
+  background: var(--text-dim);
+  box-shadow: none;
+  animation: none;
+}
+
+@keyframes vmw-pulso {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vmw-frescura__punto {
+    animation: none;
+  }
+}
+
 .vmw-chip {
   padding: 10px 18px;
   border-radius: var(--radius-pill);

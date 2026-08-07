@@ -111,6 +111,59 @@ const GRUPOS_PARRILLA: Grupo[] = ORDEN_GRUPOS.filter(
 /** El intradía se refresca al ritmo del bucket más fino (5 min). */
 const REFRESCO_MS = 300_000;
 
+/**
+ * Granularidades ofrecidas, en orden de grano.
+ *
+ * Los tres valores existen en el contrato (`components.parameters.Interval`) y
+ * `Intervalo` se deriva de él: una opción que el gateway no acepte no compila.
+ */
+const BUCKETS: { valor: Intervalo; clave: Clave }[] = [
+  { valor: "5m", clave: "intradia.bucket5m" },
+  { valor: "15m", clave: "intradia.bucket15m" },
+  { valor: "1h", clave: "intradia.bucket1h" },
+];
+
+/**
+ * Indicador de frescura. Sustituye al botón «Actualizar»: la vista ya se
+ * recarga sola cada 5 min, así que lo que falta no es un botón sino saber si
+ * eso está pasando.
+ *
+ * El punto **no late en salvia salvo que haya dato fresco de verdad**. Un
+ * latido verde mientras la carga falla afirma que hay vida donde no la hay, y
+ * es precisamente el momento en que alguien mira este punto.
+ */
+function Frescura({
+  progreso,
+  actualizado,
+  fallando,
+}: {
+  progreso: string | null;
+  actualizado: number | null;
+  fallando: boolean;
+}) {
+  const { t } = useI18n();
+  const vivo = !fallando && progreso === null && actualizado !== null;
+  const texto =
+    progreso !== null
+      ? progreso
+      : actualizado === null
+        ? t("intradia.sinRefrescoAun")
+        : t(vivo ? "intradia.enVivo" : "intradia.frescuraDetenida", {
+            hora: horaVET(actualizado),
+          });
+
+  return (
+    <p className="vmw-frescura" role="status">
+      <span
+        className="vmw-frescura__punto"
+        data-vivo={vivo ? "si" : "no"}
+        aria-hidden="true"
+      />
+      {texto}
+    </p>
+  );
+}
+
 /** Ventana con la que «qué se movió» normaliza el movimiento de la sesión. */
 const DIAS_REFERENCIA = 7;
 
@@ -369,7 +422,10 @@ export function IntradayView() {
   return (
     <main className="vmw-vista">
       <div className="vmw-contenedor">
-        <section className="vmw-controles" aria-label={t("intradia.controles")}>
+        <section
+          className="vmw-controles vmw-controles--intradia"
+          aria-label={t("intradia.controles")}
+        >
           <select
             className="vmw-select"
             aria-label={t("intradia.monedaOficial")}
@@ -380,35 +436,31 @@ export function IntradayView() {
               <option key={codigo}>{codigo}</option>
             ))}
           </select>
-          <select
-            className="vmw-select"
-            aria-label={t("historico.bucket")}
-            value={intervalo}
-            onChange={(evento) => setIntervalo(evento.target.value as Intervalo)}
+          {/* Tres opciones excluyentes = UNA elección, y así se anuncia: un
+              `radiogroup`, no tres botones sueltos sin relación entre sí. */}
+          <div
+            className="vmw-bucket"
+            role="radiogroup"
+            aria-label={t("intradia.granularidad")}
           >
-            <option value="5m">{t("intradia.bucket5m")}</option>
-            <option value="1h">{t("historico.bucket1h")}</option>
-          </select>
-          <button type="button" className="vmw-chip" onClick={cargar}>
-            {t("intradia.actualizar")}
-          </button>
-          <span className="vmw-nav__relleno" />
-          {progreso !== null ? (
-            <span
-              role="status"
-              style={{ fontSize: "var(--fs-micro)", color: "var(--text-muted)" }}
-            >
-              {progreso}
-            </span>
-          ) : null}
-          {progreso === null && actualizado !== null ? (
-            <span
-              role="status"
-              style={{ fontSize: "var(--fs-micro)", color: "var(--text-dim)" }}
-            >
-              {t("intradia.actualizado", { hora: horaVET(actualizado) })}
-            </span>
-          ) : null}
+            {BUCKETS.map(({ valor, clave }) => (
+              <button
+                key={valor}
+                type="button"
+                role="radio"
+                aria-checked={intervalo === valor}
+                className="vmw-bucket__opcion"
+                onClick={() => setIntervalo(valor)}
+              >
+                {t(clave)}
+              </button>
+            ))}
+          </div>
+          <Frescura
+            progreso={progreso}
+            actualizado={actualizado}
+            fallando={error !== null}
+          />
         </section>
         {/* Primer bloque de la vista, justo bajo los controles. Absorbe la
             frase de día operativo que antes colgaba suelta aquí: la apertura y

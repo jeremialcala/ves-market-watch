@@ -49,6 +49,21 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   las Δ, el signo va siempre escrito. Tres métricas llevan nota de contexto:
   brecha (los dos lados se miden contra la misma tasa oficial), mejor precio (no
   pasa por el filtro de outliers) y outliers (es lo descartado, no un error).
+- **La barra de control dice el ESTADO, no ofrece un botón.** Fuera «Actualizar»:
+  la vista ya se recarga sola cada 5 min, así que lo que faltaba no era un
+  control sino saber si eso está pasando. El bucket pasa de `<select>` a tres
+  pastillas excluyentes (5/15/60 min) anunciadas como `radiogroup` —tres botones
+  sueltos se leerían como tres acciones independientes, y es UNA elección—.
+  - **El punto solo late en salvia con dato fresco de verdad.** Si la carga
+    falla, se apaga y el texto dice desde cuándo no se actualiza. Un latido verde
+    mientras la carga falla afirma que hay vida donde no la hay, y es justo el
+    momento en que alguien mira ese punto.
+  - **`15m` no existía en el contrato**: `interval` sólo aceptaba 5m/1h/1d y la
+    pastilla del medio se habría ido en 422. Se amplió el enum del gateway (ver
+    [api-gateway](api-gateway.md)) y `Intervalo` pasó a **derivarse** de
+    `components.parameters.Interval` en vez de repetirse a mano: estaba duplicado
+    y por eso se quedó corto. Ahora una opción que el gateway no acepte no
+    compila.
 - **Microestructura deja de ser parrilla: son CONDICIONES, no cifras del día.**
   Las cuatro (drenaje 6 h, momentum bid 3 h, ratio oferta/demanda, spread) son
   condiciones del ruleset, y lo útil de un vistazo es si están cumplidas y a qué
@@ -298,7 +313,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   14 días»), no una nota bajo la leyenda.
 
 ## Verificación
-- **438 tests** (unit/component/contract con MSW y WS mock) — **87,43 % de ramas**
+- **444 tests** (unit/component/contract con MSW y WS mock) — **87,4 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

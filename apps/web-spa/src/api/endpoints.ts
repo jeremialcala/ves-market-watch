@@ -32,7 +32,9 @@ export type ProximidadRegla = Schemas["RuleProximity"];
 export type Banda = LecturaMedidor["band"];
 
 export type Lado = "buy" | "sell";
-export type Intervalo = "5m" | "1h" | "1d";
+/** Mismo criterio que `Banda`: sale del contrato, no de una lista a mano. Estaba
+ *  duplicado y se quedó corto al añadir 15m; así no puede volver a pasar. */
+export type Intervalo = components["parameters"]["Interval"];
 
 export const RANGO_MAX_DIAS = 90;
 const PAGE_SIZE_MAX = 500;

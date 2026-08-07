@@ -230,6 +230,23 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **`interval` del historial acepta `15m` (2026-08-06).** Ampliación **compatible**
+  del enum del contrato (`5m` / `15m` / `1h` / `1d`), pedida por las tres
+  pastillas de granularidad del intradia: sin ella, la del medio se habría ido en
+  422. Son tres líneas —mapa de `timedelta`, `Literal` de FastAPI y enum del
+  OpenAPI— porque `time_bucket` corre en crudo sobre la hipertabla, sin agregado
+  continuo que hubiera que crear.
+  - Lo prueban dos tests que antes no existían: **ninguno ejercitaba `interval`**.
+    Uno de contrato con los cuatro valores y el rechazo (400 con problem+json, no
+    el 422 por defecto de FastAPI) y uno de integración contra TimescaleDB real
+    que comprueba que 15 min **agrupa**, contrastando su total con el de 1 h sobre
+    las mismas capturas —si el intervalo no llegara al `time_bucket`, los dos
+    coincidirían y la prueba no diría nada—.
+  - En el SPA, `Intervalo` pasa a **derivarse** de
+    `components["parameters"]["Interval"]` en vez de repetirse a mano: estaba
+    duplicado y por eso se quedó corto. Es la misma regla que el archivo ya
+    aplicaba a `Banda`.
+
 - **El Intradía se reordena entero (2026-08-06, rama `feat-intraday`).** De la
   parrilla original **solo queda la tasa oficial**: cada familia se fue al bloque
   que responde a su pregunta, y los cinco se **derivan del dato** —ninguno cablea
@@ -276,7 +293,18 @@ Convención de mantenimiento (inventario por ejecución):
       salga aplanada contra un borde ES la lectura —hoy no dispara, y por mucho—.
     - **Sin análisis no se pinta ningún estado**: ni coral ni teal, sin pastilla
       y sin línea. Elegir un color sería afirmar algo que nadie ha calculado.
-  - 90 pruebas nuevas; el SPA pasa de 348 a 438 y de 87,1 a 87,43 % de ramas.
+  - **La barra de control dice el estado, no ofrece un botón.** Fuera
+    «Actualizar»: la vista ya se recarga sola cada 5 min, así que lo que faltaba
+    no era un control sino saber si eso está pasando. El bucket pasa de `<select>`
+    a tres pastillas excluyentes (5/15/60 min) anunciadas como `radiogroup`.
+    - **El punto de frescura sólo late en salvia con dato fresco de verdad**: si
+      la carga falla se apaga y el texto dice desde cuándo no se actualiza. Un
+      latido verde mientras la carga falla afirma que hay vida donde no la hay, y
+      es justo el momento en que alguien lo mira.
+    - El pulso se detiene con `prefers-reduced-motion: reduce`, y el test no
+      protege sólo a esa animación: exige que **cualquier** animación en bucle
+      del CSS esté exceptuada.
+  - 96 pruebas nuevas; el SPA pasa de 348 a 444 y de 87,1 a 87,4 % de ramas.
 
 ### Fixed
 

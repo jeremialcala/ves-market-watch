@@ -82,8 +82,19 @@ login y el estado de salud son visibles sin sesión.
   apertura negativa miente el sentido —el momentum abrió en −0,24 y estaba en
   +0,31, una subida, y el cociente escribía «−232 %» junto a una Δ de «+0,55»—; la
   Δ en unidades es exacta y no depende del signo de la base. Un indicador nuevo
-  del motor aparece sin cambios en el front. Refresco manual y automático cada
-  5 min.
+  del motor aparece sin cambios en el front. Refresco automático cada 5 min, con
+  la granularidad elegible entre **5 min, 15 min y 1 h**.
+
+  **La barra de control dice el estado, no ofrece un botón (2026-08-06).** El
+  botón «Actualizar» desaparece: la vista ya se recarga sola, así que lo que
+  faltaba no era un control sino saber si eso está pasando. En su sitio va un
+  indicador de frescura, y **solo late en salvia cuando hay dato fresco de
+  verdad**: si la carga falla, el punto se apaga y el texto dice desde cuándo no
+  se actualiza. Un latido verde mientras la carga falla afirma que hay vida donde
+  no la hay, justo en el momento en que alguien mira ese punto. El pulso se
+  detiene con `prefers-reduced-motion: reduce` —es la única animación en bucle de
+  la aplicación, y hay un test que exige que cualquier otra futura también se
+  exceptúe—.
 
   **Ampliación 2026-08-06 — la vista se lee de arriba abajo.** De la parrilla
   original solo queda la tasa oficial: cada familia se fue al bloque que responde

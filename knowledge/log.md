@@ -60,10 +60,28 @@ timestamp: 2026-08-03T12:00:00Z
   el defecto era lo que yo estaba afirmando con ella. *Lo vi porque lo miré en el
   navegador con dato real; ninguna prueba lo habría cazado, porque yo mismo no
   había pensado en el caso.*
+- **La barra de control tenía un botón que sobraba y le faltaba un estado.** La
+  vista se recarga sola cada 5 min, así que «Actualizar» no resolvía nada que no
+  estuviera ya resuelto; lo que no había era forma de saber si eso estaba
+  pasando. Cambiar un control por un indicador suena a menos, y es más.
+- **El punto de frescura no late si el dato no llega.** Era fácil dejarlo
+  latiendo siempre —es decorativo, parece inofensivo—, pero un latido verde
+  mientras la carga falla afirma que hay vida donde no la hay, y es exactamente
+  el momento en que alguien mira ese punto. *Un adorno que codifica un estado
+  deja de ser un adorno.*
+- **La pastilla de 15 min no existía en el contrato.** El `interval` sólo
+  aceptaba 5m/1h/1d, así que pintarla habría dado un 422 al primer clic. Amplié
+  el enum del gateway porque era barato de verdad —`time_bucket` corre en crudo,
+  sin agregado continuo—, pero lo revelador fue mirar los tests: **ninguno
+  ejercitaba `interval`**, ni el selector viejo ni el botón de refresco tenían
+  prueba. Quitarlos no rompió nada, y eso no era buena señal.
+- Y el tipo `Intervalo` estaba escrito a mano al lado de un comentario que
+  explicaba por qué `Banda` se deriva del contrato. Por eso se quedó corto: la
+  regla estaba enunciada justo encima y no se había aplicado.
 - El test de paridad ES/EN cazó una cadena actualizada solo en español, y la
   cobertura destapó que había escrito la lógica de la cronología pero no el
-  componente (34 % de ramas). Con su suite y las de los dos bloques nuevos, el SPA queda en 438 tests y
-  87,43 % de ramas.
+  componente (34 % de ramas). Con su suite y las de los dos bloques nuevos, el SPA queda en 444 tests y
+  87,4 % de ramas.
 
 ## 2026-08-06 — La profundidad se anclaba en un anuncio manipulado
 - Lo trajo el usuario en una captura: diez barras idénticas de 372 USDT en el lado

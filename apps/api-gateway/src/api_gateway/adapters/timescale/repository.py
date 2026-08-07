@@ -19,6 +19,7 @@ from api_gateway.application.ports import LecturaRepository
 # asyncpg codifica timedelta como interval (un string no se castea en $1::interval).
 _INTERVALOS = {
     "5m": timedelta(minutes=5),
+    "15m": timedelta(minutes=15),
     "1h": timedelta(hours=1),
     "1d": timedelta(days=1),
 }

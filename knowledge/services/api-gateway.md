@@ -28,6 +28,12 @@ in-memory, profundidad como proyección interim).
   Errores RFC 7807; paginación obligatoria con rango máx. 90 días (422); rate
   limit por token (ventana fija 60 s, cabeceras `X-RateLimit-*`, 429 con
   `Retry-After`); decimales siempre string exacto.
+- **`interval` acepta `5m` / `15m` / `1h` / `1d`** (el `15m` se añadió el
+  2026-08-06 para la barra del intradia). Es una **ampliación compatible** del
+  enum: `time_bucket` corre en crudo sobre la hipertabla, sin agregado continuo,
+  así que añadir una granularidad son tres líneas —mapa de `timedelta`, `Literal`
+  y enum del OpenAPI— y ningún cliente anterior se entera. Un valor fuera del
+  enum es **400** con problem+json, no el 422 por defecto de FastAPI.
 - **WSS `/ws/v1?token=…`** (`docs/asyncapi.yaml`): whitelist de tópicos
   `{rates.official, p2p.snapshot, indicators, signals, analysis}`, ≤ 5 conexiones y ≤ 10
   suscripciones por `sub`, ping 30 s, cierre 4401 al expirar el token, token

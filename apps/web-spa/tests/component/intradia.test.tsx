@@ -2,7 +2,7 @@
  * agrupado por familia, la Δ contra la apertura y los estados vacío/error —
  * no el dibujo SVG. */
 
-import { cleanup, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
@@ -317,5 +317,81 @@ describe("IntradayView", () => {
      */
     const referencia = ventanas.find((v) => v.ms > 6 * 86_400_000)!;
     expect(referencia.intervalo).toBe("1h");
+  });
+  it("las tres granularidades son UNA eleccion, no tres botones sueltos", async () => {
+    /*
+     * Excluyentes de verdad: `radiogroup` + `aria-checked`. Tres botones sin
+     * relacion se anuncian como tres acciones independientes, y lo que hay es
+     * una sola decision con tres opciones.
+     */
+    const { ventanas } = espiarPeticiones();
+    render(<IntradayView />);
+    await waitFor(() => expect(ventanas.length).toBeGreaterThanOrEqual(1));
+
+    const grupo = screen.getByRole("radiogroup", {
+      name: "Granularidad del bucket",
+    });
+    const opciones = within(grupo).getAllByRole("radio");
+
+    expect(opciones.map((o) => o.textContent)).toEqual(["5 min", "15 min", "1 h"]);
+    expect(opciones.filter((o) => o.getAttribute("aria-checked") === "true")).toHaveLength(1);
+    expect(opciones[0].getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("elegir 15 min lo pide asi al gateway", async () => {
+    /*
+     * La pastilla del medio no existia en el contrato: `interval` solo aceptaba
+     * 5m/1h/1d y un 15m se habria ido en 422. Esta prueba es la que ata la
+     * ampliacion del gateway con la UI que la usa.
+     */
+    const { ventanas } = espiarPeticiones();
+    render(<IntradayView />);
+    await waitFor(() => expect(ventanas.length).toBeGreaterThanOrEqual(1));
+
+    await userEvent.click(screen.getByRole("radio", { name: "15 min" }));
+
+    await waitFor(() =>
+      expect(
+        ventanas.some((v) => v.intervalo === "15m" && v.ms < 2 * 86_400_000),
+      ).toBe(true),
+    );
+    // Y la de referencia sigue fija en 1 h: el selector no la toca.
+    expect(
+      ventanas.filter((v) => v.ms > 6 * 86_400_000).every((v) => v.intervalo === "1h"),
+    ).toBe(true);
+  });
+
+  it("el punto de frescura no dice «en vivo» cuando la carga falla", async () => {
+    /*
+     * El punto late en salvia para afirmar que el dato esta llegando. Si la
+     * carga falla y sigue latiendo, afirma que hay vida donde no la hay — y ese
+     * es justo el momento en que alguien lo mira.
+     */
+    servidor.use(
+      http.get(`${BASE}/indicators/history`, () =>
+        HttpResponse.json(
+          { title: "Servicio no disponible", status: 503 },
+          { status: 503, headers: { "content-type": "application/problem+json" } },
+        ),
+      ),
+    );
+    render(<IntradayView />);
+
+    await waitFor(() =>
+      expect(document.querySelector(".vmw-frescura__punto")?.getAttribute("data-vivo")).toBe("no"),
+    );
+    expect(document.querySelector(".vmw-frescura")?.textContent).not.toMatch(/en vivo/i);
+  });
+
+  it("con dato fresco si lo dice, con la hora en VET", async () => {
+    conSeries();
+    render(<IntradayView />);
+
+    await waitFor(() =>
+      expect(document.querySelector(".vmw-frescura__punto")?.getAttribute("data-vivo")).toBe("si"),
+    );
+    expect(document.querySelector(".vmw-frescura")?.textContent).toMatch(
+      /en vivo · actualizado \d{2}:\d{2} VET/,
+    );
   });
 });
