@@ -199,6 +199,7 @@ gitGraph
     commit id: "8c6ca8e"
     commit id: "c636de0"
     commit id: "4fbada0"
+    commit id: "e1f378c"
 ```
 
 ### Estado actual de las ramas
@@ -206,7 +207,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `4fbada0` | 2026-08-06 | 165 |
+| `develop` | `e1f378c` | 2026-08-06 | 166 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -222,6 +223,14 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `7ea0705` | commit | — | Jeremi Alcala | 2026-08-06 | feat(web-spa): microestructura como condiciones del ruleset, no cifras del dia |
+| `dd65cfc` | commit | — | Jeremi Alcala | 2026-08-06 | feat(web-spa): compra y venta enfrentadas metrica por metrica |
+| `1ba92bb` | commit | — | Jeremi Alcala | 2026-08-06 | docs: coherencia de la rama feat-intraday |
+| `9524c44` | commit | — | Jeremi Alcala | 2026-08-06 | feat(web-spa): histeresis por permanencia en los cruces de la cronologia |
+| `7f89626` | commit | — | Jeremi Alcala | 2026-08-06 | feat(web-spa): seccion «Cronologia de la sesion» como ultimo bloque del Intradia |
+| `86acb1c` | commit | — | Jeremi Alcala | 2026-08-06 | feat(web-spa): seccion «Que se movio desde la apertura» en el Intradia |
+| `6deea55` | commit | — | Jeremi Alcala | 2026-08-06 | feat(web-spa): panel «Lectura de la sesion» como primer bloque del Intradia |
+| `e1f378c` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
 | `4fbada0` | commit | — | Jeremi Alcala | 2026-08-06 | fix: la profundidad se anclaba en un anuncio manipulado (T2) |
 | `c636de0` | commit | — | Jeremi Alcala | 2026-08-06 | ci: apretar el trinquete del gateway a 92 (era 90) |
 | `8c6ca8e` | commit | — | Jeremi Alcala | 2026-08-06 | fix(api-gateway): un fallo transitorio de JWKS mataba la autenticacion 60 s |
