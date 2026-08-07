@@ -223,6 +223,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `ee5e8c1` | commit | — | Jeremi Alcala | 2026-08-06 | style(intradia): ritmo vertical normalizado, y siete blancos que no eran blancos |
+| `e0b1a95` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
 | `af51136` | commit | — | Jeremi Alcala | 2026-08-06 | feat(intradia): el cero de outliers es un resultado, no un hueco |
 | `74c55b5` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
 | `3859349` | commit | — | Jeremi Alcala | 2026-08-06 | fix(intradia): tooltip propio para los sparklines, fuera del flujo |
