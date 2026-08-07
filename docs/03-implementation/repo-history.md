@@ -228,9 +228,14 @@ gitGraph
     commit id: "a98cf7f"
     commit id: "ed9f843" type: HIGHLIGHT
     commit id: "3b6407a"
+    commit id: "7f5ac52"
+    commit id: "e5d3069"
     commit id: "64ed29f"
     commit id: "1f20118"
     commit id: "59ddc5a" type: HIGHLIGHT
+    commit id: "eb6fbfb" type: HIGHLIGHT
+    commit id: "4917d03"
+    commit id: "df2da0b" type: HIGHLIGHT
 ```
 
 ### Estado actual de las ramas
@@ -238,7 +243,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `59ddc5a` | 2026-08-07 | 197 |
+| `develop` | `df2da0b` | 2026-08-07 | 202 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -254,6 +259,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `df2da0b` | merge | — | Jeremi J. Alcalá M. | 2026-08-07 | Merge pull request #3 from jeremialcala/fix-cronologia-repeticion |
+| `4917d03` | commit | — | Jeremi Alcala | 2026-08-07 | docs(repo-history): regenerar |
 | `eb6fbfb` | merge | — | Jeremi Alcala | 2026-08-07 | Merge develop en fix-cronologia-repeticion: resolver la normalizacion duplicada |
 | `59ddc5a` | merge | — | Jeremi J. Alcalá M. | 2026-08-07 | Merge pull request #2 from jeremialcala/fix-mejor-precio |
 | `e5d3069` | commit | — | Jeremi Alcala | 2026-08-07 | docs(repo-history): regenerar |
