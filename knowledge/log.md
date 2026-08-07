@@ -60,6 +60,23 @@ timestamp: 2026-08-03T12:00:00Z
   el defecto era lo que yo estaba afirmando con ella. *Lo vi porque lo miré en el
   navegador con dato real; ninguna prueba lo habría cazado, porque yo mismo no
   había pensado en el caso.*
+- **El tooltip que había que arreglar no era el que faltaba.** El único que
+  existía era el de Recharts en la parrilla —tres paneles— y vivía dentro del
+  flujo: aparecer empujaba la tarjeta. Los otros 24 sparklines no tenían
+  ninguno, así que arreglar el roto y añadir los que faltaban era el mismo
+  trabajo si se hacía uno solo.
+- **Extraje `coordenadasSparkline` de `trazoSparkline` en vez de recalcular.**
+  El tooltip necesita el punto exacto que dibuja la línea; con dos cálculos
+  paralelos, el día que cambiara el `pad` el tooltip señalaría a un sitio y la
+  línea estaría en otro. *Dos formas de calcular lo mismo es la duplicación que
+  este proyecto ya pagó con el formato de Δ.*
+- **`rgba(21,24,27,.94)` cableado habría sido una caja negra sobre papel.** El
+  valor pedido es la tinta oscura; en tema claro hacía falta su reflejo, igual
+  que `--nav-bg` ya lo tiene. La superficie es un token, no un literal.
+- Verificando en vivo me dio dos falsos negativos míos: `pointerleave` sintético
+  no llega a React —que lo implementa sobre `pointerout`— y leí el `data-voltear`
+  de un tooltip anterior que seguía montado por culpa de eso. *Cuando la prueba
+  en vivo contradice a la unitaria, sospecha primero del arnés.*
 - **Me pidieron claves que no existen y no las inventé.** La lista pedía
   `p2p_brecha_ves`, `p2p_liquidez_usdt`, `micro_drenaje_oferta_6h`; los nombres
   reales de `indicators` son `p2p_brecha_abs`, `p2p_liquidez` y
@@ -110,8 +127,8 @@ timestamp: 2026-08-03T12:00:00Z
   regla estaba enunciada justo encima y no se había aplicado.
 - El test de paridad ES/EN cazó una cadena actualizada solo en español, y la
   cobertura destapó que había escrito la lógica de la cronología pero no el
-  componente (34 % de ramas). Con su suite y las de los dos bloques nuevos, el SPA queda en 466 tests y
-  88,1 % de ramas.
+  componente (34 % de ramas). Con su suite y las de los dos bloques nuevos, el SPA queda en 478 tests y
+  88,23 % de ramas.
 
 ## 2026-08-06 — La profundidad se anclaba en un anuncio manipulado
 - Lo trajo el usuario en una captura: diez barras idénticas de 372 USDT en el lado

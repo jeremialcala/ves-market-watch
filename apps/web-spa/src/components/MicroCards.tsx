@@ -24,6 +24,7 @@
 
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
+import { ChispaConTooltip } from "./ChispaConTooltip";
 import { NombreSerie } from "./NombreSerie";
 import { formatearDelta, valorConUnidad } from "../lib/delta";
 import { presentacionDe, resumenIntradia, type PuntoIntradia } from "../lib/intradia";
@@ -146,6 +147,14 @@ function Tarjeta({
             </span>
           </p>
 
+          <ChispaConTooltip
+            puntos={puntos}
+            ancho={ANCHO}
+            alto={ALTO}
+            color={color}
+            unidad={unidad}
+            decimales={decimales}
+          >
           <svg
             className="vmw-micro__spark"
             viewBox={`0 0 ${ANCHO} ${ALTO}`}
@@ -185,6 +194,7 @@ function Tarjeta({
               strokeLinecap="round"
             />
           </svg>
+          </ChispaConTooltip>
 
           <div className="vmw-micro__pie">
             <span>{t("micro.apertura", { valor: num(resumen.apertura) })}</span>

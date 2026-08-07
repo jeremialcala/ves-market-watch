@@ -334,7 +334,22 @@ Convención de mantenimiento (inventario por ejecución):
       existe: se leería como identificador y fallaría en la primera consulta.
     - Familia en la tabla (la fila cubre los dos lados) y serie en las tarjetas:
       la clave identifica exactamente lo que se está viendo.
-  - 118 pruebas nuevas; el SPA pasa de 348 a 466 y de 87,1 a 88,1 % de ramas.
+  - **Tooltip propio para los 27 sparklines.** El único que había era el de
+    Recharts en la parrilla, y vivía **dentro del flujo** de la tarjeta: aparecer
+    empujaba el layout y tapaba la línea de apertura. Los 24 SVG de la tabla
+    enfrentada, «qué se movió» y microestructura no tenían ninguno —la serie se
+    veía y no se podía leer un valor—.
+    - `absolute` sobre el hueco del sparkline (sale del flujo, no mueve un
+      píxel) y `pointer-events: none`, que es lo que evita el parpadeo clásico.
+    - Se ancla con las **mismas coordenadas que dibuja la línea**:
+      `coordenadasSparkline` se extrajo de `trazoSparkline` para que no puedan
+      separarse. Voltea a menos de 120 px del borde del viewport.
+    - Desenfoque **compartido con la barra de navegación** vía `--blur-nav`, y
+      fondo en un token que se voltea con el tema: cableado a la tinta oscura
+      sería una caja negra sobre papel en tema claro.
+    - **En táctil no aparece**: sin hover no habría forma de cerrarlo. La vía sin
+      puntero es «Exportar sesión».
+  - 130 pruebas nuevas; el SPA pasa de 348 a 478 y de 87,1 a 88,23 % de ramas.
 
 ### Fixed
 

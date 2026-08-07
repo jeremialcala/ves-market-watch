@@ -1873,6 +1873,56 @@ body {
   border: var(--border-width) solid var(--border);
 }
 
+/* -- tooltip de los sparklines -------------------------------------------- */
+
+/* El hueco del sparkline es el sistema de referencia: el tooltip sale del flujo
+   y aparecer no mueve un pixel de la tarjeta. */
+.vmw-chispa {
+  position: relative;
+}
+
+/* Desenfoque: el MISMO tratamiento que la barra de navegacion, que es el otro
+   unico sitio del sistema que lo usa (`--blur-nav`). Dos superficies flotantes,
+   un solo lenguaje. */
+.vmw-chispa__tooltip {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--tooltip-bg);
+  backdrop-filter: var(--blur-nav);
+  border: var(--border-width) solid var(--border);
+  /* No captura el puntero: si lo hiciera, entrar en el tooltip seria salir del
+     grafico y el tooltip parpadearia. */
+  pointer-events: none;
+  white-space: nowrap;
+  transform: translate(-50%, -100%);
+}
+
+/* Cerca del borde del viewport se ancla por su lado en vez de centrarse. */
+.vmw-chispa__tooltip[data-voltear="der"] {
+  transform: translate(-100%, -100%);
+}
+
+.vmw-chispa__tooltip[data-voltear="izq"] {
+  transform: translate(0, -100%);
+}
+
+.vmw-chispa__hora {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.vmw-chispa__valor {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+}
+
 /* -- par etiqueta/clave en la parrilla ------------------------------------- */
 
 .intradia-titulo {

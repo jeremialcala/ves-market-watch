@@ -124,6 +124,28 @@ login y el estado de salud son visibles sin sesión.
   - Un indicador fuera del catálogo aparece con su nombre canónico y **sin
     segunda línea**: repetir la misma cadena dos veces no informa.
 
+  **Tooltip propio para los sparklines (2026-08-06).** El único que había era el
+  de Recharts, en los paneles de la parrilla: se pintaba **dentro del flujo** de
+  la tarjeta —aparecer empujaba el layout— y tapaba la línea de apertura. Los 24
+  sparklines de la tabla enfrentada, «qué se movió» y microestructura no tenían
+  ninguno: la serie se veía pero no se podía leer un valor. Ahora los 27 comparten
+  uno:
+
+  - `position: absolute` sobre el hueco del sparkline, así que **sale del flujo**
+    y aparecer no mueve un píxel; `pointer-events: none`, para no robar el puntero
+    y provocar el parpadeo clásico.
+  - Se ancla sobre el punto con `translate(-50%, -100%)` y 8 px, usando las
+    **mismas coordenadas que dibuja la línea**: un tooltip que señala un punto
+    distinto del que se ve es peor que no tenerlo.
+  - **Voltea** a menos de 120 px del borde del viewport en vez de salirse.
+  - Superficie con el **mismo tratamiento que la barra de navegación**, que es el
+    otro único sitio del sistema con desenfoque (`--blur-nav`). El fondo es un
+    token que se voltea con el tema, como `--nav-bg`: cableado a la tinta oscura
+    sería una caja negra sobre papel en tema claro.
+  - **En táctil no aparece**: sin hover no habría forma de cerrarlo salvo tocando
+    otra cosa, y taparía la tarjeta que se acaba de tocar. El dato exacto de cada
+    bucket sale por «Exportar sesión», que sí funciona sin puntero.
+
   **La barra de control dice el estado, no ofrece un botón (2026-08-06).** El
   botón «Actualizar» desaparece: la vista ya se recarga sola, así que lo que
   faltaba no era un control sino saber si eso está pasando. En su sitio va un

@@ -49,6 +49,20 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   las Δ, el signo va siempre escrito. Tres métricas llevan nota de contexto:
   brecha (los dos lados se miden contra la misma tasa oficial), mejor precio (no
   pasa por el filtro de outliers) y outliers (es lo descartado, no un error).
+- **Los 27 sparklines comparten un tooltip propio.** El de Recharts —el único
+  que había, en la parrilla— vivía dentro del flujo de la tarjeta: aparecer
+  empujaba el layout y tapaba la línea de apertura. Los 24 SVG no tenían ninguno.
+  - `absolute` sobre el hueco del sparkline (sale del flujo) + `pointer-events:
+    none` (no roba el puntero, que es lo que provoca el parpadeo clásico:
+    entra el tooltip → sale del gráfico → se cierra → vuelve).
+  - Se ancla con las **mismas coordenadas que dibuja la línea**
+    (`coordenadasSparkline`, extraída de `trazoSparkline` para que no puedan
+    separarse). Un tooltip que señala otro punto es peor que ninguno.
+  - **Desenfoque compartido con la barra** vía `--blur-nav`, el otro único sitio
+    del sistema que lo usa, y fondo en un token que **se voltea con el tema**:
+    `rgba(21,24,27,.94)` cableado sería una caja negra sobre papel en claro.
+  - **En táctil no se muestra**: sin hover no hay forma de cerrarlo salvo tocando
+    otra cosa. La vía que sí funciona sin puntero es «Exportar sesión».
 - **Etiqueta y clave viven en un solo catálogo** (`presentacionDe`): etiqueta
   legible traducible + clave canónica. Los cuatro bloques del Intradía nombran la
   misma serie igual porque leen de ahí, y de paso cierra un hueco de RF-9 que
@@ -345,7 +359,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   14 días»), no una nota bajo la leyenda.
 
 ## Verificación
-- **466 tests** (unit/component/contract con MSW y WS mock) — **88,1 % de ramas**
+- **478 tests** (unit/component/contract con MSW y WS mock) — **88,23 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

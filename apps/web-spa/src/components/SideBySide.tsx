@@ -19,6 +19,7 @@
 
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
+import { ChispaConTooltip } from "./ChispaConTooltip";
 import { NombreSerie } from "./NombreSerie";
 import {
   presentacionDe,
@@ -157,6 +158,15 @@ function Celda({
           {t("vs.apertura", { valor: num(resumen.apertura) })}
         </span>
       </div>
+      <ChispaConTooltip
+        puntos={puntos}
+        ancho={ANCHO}
+        alto={ALTO}
+        pad={3}
+        color={delta.color}
+        unidad={unidad}
+        decimales={decimales}
+      >
       <svg
         className="vmw-vs__spark"
         viewBox={`0 0 ${ANCHO} ${ALTO}`}
@@ -181,6 +191,7 @@ function Celda({
           strokeLinecap="round"
         />
       </svg>
+      </ChispaConTooltip>
     </div>
   );
 }

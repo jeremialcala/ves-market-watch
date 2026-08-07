@@ -37,7 +37,6 @@ import {
   LineChart,
   ReferenceLine,
   ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
@@ -48,6 +47,7 @@ import {
   type Intervalo,
 } from "../api/endpoints";
 import { ApiError } from "../api/problem";
+import { ChispaConTooltip } from "../components/ChispaConTooltip";
 import { MicroCards } from "../components/MicroCards";
 import { NombreSerie } from "../components/NombreSerie";
 import { NoDataState } from "../components/NoDataState";
@@ -57,7 +57,7 @@ import { SessionReading } from "../components/SessionReading";
 import { SessionTimeline } from "../components/SessionTimeline";
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
-import { formatDecimal, toChartNumber } from "../lib/decimal";
+import { toChartNumber } from "../lib/decimal";
 import { formatearDelta, valorConUnidad } from "../lib/delta";
 import {
   grupoDe,
@@ -176,62 +176,66 @@ const DIAS_REFERENCIA = 7;
  */
 const INTERVALO_REFERENCIA = "1h" as const;
 
+/**
+ * Panel de la parrilla. El tooltip **ya no es el de Recharts**: se pintaba
+ * dentro del flujo de la tarjeta, tapaba la línea de apertura y empujaba el
+ * layout al aparecer. Ahora usa el mismo de los demás sparklines.
+ *
+ * Se ancla ARRIBA y no sobre el punto porque la escala vertical la calcula
+ * Recharts, no nosotros: colocarlo a una `y` que no hemos calculado lo pondría
+ * junto a un punto distinto del que señala.
+ */
 function Chispa({
   puntos,
   apertura,
   color,
+  unidad,
   decimales,
 }: {
   puntos: readonly PuntoIntradia[];
   apertura: string;
   color: string;
+  unidad: string;
   decimales: number;
 }) {
-  const { t, idioma } = useI18n();
   const datos = puntos.map((punto) => ({
     t: punto.t,
     valor: toChartNumber(punto.valor),
     valorStr: punto.valor,
   }));
   return (
-    <ResponsiveContainer width="100%" height={64}>
-      <LineChart data={datos} margin={{ top: 4, right: 2, bottom: 0, left: 2 }}>
-        <XAxis dataKey="t" type="number" domain={["dataMin", "dataMax"]} hide />
-        <YAxis domain={["auto", "auto"]} hide />
-        {/* La apertura es la referencia de la que se mide la Δ del día. */}
-        <ReferenceLine
-          y={toChartNumber(apertura)}
-          stroke="var(--text-muted)"
-          strokeDasharray="3 3"
-          strokeWidth={1}
-        />
-        <Tooltip
-          contentStyle={{
-            background: "var(--surface-card)",
-            border: "1px solid var(--border)",
-            borderRadius: 14,
-            color: "var(--text)",
-          }}
-          labelFormatter={(t) => `${horaVET(t as number)} VET`}
-          formatter={(_valor, _nombre, item) => [
-            formatDecimal((item.payload as { valorStr: string }).valorStr, {
-              maxDecimales: decimales,
-              idioma,
-            }),
-            t("intradia.valor"),
-          ]}
-        />
-        <Line
-          type="monotone"
-          dataKey="valor"
-          stroke={color}
-          strokeWidth={2}
-          dot={false}
-          activeDot={{ r: 4 }}
-          isAnimationActive={false}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <ChispaConTooltip
+      puntos={puntos}
+      ancho={100}
+      alto={64}
+      color={color}
+      unidad={unidad}
+      decimales={decimales}
+      anclarArriba
+    >
+      <ResponsiveContainer width="100%" height={64}>
+        <LineChart data={datos} margin={{ top: 4, right: 2, bottom: 0, left: 2 }}>
+          <XAxis dataKey="t" type="number" domain={["dataMin", "dataMax"]} hide />
+          <YAxis domain={["auto", "auto"]} hide />
+          {/* La apertura es la referencia de la que se mide la Δ del día. */}
+          <ReferenceLine
+            y={toChartNumber(apertura)}
+            stroke="var(--text-muted)"
+            strokeDasharray="3 3"
+            strokeWidth={1}
+          />
+          <Line
+            type="monotone"
+            dataKey="valor"
+            stroke={color}
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4 }}
+            isAnimationActive={false}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </ChispaConTooltip>
   );
 }
 
@@ -290,6 +294,7 @@ function PanelIndicador({
           puntos={puntos}
           apertura={resumen.apertura}
           color={COLOR_LADO[ladoDe(indicador)]}
+          unidad={unidad}
           decimales={decimales}
         />
       </div>

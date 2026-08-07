@@ -24,6 +24,9 @@
   /* Vidrio */
   --blur-nav: blur(16px);
   --nav-bg: rgb(21 24 27 / 82%);
+  /* Tooltip: misma familia que la barra (misma tinta, mismo desenfoque), un
+     punto mas opaca porque flota sobre contenido y no sobre el fondo. */
+  --tooltip-bg: rgb(21 24 27 / 94%);
 
   /* Movimiento */
   --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);

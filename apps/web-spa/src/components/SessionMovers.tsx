@@ -14,6 +14,7 @@
 
 import type { Clave } from "../i18n/dict";
 import { useI18n, type Traducir } from "../i18n/contexto";
+import { ChispaConTooltip } from "./ChispaConTooltip";
 import { NombreSerie } from "./NombreSerie";
 import { formatDecimal } from "../lib/decimal";
 import { formatearDelta, valorConUnidad } from "../lib/delta";
@@ -148,6 +149,14 @@ function Tarjeta({ movimiento }: { movimiento: MovimientoSerie }) {
         </span>
       </p>
 
+      <ChispaConTooltip
+        puntos={movimiento.puntos}
+        ancho={ANCHO}
+        alto={ALTO}
+        color={adverso === true ? "var(--coral)" : "var(--teal)"}
+        unidad={unidad}
+        decimales={decimales}
+      >
       <svg
         className="vmw-movio__spark"
         viewBox={`0 0 ${ANCHO} ${ALTO}`}
@@ -173,6 +182,7 @@ function Tarjeta({ movimiento }: { movimiento: MovimientoSerie }) {
           strokeLinecap="round"
         />
       </svg>
+      </ChispaConTooltip>
 
       <div className="vmw-movio__pie">
         <span>{t("movio.apertura", { valor: num(movimiento.apertura) })}</span>

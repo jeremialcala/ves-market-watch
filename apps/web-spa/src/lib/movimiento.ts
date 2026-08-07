@@ -160,21 +160,37 @@ export function trazoSparkline(
   alto: number,
   pad = 4,
 ): string {
+  return coordenadasSparkline(puntos, ancho, alto, pad)
+    .map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`)
+    .join(" ");
+}
+
+/**
+ * Las coordenadas del trazo, en unidades del viewBox.
+ *
+ * El tooltip las necesita para anclarse EXACTAMENTE sobre el punto que la línea
+ * dibuja. Recalcularlas por su cuenta las habría dejado a la deriva en cuanto
+ * cambiara el pad, y un tooltip que señala un punto distinto del que se ve es
+ * peor que no tenerlo.
+ */
+export function coordenadasSparkline(
+  puntos: readonly PuntoIntradia[],
+  ancho: number,
+  alto: number,
+  pad = 4,
+): { x: number; y: number }[] {
   if (puntos.length === 0) {
-    return "";
+    return [];
   }
   const valores = puntos.map((p) => toChartNumber(p.valor));
   const min = Math.min(...valores);
   const max = Math.max(...valores);
   const span = max - min || 1;
   const divisor = puntos.length > 1 ? puntos.length - 1 : 1;
-  return valores
-    .map((v, i) => {
-      const x = (i / divisor) * ancho;
-      const y = alto - pad - ((v - min) / span) * (alto - pad * 2);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
+  return valores.map((v, i) => ({
+    x: (i / divisor) * ancho,
+    y: alto - pad - ((v - min) / span) * (alto - pad * 2),
+  }));
 }
 
 /** Cierra el trazo contra la base para poder rellenarlo. */
