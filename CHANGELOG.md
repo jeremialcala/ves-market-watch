@@ -374,7 +374,20 @@ Convención de mantenimiento (inventario por ejecución):
     informaban: «sin lado» repetía una obviedad del título y el lado de una
     tarjeta ya lo dice su clave (`p2p_vwap_sell`). En su lugar, cada sección lleva
     un subtítulo que dice **qué mira el bloque**.
-  - 137 pruebas nuevas; el SPA pasa de 348 a 485 y de 87,1 a 88,29 % de ramas.
+  - **Una sola tarjeta de métrica (`MetricCard`)** para «qué se movió»,
+    microestructura y cualquier bloque futuro. Eran dos componentes con el mismo
+    dibujo cuyos valores **ya habían empezado a divergir** —gap 10 contra 12,
+    trazo 1,6 contra 1,8—, el mismo patrón que dejó cuatro títulos invisibles.
+    - Contrato: etiqueta y clave **del catálogo** (la identidad entra como
+      `indicador`, no como dos cadenas sueltas), valor, Δ con su color, apertura y
+      serie; opcionales el umbral, la pastilla, la nota y el pie derecho.
+    - Estilo fijo **en tokens que ya valían lo pedido**: `--border` era el 8 %,
+      `--border-2` el 14 %, `--lift` los −4 px y `--dur-card` los 0,25 s. Sin
+      sombra en reposo, sin scale, sin `:active`, sin degradado y sin borde
+      lateral de color. Foco con `outline` 2 px y `outline-offset` 3 px.
+    - Se retiraron **25 reglas CSS** que quedaron huérfanas y las dos rejillas
+      idénticas pasaron a una.
+  - 146 pruebas nuevas; el SPA pasa de 348 a 494 y de 87,1 a 88,19 % de ramas.
 
 ### Fixed
 

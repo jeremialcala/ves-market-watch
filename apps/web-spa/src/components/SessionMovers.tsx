@@ -14,26 +14,21 @@
 
 import type { Clave } from "../i18n/dict";
 import { useI18n, type Traducir } from "../i18n/contexto";
-import { ChispaConTooltip } from "./ChispaConTooltip";
-import { NombreSerie } from "./NombreSerie";
+import { MetricCard } from "./MetricCard";
 import { formatDecimal } from "../lib/decimal";
 import { formatearDelta, valorConUnidad } from "../lib/delta";
 import { presentacionDe, type PuntoIntradia } from "../lib/intradia";
 import {
-  areaSparkline,
   fueraDeRango,
   movimientosDeSesion,
   sentidoDelMovimiento,
   signoTexto,
-  trazoSparkline,
   type MovimientoSerie,
 } from "../lib/movimiento";
 
-/** Tarjetas de la rejilla. Cuatro: caben en una fila cómoda y obligan a que la
- *  selección signifique algo. */
+/** Tarjetas de la rejilla. Cuatro: caben en una fila cómoda y obligan a que
+ *  la selección signifique algo. */
 const TARJETAS = 4;
-const ANCHO = 160;
-const ALTO = 44;
 
 /** Familias con lectura establecida: la nota puede decir qué implica. Para el
  *  resto solo se dice la magnitud. */
@@ -81,7 +76,7 @@ export function SessionMovers({
             : t("movio.restoInquieto", { n: inquietas })}
         </span>
       </div>
-      <div className="vmw-movio__rejilla">
+      <div className="vmw-metrica__rejilla">
         {destacados.map((movimiento) => (
           <Tarjeta key={movimiento.indicador} movimiento={movimiento} />
         ))}
@@ -95,83 +90,33 @@ function Tarjeta({ movimiento }: { movimiento: MovimientoSerie }) {
   const { etiqueta: claveEtiqueta, unidad, decimales } = presentacionDe(
     movimiento.indicador,
   );
-  // Para el texto alternativo hace falta la etiqueta ya traducida; el par
-  // visible lo pinta `NombreSerie`.
   const etiqueta =
     claveEtiqueta === null ? movimiento.indicador : t(claveEtiqueta);
   const adverso = sentidoDelMovimiento(movimiento.indicador, movimiento.deltaAbs);
   const num = (v: string) => valorConUnidad(v, { unidad, decimales, idioma });
-  const delta = formatearDelta(movimiento, {
-    unidad,
-    decimales,
-    idioma,
-    sinCambio: t("delta.sinCambio"),
-  });
-  const trazo = trazoSparkline(movimiento.puntos, ANCHO, ALTO);
 
   return (
-    <article
-      className="vmw-movio__tarjeta"
-      data-adverso={adverso === true ? "si" : "no"}
-    >
-      <div className="vmw-movio__cabecera-tarjeta">
-        <span className="vmw-movio__nombre-serie">
-          <NombreSerie
-            indicador={movimiento.indicador}
-            claseEtiqueta="vmw-movio__metrica"
-          />
-        </span>
-      </div>
-
-      <p className="vmw-movio__cifra-fila">
-        <span className="vmw-movio__cifra">{num(movimiento.ultimo)}</span>
-        <span className="vmw-movio__delta" style={{ color: delta.color }}>
-          {delta.texto}
-        </span>
-      </p>
-
-      <ChispaConTooltip
-        puntos={movimiento.puntos}
-        ancho={ANCHO}
-        alto={ALTO}
-        color={adverso === true ? "var(--coral)" : "var(--teal)"}
-        unidad={unidad}
-        decimales={decimales}
-      >
-      <svg
-        className="vmw-movio__spark"
-        viewBox={`0 0 ${ANCHO} ${ALTO}`}
-        preserveAspectRatio="none"
-        role="img"
-        aria-label={t("movio.descripcionSpark", {
-          etiqueta,
-          apertura: num(movimiento.apertura),
-          ultimo: num(movimiento.ultimo),
-        })}
-      >
-        <polyline
-          points={areaSparkline(trazo, ANCHO, ALTO)}
-          fill={adverso === true ? "var(--coral-tint)" : "var(--teal-tint)"}
-          stroke="none"
-        />
-        <polyline
-          points={trazo}
-          fill="none"
-          stroke={adverso === true ? "var(--coral)" : "var(--teal)"}
-          strokeWidth="1.6"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-      </svg>
-      </ChispaConTooltip>
-
-      <div className="vmw-movio__pie">
-        <span>{t("movio.apertura", { valor: num(movimiento.apertura) })}</span>
-        <span>{t("movio.ahora")}</span>
-      </div>
-
-      <p className="vmw-movio__nota">{nota(movimiento, t, idioma)}</p>
-    </article>
+    <MetricCard
+      indicador={movimiento.indicador}
+      valor={num(movimiento.ultimo)}
+      delta={formatearDelta(movimiento, {
+        unidad,
+        decimales,
+        idioma,
+        sinCambio: t("delta.sinCambio"),
+      })}
+      colorSerie={adverso === true ? "var(--coral)" : "var(--teal)"}
+      apertura={num(movimiento.apertura)}
+      puntos={movimiento.puntos}
+      pieDerecho={t("metrica.ahora")}
+      tono={adverso === true ? "alerta" : "neutro"}
+      nota={nota(movimiento, t, idioma)}
+      descripcionSerie={t("movio.descripcionSpark", {
+        etiqueta,
+        apertura: num(movimiento.apertura),
+        ultimo: num(movimiento.ultimo),
+      })}
+    />
   );
 }
 

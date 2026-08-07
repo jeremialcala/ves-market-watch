@@ -24,15 +24,11 @@
 
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
-import { ChispaConTooltip } from "./ChispaConTooltip";
+import { MetricCard } from "./MetricCard";
 import { NombreSerie } from "./NombreSerie";
 import { formatearDelta, valorConUnidad } from "../lib/delta";
 import { presentacionDe, resumenIntradia, type PuntoIntradia } from "../lib/intradia";
 import { condicionDe, type CondicionDeIndicador } from "../lib/reglas";
-import { trazoConUmbral } from "../lib/movimiento";
-
-const ANCHO = 160;
-const ALTO = 44;
 
 /** Cómo se escribe cada operador en la línea de disparo. */
 const SIMBOLO_OP = { gt: ">", gte: "≥", lt: "<", lte: "≤" } as const;
@@ -67,7 +63,7 @@ export function MicroCards({
         <h3 className="vmw-seccion__titulo">{t("intradia.grupoMicro")}</h3>
         <span className="vmw-seccion__bajada">{t("micro.bajada")}</span>
       </div>
-      <div className="vmw-micro__rejilla">
+      <div className="vmw-metrica__rejilla">
         {indicadores.map(([indicador, puntos]) => (
           <Tarjeta
             key={indicador}
@@ -102,127 +98,90 @@ function Tarjeta({
    */
   const estado =
     condicion === null ? "sin-regla" : condicion.cumple ? "cumple" : "no-cumple";
-  const color =
+  const colorSerie =
     estado === "cumple"
       ? "var(--coral)"
       : estado === "no-cumple"
         ? "var(--teal)"
         : "var(--text-muted)";
 
-  const { trazo, yUmbral } = trazoConUmbral(
-    puntos,
-    condicion?.umbral ?? null,
-    ANCHO,
-    ALTO,
+  const regla = (
+    <span className="vmw-metrica__regla">
+      {condicion === null
+        ? t("micro.sinRegla")
+        : t("micro.regla", {
+            regla: condicion.regla,
+            i: condicion.indice,
+            n: condicion.total,
+          })}
+    </span>
   );
 
-  return (
-    <article className="vmw-micro__tarjeta" data-estado={estado}>
-      <div className="vmw-micro__cabecera">
-        <span className="vmw-micro__nombre-serie">
-          <NombreSerie indicador={indicador} claseEtiqueta="vmw-micro__metrica" />
-        </span>
-        {condicion !== null && (
-          <span className="vmw-micro__estado" data-estado={estado}>
-            {t(condicion.cumple ? "micro.cumple" : "micro.noCumple")}
+  if (resumen === null) {
+    return (
+      <article className="vmw-metrica" data-tono="neutro">
+        <div className="vmw-metrica__cabecera">
+          <span className="vmw-metrica__nombre-serie">
+            <NombreSerie indicador={indicador} claseEtiqueta="vmw-metrica__etiqueta" />
           </span>
-        )}
-      </div>
+        </div>
+        <p className="vmw-metrica__nota">{t("intradia.sinHoy")}</p>
+        {regla}
+      </article>
+    );
+  }
 
-      {resumen === null ? (
-        <p className="vmw-micro__nota">{t("intradia.sinHoy")}</p>
-      ) : (
-        <>
-          <p className="vmw-micro__cifra-fila">
-            <span className="vmw-micro__cifra">{num(resumen.ultimo)}</span>
-            {/* La variación en tinta: el color de la tarjeta ya lo gasta el
-                ESTADO de la condición, así que aquí manda el signo escrito. */}
-            <span className="vmw-micro__variacion">
-              {formatearDelta(resumen, {
-                unidad,
-                decimales,
-                idioma,
-                sinCambio: t("delta.sinCambio"),
-              }).texto}
-            </span>
-          </p>
-
-          <ChispaConTooltip
-            puntos={puntos}
-            ancho={ANCHO}
-            alto={ALTO}
-            color={color}
-            unidad={unidad}
-            decimales={decimales}
-          >
-          <svg
-            className="vmw-micro__spark"
-            viewBox={`0 0 ${ANCHO} ${ALTO}`}
-            preserveAspectRatio="none"
-            role="img"
-            aria-label={
-              condicion === null
-                ? t("micro.descripcionSpark", {
-                    apertura: num(resumen.apertura),
-                    ultimo: num(resumen.ultimo),
-                  })
-                : t("micro.descripcionSparkUmbral", {
-                    apertura: num(resumen.apertura),
-                    ultimo: num(resumen.ultimo),
-                    umbral: num(condicion.umbral),
-                  })
+  return (
+    <MetricCard
+      indicador={indicador}
+      valor={num(resumen.ultimo)}
+      delta={formatearDelta(resumen, {
+        unidad,
+        decimales,
+        idioma,
+        sinCambio: t("delta.sinCambio"),
+      })}
+      colorSerie={colorSerie}
+      apertura={num(resumen.apertura)}
+      puntos={puntos}
+      umbral={condicion?.umbral ?? null}
+      tono={estado === "cumple" ? "alerta" : "neutro"}
+      pastilla={
+        condicion === null
+          ? null
+          : {
+              texto: t(condicion.cumple ? "micro.cumple" : "micro.noCumple"),
+              tono: condicion.cumple ? "alerta" : "calma",
             }
-          >
-            {/* El umbral va DEBAJO de la serie y comparte su escala: es el
-                fondo contra el que se lee la línea, no un dato más. */}
-            {yUmbral !== null && (
-              <polyline
-                points={`0,${yUmbral} ${ANCHO},${yUmbral}`}
-                fill="none"
-                stroke="var(--coral)"
-                strokeWidth="1"
-                strokeDasharray="4 4"
-                opacity="0.7"
-              />
-            )}
-            <polyline
-              points={trazo}
-              fill="none"
-              stroke={color}
-              strokeWidth="1.8"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-          </svg>
-          </ChispaConTooltip>
-
-          <div className="vmw-micro__pie">
-            <span>{t("micro.apertura", { valor: num(resumen.apertura) })}</span>
-            {condicion !== null && (
-              <span>
-                {t("micro.dispara", {
-                  op: SIMBOLO_OP[condicion.op],
-                  umbral: num(condicion.umbral),
-                })}
-              </span>
-            )}
-          </div>
+      }
+      pieDerecho={
+        condicion === null
+          ? null
+          : t("micro.dispara", {
+              op: SIMBOLO_OP[condicion.op],
+              umbral: num(condicion.umbral),
+            })
+      }
+      nota={
+        <>
+          {nota !== undefined && t(nota)}
+          {/* Sin la regla, «cumple» no dice qué se cumple: dos condiciones del
+              mismo indicador viven en reglas distintas con umbrales distintos. */}
+          {regla}
         </>
-      )}
-
-      {nota !== undefined && <p className="vmw-micro__nota">{t(nota)}</p>}
-
-      {/* Sin la regla, «cumple» no dice qué se cumple: dos condiciones del mismo
-          indicador viven en reglas distintas con umbrales distintos. */}
-      <p className="vmw-micro__regla">
-        {condicion === null
-          ? t("micro.sinRegla")
-          : t("micro.regla", {
-              regla: condicion.regla,
-              i: condicion.indice,
-              n: condicion.total,
-            })}
-      </p>
-    </article>
+      }
+      descripcionSerie={
+        condicion === null
+          ? t("micro.descripcionSpark", {
+              apertura: num(resumen.apertura),
+              ultimo: num(resumen.ultimo),
+            })
+          : t("micro.descripcionSparkUmbral", {
+              apertura: num(resumen.apertura),
+              ultimo: num(resumen.ultimo),
+              umbral: num(condicion.umbral),
+            })
+      }
+    />
   );
 }

@@ -60,6 +60,22 @@ timestamp: 2026-08-03T12:00:00Z
   el defecto era lo que yo estaba afirmando con ella. *Lo vi porque lo miré en el
   navegador con dato real; ninguna prueba lo habría cazado, porque yo mismo no
   había pensado en el caso.*
+- **Las dos tarjetas ya habían empezado a divergir antes de unificarlas**: gap
+  10 contra 12, trazo 1,6 contra 1,8, la misma cifra con dos clases. Es el mismo
+  patrón que el de los títulos, cazado antes de que costara nada.
+- **Todo el «estilo fijo» que se pidió ya existía en tokens con ese valor**:
+  `--border` era el 8 %, `--border-2` el 14 %, `--lift` los −4 px y `--dur-card`
+  los 0,25 s. Escribirlos a mano habría creado una segunda fuente para los
+  mismos números. *Antes de escribir una constante, busca si el sistema ya la
+  tiene con nombre.*
+- **El foco visible es correcto y hoy inalcanzable.** La tarjeta no es un
+  control; añadirle `tabIndex` habría metido ~28 paradas de tabulación sin nada
+  que activar, que empeora la vida justo a quien la regla protege. Está escrita,
+  con `:focus-within`, para el día que la tarjeta gane una acción.
+- **`PainCard` y `SlaCard` no existen en este repo** —son del proyecto de
+  diseño—, así que la premisa «los únicos degradados del sistema» no describe
+  este código: aquí hay seis, y uno es el panel de sesión pedido en esta misma
+  rama. La prohibición se aplicó a la tarjeta; la premisa se anotó.
 - **Toda la vista de Intradía estaba rota en tema claro y llevaba así ocho
   commits.** Los prompts decían «blanco» y yo escribí `#fff` siete veces en vez
   de `var(--white)`, que es el token de máximo contraste y vale tinta oscura en
@@ -156,8 +172,8 @@ timestamp: 2026-08-03T12:00:00Z
   regla estaba enunciada justo encima y no se había aplicado.
 - El test de paridad ES/EN cazó una cadena actualizada solo en español, y la
   cobertura destapó que había escrito la lógica de la cronología pero no el
-  componente (34 % de ramas). Con su suite y las de los dos bloques nuevos, el SPA queda en 485 tests y
-  88,29 % de ramas.
+  componente (34 % de ramas). Con su suite y las de los dos bloques nuevos, el SPA queda en 494 tests y
+  88,19 % de ramas.
 
 ## 2026-08-06 — La profundidad se anclaba en un anuncio manipulado
 - Lo trajo el usuario en una captura: diez barras idénticas de 372 USDT en el lado

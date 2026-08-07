@@ -726,6 +726,9 @@ export const ES = {
   "serie.oficialDeltaPct": "Δ oficial %",
   // -- Estado cero: el cero como resultado, no como hueco --------------------
   "cero.sinOutliers": "sin outliers en la sesión",
+  // -- Tarjeta de métrica (común a los bloques del Intradía) ------------------
+  "metrica.apertura": "apertura {valor}",
+  "metrica.ahora": "ahora",
   "delta.sinCambio": "— sin cambio",
   "intradia.bajadaOficial": "la tasa del BCV y su variación dentro del día",
   "intradia.bucket5m": "5 min",
@@ -1399,6 +1402,9 @@ export const EN: Record<Clave, string> = {
   "serie.oficialDeltaPct": "Official Δ %",
   // -- Zero state: zero as an outcome, not a gap -----------------------------
   "cero.sinOutliers": "no outliers this session",
+  // -- Metric card (shared by the Intraday blocks) ----------------------------
+  "metrica.apertura": "open {valor}",
+  "metrica.ahora": "now",
   "delta.sinCambio": "— no change",
   "intradia.bajadaOficial": "the BCV rate and its change within the day",
   "intradia.bucket5m": "5 min",

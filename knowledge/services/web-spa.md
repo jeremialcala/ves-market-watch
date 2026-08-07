@@ -49,6 +49,21 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   las Δ, el signo va siempre escrito. Tres métricas llevan nota de contexto:
   brecha (los dos lados se miden contra la misma tasa oficial), mejor precio (no
   pasa por el filtro de outliers) y outliers (es lo descartado, no un error).
+- **Una sola tarjeta de métrica (`MetricCard`)** para movers, microestructura y
+  lo que venga. Eran dos componentes con el mismo dibujo y valores que **ya habían
+  empezado a divergir** —gap 10 contra 12, trazo 1,6 contra 1,8—, que es el mismo
+  patrón que dejó cuatro títulos en blanco sobre blanco.
+  - La identidad entra como `indicador` y el par etiqueta/clave sale del
+    catálogo: pasarlos por props reabriría la divergencia que se cerró.
+  - Estilo fijo en tokens que **ya valían lo pedido** (`--border` 8 %,
+    `--border-2` 14 %, `--lift` −4 px, `--dur-card` 0,25 s). Sin sombra en
+    reposo, sin scale, sin `:active`, sin degradado y sin borde lateral de color.
+  - **El foco está escrito pero hoy no se alcanza**: la tarjeta no es un control
+    y no se le añadió `tabIndex` —serían ~28 paradas de tabulación sin nada que
+    activar, un empeoramiento para quien navega con teclado—. La regla lleva
+    `:focus-within` para cubrir el día que la tarjeta contenga algo enfocable.
+  - Al extraerla quedaron **25 reglas CSS huérfanas**; se retiraron, y las dos
+    rejillas idénticas pasaron a una.
 - **Siete elementos de Intradía estaban en blanco sobre blanco en tema claro.**
   Los prompts decían «blanco» y se escribió `color: #fff` en vez de
   `var(--white)`, que vale `#15181b` en claro: el veredicto de la sesión, cuatro
@@ -389,7 +404,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   14 días»), no una nota bajo la leyenda.
 
 ## Verificación
-- **485 tests** (unit/component/contract con MSW y WS mock) — **88,29 % de ramas**
+- **494 tests** (unit/component/contract con MSW y WS mock) — **88,19 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

@@ -1255,200 +1255,11 @@ body {
 
 /* -- qué se movió desde la apertura (Intradía) ------------------------------ */
 
-.vmw-movio__rejilla {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 18px;
-}
-
-.vmw-movio__tarjeta {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  border-radius: 22px;
-  padding: 22px 24px;
-  background: var(--dark-3);
-  border: 1px solid var(--border);
-}
-
-/* El borde coral es del movimiento ADVERSO, con la misma convención que la
-   brecha del dashboard. Donde el proyecto no tiene lectura establecida, la
-   tarjeta va con hairline y no insinúa nada. */
-.vmw-movio__tarjeta[data-adverso="si"] {
-  border-color: var(--coral-line);
-}
-
-.vmw-movio__cabecera-tarjeta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-/* Caja de oración, no versalitas: la etiqueta es el nombre legible de la serie
-   y sobre él va la clave, que ya aporta el contraste tipográfico. */
-.vmw-movio__metrica {
-  display: block;
-  font-size: 13.5px;
-  color: var(--text);
-}
-
-.vmw-movio__nombre-serie,
-.vmw-micro__nombre-serie {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.vmw-movio__cifra-fila {
-  margin: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.vmw-movio__cifra {
-  font-family: var(--font-display);
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--white);
-}
-
-/* La Δ en tinta, no en el color de la serie: el signo va escrito. */
-.vmw-movio__delta {
-  font-size: 13.5px;
-  color: var(--text-muted);
-}
-
-.vmw-movio__spark {
-  width: 100%;
-  height: 48px;
-  display: block;
-}
-
-.vmw-movio__pie {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 12px;
-  color: var(--text-dim);
-}
-
-.vmw-movio__nota {
-  margin: 0;
-  font-size: 13.5px;
-  line-height: 1.55;
-  color: var(--text-muted);
-}
-
 /* -- microestructura (Intradía) -------------------------------------------- */
 
 /* Aquí el color NO es del lado —estas cuatro no lo tienen— sino del ESTADO de
    la condición: coral cumple, teal no. Ninguna va en gris: el gris quedaría para
    la tarjeta sin regla, que es el único caso en el que no hay estado que decir. */
-.vmw-micro__rejilla {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 18px;
-}
-
-.vmw-micro__tarjeta {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  border-radius: 22px;
-  padding: 22px 24px;
-  background: var(--dark-3);
-  border: 1px solid var(--border);
-}
-
-.vmw-micro__tarjeta[data-estado="cumple"] {
-  border-color: var(--coral-line);
-}
-
-.vmw-micro__cabecera {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.vmw-micro__metrica {
-  display: block;
-  font-size: 13.5px;
-  color: var(--text);
-}
-
-.vmw-micro__estado {
-  flex: none;
-  font-size: 12px;
-  border-radius: 100px;
-  padding: 3px 11px;
-}
-
-.vmw-micro__estado[data-estado="cumple"] {
-  background: var(--coral-tint);
-  color: var(--coral);
-}
-
-.vmw-micro__estado[data-estado="no-cumple"] {
-  background: var(--teal-tint);
-  color: var(--teal);
-}
-
-.vmw-micro__cifra-fila {
-  margin: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.vmw-micro__cifra {
-  font-family: var(--font-display);
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--white);
-}
-
-/* La variación en tinta: el color de la tarjeta ya lo gasta el estado. */
-.vmw-micro__variacion {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.vmw-micro__spark {
-  width: 100%;
-  height: 48px;
-  display: block;
-}
-
-.vmw-micro__pie {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 12px;
-  color: var(--text-dim);
-}
-
-.vmw-micro__nota {
-  margin: 0;
-  font-size: 13.5px;
-  line-height: 1.55;
-  color: var(--text-muted);
-}
-
-.vmw-micro__regla {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 12.5px;
-  color: var(--text-dim);
-}
-
 /* -- lectura de la sesión (Intradía) --------------------------------------- */
 
 /* Bloque rector de la vista: la ÚNICA superficie con tinte coral aquí, igual
@@ -1852,6 +1663,159 @@ body {
   border-radius: var(--radius-lg);
   background: var(--surface-panel);
   border: var(--border-width) solid var(--border);
+}
+
+/* -- tarjeta de metrica (movers, microestructura y lo que venga) ----------- */
+
+/* Una sola definicion para todos los bloques. Antes eran dos con el mismo
+   dibujo y valores que ya habian empezado a divergir (gap 10 contra 12, trazo
+   1,6 contra 1,8), y esa deriva es la que dejo cuatro titulos en blanco sobre
+   blanco durante ocho commits.
+
+   Todo en tokens que ya valian lo pedido: --border es el 8 %, --border-2 el
+   14 %, --lift son -4px y --dur-card 0,25 s. Sin sombra en reposo, sin scale y
+   sin estado de pulsado: el sistema no los define. Sin degradado y sin borde
+   lateral de color; el relieve lo dan el borde y la elevacion. */
+/* Rejilla comun de tarjetas: 18 px, y el minimo que hace que quepan tres en
+   ancho de escritorio sin apretar la nota. */
+.vmw-metrica__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.vmw-metrica {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: 22px;
+  padding: 22px 24px;
+  background: var(--dark-3);
+  border: var(--border-width) solid var(--border);
+  transition:
+    border-color var(--dur-card) var(--ease-out-expo),
+    transform var(--dur-card) var(--ease-out-expo);
+}
+
+.vmw-metrica:hover {
+  border-color: var(--border-2);
+  transform: var(--lift);
+}
+
+/* El movimiento del hover se anula con el ajuste del sistema; el cambio de
+   borde se queda, porque no es movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  .vmw-metrica {
+    transition: border-color var(--dur-card) var(--ease-out-expo);
+  }
+
+  .vmw-metrica:hover {
+    transform: none;
+  }
+}
+
+/* Foco visible: obligatorio y con separacion, para que el anillo no se coma el
+   borde de la tarjeta. `focus-within` ademas, porque lo que hoy recibe el foco
+   es lo que la tarjeta contenga, no ella. */
+.vmw-metrica:focus-visible,
+.vmw-metrica:focus-within {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.vmw-metrica[data-tono="alerta"] {
+  border-color: var(--coral-line);
+}
+
+.vmw-metrica__cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.vmw-metrica__nombre-serie {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.vmw-metrica__etiqueta {
+  display: block;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.vmw-metrica__pastilla {
+  flex: none;
+  font-size: 12px;
+  border-radius: var(--radius-pill);
+  padding: 3px 11px;
+  background: var(--overlay-soft);
+  color: var(--text-muted);
+}
+
+.vmw-metrica__pastilla[data-tono="alerta"] {
+  background: var(--coral-tint);
+  color: var(--coral);
+}
+
+.vmw-metrica__pastilla[data-tono="calma"] {
+  background: var(--teal-tint);
+  color: var(--teal);
+}
+
+.vmw-metrica__cifra-fila {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.vmw-metrica__cifra {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.03em;
+  color: var(--white);
+}
+
+.vmw-metrica__delta {
+  font-size: 13px;
+}
+
+.vmw-metrica__spark {
+  width: 100%;
+  height: 48px;
+  display: block;
+}
+
+.vmw-metrica__pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.vmw-metrica__nota {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* Regla del ruleset a la que pertenece la condicion. Display porque es un
+   identificador, como la clave de la serie. */
+.vmw-metrica__regla {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  color: var(--text-dim);
 }
 
 /* -- estado cero de una serie ---------------------------------------------- */

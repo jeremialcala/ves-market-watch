@@ -54,7 +54,7 @@ describe("SessionMovers", () => {
     const { sesion, historial } = escenario();
     render(<SessionMovers sesion={sesion} historia={historial} />);
 
-    expect(document.querySelectorAll(".vmw-movio__tarjeta")).toHaveLength(4);
+    expect(document.querySelectorAll(".vmw-metrica")).toHaveLength(4);
     expect(screen.getByText(/4 de 6 series explican la sesión/i)).toBeTruthy();
   });
 
@@ -92,15 +92,15 @@ describe("SessionMovers", () => {
     ]);
     render(<SessionMovers sesion={sesion} historia={historial} />);
 
-    const tarjetas = [...document.querySelectorAll(".vmw-movio__tarjeta")];
+    const tarjetas = [...document.querySelectorAll(".vmw-metrica")];
     const porAdverso = Object.fromEntries(
       tarjetas.map((t) => [
-        t.querySelector(".vmw-movio__metrica")?.textContent ?? "",
-        t.getAttribute("data-adverso"),
+        t.querySelector(".vmw-metrica__etiqueta")?.textContent ?? "",
+        t.getAttribute("data-tono"),
       ]),
     );
-    expect(Object.values(porAdverso)).toContain("si");
-    expect(Object.values(porAdverso)).toContain("no");
+    expect(Object.values(porAdverso)).toContain("alerta");
+    expect(Object.values(porAdverso)).toContain("neutro");
   });
 
   it("la nota dice qué implica el movimiento, no solo que lo hubo", () => {
@@ -108,7 +108,7 @@ describe("SessionMovers", () => {
     const historial = new Map([["p2p_brecha_pct_buy", historia(12, 0.5)]]);
     render(<SessionMovers sesion={sesion} historia={historial} />);
 
-    const nota = document.querySelector(".vmw-movio__nota")!.textContent!;
+    const nota = document.querySelector(".vmw-metrica__nota")!.textContent!;
     expect(nota).toMatch(/la brecha se abrió/i);
     // Y la magnitud, que es lo que justifica que esta serie esté en la rejilla.
     expect(nota).toMatch(/veces su variación típica/i);
@@ -126,7 +126,7 @@ describe("SessionMovers", () => {
     const { sesion, historial } = escenario();
     render(<SessionMovers sesion={sesion} historia={historial} />);
 
-    const pie = document.querySelector(".vmw-movio__pie")!.textContent!;
+    const pie = document.querySelector(".vmw-metrica__pie")!.textContent!;
     expect(pie).toMatch(/apertura/i);
     expect(pie).toMatch(/ahora/i);
   });
@@ -135,6 +135,6 @@ describe("SessionMovers", () => {
     const { sesion } = escenario();
     render(<SessionMovers sesion={sesion} historia={new Map()} />);
 
-    expect(document.querySelector(".vmw-movio__rejilla")).toBeNull();
+    expect(document.querySelector(".vmw-metrica__rejilla")).toBeNull();
   });
 });

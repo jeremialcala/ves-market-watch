@@ -43,21 +43,27 @@ const SERIES: Array<readonly [string, PuntoIntradia[]]> = [
 ];
 
 function tarjetas() {
-  return [...document.querySelectorAll(".vmw-micro__tarjeta")];
+  return [...document.querySelectorAll(".vmw-metrica")];
 }
 
 describe("MicroCards", () => {
   it("el color lo decide el estado de la condición, no la sección", () => {
     render(<MicroCards indicadores={SERIES} analisis={ANALISIS} />);
 
+    /*
+     * Con la tarjeta comun, el estado vive en la PASTILLA —que lo dice con
+     * palabras— y el borde coral solo marca el caso que cumple, que es el que
+     * acerca una regla a disparar.
+     */
     const [drenaje, momentum] = tarjetas();
-    expect(drenaje.getAttribute("data-estado")).toBe("no-cumple");
-    expect(momentum.getAttribute("data-estado")).toBe("cumple");
-    // Y el estado se DICE, no solo se colorea.
-    expect(momentum.querySelector(".vmw-micro__estado")?.textContent).toBe("Cumple");
-    expect(drenaje.querySelector(".vmw-micro__estado")?.textContent).toBe(
-      "No cumple",
-    );
+    expect(momentum.getAttribute("data-tono")).toBe("alerta");
+    expect(drenaje.getAttribute("data-tono")).toBe("neutro");
+
+    const pastilla = (t: Element) => t.querySelector(".vmw-metrica__pastilla")!;
+    expect(pastilla(momentum).textContent).toBe("Cumple");
+    expect(pastilla(momentum).getAttribute("data-tono")).toBe("alerta");
+    expect(pastilla(drenaje).textContent).toBe("No cumple");
+    expect(pastilla(drenaje).getAttribute("data-tono")).toBe("calma");
   });
 
   it("nombra la regla y la posición de la condición dentro de ella", () => {
@@ -68,14 +74,14 @@ describe("MicroCards", () => {
     render(<MicroCards indicadores={SERIES} analisis={ANALISIS} />);
 
     expect(
-      tarjetas()[0].querySelector(".vmw-micro__regla")?.textContent,
+      tarjetas()[0].querySelector(".vmw-metrica__regla")?.textContent,
     ).toBe("arranque_alcista@v1 · condición 2 de 3");
   });
 
   it("el pie escribe la condición de disparo con su operador", () => {
     render(<MicroCards indicadores={SERIES} analisis={ANALISIS} />);
 
-    expect(tarjetas()[0].querySelector(".vmw-micro__pie")?.textContent).toContain(
+    expect(tarjetas()[0].querySelector(".vmw-metrica__pie")?.textContent).toContain(
       "dispara < −40 %",
     );
   });
@@ -93,7 +99,8 @@ describe("MicroCards", () => {
     expect(y).toBeGreaterThanOrEqual(0);
     expect(y).toBeLessThanOrEqual(44);
     // Y la serie queda arriba, que es lo que significa estar lejos de disparar.
-    const traza = tarjetas()[0].querySelectorAll("polyline")[1];
+    const polilineas = tarjetas()[0].querySelectorAll("polyline");
+    const traza = polilineas[polilineas.length - 1];
     const yes = traza
       .getAttribute("points")!
       .split(" ")
@@ -104,11 +111,12 @@ describe("MicroCards", () => {
   it("sin análisis no se pinta un estado que nadie ha calculado", () => {
     render(<MicroCards indicadores={SERIES} analisis={null} />);
 
-    expect(tarjetas()[0].getAttribute("data-estado")).toBe("sin-regla");
-    expect(document.querySelector(".vmw-micro__estado")).toBeNull();
+    // Sin condicion no hay pastilla que poner: es la ausencia lo que lo dice.
+    expect(tarjetas()[0].getAttribute("data-tono")).toBe("neutro");
+    expect(document.querySelector(".vmw-metrica__pastilla")).toBeNull();
     expect(document.querySelector("polyline[stroke-dasharray]")).toBeNull();
     expect(
-      tarjetas()[0].querySelector(".vmw-micro__regla")?.textContent,
+      tarjetas()[0].querySelector(".vmw-metrica__regla")?.textContent,
     ).toMatch(/no es condición de ninguna regla/i);
   });
 
@@ -126,7 +134,8 @@ describe("MicroCards", () => {
 
     expect(tarjetas()).toHaveLength(1);
     expect(screen.getByTitle("p2p_indicador_nuevo")).toBeTruthy();
-    expect(tarjetas()[0].getAttribute("data-estado")).toBe("sin-regla");
+    expect(tarjetas()[0].getAttribute("data-tono")).toBe("neutro");
+    expect(tarjetas()[0].querySelector(".vmw-metrica__pastilla")).toBeNull();
   });
 
   it("una serie sin datos del día lo dice, sin cifra inventada", () => {
@@ -137,7 +146,7 @@ describe("MicroCards", () => {
       />,
     );
 
-    expect(document.querySelector(".vmw-micro__cifra")).toBeNull();
+    expect(document.querySelector(".vmw-metrica__cifra")).toBeNull();
     expect(tarjetas()[0].textContent).toMatch(/sin datos/i);
   });
 
@@ -145,13 +154,13 @@ describe("MicroCards", () => {
     render(<MicroCards indicadores={SERIES} analisis={ANALISIS} />);
 
     expect(
-      tarjetas()[0].querySelector(".vmw-micro__nota")?.textContent,
+      tarjetas()[0].querySelector(".vmw-metrica__nota")?.textContent,
     ).toMatch(/seis horas/i);
   });
 
   it("sin series no se pinta una sección vacía", () => {
     render(<MicroCards indicadores={[]} analisis={ANALISIS} />);
 
-    expect(document.querySelector(".vmw-micro__rejilla")).toBeNull();
+    expect(document.querySelector(".vmw-metrica__rejilla")).toBeNull();
   });
 });

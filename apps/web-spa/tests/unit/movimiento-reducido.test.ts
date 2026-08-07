@@ -14,22 +14,43 @@ import { describe, expect, it } from "vitest";
 
 const CSS = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8");
 
-/** Cuerpo de la media query de movimiento reducido. */
+/**
+ * Cuerpo de TODAS las media queries de movimiento reducido, concatenado.
+ *
+ * En plural desde que hay dos: la primera versión miraba solo la primera y, al
+ * añadir la de la tarjeta de métrica, dio por descubierta la excepción del punto
+ * de frescura que estaba en la segunda. Un ayudante que mira «el primero» falla
+ * en silencio en cuanto aparece un segundo.
+ */
 function bloqueMovimientoReducido(): string {
   const marca = "@media (prefers-reduced-motion: reduce) {";
-  const i = CSS.indexOf(marca);
-  expect(i).toBeGreaterThan(-1);
-  let nivel = 0;
-  for (let j = i + marca.length - 1; j < CSS.length; j++) {
-    if (CSS[j] === "{") nivel++;
-    else if (CSS[j] === "}") {
-      nivel--;
-      if (nivel === 0) {
-        return CSS.slice(i, j + 1);
+  const bloques: string[] = [];
+  let desde = 0;
+  for (;;) {
+    const i = CSS.indexOf(marca, desde);
+    if (i === -1) {
+      break;
+    }
+    let nivel = 0;
+    let fin = -1;
+    for (let j = i + marca.length - 1; j < CSS.length; j++) {
+      if (CSS[j] === "{") nivel++;
+      else if (CSS[j] === "}") {
+        nivel--;
+        if (nivel === 0) {
+          fin = j + 1;
+          break;
+        }
       }
     }
+    if (fin === -1) {
+      throw new Error("media query sin cerrar");
+    }
+    bloques.push(CSS.slice(i, fin));
+    desde = fin;
   }
-  throw new Error("media query sin cerrar");
+  expect(bloques.length).toBeGreaterThan(0);
+  return bloques.join("\n");
 }
 
 describe("movimiento reducido", () => {

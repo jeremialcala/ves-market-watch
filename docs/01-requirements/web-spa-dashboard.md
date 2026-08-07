@@ -183,6 +183,24 @@ login y el estado de salud son visibles sin sesión.
     (24 px) la comparten Dashboard, Análisis e Histórico, y ahí el ritmo medido es
     otro.
 
+  **Una sola tarjeta de métrica (2026-08-06).** `MetricCard` la usan «qué se
+  movió» y microestructura, y es la que debe usar cualquier bloque futuro.
+  Contrato: etiqueta y clave **derivadas del catálogo**, valor, Δ con su color de
+  dirección, apertura, serie, y como opcionales umbral, pastilla, nota y pie
+  derecho.
+
+  - **La identidad entra como `indicador`, no como etiqueta + clave sueltas.** El
+    catálogo es el único dueño de ese par; aceptarlo por props reabriría la puerta
+    a que dos bloques nombren la misma serie distinto.
+  - Estilo **fijo y no personalizable por bloque**, todo en tokens que ya valían
+    lo pedido: `--dark-3`, radio 22, padding 22/24, gap 12, `--border` (8 %) y en
+    hover `--border-2` (14 %) con `--lift` (−4 px) en `--dur-card` (0,25 s).
+    **Sin sombra en reposo, sin scale y sin estado de pulsado** —el sistema no los
+    define—, **sin degradado y sin borde lateral de color**. Foco visible
+    obligatorio con `outline` de 2 px y `outline-offset` 3 px.
+  - El movimiento del hover se anula con `prefers-reduced-motion`; el cambio de
+    borde se queda, porque no es movimiento.
+
   **La barra de control dice el estado, no ofrece un botón (2026-08-06).** El
   botón «Actualizar» desaparece: la vista ya se recarga sola, así que lo que
   faltaba no era un control sino saber si eso está pasando. En su sitio va un

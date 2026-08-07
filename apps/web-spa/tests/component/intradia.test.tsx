@@ -167,9 +167,9 @@ describe("IntradayView", () => {
     expect(fila.querySelector(".vmw-vs__clave")?.textContent).toBe("p2p_mediana");
 
     // Día plano: se DICE que no cambió, en vez de un «0 (0 %)» que parece un dato.
-    const spread = document.querySelector(".vmw-micro__tarjeta")!;
-    expect(spread.querySelector(".vmw-micro__cifra")?.textContent).toBe("2,5 %");
-    expect(spread.querySelector(".vmw-micro__variacion")?.textContent).toBe(
+    const spread = document.querySelector(".vmw-metrica")!;
+    expect(spread.querySelector(".vmw-metrica__cifra")?.textContent).toBe("2,5 %");
+    expect(spread.querySelector(".vmw-metrica__delta")?.textContent).toBe(
       "— sin cambio",
     );
   });
@@ -302,7 +302,7 @@ describe("IntradayView", () => {
     await waitFor(() =>
       expect(document.querySelector(".vmw-vs__fila")).toBeTruthy(),
     );
-    expect(document.querySelector(".vmw-movio__rejilla")).toBeNull();
+    expect(document.querySelector(".vmw-metrica__rejilla")).toBeNull();
     // Y ningún error se le echa encima al usuario: la vista no falló.
     expect(screen.queryByText(/rango no procesable/i)).toBeNull();
   });
@@ -424,8 +424,8 @@ describe("IntradayView", () => {
 
     const cifras = [
       ".vmw-vs__valor", ".vmw-vs__delta", ".vmw-vs__apertura",
-      ".vmw-micro__cifra", ".vmw-micro__variacion", ".vmw-micro__pie",
-      ".vmw-movio__cifra", ".vmw-movio__delta",
+      ".vmw-metrica__cifra", ".vmw-metrica__delta", ".vmw-metrica__pie",
+      ".vmw-metrica__cifra", ".vmw-metrica__delta",
       ".vmw-crono__cifras", ".intradia-valor", ".intradia-delta",
     ].flatMap((selector) =>
       [...document.querySelectorAll(selector)].map((e) => ({
@@ -452,8 +452,8 @@ describe("IntradayView", () => {
     await waitFor(() => expect(screen.getAllByText("Spread").length).toBeGreaterThan(0));
 
     // La tarjeta de microestructura: etiqueta legible + clave del contrato.
-    const micro = document.querySelector(".vmw-micro__nombre-serie")!;
-    expect(micro.querySelector(".vmw-micro__metrica")?.textContent).toBe("Spread");
+    const micro = document.querySelector(".vmw-metrica__nombre-serie")!;
+    expect(micro.querySelector(".vmw-metrica__etiqueta")?.textContent).toBe("Spread");
     expect(micro.querySelector(".vmw-serie__clave")?.textContent).toBe(
       "p2p_spread_pct",
     );
