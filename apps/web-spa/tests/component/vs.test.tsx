@@ -120,15 +120,24 @@ describe("SideBySide", () => {
       (d) => d.textContent ?? "",
     );
     expect(deltas[0].startsWith("+")).toBe(true);
-    expect(deltas[1].startsWith("-")).toBe(true);
+    // Menos tipográfico U+2212, jamás el guion ASCII.
+    expect(deltas[1].startsWith("−")).toBe(true);
+    expect(deltas[1]).not.toContain("-");
   });
 
-  it("un día plano no inventa un signo", () => {
+  it("un día plano lo DICE, no imprime un «0 (0 %)»", () => {
+    /*
+     * Un cero con su porcentaje se lee como una medición; «sin cambio» se lee
+     * como lo que es. Y va en tinta apagada, no en el color de una dirección
+     * que no existe.
+     */
     render(
       <SideBySide series={new Map([["p2p_vwap_buy", serie(["10", "10"])]])} />,
     );
 
-    expect(document.querySelector(".vmw-vs__delta")?.textContent).toBe("0 (0 %)");
+    const delta = document.querySelector(".vmw-vs__delta") as HTMLElement;
+    expect(delta.textContent).toBe("— sin cambio");
+    expect(delta.style.color).toBe("var(--dir-neutral)");
   });
 
   it("la nota de contexto cruza la fila entera y solo donde hace falta", () => {

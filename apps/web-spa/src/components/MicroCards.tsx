@@ -24,10 +24,10 @@
 
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
-import { formatDecimal } from "../lib/decimal";
+import { formatearDelta, valorConUnidad } from "../lib/delta";
 import { presentacionDe, resumenIntradia, type PuntoIntradia } from "../lib/intradia";
 import { condicionDe, type CondicionDeIndicador } from "../lib/reglas";
-import { signoTexto, trazoConUmbral } from "../lib/movimiento";
+import { trazoConUmbral } from "../lib/movimiento";
 
 const ANCHO = 160;
 const ALTO = 44;
@@ -91,8 +91,7 @@ function Tarjeta({
   const { t, idioma } = useI18n();
   const { etiqueta, unidad, decimales } = presentacionDe(indicador);
   const resumen = resumenIntradia(puntos);
-  const num = (v: string, d = decimales) =>
-    formatDecimal(v, { maxDecimales: d, idioma });
+  const num = (v: string) => valorConUnidad(v, { unidad, decimales, idioma });
   const nota = NOTA[indicador];
 
   /*
@@ -118,9 +117,9 @@ function Tarjeta({
   return (
     <article className="vmw-micro__tarjeta" data-estado={estado}>
       <div className="vmw-micro__cabecera">
+        {/* Solo el nombre: la unidad viaja pegada a la cifra. */}
         <span className="vmw-micro__metrica" title={indicador}>
           {etiqueta}
-          {unidad !== "" ? ` · ${unidad}` : ""}
         </span>
         {condicion !== null && (
           <span className="vmw-micro__estado" data-estado={estado}>
@@ -135,14 +134,15 @@ function Tarjeta({
         <>
           <p className="vmw-micro__cifra-fila">
             <span className="vmw-micro__cifra">{num(resumen.ultimo)}</span>
-            {/* El signo escrito: el color de la tarjeta es del ESTADO, así que
-                no queda ninguno libre para el sentido de la variación. */}
+            {/* La variación en tinta: el color de la tarjeta ya lo gasta el
+                ESTADO de la condición, así que aquí manda el signo escrito. */}
             <span className="vmw-micro__variacion">
-              {signoTexto(resumen.deltaAbs)}
-              {num(resumen.deltaAbs)}
-              {resumen.deltaPct !== null
-                ? ` (${signoTexto(resumen.deltaAbs)}${num(resumen.deltaPct, 2)} %)`
-                : ""}
+              {formatearDelta(resumen, {
+                unidad,
+                decimales,
+                idioma,
+                sinCambio: t("delta.sinCambio"),
+              }).texto}
             </span>
           </p>
 
@@ -192,7 +192,7 @@ function Tarjeta({
               <span>
                 {t("micro.dispara", {
                   op: SIMBOLO_OP[condicion.op],
-                  umbral: `${num(condicion.umbral)}${unidad !== "" ? ` ${unidad}` : ""}`,
+                  umbral: num(condicion.umbral),
                 })}
               </span>
             )}

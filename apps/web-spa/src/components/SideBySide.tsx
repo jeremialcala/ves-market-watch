@@ -19,12 +19,12 @@
 
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
-import { formatDecimal } from "../lib/decimal";
 import {
   presentacionDe,
   resumenIntradia,
   type PuntoIntradia,
 } from "../lib/intradia";
+import { formatearDelta, valorConUnidad } from "../lib/delta";
 import { areaSparkline, trazoSparkline } from "../lib/movimiento";
 
 const ANCHO = 96;
@@ -53,12 +53,6 @@ const NOTA: Record<string, Clave> = {
   p2p_mejor_precio: "vs.notaMejorPrecio",
   p2p_outliers_pct: "vs.notaOutliers",
 };
-
-const COLOR_DIRECCION = {
-  "-1": "var(--dir-bajista)",
-  "0": "var(--dir-neutral)",
-  "1": "var(--dir-alcista)",
-} as const;
 
 export function SideBySide({
   series,
@@ -101,16 +95,15 @@ function Fila({
   series: Map<string, PuntoIntradia[]>;
 }) {
   const { t } = useI18n();
-  const { etiqueta, unidad } = presentacionDe(`${base}_buy`);
+  const { etiqueta } = presentacionDe(`${base}_buy`);
   const nota = NOTA[base];
 
   return (
     <div className="vmw-vs__fila">
       <div className="vmw-vs__metrica">
-        <span className="vmw-vs__nombre">
-          {etiqueta}
-          {unidad !== "" ? ` ${unidad}` : ""}
-        </span>
+        {/* Solo el nombre: la unidad va pegada a la cifra de cada lado, que es
+            donde se lee el numero. */}
+        <span className="vmw-vs__nombre">{etiqueta}</span>
         {/* La clave canónica, sin maquillar: es el vocabulario del contrato y
             lo que se escribe en una consulta o en un ticket. */}
         <span className="vmw-vs__clave">{base}</span>
@@ -130,7 +123,7 @@ function Celda({
   series: Map<string, PuntoIntradia[]>;
 }) {
   const { t, idioma } = useI18n();
-  const { decimales } = presentacionDe(indicador);
+  const { unidad, decimales } = presentacionDe(indicador);
   const puntos = series.get(indicador) ?? [];
   const resumen = resumenIntradia(puntos);
 
@@ -140,11 +133,14 @@ function Celda({
     return <div className="vmw-vs__celda vmw-vs__celda--vacia">{t("vs.sinLado")}</div>;
   }
 
+  const num = (v: string) => valorConUnidad(v, { unidad, decimales, idioma });
+  const delta = formatearDelta(resumen, {
+    unidad,
+    decimales,
+    idioma,
+    sinCambio: t("delta.sinCambio"),
+  });
   const clave = String(resumen.direccion) as "-1" | "0" | "1";
-  const color = COLOR_DIRECCION[clave];
-  const num = (v: string, d = decimales) =>
-    formatDecimal(v, { maxDecimales: d, idioma });
-  const signo = resumen.direccion > 0 ? "+" : "";
   const trazo = trazoSparkline(puntos, ANCHO, ALTO, 3);
 
   return (
@@ -153,12 +149,8 @@ function Celda({
         <span className="vmw-vs__valor">{num(resumen.ultimo)}</span>
         {/* El signo va escrito SIEMPRE: el color de dirección comparte tonos con
             las cabeceras de lado, así que no puede ser la única pista. */}
-        <span className="vmw-vs__delta" style={{ color }}>
-          {signo}
-          {num(resumen.deltaAbs)}
-          {resumen.deltaPct !== null
-            ? ` (${signo}${num(resumen.deltaPct, 2)} %)`
-            : ""}
+        <span className="vmw-vs__delta" style={{ color: delta.color }}>
+          {delta.texto}
         </span>
         <span className="vmw-vs__apertura">
           {t("vs.apertura", { valor: num(resumen.apertura) })}
@@ -182,7 +174,7 @@ function Celda({
         <polyline
           points={trazo}
           fill="none"
-          stroke={color}
+          stroke={delta.color}
           strokeWidth="2"
           strokeLinejoin="round"
           strokeLinecap="round"

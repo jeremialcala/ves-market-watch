@@ -568,7 +568,7 @@ export const ES = {
   "crono.liquidezTitulo": "Salto de liquidez",
   "crono.liquidezTexto":
     "El volumen ofrecido del lado {lado} se movió más de {sigmas} veces lo que salta habitualmente entre buckets.",
-  "crono.cifrasLiquidez": "{delta} USDT · total {valor} · {sigmas}σ",
+  "crono.cifrasLiquidez": "{delta} · total {valor} · {sigmas}σ",
   "crono.recalculoTitulo": "Último recálculo",
   "crono.recalculoTexto":
     "El motor volvió a evaluar el ruleset con el snapshot más reciente.",
@@ -626,7 +626,7 @@ export const ES = {
   "sesion.prosaFaltaBajar":
     "Falta que {indicador} baje {distancia} hasta quedar por debajo de {umbral}: mientras no lo haga, la regla no dispara por mucho que el resto se mantenga.",
   "sesion.hechoCondiciones": "{cumplidas} de {totales} condiciones",
-  "sesion.hechoLiquidez": "liquidez {valor} USDT · {delta} en la sesión",
+  "sesion.hechoLiquidez": "liquidez {valor} · {delta} en la sesión",
   "sesion.hechoMomentum": "momentum bid 3 h {valor} %",
   "sesion.hechoFrescura": "datos {cuando} · confianza {confianza}",
   "sesion.confianzaNormal": "normal",
@@ -706,6 +706,7 @@ export const ES = {
   "historico.bucket1d": "1 día",
   "intradia.controles": "Controles del intradía",
   "intradia.monedaOficial": "Moneda de la tasa oficial",
+  "delta.sinCambio": "— sin cambio",
   "intradia.bucket5m": "5 min",
   "intradia.bucket15m": "15 min",
   "intradia.bucket1h": "1 h",
@@ -722,7 +723,7 @@ export const ES = {
   "intradia.ladoVenta": "venta",
   "intradia.ladoSinLado": "sin lado",
   "intradia.descripcionPanel":
-    "{etiqueta}: apertura {apertura}, último {ultimo}, variación {delta}{pct}",
+    "{etiqueta}: apertura {apertura}, último {ultimo}, variación {delta}",
 
   // -- auth ------------------------------------------------------------------
   // Los cuatro estados del guard de sesión (`auth/RequireAuth.tsx`). Son
@@ -1227,7 +1228,7 @@ export const EN: Record<Clave, string> = {
   "crono.liquidezTitulo": "Liquidity jump",
   "crono.liquidezTexto":
     "Offered volume on the {lado} side moved more than {sigmas} times its usual bucket-to-bucket jump.",
-  "crono.cifrasLiquidez": "{delta} USDT · total {valor} · {sigmas}σ",
+  "crono.cifrasLiquidez": "{delta} · total {valor} · {sigmas}σ",
   "crono.recalculoTitulo": "Latest recalculation",
   "crono.recalculoTexto":
     "The engine re-evaluated the ruleset with the most recent snapshot.",
@@ -1283,7 +1284,7 @@ export const EN: Record<Clave, string> = {
   "sesion.prosaFaltaBajar":
     "{indicador} still has to fall {distancia} to drop below {umbral}: until it does, the rule will not fire however steady the rest stays.",
   "sesion.hechoCondiciones": "{cumplidas} of {totales} conditions",
-  "sesion.hechoLiquidez": "liquidity {valor} USDT · {delta} this session",
+  "sesion.hechoLiquidez": "liquidity {valor} · {delta} this session",
   "sesion.hechoMomentum": "3 h bid momentum {valor} %",
   "sesion.hechoFrescura": "data {cuando} · {confianza} confidence",
   "sesion.confianzaNormal": "normal",
@@ -1359,6 +1360,7 @@ export const EN: Record<Clave, string> = {
   "historico.bucket1d": "1 day",
   "intradia.controles": "Intraday controls",
   "intradia.monedaOficial": "Official rate currency",
+  "delta.sinCambio": "— no change",
   "intradia.bucket5m": "5 min",
   "intradia.bucket15m": "15 min",
   "intradia.bucket1h": "1 h",
@@ -1375,7 +1377,7 @@ export const EN: Record<Clave, string> = {
   "intradia.ladoVenta": "sell",
   "intradia.ladoSinLado": "no side",
   "intradia.descripcionPanel":
-    "{etiqueta}: open {apertura}, last {ultimo}, change {delta}{pct}",
+    "{etiqueta}: open {apertura}, last {ultimo}, change {delta}",
   "auth.verificando": "Checking session…",
   "auth.redirigiendo": "Redirecting to sign in…",
   "auth.entrar": "Sign in",

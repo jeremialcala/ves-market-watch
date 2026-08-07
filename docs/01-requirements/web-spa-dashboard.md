@@ -85,6 +85,25 @@ login y el estado de salud son visibles sin sesión.
   del motor aparece sin cambios en el front. Refresco automático cada 5 min, con
   la granularidad elegible entre **5 min, 15 min y 1 h**.
 
+  **Todo formato de Δ pasa por una sola función (`lib/delta.ts`, 2026-08-06).**
+  Estaba repetido en cinco componentes con cinco criterios, y por ahí se colaron
+  dos cosas que llegaron a pantalla: un porcentaje que contradecía el signo que
+  tenía al lado y un signo duplicado. Las reglas:
+
+  - **Menos tipográfico U+2212**, nunca el guion ASCII; separadores del idioma.
+  - **«+» explícito solo en positivos**, y siempre escrito: el color no puede ser
+    la única pista de la dirección.
+  - **El porcentaje se omite si la apertura no llega a 0,5.** Una condición cubre
+    los tres casos malos: apertura cero (no existe el cociente), pequeña (un
+    movimiento de nada sale como «+133 %») y **negativa** (el cociente invierte el
+    sentido). La Δ en unidades es exacta siempre.
+  - **Sin cambio se dice** («— sin cambio»), no se pinta un «+0» que parece una
+    medición.
+  - **La unidad viaja pegada al valor** con espacio duro, nunca colgada del nombre
+    de la métrica.
+  - **Sin triángulos de dirección**: eran un tercer canal que repetía lo que ya
+    dicen el signo escrito y el color.
+
   **La barra de control dice el estado, no ofrece un botón (2026-08-06).** El
   botón «Actualizar» desaparece: la vista ya se recarga sola, así que lo que
   faltaba no era un control sino saber si eso está pasando. En su sitio va un

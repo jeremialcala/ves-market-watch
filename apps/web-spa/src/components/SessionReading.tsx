@@ -24,6 +24,7 @@ import type { Analisis } from "../api/endpoints";
 import type { Clave } from "../i18n/dict";
 import { useI18n, type Traducir } from "../i18n/contexto";
 import { formatDecimal } from "../lib/decimal";
+import { formatearDelta, valorConUnidad } from "../lib/delta";
 import { relativo } from "../lib/freshness";
 import {
   etiquetaDiaVET,
@@ -109,7 +110,7 @@ export function SessionReading({
       <p className="vmw-sesion__prosa">{prosa(analisis, cercana, t, num)}</p>
 
       <div className="vmw-sesion__hechos">
-        {hechos(analisis, cercana, series, t, num).map((hecho) => (
+        {hechos(analisis, cercana, series, t, num, idioma).map((hecho) => (
           <span className="vmw-sesion__hecho" key={hecho}>
             <i aria-hidden="true" />
             {hecho}
@@ -260,6 +261,7 @@ function hechos(
   series: Map<string, PuntoIntradia[]>,
   t: Traducir,
   num: (v: string, d?: number) => string,
+  idioma: "es" | "en",
 ): string[] {
   const lista: string[] = [];
 
@@ -276,8 +278,17 @@ function hechos(
   if (liquidez !== null) {
     lista.push(
       t("sesion.hechoLiquidez", {
-        valor: num(liquidez.ultimo, 0),
-        delta: `${liquidez.direccion > 0 ? "+" : ""}${num(liquidez.deltaAbs, 0)}`,
+        valor: valorConUnidad(liquidez.ultimo, {
+          unidad: "USDT",
+          decimales: 0,
+          idioma,
+        }),
+        // Por la función común: el mismo signo y el mismo menos que el resto.
+        delta: formatearDelta(liquidez, {
+          decimales: 0,
+          idioma,
+          sinCambio: t("delta.sinCambio"),
+        }).texto,
       }),
     );
   }

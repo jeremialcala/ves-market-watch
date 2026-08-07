@@ -60,6 +60,24 @@ timestamp: 2026-08-03T12:00:00Z
   el defecto era lo que yo estaba afirmando con ella. *Lo vi porque lo miré en el
   navegador con dato real; ninguna prueba lo habría cazado, porque yo mismo no
   había pensado en el caso.*
+- **Centralizar el formato de Δ no era cosmético: era la causa de los dos
+  defectos.** Estaba repetido en cinco componentes, y los dos errores que
+  llegaron a pantalla —un porcentaje que contradecía su propio signo, un signo
+  duplicado— no eran fallos de aritmética sino cinco formateos distintos del
+  mismo hecho. *Cuando el mismo defecto aparece dos veces en sitios distintos,
+  el defecto es la duplicación.*
+- **El signo del porcentaje ahora se COMPONE en vez de copiarse.** Se toma la
+  dirección de la Δ y la magnitud del cociente, nunca el signo que devuelve la
+  división. Así el «+−382,85 %» no es un caso que haya que recordar evitar: es
+  inexpresable.
+- **Y una condición sustituyó a dos.** Tenía «apertura ≤ 0» en un sitio; con
+  «apertura < 0,5» se cubren de golpe el cero, la apertura pequeña y la
+  negativa, que son el mismo problema visto desde tres lados.
+- **La cronología seguía volcando el string crudo del contrato** y no lo vi
+  hasta recorrer la página en vivo: «−57.10523657 · umbral -40» junto a tarjetas
+  que ya escribían «−57,10 %». Ningún test unitario podía verlo —cada uno mira
+  su componente y esto era un defecto de la vista entera—. *Los defectos de
+  coherencia solo se ven mirando el conjunto.*
 - **La barra de control tenía un botón que sobraba y le faltaba un estado.** La
   vista se recarga sola cada 5 min, así que «Actualizar» no resolvía nada que no
   estuviera ya resuelto; lo que no había era forma de saber si eso estaba
@@ -80,8 +98,8 @@ timestamp: 2026-08-03T12:00:00Z
   regla estaba enunciada justo encima y no se había aplicado.
 - El test de paridad ES/EN cazó una cadena actualizada solo en español, y la
   cobertura destapó que había escrito la lógica de la cronología pero no el
-  componente (34 % de ramas). Con su suite y las de los dos bloques nuevos, el SPA queda en 444 tests y
-  87,4 % de ramas.
+  componente (34 % de ramas). Con su suite y las de los dos bloques nuevos, el SPA queda en 463 tests y
+  88,12 % de ramas.
 
 ## 2026-08-06 — La profundidad se anclaba en un anuncio manipulado
 - Lo trajo el usuario en una captura: diez barras idénticas de 372 USDT en el lado

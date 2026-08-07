@@ -103,7 +103,9 @@ describe("SessionTimeline", () => {
     );
     const cruce = cifras.find((c) => c.includes("p2p_momentum_bid_3h_pct"))!;
     expect(cruce).toContain("arranque_alcista@v1");
-    expect(cruce).toContain("umbral 0.5");
+    // Formateado como el resto, no crudo del contrato: coma decimal y unidad
+    // pegada. El string exacto es el del CSV, no el de pantalla.
+    expect(cruce).toContain("umbral 0,5 %");
   });
 
   it("un salto de liquidez dice cuánto y cuántas σ, con el signo escrito", () => {
@@ -214,5 +216,49 @@ describe("SessionTimeline", () => {
       ),
     ).toBe(true);
     expect(texto).toBeTruthy();
+  });
+  it("las cifras del cruce se formatean, no se vuelcan crudas del contrato", () => {
+    /*
+     * Visto en la pagina en vivo: la linea decia
+     * «p2p_drenaje_oferta_6h_pct -57.10523657 · umbral -40», con guion ASCII y
+     * punto decimal, al lado de tarjetas que ya escribian «−57,11 %». El string
+     * exacto es el que va al CSV; el de pantalla se lee.
+     */
+    const analisis = {
+      as_of: new Date(T0 + 5 * PASO).toISOString(),
+      rule_proximity: [
+        {
+          rule: "arranque_alcista@v1",
+          conditions: [
+            {
+              indicator: "p2p_drenaje_oferta_6h_pct",
+              op: "lt" as const,
+              threshold: "-40",
+            },
+          ],
+        },
+      ],
+    };
+    const sesion = new Map([
+      [
+        "p2p_drenaje_oferta_6h_pct",
+        serie(["-10", "-57.10523657", "-58", "-59", "-60", "-61"]),
+      ],
+    ]);
+
+    render(
+      <SessionTimeline sesion={sesion} referencia={new Map()} analisis={analisis} />,
+    );
+
+    const cruce = [...document.querySelectorAll(".vmw-crono__cifras")]
+      .map((c) => c.textContent ?? "")
+      .find((c) => c.includes("p2p_drenaje_oferta_6h_pct"))!;
+
+    // Truncado, no redondeado: es la regla del proyecto para el dato exacto
+    // (−57,105… se escribe −57,10 y no −57,11).
+    expect(cruce).toContain("−57,10 %");
+    expect(cruce).toContain("umbral −40 %");
+    expect(cruce).not.toContain("-");
+    expect(cruce).not.toContain(".10523657");
   });
 });

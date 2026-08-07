@@ -15,6 +15,7 @@
 import type { Clave } from "../i18n/dict";
 import { useI18n, type Traducir } from "../i18n/contexto";
 import { formatDecimal } from "../lib/decimal";
+import { formatearDelta, valorConUnidad } from "../lib/delta";
 import { ladoDe, presentacionDe, type PuntoIntradia } from "../lib/intradia";
 import {
   areaSparkline,
@@ -104,9 +105,13 @@ function Tarjeta({ movimiento }: { movimiento: MovimientoSerie }) {
   const { etiqueta, unidad, decimales } = presentacionDe(movimiento.indicador);
   const lado = ladoDe(movimiento.indicador);
   const adverso = sentidoDelMovimiento(movimiento.indicador, movimiento.deltaAbs);
-  const num = (v: string, d = decimales) =>
-    formatDecimal(v, { maxDecimales: d, idioma });
-  const signo = signoTexto(movimiento.deltaAbs);
+  const num = (v: string) => valorConUnidad(v, { unidad, decimales, idioma });
+  const delta = formatearDelta(movimiento, {
+    unidad,
+    decimales,
+    idioma,
+    sinCambio: t("delta.sinCambio"),
+  });
   const trazo = trazoSparkline(movimiento.puntos, ANCHO, ALTO);
 
   return (
@@ -115,10 +120,8 @@ function Tarjeta({ movimiento }: { movimiento: MovimientoSerie }) {
       data-adverso={adverso === true ? "si" : "no"}
     >
       <div className="vmw-movio__cabecera-tarjeta">
-        <span className="vmw-movio__metrica">
-          {etiqueta}
-          {unidad !== "" ? ` · ${unidad}` : ""}
-        </span>
+        {/* Solo el nombre: la unidad viaja pegada a la cifra. */}
+        <span className="vmw-movio__metrica">{etiqueta}</span>
         <span
           className="vmw-movio__lado"
           style={{ color: COLOR_LADO[lado], borderColor: COLOR_LADO[lado] }}
@@ -129,12 +132,8 @@ function Tarjeta({ movimiento }: { movimiento: MovimientoSerie }) {
 
       <p className="vmw-movio__cifra-fila">
         <span className="vmw-movio__cifra">{num(movimiento.ultimo)}</span>
-        <span className="vmw-movio__delta">
-          {signo}
-          {num(movimiento.deltaAbs)}
-          {movimiento.deltaPct !== null
-            ? ` (${signo}${num(movimiento.deltaPct, 2)} %)`
-            : ""}
+        <span className="vmw-movio__delta" style={{ color: delta.color }}>
+          {delta.texto}
         </span>
       </p>
 

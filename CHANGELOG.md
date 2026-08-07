@@ -304,9 +304,35 @@ Convención de mantenimiento (inventario por ejecución):
     - El pulso se detiene con `prefers-reduced-motion: reduce`, y el test no
       protege sólo a esa animación: exige que **cualquier** animación en bucle
       del CSS esté exceptuada.
-  - 96 pruebas nuevas; el SPA pasa de 348 a 444 y de 87,1 a 87,4 % de ramas.
+  - **Todo formato de Δ pasa por una sola función (`lib/delta.ts`).** Estaba
+    repetido en cinco componentes con cinco criterios, y por ahí se colaron los
+    dos defectos que llegaron a pantalla: un porcentaje que contradecía el signo
+    que tenía al lado y un signo duplicado. No eran fallos de aritmética: eran
+    cinco formateos distintos del mismo hecho.
+    - Menos tipográfico **U+2212**, «+» solo en positivos, unidad pegada al valor
+      con espacio duro, «— sin cambio» cuando no se movió y **sin triángulos de
+      dirección** —eran un tercer canal que repetía lo que ya dicen el signo
+      escrito y el color—.
+    - **Una condición sustituye a dos**: el porcentaje se omite si la apertura no
+      llega a 0,5, lo que cubre de golpe el cero, la apertura pequeña («+133 %»
+      de casi nada) y la negativa (invierte el sentido).
+    - **El signo del porcentaje se COMPONE, no se copia** del que devuelve la
+      división: dirección de la Δ + magnitud del cociente. Así el «+−382,85 %»
+      deja de ser un caso que recordar y pasa a ser inexpresable.
+    - Lo vigilan tres pruebas de fuente (los seis componentes importan la
+      función, no queda ningún triángulo, nadie compone un porcentaje a mano) y
+      una de vista que barre las cifras de todos los bloques.
+  - 115 pruebas nuevas; el SPA pasa de 348 a 463 y de 87,1 a 88,12 % de ramas.
 
 ### Fixed
+
+- **La cronología volcaba el string CRUDO del contrato (2026-08-06).** Los
+  cruces de umbral escribían «p2p_drenaje_oferta_6h_pct -57.10523657 · umbral
+  -40» —guion ASCII y punto decimal— al lado de tarjetas que ya escribían
+  «−57,10 %». **Ningún test unitario podía verlo**: cada uno mira su componente y
+  esto era un defecto de coherencia de la vista entera. Apareció recorriendo la
+  página en vivo; ahora hay una guarda que barre las cifras de todos los bloques
+  buscando guiones ASCII y signos dobles.
 
 - **El % de variación mentía el sentido con apertura negativa (2026-08-06).**
   Salió al pintar las tarjetas de microestructura: `p2p_momentum_bid_3h_pct`

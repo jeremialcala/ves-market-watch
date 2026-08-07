@@ -153,18 +153,24 @@ describe("IntradayView", () => {
     // la lleva en su columna con el signo escrito.
     const fila = document.querySelector(".vmw-vs__fila")!;
     const [compra, venta] = [...fila.querySelectorAll(".vmw-vs__celda")];
-    expect(compra.querySelector(".vmw-vs__valor")?.textContent).toBe("120");
-    expect(compra.querySelector(".vmw-vs__delta")?.textContent).toBe("+20 (+20 %)");
-    expect(venta.querySelector(".vmw-vs__valor")?.textContent).toBe("95");
-    expect(venta.querySelector(".vmw-vs__delta")?.textContent).toBe("-5 (-5 %)");
+    // Formato ÚNICO de `lib/delta.ts`: menos tipográfico, «+» solo en positivos
+    // y la unidad pegada a la cifra con espacio duro.
+    expect(compra.querySelector(".vmw-vs__valor")?.textContent).toBe("120 VES");
+    expect(compra.querySelector(".vmw-vs__delta")?.textContent).toBe(
+      "+20 VES (+20 %)",
+    );
+    expect(venta.querySelector(".vmw-vs__valor")?.textContent).toBe("95 VES");
+    expect(venta.querySelector(".vmw-vs__delta")?.textContent).toBe(
+      "−5 VES (−5 %)",
+    );
     // Y la clave canónica de la métrica, sin maquillar.
     expect(fila.querySelector(".vmw-vs__clave")?.textContent).toBe("p2p_mediana");
 
-    // Día plano en microestructura: variación cero, sin signo inventado.
+    // Día plano: se DICE que no cambió, en vez de un «0 (0 %)» que parece un dato.
     const spread = document.querySelector(".vmw-micro__tarjeta")!;
-    expect(spread.querySelector(".vmw-micro__cifra")?.textContent).toBe("2,5");
+    expect(spread.querySelector(".vmw-micro__cifra")?.textContent).toBe("2,5 %");
     expect(spread.querySelector(".vmw-micro__variacion")?.textContent).toBe(
-      "0 (0 %)",
+      "— sin cambio",
     );
   });
 
@@ -393,5 +399,41 @@ describe("IntradayView", () => {
     expect(document.querySelector(".vmw-frescura")?.textContent).toMatch(
       /en vivo · actualizado \d{2}:\d{2} VET/,
     );
+  });
+  it("ninguna cifra de la vista imprime un guion ASCII", async () => {
+    /*
+     * La guarda de conjunto. El hueco que destapo mirando la pagina en vivo: la
+     * cronologia pintaba el string CRUDO del contrato en los cruces de umbral
+     * («-57.10523657 · umbral -40»), con guion ASCII y punto decimal, al lado de
+     * cifras ya formateadas. Ningun test unitario lo habria visto: cada uno
+     * miraba su componente y este es un defecto de la vista entera.
+     *
+     * Con este fixture NO hay analisis ni ventana de referencia, asi que la
+     * cronologia y «que se movio» no se pintan: sus selectores estan en la lista
+     * para cuando los haya, pero quien cubre el caso del cruce es
+     * `crono.test.tsx`.
+     */
+    conSeries();
+    render(<IntradayView />);
+    await waitFor(() => expect(screen.getAllByText(/VES/).length).toBeGreaterThan(0));
+
+    const cifras = [
+      ".vmw-vs__valor", ".vmw-vs__delta", ".vmw-vs__apertura",
+      ".vmw-micro__cifra", ".vmw-micro__variacion", ".vmw-micro__pie",
+      ".vmw-movio__cifra", ".vmw-movio__delta",
+      ".vmw-crono__cifras", ".intradia-valor", ".intradia-delta",
+    ].flatMap((selector) =>
+      [...document.querySelectorAll(selector)].map((e) => ({
+        selector,
+        texto: e.textContent ?? "",
+      })),
+    );
+
+    expect(cifras.length).toBeGreaterThan(0);
+    for (const { selector, texto } of cifras) {
+      expect(texto, `${selector}: ${texto}`).not.toContain("-");
+      // Y nunca dos signos seguidos, que es como se vio el «+−382,85 %».
+      expect(texto, `${selector}: ${texto}`).not.toMatch(/[+−]{2}/);
+    }
   });
 });

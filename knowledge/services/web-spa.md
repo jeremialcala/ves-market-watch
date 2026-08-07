@@ -49,6 +49,26 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   las Δ, el signo va siempre escrito. Tres métricas llevan nota de contexto:
   brecha (los dos lados se miden contra la misma tasa oficial), mejor precio (no
   pasa por el filtro de outliers) y outliers (es lo descartado, no un error).
+- **Todo formato de Δ vive en `lib/delta.ts`, una sola función.** Estaba
+  repetido en cinco componentes con cinco criterios, y por ahí llegaron a
+  pantalla un porcentaje que contradecía su propio signo y un signo duplicado.
+  Menos tipográfico U+2212, «+» solo en positivos, unidad pegada con espacio
+  duro, «— sin cambio» cuando no se movió y sin triángulos de dirección.
+  - **Una condición para el porcentaje: apertura ≥ 0,5.** Cubre los tres casos
+    malos de golpe —cero (no existe), pequeña («+133 %» de casi nada) y negativa
+    (invierte el sentido)—. Antes había dos reglas distintas en dos sitios.
+  - **El signo del porcentaje se COMPONE, no se copia** del que devuelve la
+    división: se toma la dirección de la Δ y la magnitud del cociente. Es lo que
+    hace estructuralmente imposible volver a imprimir «+−382,85 %».
+  - Lo vigilan tres pruebas de fuente: que los seis componentes importen la
+    función, que no quede ningún triángulo y que nadie componga un porcentaje a
+    mano en una plantilla.
+- **La cronología volcaba el string CRUDO del contrato** en los cruces de umbral
+  —«−57.10523657 · umbral -40», con guion ASCII y punto decimal— al lado de
+  tarjetas ya formateadas. **Ningún test unitario lo habría visto**: cada uno
+  miraba su componente y era un defecto de la vista entera. Apareció recorriendo
+  la página en vivo y ahora hay una guarda que barre las cifras de todos los
+  bloques buscando guiones ASCII.
 - **La barra de control dice el ESTADO, no ofrece un botón.** Fuera «Actualizar»:
   la vista ya se recarga sola cada 5 min, así que lo que faltaba no era un
   control sino saber si eso está pasando. El bucket pasa de `<select>` a tres
@@ -313,7 +333,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   14 días»), no una nota bajo la leyenda.
 
 ## Verificación
-- **444 tests** (unit/component/contract con MSW y WS mock) — **87,4 % de ramas**
+- **463 tests** (unit/component/contract con MSW y WS mock) — **88,12 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

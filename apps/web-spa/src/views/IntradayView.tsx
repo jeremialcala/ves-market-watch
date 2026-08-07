@@ -23,8 +23,12 @@
  *   unidades distintas, por eso son paneles separados y no un gráfico común).
  * - El aqua queda bajo 3:1 sobre la superficie clara: aplica la regla de
  *   relieve, y por eso cada panel lleva SIEMPRE etiqueta y valor visibles.
- * - El signo de la Δ va en glifo (▲ ▼ ●) + texto, nunca en color solo; el
- *   número se escribe en tinta, no en el color de la serie.
+ * - **Todo formato de Δ pasa por `lib/delta.ts`**, sin excepciones: menos
+ *   tipográfico U+2212, «+» solo en positivos, porcentaje omitido cuando la
+ *   apertura no llega a 0,5 y unidad pegada a la cifra. Los triángulos de
+ *   dirección se retiraron: eran un tercer canal que repetía lo que ya dicen el
+ *   signo escrito y el color, y había que traducirlos mentalmente. Un test de
+ *   `delta.test.ts` comprueba que no vuelvan —por eso aquí no se escriben—.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -53,6 +57,7 @@ import { SessionTimeline } from "../components/SessionTimeline";
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
 import { formatDecimal, toChartNumber } from "../lib/decimal";
+import { formatearDelta, valorConUnidad } from "../lib/delta";
 import {
   grupoDe,
   horaVET,
@@ -89,13 +94,6 @@ const CLAVE_LADO: Record<Lado, Clave> = {
   venta: "intradia.ladoVenta",
   "sin-lado": "intradia.ladoSinLado",
 };
-
-const GLIFO_DIRECCION = { "-1": "▼", "0": "●", "1": "▲" } as const;
-const COLOR_DIRECCION = {
-  "-1": "var(--dir-bajista)",
-  "0": "var(--dir-neutral)",
-  "1": "var(--dir-alcista)",
-} as const;
 
 /**
  * Los grupos que siguen siendo parrilla de small multiples.
@@ -249,49 +247,32 @@ function PanelIndicador({
   if (resumen === null) {
     return (
       <figure className="vmw-tarjeta vmw-tarjeta--sm" style={{ margin: 0 }}>
-        <figcaption className="intradia-titulo">
-          {etiqueta}
-          {unidad !== "" ? <span className="intradia-unidad">{unidad}</span> : null}
-        </figcaption>
+        <figcaption className="intradia-titulo">{etiqueta}</figcaption>
         <NoDataState detalle={t("intradia.sinHoy")} />
       </figure>
     );
   }
-  const clave = String(resumen.direccion) as "-1" | "0" | "1";
-  const valorFmt = formatDecimal(resumen.ultimo, {
-    maxDecimales: decimales,
+  const num = (v: string) => valorConUnidad(v, { unidad, decimales, idioma });
+  const valorFmt = num(resumen.ultimo);
+  const aperturaFmt = num(resumen.apertura);
+  const delta = formatearDelta(resumen, {
+    unidad,
+    decimales,
     idioma,
+    sinCambio: t("delta.sinCambio"),
   });
-  const deltaFmt = formatDecimal(resumen.deltaAbs, {
-    maxDecimales: decimales,
-    idioma,
-  });
-  const aperturaFmt = formatDecimal(resumen.apertura, {
-    maxDecimales: decimales,
-    idioma,
-  });
-  const signoTexto = resumen.direccion > 0 ? "+" : "";
-  /* Sin porcentaje no se escribe un paréntesis vacío ni un «(+—)»: la Δ en
-     unidades ya es la cifra exacta (ver `ResumenIntradia.deltaPct`). */
-  const pctFmt =
-    resumen.deltaPct === null
-      ? ""
-      : ` (${signoTexto}${formatDecimal(resumen.deltaPct, { maxDecimales: 2, idioma })} %)`;
 
   return (
     <figure className="vmw-tarjeta vmw-tarjeta--sm" style={{ margin: 0 }}>
+      {/* Solo el nombre: la unidad viaja pegada a la cifra. */}
       <figcaption className="intradia-titulo" title={indicador}>
         {etiqueta}
-        {unidad !== "" ? <span className="intradia-unidad">{unidad}</span> : null}
       </figcaption>
       <p className="intradia-valor">{valorFmt}</p>
-      <p className="intradia-delta">
-        <span aria-hidden="true" style={{ color: COLOR_DIRECCION[clave] }}>
-          {GLIFO_DIRECCION[clave]}
-        </span>{" "}
-        {signoTexto}
-        {deltaFmt}
-        {pctFmt}
+      {/* Sin glifo: la direccion la dan el signo escrito y el color, y un
+          tercer canal solo obligaba a traducir el triangulo mentalmente. */}
+      <p className="intradia-delta" style={{ color: delta.color }}>
+        {delta.texto}
       </p>
       <div
         role="img"
@@ -299,8 +280,7 @@ function PanelIndicador({
           etiqueta,
           apertura: aperturaFmt,
           ultimo: valorFmt,
-          delta: `${signoTexto}${deltaFmt}`,
-          pct: pctFmt,
+          delta: delta.texto,
         })}
       >
         <Chispa

@@ -13,14 +13,14 @@
 
 import type { Clave } from "../i18n/dict";
 import { useI18n, type Traducir } from "../i18n/contexto";
-import { formatDecimal } from "../lib/decimal";
+import { formatearDelta, valorConUnidad } from "../lib/delta";
 import {
   eventosDeSesion,
   SIGMAS_SALTO,
   type ClaseEvento,
   type EventoSesion,
 } from "../lib/cronologia";
-import { horaVET, type PuntoIntradia } from "../lib/intradia";
+import { horaVET, presentacionDe, type PuntoIntradia } from "../lib/intradia";
 
 type AnalisisTimeline = Parameters<typeof eventosDeSesion>[2];
 
@@ -117,21 +117,37 @@ function cifras(
   idioma: "es" | "en",
 ): string {
   if (evento.clase === "umbral" && evento.valor !== undefined) {
-    // La regla va en la línea de cifras: sin ella, dos cruces del mismo
-    // indicador contra umbrales distintos se leen como una línea repetida.
+    /*
+     * Valor y umbral por `valorConUnidad`, no crudos del contrato: el string
+     * exacto trae punto decimal y guion ASCII («-57.10523657»), y en pantalla
+     * eso es otro formato distinto del de al lado. La cifra exacta es la del
+     * CSV; esta es la que se lee.
+     *
+     * La regla va en la línea: sin ella, dos cruces del mismo indicador contra
+     * umbrales distintos se leen como una línea repetida.
+     */
+    const { unidad, decimales } = presentacionDe(evento.indicador ?? "");
+    const num = (v: string) => valorConUnidad(v, { unidad, decimales, idioma });
     return t("crono.cifrasUmbral", {
       regla: evento.regla ?? "",
       indicador: evento.indicador ?? "",
-      valor: evento.valor,
-      umbral: evento.umbral ?? "",
+      valor: num(evento.valor),
+      umbral: evento.umbral === undefined ? "" : num(evento.umbral),
     });
   }
   if (evento.clase === "liquidez" && evento.delta !== undefined) {
-    const entero = (v: string) => formatDecimal(v, { maxDecimales: 0, idioma });
+    const opciones = { unidad: "USDT", decimales: 0, idioma };
     return t("crono.cifrasLiquidez", {
-      // Signo explícito: el color del punto refuerza, nunca codifica solo.
-      delta: `${evento.delta.startsWith("-") ? "" : "+"}${entero(evento.delta)}`,
-      valor: entero(evento.valor ?? "0"),
+      /*
+       * Por la función común: signo escrito, menos tipográfico y unidad pegada.
+       * `apertura: null` porque un salto no se mide contra ninguna base —no hay
+       * porcentaje que dar, y el criterio de si lo hay vive en un solo sitio—.
+       */
+      delta: formatearDelta(
+        { deltaAbs: evento.delta, apertura: null },
+        { ...opciones, sinCambio: t("delta.sinCambio") },
+      ).texto,
+      valor: valorConUnidad(evento.valor ?? "0", opciones),
       sigmas: (evento.sigmas ?? 0).toFixed(1),
     });
   }

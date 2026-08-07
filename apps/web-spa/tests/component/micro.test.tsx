@@ -76,7 +76,7 @@ describe("MicroCards", () => {
     render(<MicroCards indicadores={SERIES} analisis={ANALISIS} />);
 
     expect(tarjetas()[0].querySelector(".vmw-micro__pie")?.textContent).toContain(
-      "dispara < -40 %",
+      "dispara < −40 %",
     );
   });
 
