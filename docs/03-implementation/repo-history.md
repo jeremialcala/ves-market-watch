@@ -260,6 +260,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `4c25643` | commit | — | Jeremi Alcala | 2026-08-07 | test(e2e): los rechazos en vivo, que no necesitaban credenciales |
+| `a3f5e73` | commit | — | Jeremi Alcala | 2026-08-07 | docs(repo-history): regenerar |
 | `e79ba7d` | commit | — | Jeremi Alcala | 2026-08-07 | test(e2e): los rechazos en vivo, que no necesitaban credenciales |
 | `3be72cb` | commit | — | Jeremi Alcala | 2026-08-07 | docs(repo-history): regenerar tras los merges de los PR #2 y #3 |
 | `df2da0b` | merge | — | Jeremi J. Alcalá M. | 2026-08-07 | Merge pull request #3 from jeremialcala/fix-cronologia-repeticion |
