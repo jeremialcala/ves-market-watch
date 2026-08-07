@@ -64,8 +64,8 @@ export function MicroCards({
   return (
     <section className="vmw-seccion" aria-label={t("intradia.grupoMicro")}>
       <div className="vmw-seccion__cabecera">
-        <h3 className="vmw-movio__titulo">{t("intradia.grupoMicro")}</h3>
-        <span className="vmw-movio__bajada">{t("micro.bajada")}</span>
+        <h3 className="vmw-seccion__titulo">{t("intradia.grupoMicro")}</h3>
+        <span className="vmw-seccion__bajada">{t("micro.bajada")}</span>
       </div>
       <div className="vmw-micro__rejilla">
         {indicadores.map(([indicador, puntos]) => (

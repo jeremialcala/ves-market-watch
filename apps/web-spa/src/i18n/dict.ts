@@ -727,6 +727,7 @@ export const ES = {
   // -- Estado cero: el cero como resultado, no como hueco --------------------
   "cero.sinOutliers": "sin outliers en la sesión",
   "delta.sinCambio": "— sin cambio",
+  "intradia.bajadaOficial": "la tasa del BCV y su variación dentro del día",
   "intradia.bucket5m": "5 min",
   "intradia.bucket15m": "15 min",
   "intradia.bucket1h": "1 h",
@@ -740,7 +741,6 @@ export const ES = {
   "intradia.error": "No se pudo cargar el intradía.",
   "intradia.ladoCompra": "compra",
   "intradia.ladoVenta": "venta",
-  "intradia.ladoSinLado": "sin lado",
   "intradia.descripcionPanel":
     "{etiqueta}: apertura {apertura}, último {ultimo}, variación {delta}",
 
@@ -1400,6 +1400,7 @@ export const EN: Record<Clave, string> = {
   // -- Zero state: zero as an outcome, not a gap -----------------------------
   "cero.sinOutliers": "no outliers this session",
   "delta.sinCambio": "— no change",
+  "intradia.bajadaOficial": "the BCV rate and its change within the day",
   "intradia.bucket5m": "5 min",
   "intradia.bucket15m": "15 min",
   "intradia.bucket1h": "1 h",
@@ -1413,7 +1414,6 @@ export const EN: Record<Clave, string> = {
   "intradia.error": "Could not load the intraday view.",
   "intradia.ladoCompra": "buy",
   "intradia.ladoVenta": "sell",
-  "intradia.ladoSinLado": "no side",
   "intradia.descripcionPanel":
     "{etiqueta}: open {apertura}, last {ultimo}, change {delta}",
   "auth.verificando": "Checking session…",

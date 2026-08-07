@@ -56,8 +56,8 @@ export function SessionTimeline({
   return (
     <section className="vmw-seccion" aria-label={t("crono.titulo")}>
       <div className="vmw-seccion__cabecera">
-        <h3 className="vmw-movio__titulo">{t("crono.titulo")}</h3>
-        <span className="vmw-movio__bajada">{t("crono.bajada")}</span>
+        <h3 className="vmw-seccion__titulo">{t("crono.titulo")}</h3>
+        <span className="vmw-seccion__bajada">{t("crono.bajada")}</span>
       </div>
       <ol className="vmw-crono">
         {eventos.map((evento, indice) => (

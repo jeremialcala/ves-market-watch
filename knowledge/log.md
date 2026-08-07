@@ -60,6 +60,20 @@ timestamp: 2026-08-03T12:00:00Z
   el defecto era lo que yo estaba afirmando con ella. *Lo vi porque lo miré en el
   navegador con dato real; ninguna prueba lo habría cazado, porque yo mismo no
   había pensado en el caso.*
+- **Toda la vista de Intradía estaba rota en tema claro y llevaba así ocho
+  commits.** Los prompts decían «blanco» y yo escribí `#fff` siete veces en vez
+  de `var(--white)`, que es el token de máximo contraste y vale tinta oscura en
+  claro. Resultado: veredicto, cuatro títulos, cifras y valores en blanco sobre
+  fondo blanco. *Un literal que casualmente coincide con el token en el tema en
+  que trabajas no es un color: es una bomba de relojería.*
+- **Ninguna prueba lo vio porque todas corren en oscuro**, que es el tema por
+  defecto del producto. El canario nuevo no comprueba píxeles: comprueba que el
+  color venga de un token, que es lo único verificable sin renderizar los dos
+  temas.
+- **Lo destapó unificar los títulos, no buscarlo.** Había dos definiciones del
+  mismo elemento —`.vmw-movio__titulo` y `.vmw-seccion__titulo`— con la misma
+  tipografía y distinto color; al ir a borrar la duplicada saltó la diferencia.
+  Duplicar una regla de estilo es duplicar el sitio donde puede divergir.
 - **La nota del «snapshot limpio» habría sido falsa el día que la escribí.**
   Antes de implementarla miré el dato: el día operativo llevaba 17 lecturas de
   outliers no nulas en compra y 128 en venta. Cablearla a la métrica —que es lo
@@ -142,7 +156,7 @@ timestamp: 2026-08-03T12:00:00Z
   regla estaba enunciada justo encima y no se había aplicado.
 - El test de paridad ES/EN cazó una cadena actualizada solo en español, y la
   cobertura destapó que había escrito la lógica de la cronología pero no el
-  componente (34 % de ramas). Con su suite y las de los dos bloques nuevos, el SPA queda en 483 tests y
+  componente (34 % de ramas). Con su suite y las de los dos bloques nuevos, el SPA queda en 485 tests y
   88,29 % de ramas.
 
 ## 2026-08-06 — La profundidad se anclaba en un anuncio manipulado

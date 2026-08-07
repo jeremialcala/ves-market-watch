@@ -366,9 +366,31 @@ Convención de mantenimiento (inventario por ejecución):
     cualquier microcambio le daba una z enorme: se vio en vivo ocupando la primera
     tarjeta con un «−0,50 (−100 %)». Al excluirla, las cuatro pasaron a ser series
     de mercado.
-  - 135 pruebas nuevas; el SPA pasa de 348 a 483 y de 87,1 a 88,29 % de ramas.
+  - **Ritmo vertical normalizado**: 46 px entre bloques, 18 px de cabecera a
+    contenido y entre tarjetas hermanas; contenedor a 1180 px con 24 px de aire
+    lateral y `clamp(24px,4vw,44px)` / 96 px. Los 46 px van en un **modificador de
+    vista**: la regla base de 24 px la comparten Dashboard, Análisis e Histórico.
+  - **Fuera las pastillas «compra», «venta» y «sin lado» de las cabeceras.** No
+    informaban: «sin lado» repetía una obviedad del título y el lado de una
+    tarjeta ya lo dice su clave (`p2p_vwap_sell`). En su lugar, cada sección lleva
+    un subtítulo que dice **qué mira el bloque**.
+  - 137 pruebas nuevas; el SPA pasa de 348 a 485 y de 87,1 a 88,29 % de ramas.
 
 ### Fixed
+
+- **Toda la vista de Intradía estaba rota en TEMA CLARO (2026-08-06).** Los
+  prompts de la rama decían «blanco» y se escribió `color: #fff` **siete veces**
+  en vez de `var(--white)`, que es el token de máximo contraste y vale `#15181b`
+  en claro. El veredicto de la sesión, cuatro títulos de sección, las cifras de
+  las tarjetas y los valores de la tabla quedaron en blanco sobre fondo blanco,
+  a contraste 1:1, durante ocho commits.
+  - **Ninguna prueba se enteró**: todas corren en oscuro, que es el tema por
+    defecto. El canario nuevo (`unit/tema-tokens.test.ts`) no mide píxeles —no se
+    puede sin renderizar los dos temas— sino que **ningún `color:` de la hoja sea
+    un literal** y que `--white` siga volteándose. Verificado por mutación.
+  - Lo destapó unificar los títulos de sección: había **dos definiciones del
+    mismo elemento** con la misma tipografía y distinto color, y solo una usaba el
+    token. Verificado en vivo: 26 elementos se voltean ahora en los dos temas.
 
 - **La cronología volcaba el string CRUDO del contrato (2026-08-06).** Los
   cruces de umbral escribían «p2p_drenaje_oferta_6h_pct -57.10523657 · umbral

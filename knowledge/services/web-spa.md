@@ -49,6 +49,22 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   las Δ, el signo va siempre escrito. Tres métricas llevan nota de contexto:
   brecha (los dos lados se miden contra la misma tasa oficial), mejor precio (no
   pasa por el filtro de outliers) y outliers (es lo descartado, no un error).
+- **Siete elementos de Intradía estaban en blanco sobre blanco en tema claro.**
+  Los prompts decían «blanco» y se escribió `color: #fff` en vez de
+  `var(--white)`, que vale `#15181b` en claro: el veredicto de la sesión, cuatro
+  títulos de sección, las cifras de las tarjetas y los valores de la tabla, todos
+  a contraste 1:1. **Ninguna prueba se enteró porque todas corrían en oscuro.**
+  - Lo destapó unificar los títulos: había **dos definiciones del mismo
+    elemento** (`.vmw-movio__titulo` junto a `.vmw-seccion__titulo`) y solo una
+    usaba el token. *Duplicar una regla de estilo es duplicar el sitio donde
+    puede divergir.*
+  - Canario en `unit/tema-tokens.test.ts`: ningún `color:` de la hoja puede ser un
+    literal, y `--white` tiene que seguir volteándose. Verificado por mutación.
+- **Ritmo vertical de Intradía**: 46 px entre bloques (en un modificador de
+  vista, porque la regla base de 24 px la comparten las otras tres), 18 px de
+  cabecera a contenido y entre tarjetas. Fuera las pastillas de lado: «sin lado»
+  repetía el título y el lado de una tarjeta ya lo dice su clave. Cada sección
+  gana un subtítulo que dice qué mira.
 - **El cero de `p2p_outliers_pct` es un RESULTADO, no un hueco.** Con la serie
   entera a cero, el área del sparkline pasa a una línea hairline y la frase «sin
   outliers en la sesión» en salvia: el filtro MAD/IQR no tuvo que descartar nada.
@@ -373,7 +389,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   14 días»), no una nota bajo la leyenda.
 
 ## Verificación
-- **483 tests** (unit/component/contract con MSW y WS mock) — **88,29 % de ramas**
+- **485 tests** (unit/component/contract con MSW y WS mock) — **88,29 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

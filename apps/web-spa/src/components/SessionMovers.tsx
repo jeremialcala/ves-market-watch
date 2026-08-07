@@ -18,7 +18,7 @@ import { ChispaConTooltip } from "./ChispaConTooltip";
 import { NombreSerie } from "./NombreSerie";
 import { formatDecimal } from "../lib/decimal";
 import { formatearDelta, valorConUnidad } from "../lib/delta";
-import { ladoDe, presentacionDe, type PuntoIntradia } from "../lib/intradia";
+import { presentacionDe, type PuntoIntradia } from "../lib/intradia";
 import {
   areaSparkline,
   fueraDeRango,
@@ -34,18 +34,6 @@ import {
 const TARJETAS = 4;
 const ANCHO = 160;
 const ALTO = 44;
-
-const COLOR_LADO = {
-  compra: "var(--series-buy)",
-  venta: "var(--series-sell)",
-  "sin-lado": "var(--series-aqua)",
-} as const;
-
-const CLAVE_LADO = {
-  compra: "intradia.ladoCompra",
-  venta: "intradia.ladoVenta",
-  "sin-lado": "intradia.ladoSinLado",
-} as const satisfies Record<string, Clave>;
 
 /** Familias con lectura establecida: la nota puede decir qué implica. Para el
  *  resto solo se dice la magnitud. */
@@ -78,11 +66,11 @@ export function SessionMovers({
   return (
     <section className="vmw-seccion" aria-label={t("movio.titulo")}>
       <div className="vmw-seccion__cabecera">
-        <h3 className="vmw-movio__titulo">{t("movio.titulo")}</h3>
+        <h3 className="vmw-seccion__titulo">{t("movio.titulo")}</h3>
         {/* La segunda mitad se CALCULA: afirmar que el resto se mantuvo dentro
             de su rango sin haberlo mirado sería una afirmación gratuita, y el
             día que no sea cierta nadie se enteraría. */}
-        <span className="vmw-movio__bajada">
+        <span className="vmw-seccion__bajada">
           {t("movio.bajada", {
             destacadas: destacados.length,
             totales: movimientos.length,
@@ -111,7 +99,6 @@ function Tarjeta({ movimiento }: { movimiento: MovimientoSerie }) {
   // visible lo pinta `NombreSerie`.
   const etiqueta =
     claveEtiqueta === null ? movimiento.indicador : t(claveEtiqueta);
-  const lado = ladoDe(movimiento.indicador);
   const adverso = sentidoDelMovimiento(movimiento.indicador, movimiento.deltaAbs);
   const num = (v: string) => valorConUnidad(v, { unidad, decimales, idioma });
   const delta = formatearDelta(movimiento, {
@@ -133,12 +120,6 @@ function Tarjeta({ movimiento }: { movimiento: MovimientoSerie }) {
             indicador={movimiento.indicador}
             claseEtiqueta="vmw-movio__metrica"
           />
-        </span>
-        <span
-          className="vmw-movio__lado"
-          style={{ color: COLOR_LADO[lado], borderColor: COLOR_LADO[lado] }}
-        >
-          {t(CLAVE_LADO[lado])}
         </span>
       </div>
 

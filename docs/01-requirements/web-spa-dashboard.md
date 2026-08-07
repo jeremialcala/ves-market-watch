@@ -168,6 +168,21 @@ login y el estado de salud son visibles sin sesión.
     ocupando la primera tarjeta con un «−0,50 (−100 %)» que no decía nada del
     mercado. Su sitio es su fila de la tabla, donde tiene contexto.
 
+  **Ritmo vertical normalizado (2026-08-06).** 46 px entre bloques, 18 px entre
+  la cabecera de sección y su contenido, 18 px entre tarjetas hermanas; el
+  contenedor mantiene 1180 px, 24 px de aire lateral y
+  `clamp(24px,4vw,44px)` / 96 px arriba y abajo. La cabecera es una fila flex a
+  línea base con h3 en caja de oración y, al lado, **un subtítulo que dice qué
+  mira el bloque**.
+
+  - **Fuera las pastillas «compra», «venta» y «sin lado».** No informaban: «sin
+    lado» repetía una obviedad del título y el lado de una tarjeta ya lo dice su
+    clave (`p2p_vwap_sell`). Cada sección gana en su sitio una frase que sí dice
+    algo.
+  - Los 46 px van en un **modificador de la vista**: la regla base de separación
+    (24 px) la comparten Dashboard, Análisis e Histórico, y ahí el ritmo medido es
+    otro.
+
   **La barra de control dice el estado, no ofrece un botón (2026-08-06).** El
   botón «Actualizar» desaparece: la vista ya se recarga sola, así que lo que
   faltaba no era un control sino saber si eso está pasando. En su sitio va un

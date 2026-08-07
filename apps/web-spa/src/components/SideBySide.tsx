@@ -72,8 +72,8 @@ export function SideBySide({
   return (
     <section className="vmw-seccion" aria-label={t("vs.titulo")}>
       <div className="vmw-seccion__cabecera">
-        <h3 className="vmw-movio__titulo">{t("vs.titulo")}</h3>
-        <span className="vmw-movio__bajada">{t("vs.bajada")}</span>
+        <h3 className="vmw-seccion__titulo">{t("vs.titulo")}</h3>
+        <span className="vmw-seccion__bajada">{t("vs.bajada")}</span>
       </div>
       <div className="vmw-vs">
         <div className="vmw-vs__tabla">

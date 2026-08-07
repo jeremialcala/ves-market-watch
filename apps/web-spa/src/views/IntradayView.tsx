@@ -63,12 +63,10 @@ import {
   grupoDe,
   horaVET,
   ladoDe,
-  ladoDeGrupo,
   ORDEN_GRUPOS,
   presentacionDe,
   resumenIntradia,
   type Grupo,
-  type Lado,
   type PuntoIntradia,
 } from "../lib/intradia";
 import { useMarket } from "../state/marketStore";
@@ -90,10 +88,12 @@ const CLAVE_GRUPO: Record<Grupo, Clave> = {
   microestructura: "intradia.grupoMicro",
 };
 
-const CLAVE_LADO: Record<Lado, Clave> = {
-  compra: "intradia.ladoCompra",
-  venta: "intradia.ladoVenta",
-  "sin-lado": "intradia.ladoSinLado",
+/** Qué mira cada grupo que sigue en parrilla. */
+const BAJADA_GRUPO: Record<Grupo, Clave> = {
+  oficial: "intradia.bajadaOficial",
+  compra: "intradia.bajadaOficial",
+  venta: "intradia.bajadaOficial",
+  microestructura: "micro.bajada",
 };
 
 /**
@@ -408,7 +408,7 @@ export function IntradayView() {
   }
 
   return (
-    <main className="vmw-vista">
+    <main className="vmw-vista vmw-vista--intradia">
       <div className="vmw-contenedor">
         <section
           className="vmw-controles vmw-controles--intradia"
@@ -485,14 +485,11 @@ export function IntradayView() {
           >
             <div className="vmw-seccion__cabecera">
               <h3 className="vmw-seccion__titulo">{t(CLAVE_GRUPO[grupo])}</h3>
-              <span
-                className="vmw-badge"
-                style={{ borderColor: COLOR_LADO[ladoDeGrupo(grupo)] }}
-              >
-                {t(CLAVE_LADO[ladoDeGrupo(grupo)])}
-              </span>
+              {/* Subtítulo que dice QUÉ MIRA el bloque. La pastilla «sin lado»
+                  que había aquí repetía una obviedad del título y no informaba. */}
+              <span className="vmw-seccion__bajada">{t(BAJADA_GRUPO[grupo])}</span>
             </div>
-            <div className="vmw-grid" style={{ "--min": "210px", gap: "0.75rem" } as React.CSSProperties}>
+            <div className="vmw-grid" style={{ "--min": "210px", gap: "18px" } as React.CSSProperties}>
               {(porGrupo.get(grupo) ?? []).map(([nombre, puntos]) => (
                 <PanelIndicador key={nombre} indicador={nombre} puntos={puntos} />
               ))}
