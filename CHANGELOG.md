@@ -349,7 +349,24 @@ Convención de mantenimiento (inventario por ejecución):
       sería una caja negra sobre papel en tema claro.
     - **En táctil no aparece**: sin hover no habría forma de cerrarlo. La vía sin
       puntero es «Exportar sesión».
-  - 130 pruebas nuevas; el SPA pasa de 348 a 478 y de 87,1 a 88,23 % de ramas.
+  - **El cero de `p2p_outliers_pct` se pinta como RESULTADO, no como hueco.** Con
+    la serie entera a cero, el área del sparkline pasa a una línea hairline
+    centrada y la frase «sin outliers en la sesión» en salvia —el color de la
+    validación—: el filtro MAD/IQR no tuvo que descartar nada. Ni chispa plana,
+    que se lee igual que un dato que falta, ni «(—)».
+    - **Se dispara con TODOS los puntos a cero**, no con «no se movió»: la frase
+      habla del día entero. Y la nota interpretativa de la tabla exige que **los
+      dos lados** lo cumplan: cablearla habría escrito «el filtro no descartó
+      nada hoy» el mismo día en que descartó —el 6-ago hubo 17 lecturas no nulas
+      en compra y 128 en venta, comprobado en la base antes de implementarlo—.
+    - **Solo donde hay lectura escrita del cero**: una mediana en cero no es
+      «limpio», es que algo va mal.
+  - **`p2p_outliers_pct` queda fuera del ranking de «qué se movió», siempre.**
+    Mide la calidad del snapshot, no el mercado, y con una σ de 7 días diminuta
+    cualquier microcambio le daba una z enorme: se vio en vivo ocupando la primera
+    tarjeta con un «−0,50 (−100 %)». Al excluirla, las cuatro pasaron a ser series
+    de mercado.
+  - 135 pruebas nuevas; el SPA pasa de 348 a 483 y de 87,1 a 88,29 % de ramas.
 
 ### Fixed
 

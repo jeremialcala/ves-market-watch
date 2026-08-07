@@ -181,4 +181,90 @@ describe("SideBySide", () => {
     expect(screen.getByText("Venta (sell)")).toBeTruthy();
     expect(screen.getByText("Métrica")).toBeTruthy();
   });
+  it("una serie en cero se dibuja como resultado, no como hueco", () => {
+    /*
+     * En `p2p_outliers_pct` el cero ES lo deseado: el filtro MAD/IQR no tuvo que
+     * descartar nada. Una chispa plana lo cuenta como si faltara el dato —una
+     * linea sin relieve es lo mismo que se ve cuando una serie no llega—.
+     */
+    render(
+      <SideBySide
+        series={
+          new Map([
+            ["p2p_outliers_pct_buy", serie(["0", "0", "0"])],
+            ["p2p_outliers_pct_sell", serie(["0", "0", "0"])],
+          ])
+        }
+      />,
+    );
+
+    const celdas = [...document.querySelectorAll(".vmw-vs__celda")];
+    for (const celda of celdas) {
+      expect(celda.querySelector(".vmw-cero")).toBeTruthy();
+      expect(celda.querySelector("svg")).toBeNull();
+      expect(celda.querySelector(".vmw-cero__etiqueta")?.textContent).toBe(
+        "sin outliers en la sesión",
+      );
+      // Y la delta lo dice con palabras, sin «(—)».
+      expect(celda.querySelector(".vmw-vs__delta")?.textContent).toBe(
+        "— sin cambio",
+      );
+    }
+  });
+
+  it("la nota del snapshot limpio SOLO si los dos lados vinieron a cero", () => {
+    /*
+     * El dato de hoy: 17 lecturas no nulas en compra y 128 en venta. Cablear la
+     * nota a la metrica habria escrito «el filtro no descarto nada hoy» un dia
+     * en que si descarto — que es precisamente hoy.
+     */
+    render(
+      <SideBySide
+        series={
+          new Map([
+            ["p2p_outliers_pct_buy", serie(["0", "0"])],
+            ["p2p_outliers_pct_sell", serie(["0", "0.5"])],
+          ])
+        }
+      />,
+    );
+
+    const nota = document.querySelector(".vmw-vs__nota")?.textContent ?? "";
+    expect(nota).not.toMatch(/no descartó nada/);
+    expect(nota).toMatch(/porcentaje de anuncios que el filtro descartó/);
+    // Y el lado que si tuvo outliers conserva su chispa: hay algo que mirar.
+    const celdas = [...document.querySelectorAll(".vmw-vs__celda")];
+    expect(celdas[0].querySelector(".vmw-cero")).toBeTruthy();
+    expect(celdas[1].querySelector("svg")).toBeTruthy();
+  });
+
+  it("con los dos lados a cero, la nota interpreta el cero", () => {
+    render(
+      <SideBySide
+        series={
+          new Map([
+            ["p2p_outliers_pct_buy", serie(["0", "0"])],
+            ["p2p_outliers_pct_sell", serie(["0", "0"])],
+          ])
+        }
+      />,
+    );
+
+    expect(document.querySelector(".vmw-vs__nota")?.textContent).toMatch(
+      /no descartó nada hoy/,
+    );
+  });
+
+  it("otra serie en cero NO hereda la frase de outliers", () => {
+    /*
+     * El cero de la mediana no significa «limpio», significa que algo va mal.
+     * Solo se interpreta el cero donde el proyecto tiene una lectura escrita.
+     */
+    render(
+      <SideBySide series={new Map([["p2p_mediana_buy", serie(["0", "0"])]])} />,
+    );
+
+    expect(document.querySelector(".vmw-cero")).toBeNull();
+    expect(document.querySelector(".vmw-vs__celda svg")).toBeTruthy();
+  });
 });

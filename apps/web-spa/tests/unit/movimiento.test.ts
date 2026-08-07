@@ -75,24 +75,24 @@ describe("movimientosDeSesion", () => {
      * pasar a esa serie. Descartarla escondería justo el evento del día.
      */
     const sesion = new Map([
-      ["p2p_outliers_pct_buy", serie(["0", "3"])],
+      ["p2p_merchants_pct_buy", serie(["0", "3"])],
       ["p2p_brecha_pct_buy", serie(["12", "13"])],
     ]);
     const hist = new Map([
-      ["p2p_outliers_pct_buy", historia(0, 0)], // nunca se movió
+      ["p2p_merchants_pct_buy", historia(0, 0)], // nunca se movió
       ["p2p_brecha_pct_buy", historia(12, 0.5)],
     ]);
 
     const [primero] = movimientosDeSesion(sesion, hist);
 
-    expect(primero.indicador).toBe("p2p_outliers_pct_buy");
+    expect(primero.indicador).toBe("p2p_merchants_pct_buy");
     expect(primero.z).toBe(Infinity);
     expect(primero.sigma).toBe(0);
   });
 
   it("quieta ayer y quieta hoy no es un evento", () => {
-    const sesion = new Map([["p2p_outliers_pct_buy", serie(["0", "0"])]]);
-    const hist = new Map([["p2p_outliers_pct_buy", historia(0, 0)]]);
+    const sesion = new Map([["p2p_merchants_pct_buy", serie(["0", "0"])]]);
+    const hist = new Map([["p2p_merchants_pct_buy", historia(0, 0)]]);
 
     expect(movimientosDeSesion(sesion, hist)[0].z).toBe(0);
   });
@@ -204,5 +204,25 @@ describe("trazoSparkline", () => {
 
   it("sin puntos no dibuja", () => {
     expect(trazoSparkline([], 160, 44)).toBe("");
+  });
+  it("outliers NUNCA entra en el ranking, por mucho que se mueva", () => {
+    /*
+     * Mide la CALIDAD del snapshot, no el mercado: pasar de 0,5 % a 0 es el
+     * filtro MAD/IQR trabajando, no una noticia cambiaria. Y como su sigma de 7
+     * dias es diminuta, cualquier microcambio le daba una z enorme y le compraba
+     * una de las cuatro tarjetas — se vio en vivo ocupando la primera.
+     */
+    const sesion = new Map([
+      ["p2p_outliers_pct_sell", serie(["0.5", "0"])],
+      ["p2p_mediana_sell", serie(["850", "852"])],
+    ]);
+    const hist = new Map([
+      ["p2p_outliers_pct_sell", historia(0, 0.5)],
+      ["p2p_mediana_sell", historia(850, 5)],
+    ]);
+
+    const indicadores = movimientosDeSesion(sesion, hist).map((m) => m.indicador);
+
+    expect(indicadores).toEqual(["p2p_mediana_sell"]);
   });
 });

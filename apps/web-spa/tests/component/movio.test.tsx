@@ -115,8 +115,8 @@ describe("SessionMovers", () => {
   });
 
   it("una serie que llevaba una semana quieta lo dice con esas palabras", () => {
-    const sesion = new Map([["p2p_outliers_pct_buy", serie(["0", "3"])]]);
-    const historial = new Map([["p2p_outliers_pct_buy", historia(0, 0)]]);
+    const sesion = new Map([["p2p_merchants_pct_buy", serie(["0", "3"])]]);
+    const historial = new Map([["p2p_merchants_pct_buy", historia(0, 0)]]);
     render(<SessionMovers sesion={sesion} historia={historial} />);
 
     expect(screen.getByText(/no se había movido en los últimos 7 días/i)).toBeTruthy();

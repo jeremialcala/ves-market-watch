@@ -1873,6 +1873,32 @@ body {
   border: var(--border-width) solid var(--border);
 }
 
+/* -- estado cero de una serie ---------------------------------------------- */
+
+/* Ocupa el hueco de la chispa: sin salto de layout al pasar de una serie con
+   movimiento a una en cero. La linea dice que HAY dato y es constante; el hueco
+   vacio diria que falta. */
+.vmw-cero {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.vmw-cero__linea {
+  width: 100%;
+  height: var(--border-width);
+  background: var(--border);
+}
+
+/* Salvia: el color con el que el proyecto marca la validacion. El cero de
+   outliers no es una ausencia, es el filtro habiendo hecho su trabajo. */
+.vmw-cero__etiqueta {
+  font-size: 12.5px;
+  color: var(--sage);
+}
+
 /* -- tooltip de los sparklines -------------------------------------------- */
 
 /* El hueco del sparkline es el sistema de referencia: el tooltip sale del flujo

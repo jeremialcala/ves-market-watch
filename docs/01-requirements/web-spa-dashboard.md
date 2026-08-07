@@ -146,6 +146,28 @@ login y el estado de salud son visibles sin sesión.
     otra cosa, y taparía la tarjeta que se acaba de tocar. El dato exacto de cada
     bucket sale por «Exportar sesión», que sí funciona sin puntero.
 
+  **El cero como resultado, no como hueco (2026-08-06).** En `p2p_outliers_pct`
+  el cero **es lo deseado**: significa que el filtro MAD/IQR no tuvo que descartar
+  ningún anuncio. Cuando la serie entera vale cero, el área del sparkline se
+  sustituye por una línea hairline centrada y la frase «sin outliers en la
+  sesión» en salvia —el color con el que el proyecto marca la validación—; ni
+  chispa plana, que se lee igual que un dato que falta, ni «(—)».
+
+  - **Se dispara con TODOS los puntos a cero**, no con «no se movió» ni «el
+    último es cero»: la frase habla del día entero y una serie que tuvo outliers a
+    media mañana la desmentiría. En la tabla, la nota interpretativa
+    («snapshot limpio en ambos lados…») exige que **los dos lados** lo cumplan.
+    Cablearla habría escrito «el filtro no descartó nada hoy» el mismo día en que
+    descartó: el 6-ago hubo 17 lecturas no nulas en compra y 128 en venta.
+  - **Solo donde el proyecto tiene una lectura del cero** (`etiquetaCero` del
+    catálogo). Una mediana en cero no es «limpio», es que algo va mal; inventarle
+    una frase sería afirmar algo que nadie ha interpretado.
+  - **`p2p_outliers_pct` queda FUERA del ranking de «qué se movió»**, se mueva lo
+    que se mueva. Mide la calidad del snapshot, no el mercado, y como su σ de 7
+    días es diminuta cualquier microcambio le daba una z enorme: se vio en vivo
+    ocupando la primera tarjeta con un «−0,50 (−100 %)» que no decía nada del
+    mercado. Su sitio es su fila de la tabla, donde tiene contexto.
+
   **La barra de control dice el estado, no ofrece un botón (2026-08-06).** El
   botón «Actualizar» desaparece: la vista ya se recarga sola, así que lo que
   faltaba no era un control sino saber si eso está pasando. En su sitio va un

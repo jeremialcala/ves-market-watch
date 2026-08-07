@@ -40,6 +40,19 @@ export interface MovimientoSerie {
   puntos: readonly PuntoIntradia[];
 }
 
+/**
+ * Series que NUNCA entran en «qué se movió», por mucho que se muevan.
+ *
+ * `p2p_outliers_pct` mide la CALIDAD del snapshot, no el mercado: que pase de
+ * 0,5 % a 0 es el filtro MAD/IQR haciendo su trabajo, no una noticia cambiaria.
+ * Y como su σ de 7 días es diminuta, cualquier microcambio le daba una z enorme
+ * y le compraba una de las cuatro tarjetas —se vio en vivo ocupando la primera,
+ * con un «−0,50 (−100 %)» que no decía nada del mercado—. La sección responde
+ * «qué se movió del mercado»; la calidad del dato se lee en su fila de la tabla,
+ * que es donde tiene contexto.
+ */
+const FUERA_DEL_RANKING = new Set(["p2p_outliers_pct"]);
+
 /** Mínimo de observaciones para que σ signifique algo. */
 export const MUESTRAS_MINIMAS_SIGMA = 24;
 
@@ -78,6 +91,9 @@ export function movimientosDeSesion(
   const movimientos: MovimientoSerie[] = [];
 
   for (const [indicador, puntos] of sesion) {
+    if (FUERA_DEL_RANKING.has(indicador.replace(/_(buy|sell)$/, ""))) {
+      continue;
+    }
     const resumen = resumenIntradia(puntos);
     if (resumen === null) {
       continue;

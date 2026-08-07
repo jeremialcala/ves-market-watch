@@ -49,6 +49,20 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   las Δ, el signo va siempre escrito. Tres métricas llevan nota de contexto:
   brecha (los dos lados se miden contra la misma tasa oficial), mejor precio (no
   pasa por el filtro de outliers) y outliers (es lo descartado, no un error).
+- **El cero de `p2p_outliers_pct` es un RESULTADO, no un hueco.** Con la serie
+  entera a cero, el área del sparkline pasa a una línea hairline y la frase «sin
+  outliers en la sesión» en salvia: el filtro MAD/IQR no tuvo que descartar nada.
+  Una chispa plana se lee igual que un dato que falta.
+  - **Todos los puntos a cero**, no «no se movió»: la frase habla del día entero.
+    Y la nota de la tabla exige que **los dos lados** lo cumplan —cablearla habría
+    escrito «no descartó nada hoy» el 6-ago, que tuvo 17 lecturas no nulas en
+    compra y 128 en venta—.
+  - Solo donde hay lectura escrita del cero (`etiquetaCero`): una mediana en cero
+    no es «limpio», es que algo va mal.
+- **`p2p_outliers_pct` no entra en «qué se movió», nunca.** Mide la calidad del
+  snapshot, no el mercado; con σ diminuta cualquier microcambio le daba z enorme
+  y compraba una de las cuatro tarjetas —visto en vivo en la primera—. Al
+  excluirla, las cuatro pasaron a ser series de mercado.
 - **Los 27 sparklines comparten un tooltip propio.** El de Recharts —el único
   que había, en la parrilla— vivía dentro del flujo de la tarjeta: aparecer
   empujaba el layout y tapaba la línea de apertura. Los 24 SVG no tenían ninguno.
@@ -359,7 +373,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   14 días»), no una nota bajo la leyenda.
 
 ## Verificación
-- **478 tests** (unit/component/contract con MSW y WS mock) — **88,23 % de ramas**
+- **483 tests** (unit/component/contract con MSW y WS mock) — **88,29 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

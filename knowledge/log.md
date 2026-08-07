@@ -60,6 +60,21 @@ timestamp: 2026-08-03T12:00:00Z
   el defecto era lo que yo estaba afirmando con ella. *Lo vi porque lo miré en el
   navegador con dato real; ninguna prueba lo habría cazado, porque yo mismo no
   había pensado en el caso.*
+- **La nota del «snapshot limpio» habría sido falsa el día que la escribí.**
+  Antes de implementarla miré el dato: el día operativo llevaba 17 lecturas de
+  outliers no nulas en compra y 128 en venta. Cablearla a la métrica —que es lo
+  que pedía la letra— habría puesto «el filtro no descartó nada hoy» en pantalla
+  mientras descartaba. Va condicionada a que los DOS lados vengan a cero el día
+  entero. *La tercera vez que una frase de esta vista habría mentido el primer
+  día por darla por hecha en vez de contarla.*
+- **Y «sin variación» no es lo mismo que «en cero».** Una serie plana en 3,5 %
+  no está «sin outliers»; el estado cero exige TODOS los puntos a cero, porque
+  la frase habla del día entero, no del último bucket.
+- **Sacar outliers de «qué se movió» liberó una tarjeta.** Con σ de 7 días
+  diminuta, pasar de 0,5 % a 0 le daba una z enorme y compraba el primer puesto
+  con un movimiento que no dice nada del mercado: es el filtro trabajando. La
+  sección responde «qué se movió del MERCADO»; la calidad del dato se lee en su
+  fila, con contexto. Tras excluirla, las cuatro tarjetas son series de mercado.
 - **El tooltip que había que arreglar no era el que faltaba.** El único que
   existía era el de Recharts en la parrilla —tres paneles— y vivía dentro del
   flujo: aparecer empujaba la tarjeta. Los otros 24 sparklines no tenían
@@ -127,8 +142,8 @@ timestamp: 2026-08-03T12:00:00Z
   regla estaba enunciada justo encima y no se había aplicado.
 - El test de paridad ES/EN cazó una cadena actualizada solo en español, y la
   cobertura destapó que había escrito la lógica de la cronología pero no el
-  componente (34 % de ramas). Con su suite y las de los dos bloques nuevos, el SPA queda en 478 tests y
-  88,23 % de ramas.
+  componente (34 % de ramas). Con su suite y las de los dos bloques nuevos, el SPA queda en 483 tests y
+  88,29 % de ramas.
 
 ## 2026-08-06 — La profundidad se anclaba en un anuncio manipulado
 - Lo trajo el usuario en una captura: diez barras idénticas de 372 USDT en el lado

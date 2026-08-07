@@ -534,6 +534,8 @@ export const ES = {
     "El mejor precio es el extremo del libro y NO pasa por el filtro de outliers (a diferencia de mediana y VWAP): un solo anuncio absurdo lo mueve.",
   "vs.notaOutliers":
     "Es el porcentaje de anuncios que el filtro descartó, no un error: cuanto más alto, más ruido traía el snapshot de ese lado.",
+  "vs.notaOutliersLimpio":
+    "Snapshot limpio en ambos lados: el filtro no descartó nada hoy, la lectura no arrastra reserva de calidad.",
   // -- Microestructura (Intradía) ---------------------------------------------
   "micro.bajada": "las cuatro series que el ruleset vigila · estado de cada condición",
   "micro.cumple": "Cumple",
@@ -722,6 +724,8 @@ export const ES = {
   "serie.oficial": "Tasa oficial VES",
   "serie.oficialDeltaAbs": "Δ oficial VES",
   "serie.oficialDeltaPct": "Δ oficial %",
+  // -- Estado cero: el cero como resultado, no como hueco --------------------
+  "cero.sinOutliers": "sin outliers en la sesión",
   "delta.sinCambio": "— sin cambio",
   "intradia.bucket5m": "5 min",
   "intradia.bucket15m": "15 min",
@@ -1211,6 +1215,8 @@ export const EN: Record<Clave, string> = {
     "Best price is the edge of the book and does NOT go through the outlier filter (unlike median and VWAP): a single absurd ad moves it.",
   "vs.notaOutliers":
     "This is the share of ads the filter discarded, not an error: the higher it is, the noisier that side's snapshot was.",
+  "vs.notaOutliersLimpio":
+    "Clean snapshot on both sides: the filter discarded nothing today, so the reading carries no quality caveat.",
   // -- Microstructure (Intraday) ----------------------------------------------
   "micro.bajada": "the four series the ruleset watches · status of each condition",
   "micro.cumple": "Met",
@@ -1391,6 +1397,8 @@ export const EN: Record<Clave, string> = {
   "serie.oficial": "Official rate VES",
   "serie.oficialDeltaAbs": "Official Δ VES",
   "serie.oficialDeltaPct": "Official Δ %",
+  // -- Zero state: zero as an outcome, not a gap -----------------------------
+  "cero.sinOutliers": "no outliers this session",
   "delta.sinCambio": "— no change",
   "intradia.bucket5m": "5 min",
   "intradia.bucket15m": "15 min",

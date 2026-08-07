@@ -21,9 +21,11 @@ import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
 import { ChispaConTooltip } from "./ChispaConTooltip";
 import { NombreSerie } from "./NombreSerie";
+import { SerieEnCero } from "./SerieEnCero";
 import {
   presentacionDe,
   resumenIntradia,
+  serieEnCero,
   type PuntoIntradia,
 } from "../lib/intradia";
 import { formatearDelta, valorConUnidad } from "../lib/delta";
@@ -97,7 +99,17 @@ function Fila({
   series: Map<string, PuntoIntradia[]>;
 }) {
   const { t } = useI18n();
-  const nota = NOTA[base];
+  /*
+   * La nota del snapshot limpio SOLO si los dos lados vinieron a cero el día
+   * entero. Cablearla a la métrica habría escrito «el filtro no descartó nada
+   * hoy» un día en que sí descartó —hoy mismo, sin ir más lejos: 17 lecturas no
+   * nulas en compra y 128 en venta—.
+   */
+  const limpio =
+    base === "p2p_outliers_pct" &&
+    serieEnCero(series.get(`${base}_buy`) ?? []) &&
+    serieEnCero(series.get(`${base}_sell`) ?? []);
+  const nota = limpio ? "vs.notaOutliersLimpio" : NOTA[base];
 
   return (
     <div className="vmw-vs__fila">
@@ -125,7 +137,7 @@ function Celda({
   series: Map<string, PuntoIntradia[]>;
 }) {
   const { t, idioma } = useI18n();
-  const { unidad, decimales } = presentacionDe(indicador);
+  const { unidad, decimales, etiquetaCero } = presentacionDe(indicador);
   const puntos = series.get(indicador) ?? [];
   const resumen = resumenIntradia(puntos);
 
@@ -144,6 +156,8 @@ function Celda({
   });
   const clave = String(resumen.direccion) as "-1" | "0" | "1";
   const trazo = trazoSparkline(puntos, ANCHO, ALTO, 3);
+  // Cero con lectura propia: ni chispa plana ni «(—)» —ver `SerieEnCero`—.
+  const enCero = etiquetaCero !== null && serieEnCero(puntos);
 
   return (
     <div className="vmw-vs__celda">
@@ -158,6 +172,9 @@ function Celda({
           {t("vs.apertura", { valor: num(resumen.apertura) })}
         </span>
       </div>
+      {enCero ? (
+        <SerieEnCero etiqueta={etiquetaCero} className="vmw-vs__spark" />
+      ) : (
       <ChispaConTooltip
         puntos={puntos}
         ancho={ANCHO}
@@ -192,6 +209,7 @@ function Celda({
         />
       </svg>
       </ChispaConTooltip>
+      )}
     </div>
   );
 }

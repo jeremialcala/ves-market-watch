@@ -128,9 +128,25 @@ export interface Presentacion {
   clave: string;
   unidad: string;
   decimales: number;
+  /**
+   * Qué decir cuando la serie entera vale cero, o `null` si no hay lectura.
+   *
+   * En `p2p_outliers_pct` el cero **es el resultado deseado**: significa que el
+   * filtro MAD/IQR no tuvo que descartar ningún anuncio. Una chispa plana y un
+   * «0 %» lo cuentan como si faltara el dato; con su frase, se lee como lo que
+   * es. Donde el proyecto no tenga una lectura del cero, `null` y la serie se
+   * pinta normal: inventarle una sería afirmar algo sobre un indicador que nadie
+   * ha interpretado.
+   */
+  etiquetaCero: Clave | null;
 }
 
-type Entrada = { etiqueta: Clave; unidad: string; decimales: number };
+type Entrada = {
+  etiqueta: Clave;
+  unidad: string;
+  decimales: number;
+  etiquetaCero?: Clave;
+};
 
 const BASE_P2P: Record<string, Entrada> = {
   p2p_brecha_abs: { etiqueta: "serie.brechaAbs", unidad: "VES", decimales: 4 },
@@ -139,7 +155,12 @@ const BASE_P2P: Record<string, Entrada> = {
   p2p_mediana: { etiqueta: "serie.mediana", unidad: "VES", decimales: 4 },
   p2p_mejor_precio: { etiqueta: "serie.mejorPrecio", unidad: "VES", decimales: 4 },
   p2p_merchants_pct: { etiqueta: "serie.merchants", unidad: "%", decimales: 2 },
-  p2p_outliers_pct: { etiqueta: "serie.outliers", unidad: "%", decimales: 2 },
+  p2p_outliers_pct: {
+    etiqueta: "serie.outliers",
+    unidad: "%",
+    decimales: 2,
+    etiquetaCero: "cero.sinOutliers",
+  },
   p2p_vwap: { etiqueta: "serie.vwap", unidad: "VES", decimales: 4 },
 };
 
@@ -175,12 +196,30 @@ const SUFIJO_LADO = /_(buy|sell)$/;
 export function presentacionDe(indicador: string): Presentacion {
   const sinLado = SIN_LADO[indicador];
   if (sinLado !== undefined) {
-    return { ...sinLado, clave: indicador };
+    return { etiquetaCero: null, ...sinLado, clave: indicador };
   }
   const base = BASE_P2P[indicador.replace(SUFIJO_LADO, "")];
   return base === undefined
-    ? { etiqueta: null, clave: indicador, unidad: "", decimales: 4 }
-    : { ...base, clave: indicador };
+    ? {
+        etiqueta: null,
+        clave: indicador,
+        unidad: "",
+        decimales: 4,
+        etiquetaCero: null,
+      }
+    : { etiquetaCero: null, ...base, clave: indicador };
+}
+
+/**
+ * `true` cuando TODOS los puntos de la sesión valen cero.
+ *
+ * Es «todos», no «el último» ni «no se movió»: la frase que dispara —«sin
+ * outliers en la sesión»— habla del día entero, y una serie que tuvo outliers a
+ * media mañana y ahora está en cero la desmentiría. Hoy mismo, sin ir más lejos,
+ * el lado venta lleva 128 lecturas no nulas.
+ */
+export function serieEnCero(puntos: readonly PuntoIntradia[]): boolean {
+  return puntos.length > 0 && puntos.every((p) => signo(p.valor) === 0);
 }
 
 export interface PuntoIntradia {
