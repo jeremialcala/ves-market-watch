@@ -34,7 +34,7 @@ perspectiva del taker), normaliza, **etiqueta** outliers y publica
 - Defensas de red: TLS estricto, timeout, tope de bytes por streaming (zip-bomb).
 - Páginas incompletas → snapshot `partial=true`; CLI `python -m ingestor_binance
   [--once] [--dry-run]`. 83 tests (unit/contract/integration/e2e/`security`),
-  99,26 % de ramas sobre `src/` (medido 2026-08-04; umbral Gate 2: 80 %).
+  99,27 % de ramas sobre `src/` (medido 2026-08-04; umbral Gate 2: 80 %).
 
 ## Referencias
 - PRD: `../../docs/01-requirements/ingesta-binance-p2p.md` · Diseño: `../../apps/ingestor-binance/docs/design.md`

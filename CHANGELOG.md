@@ -247,7 +247,7 @@ Convención de mantenimiento (inventario por ejecución):
     duplicado y por eso se quedó corto. Es la misma regla que el archivo ya
     aplicaba a `Banda`.
 
-- **El Intradía se reordena entero (2026-08-06, rama `feat-intraday`).** De la
+- **El Intradía se reordena entero (2026-08-06, rama `feat-intraday`; ADR-0025).** De la
   parrilla original **solo queda la tasa oficial**: cada familia se fue al bloque
   que responde a su pregunta, y los cinco se **derivan del dato** —ninguno cablea
   lo que afirma—. Cada bloque decide además **qué codifica su color** —lado en la

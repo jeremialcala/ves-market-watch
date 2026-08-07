@@ -7,6 +7,23 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-06 — Barrido de coherencia: dos cifras mías estaban mal
+- **El `api-gateway` no subía a 93 %: bajó a 92,65.** Leí el «93%» redondeado de
+  la terminal y lo escribí como «93,00». Añadir el `15m` añadió código y las dos
+  pruebas nuevas no lo cubrieron en proporción. *Redondear hacia arriba una cifra
+  propia es la forma más fácil de documentar una mejora que no ocurrió.*
+- **La columna decía «Ramas» y no eran ramas.** Los cinco servicios Python
+  citaban `percent_covered` de `coverage` —sentencias + ramas— y el SPA sí citaba
+  ramas puras: seis filas de la misma tabla comparando cosas distintas. Ahora van
+  las dos columnas. El criterio de salida se cumple con cualquiera de ellas; la
+  más baja en ramas solas es 82,71 %.
+- Y la enumeración del plan de pruebas había perdido las comas de tanto editarla
+  seguido: seis añadidos, cada uno pegado al anterior.
+- ADR-0025 recoge lo que la rama decidió, que era lo único que faltaba del
+  registro: la vista, los cinco puntos de duplicación cerrados, la clave del
+  contrato y la ampliación a `15m`.
+
+
 ## 2026-08-06 — El Intradía reordenado, y los criterios que hubo que medir
 - Rama `feat-intraday`. De la parrilla original **solo queda la tasa oficial**:
   cada familia acabó en el bloque que responde a su pregunta —lectura del

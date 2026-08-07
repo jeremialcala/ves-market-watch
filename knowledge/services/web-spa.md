@@ -25,7 +25,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   **resync REST en cada (re)conexión** (push best-effort — ADR-0016).
 - **Histórico**: tasa oficial e indicador canónico por bucket 5m/1h/1d
   (Recharts), rango ≤ 90 días, paginación con progreso/cancelación.
-## El Intradía se lee de arriba abajo (2026-08-06)
+## El Intradía se lee de arriba abajo (2026-08-06, ADR-0025)
 - De la parrilla original **solo queda la tasa oficial**: cada familia se fue al
   bloque que responde a su pregunta —«Lectura de la sesión» (veredicto del
   ruleset), «Qué se movió desde la apertura», «Compra vs. venta»,

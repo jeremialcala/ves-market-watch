@@ -103,9 +103,11 @@ build es cualquier retroceso desde donde está hoy cada uno.
   El login quedó operativo el 2026-08-01 con dominio propio de Auth0 y desarrollo
   por túneles de Cloudflare (ADR-0020); el tenant lleva aprovisionado desde el
   2026-07-27.
-- **Gate 2 (pruebas) en curso.** Cobertura de ramas **≥ 80 % en los seis**
-  (2026-08-04): `ingestor-bcv` 99,36 · `ingestor-binance` 99,26 · `ingestor-historico`
-  97,22 · `api-gateway` 93,00 · `web-spa` 88,19 · `indicator-engine` 85,88. 1 254
+- **Gate 2 (pruebas) en curso.** Cobertura **≥ 80 % en los seis** con las dos
+  métricas —combinada y ramas solas— (medido 2026-08-06). Combinada sobre `src/`:
+  `ingestor-bcv` 99,36 · `ingestor-binance` 99,27 · `ingestor-historico`
+  97,22 · `web-spa` 94,87 · `api-gateway` 92,65 · `indicator-engine` 85,88; la más
+  baja en ramas solas es 82,71 (`indicator-engine`). 1 254
   tests en total. Quedan abiertos el e2e autenticado en vivo con token real (HITL)
   y la deuda del control de T8 —lockfiles y digests—; detalle en
   `docs/04-testing/plan-de-pruebas.md` §10 y §12.

@@ -212,7 +212,7 @@ login y el estado de salud son visibles sin sesión.
   la aplicación, y hay un test que exige que cualquier otra futura también se
   exceptúe—.
 
-  **Ampliación 2026-08-06 — la vista se lee de arriba abajo.** De la parrilla
+  **Ampliación 2026-08-06 — la vista se lee de arriba abajo (ADR-0025).** De la parrilla
   original solo queda la tasa oficial: cada familia se fue al bloque que responde
   a su pregunta, y **los cinco se derivan del dato**. Cada bloque decide además
   qué codifica su color —lado en la parrilla, dirección de la Δ en el bloque
