@@ -80,8 +80,13 @@ describe("SideBySide", () => {
       />,
     );
 
-    expect(filas().map((f) => f.querySelector(".vmw-vs__clave")?.textContent)).toEqual(
-      ["p2p_vwap", "p2p_zzz_nueva"],
+    /*
+     * La conocida trae etiqueta + clave; la desconocida solo su nombre canónico
+     * —no se le inventa un rótulo, y repetir la misma cadena dos veces no
+     * informa—. Por eso se lee el nombre, que las dos tienen.
+     */
+    expect(filas().map((f) => f.querySelector(".vmw-vs__nombre")?.textContent)).toEqual(
+      ["VWAP VES", "p2p_zzz_nueva"],
     );
   });
 

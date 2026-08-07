@@ -19,6 +19,7 @@
 
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
+import { NombreSerie } from "./NombreSerie";
 import {
   presentacionDe,
   resumenIntradia,
@@ -95,18 +96,18 @@ function Fila({
   series: Map<string, PuntoIntradia[]>;
 }) {
   const { t } = useI18n();
-  const { etiqueta } = presentacionDe(`${base}_buy`);
   const nota = NOTA[base];
 
   return (
     <div className="vmw-vs__fila">
       <div className="vmw-vs__metrica">
-        {/* Solo el nombre: la unidad va pegada a la cifra de cada lado, que es
-            donde se lee el numero. */}
-        <span className="vmw-vs__nombre">{etiqueta}</span>
-        {/* La clave canónica, sin maquillar: es el vocabulario del contrato y
-            lo que se escribe en una consulta o en un ticket. */}
-        <span className="vmw-vs__clave">{base}</span>
+        {/* Etiqueta y clave del catalogo comun: la fila nombra la serie igual
+            que la tarjeta de movers y que la cronologia. */}
+        <NombreSerie
+          indicador={base}
+          claseEtiqueta="vmw-vs__nombre"
+          claseClave="vmw-vs__clave"
+        />
       </div>
       <Celda indicador={`${base}_buy`} series={series} />
       <Celda indicador={`${base}_sell`} series={series} />

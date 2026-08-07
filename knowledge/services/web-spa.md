@@ -49,6 +49,18 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   las Δ, el signo va siempre escrito. Tres métricas llevan nota de contexto:
   brecha (los dos lados se miden contra la misma tasa oficial), mejor precio (no
   pasa por el filtro de outliers) y outliers (es lo descartado, no un error).
+- **Etiqueta y clave viven en un solo catálogo** (`presentacionDe`): etiqueta
+  legible traducible + clave canónica. Los cuatro bloques del Intradía nombran la
+  misma serie igual porque leen de ahí, y de paso cierra un hueco de RF-9 que
+  arrastraba desde julio —las etiquetas estaban cableadas en español y en inglés
+  salían en español—.
+  - **La clave mostrada existe en `indicators`**: `p2p_brecha_abs`,
+    `p2p_liquidez`, `p2p_drenaje_oferta_6h_pct`. Un rótulo más bonito
+    —`p2p_brecha_ves`, `micro_drenaje_oferta_6h`— se leería como identificador y
+    fallaría en cuanto alguien lo copiara a una consulta; RF-9 dice además que el
+    vocabulario del contrato no se traduce ni se maquilla. Hay un test que lo ata.
+  - Familia en la tabla (`p2p_mediana`, la fila cubre los dos lados) y serie en
+    las tarjetas (`p2p_mediana_sell`): la clave identifica lo que se está viendo.
 - **Todo formato de Δ vive en `lib/delta.ts`, una sola función.** Estaba
   repetido en cinco componentes con cinco criterios, y por ahí llegaron a
   pantalla un porcentaje que contradecía su propio signo y un signo duplicado.
@@ -333,7 +345,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   14 días»), no una nota bajo la leyenda.
 
 ## Verificación
-- **463 tests** (unit/component/contract con MSW y WS mock) — **88,12 % de ramas**
+- **466 tests** (unit/component/contract con MSW y WS mock) — **88,1 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

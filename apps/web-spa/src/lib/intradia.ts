@@ -8,6 +8,7 @@
  * el desplazamiento es constante y no hace falta una tz database en el cliente.
  */
 
+import type { Clave } from "../i18n/dict";
 import { porcentajeRelativo, restarDecimales, signo } from "./decimal";
 
 /** Desplazamiento de VET respecto de UTC, en minutos. */
@@ -103,54 +104,83 @@ export const ETIQUETA_LADO: Record<Lado, string> = {
 };
 
 /**
- * Catálogo de presentación. NO es una lista blanca: la parrilla dibuja todo lo
- * que devuelva el gateway, y un indicador nuevo aparece solo (con su nombre
- * canónico como etiqueta) sin tocar este archivo.
+ * Catálogo de series: el ÚNICO sitio donde vive el par etiqueta ↔ clave.
+ *
+ * La tabla enfrentada, las tarjetas de «qué se movió», las de microestructura y
+ * la cronología nombran la misma serie igual porque todas leen de aquí. Antes
+ * cada bloque componía su rótulo, y en inglés salían en español porque las
+ * etiquetas estaban cableadas en este archivo.
+ *
+ * **La clave es la del CONTRATO, no una inventada.** Es lo que se escribe en una
+ * consulta, en un ticket o en el CSV: `p2p_brecha_abs`, `p2p_liquidez`,
+ * `p2p_drenaje_oferta_6h_pct`. Un rótulo bonito que no exista en `indicators`
+ * sería un identificador que falla en cuanto alguien lo copia, y RF-9 es
+ * explícito en que el vocabulario del contrato no se traduce ni se maquilla.
+ *
+ * NO es una lista blanca: la vista dibuja todo lo que devuelva el gateway, y un
+ * indicador nuevo aparece solo —con su nombre canónico como etiqueta— sin tocar
+ * este archivo (RF-7).
  */
-interface Presentacion {
-  etiqueta: string;
+export interface Presentacion {
+  /** Clave i18n de la etiqueta legible; `null` si no está en el catálogo. */
+  etiqueta: Clave | null;
+  /** Nombre canónico, tal cual viaja en el contrato. */
+  clave: string;
   unidad: string;
   decimales: number;
 }
 
-const BASE_P2P: Record<string, Presentacion> = {
-  p2p_mediana: { etiqueta: "Mediana", unidad: "VES", decimales: 4 },
-  p2p_vwap: { etiqueta: "VWAP", unidad: "VES", decimales: 4 },
-  p2p_mejor_precio: { etiqueta: "Mejor precio", unidad: "VES", decimales: 4 },
-  p2p_liquidez: { etiqueta: "Liquidez", unidad: "USDT", decimales: 0 },
-  p2p_merchants_pct: { etiqueta: "Merchants", unidad: "%", decimales: 2 },
-  p2p_outliers_pct: { etiqueta: "Outliers", unidad: "%", decimales: 2 },
-  p2p_brecha_abs: { etiqueta: "Brecha", unidad: "VES", decimales: 4 },
-  p2p_brecha_pct: { etiqueta: "Brecha", unidad: "%", decimales: 2 },
+type Entrada = { etiqueta: Clave; unidad: string; decimales: number };
+
+const BASE_P2P: Record<string, Entrada> = {
+  p2p_brecha_abs: { etiqueta: "serie.brechaAbs", unidad: "VES", decimales: 4 },
+  p2p_brecha_pct: { etiqueta: "serie.brechaPct", unidad: "%", decimales: 2 },
+  p2p_liquidez: { etiqueta: "serie.liquidez", unidad: "USDT", decimales: 0 },
+  p2p_mediana: { etiqueta: "serie.mediana", unidad: "VES", decimales: 4 },
+  p2p_mejor_precio: { etiqueta: "serie.mejorPrecio", unidad: "VES", decimales: 4 },
+  p2p_merchants_pct: { etiqueta: "serie.merchants", unidad: "%", decimales: 2 },
+  p2p_outliers_pct: { etiqueta: "serie.outliers", unidad: "%", decimales: 2 },
+  p2p_vwap: { etiqueta: "serie.vwap", unidad: "VES", decimales: 4 },
 };
 
-const SIN_LADO: Record<string, Presentacion> = {
-  official_rate: { etiqueta: "Tasa oficial", unidad: "VES", decimales: 4 },
-  official_rate_change_abs: { etiqueta: "Δ oficial", unidad: "VES", decimales: 4 },
-  official_rate_change_pct: { etiqueta: "Δ oficial", unidad: "%", decimales: 2 },
-  p2p_spread_pct: { etiqueta: "Spread", unidad: "%", decimales: 2 },
-  p2p_ratio_oferta_demanda: {
-    etiqueta: "Ratio oferta/demanda",
-    unidad: "",
-    decimales: 3,
+const SIN_LADO: Record<string, Entrada> = {
+  official_rate: { etiqueta: "serie.oficial", unidad: "VES", decimales: 4 },
+  official_rate_change_abs: {
+    etiqueta: "serie.oficialDeltaAbs",
+    unidad: "VES",
+    decimales: 4,
   },
-  p2p_momentum_bid_3h_pct: { etiqueta: "Momentum bid 3 h", unidad: "%", decimales: 2 },
-  p2p_drenaje_oferta_6h_pct: {
-    etiqueta: "Drenaje oferta 6 h",
+  official_rate_change_pct: {
+    etiqueta: "serie.oficialDeltaPct",
     unidad: "%",
     decimales: 2,
   },
+  p2p_drenaje_oferta_6h_pct: {
+    etiqueta: "serie.drenaje",
+    unidad: "%",
+    decimales: 2,
+  },
+  p2p_momentum_bid_3h_pct: { etiqueta: "serie.momentum", unidad: "%", decimales: 2 },
+  p2p_ratio_oferta_demanda: { etiqueta: "serie.ratio", unidad: "", decimales: 3 },
+  p2p_spread_pct: { etiqueta: "serie.spread", unidad: "%", decimales: 2 },
 };
 
 const SUFIJO_LADO = /_(buy|sell)$/;
 
+/**
+ * Presentación de un indicador. `indicador` puede venir con sufijo de lado
+ * (`p2p_vwap_sell`) o sin él (`p2p_vwap`, la familia que enfrenta la tabla);
+ * `clave` devuelve lo que se le pasó, porque es el identificador de ESO.
+ */
 export function presentacionDe(indicador: string): Presentacion {
   const sinLado = SIN_LADO[indicador];
   if (sinLado !== undefined) {
-    return sinLado;
+    return { ...sinLado, clave: indicador };
   }
   const base = BASE_P2P[indicador.replace(SUFIJO_LADO, "")];
-  return base ?? { etiqueta: indicador, unidad: "", decimales: 4 };
+  return base === undefined
+    ? { etiqueta: null, clave: indicador, unidad: "", decimales: 4 }
+    : { ...base, clave: indicador };
 }
 
 export interface PuntoIntradia {

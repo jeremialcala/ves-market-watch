@@ -211,8 +211,13 @@ describe("IntradayView", () => {
       }),
     );
     render(<IntradayView />);
+    /*
+     * La fila nombra la FAMILIA: el sufijo `_buy` pertenece a la columna, no al
+     * indicador de la fila. Y sin rótulo inventado —RF-7 promete que aparece,
+     * no que tenga etiqueta—.
+     */
     await waitFor(() =>
-      expect(screen.getByText("p2p_metrica_nueva_buy")).toBeTruthy(),
+      expect(screen.getByText("p2p_metrica_nueva")).toBeTruthy(),
     );
   });
 
@@ -435,5 +440,51 @@ describe("IntradayView", () => {
       // Y nunca dos signos seguidos, que es como se vio el «+−382,85 %».
       expect(texto, `${selector}: ${texto}`).not.toMatch(/[+−]{2}/);
     }
+  });
+  it("los bloques nombran la misma serie con las mismas palabras", async () => {
+    /*
+     * La promesa del diccionario unico. Antes cada bloque componia su rotulo
+     * («SPREAD · %» en una tarjeta, «Spread» en otra) y en ingles salian todos
+     * en espanol, porque las etiquetas estaban cableadas en `lib/intradia.ts`.
+     */
+    conSeries();
+    render(<IntradayView />);
+    await waitFor(() => expect(screen.getAllByText("Spread").length).toBeGreaterThan(0));
+
+    // La tarjeta de microestructura: etiqueta legible + clave del contrato.
+    const micro = document.querySelector(".vmw-micro__nombre-serie")!;
+    expect(micro.querySelector(".vmw-micro__metrica")?.textContent).toBe("Spread");
+    expect(micro.querySelector(".vmw-serie__clave")?.textContent).toBe(
+      "p2p_spread_pct",
+    );
+
+    // La fila de la tabla, con la misma etiqueta del catalogo.
+    const fila = document.querySelector(".vmw-vs__fila")!;
+    expect(fila.querySelector(".vmw-vs__nombre")?.textContent).toBe("Mediana VES");
+    expect(fila.querySelector(".vmw-vs__clave")?.textContent).toBe("p2p_mediana");
+
+    // Y la parrilla oficial.
+    const panel = document.querySelector(".intradia-titulo")!;
+    expect(panel.querySelector(".intradia-etiqueta")?.textContent).toBe(
+      "Tasa oficial VES",
+    );
+    expect(panel.querySelector(".vmw-serie__clave")?.textContent).toBe(
+      "official_rate",
+    );
+  });
+
+  it("en ingles las etiquetas se traducen y las claves NO", async () => {
+    /*
+     * El hueco que arrastraba la vista desde julio: en ingles los rotulos
+     * seguian en espanol. La clave, en cambio, es vocabulario del contrato y
+     * RF-9 dice expresamente que no se traduce.
+     */
+    conSeries();
+    render(<IntradayView />, { idioma: "en" });
+    await waitFor(() => expect(screen.getAllByText("Spread").length).toBeGreaterThan(0));
+
+    expect(screen.getByText("Median VES")).toBeTruthy();
+    expect(screen.queryByText("Mediana VES")).toBeNull();
+    expect(screen.getAllByText("p2p_mediana").length).toBeGreaterThan(0);
   });
 });

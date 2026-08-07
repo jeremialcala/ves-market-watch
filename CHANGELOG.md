@@ -322,7 +322,19 @@ Convención de mantenimiento (inventario por ejecución):
     - Lo vigilan tres pruebas de fuente (los seis componentes importan la
       función, no queda ningún triángulo, nadie compone un porcentaje a mano) y
       una de vista que barre las cifras de todos los bloques.
-  - 115 pruebas nuevas; el SPA pasa de 348 a 463 y de 87,1 a 88,12 % de ramas.
+  - **Etiqueta y clave, separadas y en un solo catálogo.** Cada serie se nombra
+    con una etiqueta legible en caja de oración («Brecha VES», «Drenaje oferta
+    6 h») y debajo su clave técnica en snake_case, las dos del mismo sitio: la
+    tabla enfrentada, «qué se movió», microestructura y la cronología nombran la
+    misma serie igual. Cierra un hueco de RF-9 que arrastraba desde julio —las
+    etiquetas estaban cableadas en español y en inglés salían en español—.
+    - **La clave mostrada EXISTE en `indicators`**: `p2p_brecha_abs`,
+      `p2p_liquidez`, `p2p_drenaje_oferta_6h_pct`. Se descartó un juego de claves
+      más legible (`p2p_brecha_ves`, `micro_drenaje_oferta_6h`) porque ninguna
+      existe: se leería como identificador y fallaría en la primera consulta.
+    - Familia en la tabla (la fila cubre los dos lados) y serie en las tarjetas:
+      la clave identifica exactamente lo que se está viendo.
+  - 118 pruebas nuevas; el SPA pasa de 348 a 466 y de 87,1 a 88,1 % de ramas.
 
 ### Fixed
 

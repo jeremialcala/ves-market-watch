@@ -14,6 +14,7 @@
 
 import type { Clave } from "../i18n/dict";
 import { useI18n, type Traducir } from "../i18n/contexto";
+import { NombreSerie } from "./NombreSerie";
 import { formatDecimal } from "../lib/decimal";
 import { formatearDelta, valorConUnidad } from "../lib/delta";
 import { ladoDe, presentacionDe, type PuntoIntradia } from "../lib/intradia";
@@ -102,7 +103,13 @@ export function SessionMovers({
 
 function Tarjeta({ movimiento }: { movimiento: MovimientoSerie }) {
   const { t, idioma } = useI18n();
-  const { etiqueta, unidad, decimales } = presentacionDe(movimiento.indicador);
+  const { etiqueta: claveEtiqueta, unidad, decimales } = presentacionDe(
+    movimiento.indicador,
+  );
+  // Para el texto alternativo hace falta la etiqueta ya traducida; el par
+  // visible lo pinta `NombreSerie`.
+  const etiqueta =
+    claveEtiqueta === null ? movimiento.indicador : t(claveEtiqueta);
   const lado = ladoDe(movimiento.indicador);
   const adverso = sentidoDelMovimiento(movimiento.indicador, movimiento.deltaAbs);
   const num = (v: string) => valorConUnidad(v, { unidad, decimales, idioma });
@@ -120,8 +127,12 @@ function Tarjeta({ movimiento }: { movimiento: MovimientoSerie }) {
       data-adverso={adverso === true ? "si" : "no"}
     >
       <div className="vmw-movio__cabecera-tarjeta">
-        {/* Solo el nombre: la unidad viaja pegada a la cifra. */}
-        <span className="vmw-movio__metrica">{etiqueta}</span>
+        <span className="vmw-movio__nombre-serie">
+          <NombreSerie
+            indicador={movimiento.indicador}
+            claseEtiqueta="vmw-movio__metrica"
+          />
+        </span>
         <span
           className="vmw-movio__lado"
           style={{ color: COLOR_LADO[lado], borderColor: COLOR_LADO[lado] }}

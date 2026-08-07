@@ -49,6 +49,7 @@ import {
 } from "../api/endpoints";
 import { ApiError } from "../api/problem";
 import { MicroCards } from "../components/MicroCards";
+import { NombreSerie } from "../components/NombreSerie";
 import { NoDataState } from "../components/NoDataState";
 import { SessionMovers } from "../components/SessionMovers";
 import { SideBySide } from "../components/SideBySide";
@@ -242,12 +243,15 @@ function PanelIndicador({
   puntos: readonly PuntoIntradia[];
 }) {
   const { t, idioma } = useI18n();
-  const { etiqueta, unidad, decimales } = presentacionDe(indicador);
+  const { etiqueta: claveEtiqueta, unidad, decimales } = presentacionDe(indicador);
+  const etiqueta = claveEtiqueta === null ? indicador : t(claveEtiqueta);
   const resumen = resumenIntradia(puntos);
   if (resumen === null) {
     return (
       <figure className="vmw-tarjeta vmw-tarjeta--sm" style={{ margin: 0 }}>
-        <figcaption className="intradia-titulo">{etiqueta}</figcaption>
+        <figcaption className="intradia-titulo">
+          <NombreSerie indicador={indicador} claseEtiqueta="intradia-etiqueta" />
+        </figcaption>
         <NoDataState detalle={t("intradia.sinHoy")} />
       </figure>
     );
@@ -264,9 +268,8 @@ function PanelIndicador({
 
   return (
     <figure className="vmw-tarjeta vmw-tarjeta--sm" style={{ margin: 0 }}>
-      {/* Solo el nombre: la unidad viaja pegada a la cifra. */}
-      <figcaption className="intradia-titulo" title={indicador}>
-        {etiqueta}
+      <figcaption className="intradia-titulo">
+        <NombreSerie indicador={indicador} claseEtiqueta="intradia-etiqueta" />
       </figcaption>
       <p className="intradia-valor">{valorFmt}</p>
       {/* Sin glifo: la direccion la dan el signo escrito y el color, y un

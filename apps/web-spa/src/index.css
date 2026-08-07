@@ -1093,7 +1093,13 @@ body {
   color: #fff;
 }
 
+/* La clave técnica del contrato, idéntica en todos los bloques del Intradía.
+   Space Grotesk porque es un identificador, no prosa: se lee carácter a
+   carácter y a menudo se copia. */
+.vmw-serie__clave,
 .vmw-vs__clave {
+  display: block;
+  font-family: var(--font-display);
   font-size: 12.5px;
   color: var(--text-dim);
   word-break: break-word;
@@ -1288,11 +1294,20 @@ body {
   gap: 10px;
 }
 
+/* Caja de oración, no versalitas: la etiqueta es el nombre legible de la serie
+   y sobre él va la clave, que ya aporta el contraste tipográfico. */
 .vmw-movio__metrica {
-  font-size: 12.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-dim);
+  display: block;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.vmw-movio__nombre-serie,
+.vmw-micro__nombre-serie {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 /* Pastilla del lado, empujada al extremo de la fila y coloreada por él: el lado
@@ -1381,10 +1396,9 @@ body {
 }
 
 .vmw-micro__metrica {
-  font-size: 12.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-dim);
+  display: block;
+  font-size: 13.5px;
+  color: var(--text);
 }
 
 .vmw-micro__estado {
@@ -1857,6 +1871,20 @@ body {
   border-radius: var(--radius-lg);
   background: var(--surface-panel);
   border: var(--border-width) solid var(--border);
+}
+
+/* -- par etiqueta/clave en la parrilla ------------------------------------- */
+
+.intradia-titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.intradia-etiqueta {
+  font-size: 13.5px;
+  color: var(--text);
 }
 
 /* -- barra de control del Intradía ----------------------------------------- */

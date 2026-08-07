@@ -24,6 +24,7 @@
 
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
+import { NombreSerie } from "./NombreSerie";
 import { formatearDelta, valorConUnidad } from "../lib/delta";
 import { presentacionDe, resumenIntradia, type PuntoIntradia } from "../lib/intradia";
 import { condicionDe, type CondicionDeIndicador } from "../lib/reglas";
@@ -89,7 +90,7 @@ function Tarjeta({
   condicion: CondicionDeIndicador | null;
 }) {
   const { t, idioma } = useI18n();
-  const { etiqueta, unidad, decimales } = presentacionDe(indicador);
+  const { unidad, decimales } = presentacionDe(indicador);
   const resumen = resumenIntradia(puntos);
   const num = (v: string) => valorConUnidad(v, { unidad, decimales, idioma });
   const nota = NOTA[indicador];
@@ -117,9 +118,8 @@ function Tarjeta({
   return (
     <article className="vmw-micro__tarjeta" data-estado={estado}>
       <div className="vmw-micro__cabecera">
-        {/* Solo el nombre: la unidad viaja pegada a la cifra. */}
-        <span className="vmw-micro__metrica" title={indicador}>
-          {etiqueta}
+        <span className="vmw-micro__nombre-serie">
+          <NombreSerie indicador={indicador} claseEtiqueta="vmw-micro__metrica" />
         </span>
         {condicion !== null && (
           <span className="vmw-micro__estado" data-estado={estado}>

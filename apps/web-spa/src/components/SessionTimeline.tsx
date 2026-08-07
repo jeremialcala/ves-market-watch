@@ -90,13 +90,17 @@ export function SessionTimeline({
 /** Qué pasó, en prosa. */
 function texto(evento: EventoSesion, t: Traducir): string {
   const nombre = evento.indicador ?? "";
+  // La prosa nombra la serie con su ETIQUETA legible —la misma que la tabla y
+  // las tarjetas—; la clave canónica va abajo, en la línea de cifras.
+  const { etiqueta } = presentacionDe(nombre);
+  const legible = etiqueta === null ? nombre : t(etiqueta);
   switch (evento.clase) {
     case "apertura":
       return t("crono.aperturaTexto");
     case "umbral":
       return t(
         evento.cumple === true ? "crono.umbralPasa" : "crono.umbralDeja",
-        { indicador: nombre },
+        { indicador: legible },
       );
     case "liquidez":
       return t("crono.liquidezTexto", {
@@ -126,11 +130,13 @@ function cifras(
      * La regla va en la línea: sin ella, dos cruces del mismo indicador contra
      * umbrales distintos se leen como una línea repetida.
      */
-    const { unidad, decimales } = presentacionDe(evento.indicador ?? "");
+    const { unidad, decimales, clave } = presentacionDe(evento.indicador ?? "");
     const num = (v: string) => valorConUnidad(v, { unidad, decimales, idioma });
     return t("crono.cifrasUmbral", {
       regla: evento.regla ?? "",
-      indicador: evento.indicador ?? "",
+      // La CLAVE, no la etiqueta: esta linea es la que se copia a una consulta.
+      // La etiqueta legible va en el texto del evento, arriba.
+      indicador: clave,
       valor: num(evento.valor),
       umbral: evento.umbral === undefined ? "" : num(evento.umbral),
     });

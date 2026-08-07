@@ -60,6 +60,18 @@ timestamp: 2026-08-03T12:00:00Z
   el defecto era lo que yo estaba afirmando con ella. *Lo vi porque lo miré en el
   navegador con dato real; ninguna prueba lo habría cazado, porque yo mismo no
   había pensado en el caso.*
+- **Me pidieron claves que no existen y no las inventé.** La lista pedía
+  `p2p_brecha_ves`, `p2p_liquidez_usdt`, `micro_drenaje_oferta_6h`; los nombres
+  reales de `indicators` son `p2p_brecha_abs`, `p2p_liquidez` y
+  `p2p_drenaje_oferta_6h_pct`, y el prefijo `micro_` no aparece en ninguna
+  parte. Lo comprobé contra la base antes de decirlo. Una clave inventada no es
+  un detalle estético: se lee como identificador, invita a copiarla y falla en
+  la primera consulta. *Un identificador decorativo es peor que ninguno.*
+- Separar etiqueta de clave cerró de paso el hueco de i18n que yo mismo había
+  señalado dos entregas antes: las etiquetas estaban cableadas en español dentro
+  de `lib/intradia.ts`, así que en inglés la vista decía «DRENAJE OFERTA 6 H».
+  El arreglo no fue traducir cadenas sueltas sino mover el par a un catálogo
+  único: el hueco existía porque el rótulo no tenía dueño.
 - **Centralizar el formato de Δ no era cosmético: era la causa de los dos
   defectos.** Estaba repetido en cinco componentes, y los dos errores que
   llegaron a pantalla —un porcentaje que contradecía su propio signo, un signo
@@ -98,8 +110,8 @@ timestamp: 2026-08-03T12:00:00Z
   regla estaba enunciada justo encima y no se había aplicado.
 - El test de paridad ES/EN cazó una cadena actualizada solo en español, y la
   cobertura destapó que había escrito la lógica de la cronología pero no el
-  componente (34 % de ramas). Con su suite y las de los dos bloques nuevos, el SPA queda en 463 tests y
-  88,12 % de ramas.
+  componente (34 % de ramas). Con su suite y las de los dos bloques nuevos, el SPA queda en 466 tests y
+  88,1 % de ramas.
 
 ## 2026-08-06 — La profundidad se anclaba en un anuncio manipulado
 - Lo trajo el usuario en una captura: diez barras idénticas de 372 USDT en el lado

@@ -104,6 +104,26 @@ login y el estado de salud son visibles sin sesión.
   - **Sin triángulos de dirección**: eran un tercer canal que repetía lo que ya
     dicen el signo escrito y el color.
 
+  **Etiqueta y clave, separadas y en un solo catálogo (2026-08-06).** Cada serie
+  se nombra con una **etiqueta legible** en caja de oración («Brecha VES»,
+  «Drenaje oferta 6 h») y, debajo, su **clave técnica en snake_case**. Las dos
+  salen del mismo catálogo (`presentacionDe`), así que la tabla enfrentada, «qué
+  se movió», microestructura y la cronología nombran la misma serie igual. Cierra
+  además un hueco de RF-9 que arrastraba desde julio: las etiquetas estaban
+  cableadas en `lib/intradia.ts` y en inglés salían en español.
+
+  - **La clave es la del CONTRATO, no una decorativa.** `p2p_brecha_abs`,
+    `p2p_liquidez`, `p2p_drenaje_oferta_6h_pct` —los nombres reales de la tabla
+    `indicators`—. Es lo que se escribe en una consulta, en un ticket o lo que
+    sale en el CSV; un rótulo que no exista ahí sería un identificador que falla
+    en cuanto alguien lo copia. Un test lo fija.
+  - En la tabla la clave es la de la **familia** (`p2p_mediana`), porque la fila
+    cubre los dos lados y el sufijo pertenece a la columna; en las tarjetas y en
+    la cronología es la de la **serie** (`p2p_mediana_sell`), que es lo que ahí
+    se está mirando.
+  - Un indicador fuera del catálogo aparece con su nombre canónico y **sin
+    segunda línea**: repetir la misma cadena dos veces no informa.
+
   **La barra de control dice el estado, no ofrece un botón (2026-08-06).** El
   botón «Actualizar» desaparece: la vista ya se recarga sola, así que lo que
   faltaba no era un control sino saber si eso está pasando. En su sitio va un
