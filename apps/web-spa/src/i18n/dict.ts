@@ -530,7 +530,7 @@ export const ES = {
     "{indicador} pasó a cumplir su condición dentro de la regla.",
   "crono.umbralDeja":
     "{indicador} dejó de cumplir su condición dentro de la regla.",
-  "crono.cifrasUmbral": "{indicador} {valor} · umbral {umbral}",
+  "crono.cifrasUmbral": "{regla} · {indicador} {valor} · umbral {umbral}",
   "crono.liquidezTitulo": "Salto de liquidez",
   "crono.liquidezTexto":
     "El volumen ofrecido del lado {lado} se movió más de {sigmas} veces lo que salta habitualmente entre buckets.",
@@ -1151,7 +1151,7 @@ export const EN: Record<Clave, string> = {
   "crono.umbralTitulo": "Ruleset threshold crossed",
   "crono.umbralPasa": "{indicador} started meeting its condition within the rule.",
   "crono.umbralDeja": "{indicador} stopped meeting its condition within the rule.",
-  "crono.cifrasUmbral": "{indicador} {valor} · threshold {umbral}",
+  "crono.cifrasUmbral": "{regla} · {indicador} {valor} · threshold {umbral}",
   "crono.liquidezTitulo": "Liquidity jump",
   "crono.liquidezTexto":
     "Offered volume on the {lado} side moved more than {sigmas} times its usual bucket-to-bucket jump.",

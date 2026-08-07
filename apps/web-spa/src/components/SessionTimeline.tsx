@@ -117,7 +117,10 @@ function cifras(
   idioma: "es" | "en",
 ): string {
   if (evento.clase === "umbral" && evento.valor !== undefined) {
+    // La regla va en la línea de cifras: sin ella, dos cruces del mismo
+    // indicador contra umbrales distintos se leen como una línea repetida.
     return t("crono.cifrasUmbral", {
+      regla: evento.regla ?? "",
       indicador: evento.indicador ?? "",
       valor: evento.valor,
       umbral: evento.umbral ?? "",

@@ -4,8 +4,9 @@
  * Cuatro clases, y cada una es un hecho comprobable contra las series del día:
  *
  * - `apertura`: el primer bucket del día operativo.
- * - `umbral`: una condición del ruleset que cambia de estado durante la sesión.
- *   Los umbrales NO se inventan aquí: son los que publica `rule_proximity`.
+ * - `umbral`: una condición del ruleset que cambia de estado durante la sesión y
+ *   **el estado nuevo aguanta** (ver `PERMANENCIA_MS`). Los umbrales NO se
+ *   inventan aquí: son los que publica `rule_proximity`.
  * - `liquidez`: un salto de bucket a bucket que supera 2σ de los saltos de esa
  *   misma serie en la ventana de referencia. σ sobre los SALTOS y no sobre los
  *   valores: lo que se está midiendo es si este movimiento es grande *para lo
@@ -35,12 +36,30 @@ export interface EventoSesion {
   delta?: string;
   /** Un cruce puede pasar a cumplir o a dejar de cumplir. */
   cumple?: boolean;
+  /** Regla a la que pertenece la condición cruzada. */
+  regla?: string;
   /** Múltiplo de σ del salto, para poder decir cuán grande fue. */
   sigmas?: number;
 }
 
 /** Un salto de liquidez entra en la cronología a partir de este múltiplo. */
 export const SIGMAS_SALTO = 2;
+
+/**
+ * Histéresis de los cruces: el estado nuevo tiene que aguantar 15 minutos.
+ *
+ * Sin esto, un indicador que oscila junto a su umbral genera un evento por cada
+ * temblor. Medido sobre una sesión real: 21 cruces crudos en cuatro condiciones,
+ * de los que 8 sobreviven — el resto eran idas y vueltas de uno o dos buckets.
+ * La cronología pasaba de 50 líneas, 48 de ellas cuatro indicadores temblando.
+ *
+ * Va en TIEMPO y no en número de buckets para que signifique lo mismo con
+ * bucket de 5 min que de 1 h. Se probó antes una banda de amplitud —el clásico
+ * Schmitt— sobre la σ de 7 días, y no vale aquí: en el ratio esa σ es 0,58
+ * frente a un umbral de 0,3, así que la banda se comía el umbral entero. La σ
+ * larga mide cambios de régimen, no el temblor local.
+ */
+export const PERMANENCIA_MS = 15 * 60_000;
 
 const LIQUIDEZ = ["p2p_liquidez_buy", "p2p_liquidez_sell"];
 
@@ -55,6 +74,7 @@ interface CondicionRuleset {
 interface AnalisisMinimo {
   as_of: string;
   rule_proximity: readonly {
+    readonly rule: string;
     readonly conditions: readonly CondicionRuleset[];
   }[];
 }
@@ -113,6 +133,31 @@ export function eventosDeSesion(
   );
 }
 
+/**
+ * ¿El estado del bucket `i` se sostiene durante `PERMANENCIA_MS`?
+ *
+ * Con la serie aún demasiado corta para saberlo —el cruce es de hace un
+ * momento— la respuesta es NO: puede ser ruido, y aparecerá en el refresco
+ * siguiente si aguantó. Un evento que se pinta y desaparece es peor que uno que
+ * llega tarde.
+ */
+function aguanta(
+  puntos: readonly PuntoIntradia[],
+  i: number,
+  estado: (indice: number) => boolean,
+): boolean {
+  const nuevo = estado(i);
+  const limite = puntos[i].t + PERMANENCIA_MS;
+  let j = i + 1;
+  for (; j < puntos.length && puntos[j].t < limite; j += 1) {
+    if (estado(j) !== nuevo) {
+      return false;
+    }
+  }
+  // Se agotó la serie antes del plazo: todavía no se puede afirmar.
+  return puntos[puntos.length - 1].t >= limite;
+}
+
 function primerBucket(
   sesion: ReadonlyMap<string, readonly PuntoIntradia[]>,
 ): number | null {
@@ -146,7 +191,12 @@ function crucesDeUmbral(
 
   for (const regla of analisis.rule_proximity) {
     for (const condicion of regla.conditions) {
-      // La misma condición puede aparecer en varias reglas: se evalúa una vez.
+      /*
+       * Se deduplica por (indicador, op, umbral) y NO por indicador: un mismo
+       * indicador tiene condiciones distintas en reglas distintas —el ratio
+       * lleva `lt 0.2`, `lt 0.3` y `gt 2`— y son cruces diferentes. Deduplicar
+       * por indicador habría escondido dos de cada tres.
+       */
       const firma = `${condicion.indicator}|${condicion.op}|${condicion.threshold}`;
       if (vistas.has(firma)) {
         continue;
@@ -155,24 +205,31 @@ function crucesDeUmbral(
 
       const puntos = sesion.get(condicion.indicator) ?? [];
       const umbral = toChartNumber(condicion.threshold);
-      let anterior: boolean | null = null;
-      for (const punto of puntos) {
-        const ahora = cumpleCondicion(
-          toChartNumber(punto.valor),
-          condicion.op,
-          umbral,
-        );
-        if (anterior !== null && ahora !== anterior) {
-          eventos.push({
-            t: punto.t,
-            clase: "umbral",
-            indicador: condicion.indicator,
-            valor: punto.valor,
-            umbral: condicion.threshold,
-            cumple: ahora,
-          });
+      const estado = (i: number) =>
+        cumpleCondicion(toChartNumber(puntos[i].valor), condicion.op, umbral);
+
+      let confirmado: boolean | null = null;
+      for (let i = 0; i < puntos.length; i += 1) {
+        const ahora = estado(i);
+        if (confirmado === null) {
+          confirmado = ahora;
+          continue;
         }
-        anterior = ahora;
+        if (ahora === confirmado || !aguanta(puntos, i, estado)) {
+          continue;
+        }
+        confirmado = ahora;
+        eventos.push({
+          // El instante es el del CRUCE, no el de su confirmación: lo que se
+          // señala es cuándo pasó, no cuándo se pudo asegurar.
+          t: puntos[i].t,
+          clase: "umbral",
+          indicador: condicion.indicator,
+          valor: puntos[i].valor,
+          umbral: condicion.threshold,
+          cumple: ahora,
+          regla: regla.rule,
+        });
       }
     }
   }

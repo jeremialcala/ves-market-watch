@@ -13,10 +13,16 @@ import type { PuntoIntradia } from "../../src/lib/intradia";
 import { MUESTRAS_MINIMAS_SIGMA } from "../../src/lib/movimiento";
 
 const T0 = Date.parse("2026-08-06T04:00:00Z"); // 00:00 VET
-const PASO = 3_600_000;
+const PASO = 3_600_000; // 1 h
+const PASO_FINO = 300_000; // 5 min
 
 function serie(valores: string[], desde = T0): PuntoIntradia[] {
   return valores.map((valor, i) => ({ t: desde + i * PASO, valor }));
+}
+
+/** La misma serie con el bucket de 5 min de la vista. */
+function serieFina(valores: string[], desde = T0): PuntoIntradia[] {
+  return valores.map((valor, i) => ({ t: desde + i * PASO_FINO, valor }));
 }
 
 /** Referencia con saltos de ±`salto`: σ de los saltos sale `salto`. */
@@ -32,6 +38,7 @@ const ANALISIS = {
   as_of: new Date(T0 + 3 * PASO).toISOString(),
   rule_proximity: [
     {
+      rule: 'arranque_alcista@v1',
       conditions: [
         { indicator: "p2p_momentum_bid_3h_pct", op: "gt" as const, threshold: "0.5" },
       ],
@@ -75,7 +82,9 @@ describe("eventosDeSesion", () => {
 
   it("dejar de cumplir también es un cruce", () => {
     const sesion = new Map([
-      ["p2p_momentum_bid_3h_pct", serie(["0.9", "0.7", "0.2"])],
+      // El estado nuevo tiene que AGUANTAR: con el cruce en el último punto no
+      // se puede afirmar todavía (ver la prueba de la cola).
+      ["p2p_momentum_bid_3h_pct", serie(["0.9", "0.7", "0.2", "0.1", "0.1"])],
     ]);
 
     const cruces = eventosDeSesion(sesion, new Map(), ANALISIS).filter(
@@ -108,7 +117,7 @@ describe("eventosDeSesion", () => {
       rule_proximity: [ANALISIS.rule_proximity[0], ANALISIS.rule_proximity[0]],
     };
     const sesion = new Map([
-      ["p2p_momentum_bid_3h_pct", serie(["0.2", "0.7"])],
+      ["p2p_momentum_bid_3h_pct", serie(["0.2", "0.7", "0.8", "0.9"])],
     ]);
 
     expect(
@@ -207,9 +216,84 @@ describe("eventosDeSesion", () => {
     expect(orden()).toEqual(orden());
   });
 
+  it("un temblor junto al umbral NO es un evento", () => {
+    /*
+     * El defecto que motivó la histéresis: `p2p_ratio_oferta_demanda` oscilando
+     * alrededor de 0,3 generaba 23 líneas en una sola sesión, y la cronología
+     * llegaba a 50 entradas de las que 48 eran cuatro indicadores temblando.
+     * Aquí el valor cruza cuatro veces y ninguna se sostiene.
+     */
+    const sesion = new Map([
+      [
+        "p2p_momentum_bid_3h_pct",
+        serieFina(["0.4", "0.6", "0.4", "0.6", "0.4", "0.4", "0.4", "0.4"]),
+      ],
+    ]);
+
+    expect(
+      eventosDeSesion(sesion, new Map(), ANALISIS).filter(
+        (e) => e.clase === "umbral",
+      ),
+    ).toEqual([]);
+  });
+
+  it("un cruce que se sostiene SÍ es un evento, con la hora del cruce", () => {
+    /*
+     * El instante es el del cruce, no el de su confirmación: lo que se señala es
+     * cuándo pasó, no cuándo se pudo asegurar.
+     */
+    const sesion = new Map([
+      [
+        "p2p_momentum_bid_3h_pct",
+        serieFina(["0.4", "0.4", "0.7", "0.8", "0.9", "0.9", "0.9"]),
+      ],
+    ]);
+
+    const cruces = eventosDeSesion(sesion, new Map(), ANALISIS).filter(
+      (e) => e.clase === "umbral",
+    );
+
+    expect(cruces).toHaveLength(1);
+    expect(cruces[0].t).toBe(T0 + 2 * PASO_FINO);
+    expect(cruces[0].valor).toBe("0.7");
+  });
+
+  it("un cruce recién ocurrido espera al refresco siguiente", () => {
+    /*
+     * Sin plazo cumplido no se puede decir que aguantó. Un evento que se pinta y
+     * desaparece en el refresco siguiente es peor que uno que llega tarde.
+     */
+    const sesion = new Map([
+      ["p2p_momentum_bid_3h_pct", serieFina(["0.4", "0.4", "0.7"])],
+    ]);
+
+    expect(
+      eventosDeSesion(sesion, new Map(), ANALISIS).filter(
+        (e) => e.clase === "umbral",
+      ),
+    ).toEqual([]);
+  });
+
+  it("la permanencia se mide en TIEMPO, no en número de buckets", () => {
+    /*
+     * Los mismos tres valores: a 5 min no llegan a los 15 que hacen falta; a 1 h
+     * los superan de sobra. Contar buckets habría dado la misma respuesta a dos
+     * situaciones distintas.
+     */
+    const valores = ["0.4", "0.4", "0.7", "0.7"];
+    const fina = new Map([["p2p_momentum_bid_3h_pct", serieFina(valores)]]);
+    const gruesa = new Map([["p2p_momentum_bid_3h_pct", serie(valores)]]);
+
+    const cruces = (m: Map<string, PuntoIntradia[]>) =>
+      eventosDeSesion(m, new Map(), ANALISIS).filter((e) => e.clase === "umbral");
+
+    expect(cruces(fina)).toEqual([]);
+    expect(cruces(gruesa)).toHaveLength(1);
+  });
+
   it("los eventos salen en orden cronológico", () => {
     const sesion = new Map([
-      ["p2p_momentum_bid_3h_pct", serie(["0.2", "0.7", "0.2", "0.9"])],
+      ["p2p_momentum_bid_3h_pct", serie(["0.2", "0.7", "0.7", "0.2", "0.2", "0.9", "0.9"])],
     ]);
 
     const tiempos = eventosDeSesion(sesion, new Map(), ANALISIS).map((e) => e.t);
