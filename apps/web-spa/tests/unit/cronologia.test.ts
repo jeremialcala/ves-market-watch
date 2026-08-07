@@ -8,7 +8,11 @@
 
 import { describe, expect, it } from "vitest";
 
-import { eventosDeSesion, SIGMAS_SALTO } from "../../src/lib/cronologia";
+import {
+  CRUCES_PARA_RESUMIR,
+  eventosDeSesion,
+  SIGMAS_SALTO,
+} from "../../src/lib/cronologia";
 import type { PuntoIntradia } from "../../src/lib/intradia";
 import { MUESTRAS_MINIMAS_SIGMA } from "../../src/lib/movimiento";
 
@@ -299,5 +303,99 @@ describe("eventosDeSesion", () => {
     const tiempos = eventosDeSesion(sesion, new Map(), ANALISIS).map((e) => e.t);
 
     expect(tiempos).toEqual([...tiempos].sort((a, b) => a - b));
+  });
+  it("una condicion que oscila mucho se RESUME en una linea", () => {
+    /*
+     * Medido sobre tres sesiones reales: con la histeresis quedaban 37/30/29
+     * cruces, repartidos en cinco condiciones que entraban y salian. Ninguno era
+     * falso —todos aguantaron sus 15 minutos— pero una condicion que cruza once
+     * veces no cuenta once historias: cuenta una, y es que hoy esta inestable.
+     */
+    const sesion = new Map([
+      [
+        "p2p_momentum_bid_3h_pct",
+        // Cuatro cruces sostenidos: 0,4 -> 0,7 -> 0,4 -> 0,7 -> 0,4, con cada
+        // tramo lo bastante largo para confirmarse.
+        serie([
+          "0.4", "0.4", "0.7", "0.7", "0.7",
+          "0.4", "0.4", "0.4", "0.7", "0.7",
+          "0.7", "0.4", "0.4", "0.4",
+        ]),
+      ],
+    ]);
+
+    const umbrales = eventosDeSesion(sesion, new Map(), ANALISIS).filter(
+      (e) => e.clase === "umbral",
+    );
+
+    expect(umbrales).toHaveLength(1);
+    expect(umbrales[0].repeticiones).toBeGreaterThan(CRUCES_PARA_RESUMIR);
+  });
+
+  it("el resumen NO esconde: dice cuantas veces y desde cuando", () => {
+    const sesion = new Map([
+      [
+        "p2p_momentum_bid_3h_pct",
+        serie([
+          "0.4", "0.4", "0.7", "0.7", "0.7",
+          "0.4", "0.4", "0.4", "0.7", "0.7",
+          "0.7", "0.4", "0.4", "0.4",
+        ]),
+      ],
+    ]);
+
+    const [resumen] = eventosDeSesion(sesion, new Map(), ANALISIS).filter(
+      (e) => e.clase === "umbral",
+    );
+
+    // La cuenta va escrita y el tramo tambien: se puede reconstruir que paso.
+    expect(resumen.repeticiones).toBe(4);
+    expect(resumen.desde).toBeLessThan(resumen.t);
+    // Y el estado que reporta es el ULTIMO, no el primero.
+    expect(resumen.cumple).toBe(false);
+  });
+
+  it("el resumen se coloca en el ULTIMO cruce, no en el primero", () => {
+    /*
+     * La cronologia sigue siendo cronologica: el instante del evento es cuando
+     * empezo el estado actual. El primero va en `desde`.
+     */
+    const sesion = new Map([
+      [
+        "p2p_momentum_bid_3h_pct",
+        serie([
+          "0.4", "0.4", "0.7", "0.7", "0.7",
+          "0.4", "0.4", "0.4", "0.7", "0.7",
+          "0.7", "0.4", "0.4", "0.4",
+        ]),
+      ],
+    ]);
+
+    const [resumen] = eventosDeSesion(sesion, new Map(), ANALISIS).filter(
+      (e) => e.clase === "umbral",
+    );
+
+    expect(resumen.t).toBe(T0 + 11 * PASO);
+    expect(resumen.desde).toBe(T0 + 2 * PASO);
+  });
+
+  it("pocos cruces siguen contandose uno a uno", () => {
+    /*
+     * Dos cruces son entrar y salir: todavia una historia, y merecen su linea.
+     * Resumir a partir de uno habria escondido el caso mas comun.
+     */
+    const sesion = new Map([
+      [
+        "p2p_momentum_bid_3h_pct",
+        serie(["0.4", "0.4", "0.7", "0.7", "0.7", "0.4", "0.4", "0.4"]),
+      ],
+    ]);
+
+    const umbrales = eventosDeSesion(sesion, new Map(), ANALISIS).filter(
+      (e) => e.clase === "umbral",
+    );
+
+    expect(umbrales).toHaveLength(2);
+    expect(umbrales.every((e) => e.repeticiones === undefined)).toBe(true);
   });
 });

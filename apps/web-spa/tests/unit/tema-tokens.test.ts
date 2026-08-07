@@ -17,7 +17,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const CSS = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8");
+const CSS = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8").replaceAll("\r\n", "\n").replaceAll("\r\n", "\n");
 
 /** Colores literales de texto: `color: #fff`, `color: white`, `color: #000`… */
 const LITERALES =
@@ -41,11 +41,11 @@ describe("tokens de tema", () => {
     const oscuro = readFileSync(
       resolve(process.cwd(), "src/ds/tokens/colors.css"),
       "utf8",
-    );
+    ).replaceAll("\r\n", "\n");
     const claro = readFileSync(
       resolve(process.cwd(), "src/ds/tokens/theme-light.css"),
       "utf8",
-    );
+    ).replaceAll("\r\n", "\n");
     const valor = (css: string) => /--white:\s*([^;]+);/.exec(css)?.[1].trim();
 
     expect(valor(oscuro)).toBe("#ffffff");

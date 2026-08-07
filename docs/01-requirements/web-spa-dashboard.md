@@ -261,6 +261,17 @@ login y el estado de salud son visibles sin sesión.
      **aparte y en bucket de 1 h**, no en el del selector: a 5 min son más de
      40 000 filas.
 
+     **Y las repeticiones se RESUMEN (2026-08-07).** La histéresis quita el ruido
+     pero los cruces que quedan son reales, y aun así eran 37 en una sesión,
+     repartidos en cinco condiciones que entraban y salían. Una condición que
+     cruza once veces **no cuenta once historias, cuenta una**: que hoy está
+     inestable. Con más de dos cruces, la cronología emite **un solo evento** que
+     dice cuántas veces, desde cuándo y cómo está ahora —la cuenta va escrita, así
+     que agrupar no esconde—. Medido sobre tres sesiones reales: **37/30/29
+     líneas pasan a 6/6/7**, y el corte es poco sensible (con 2, 3 o 4 sale lo
+     mismo). Se descartó alargar la permanencia, que era lo obvio: a 120 minutos
+     quedan 11/9/10 —peor— **y cada cruce real tardaría dos horas en aparecer**.
+
 - **RF-8 — Vista de análisis** (2026-07-31, ADR-0018): lectura del mercado con
   escenarios y riesgos. Los números que la plataforma sirve (presión de liquidez,
   merchants, spread) son reales; la prosa, las probabilidades y los umbrales de

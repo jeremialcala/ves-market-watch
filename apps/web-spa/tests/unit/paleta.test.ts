@@ -21,7 +21,7 @@ import { describe, expect, it } from "vitest";
 import { PASOS_CALOR, PASOS_CALOR_ALTO } from "../../src/lib/series";
 
 // `import.meta.url` no es file: bajo el runner de vitest: se resuelve desde la raíz.
-const CSS = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8");
+const CSS = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8").replaceAll("\r\n", "\n").replaceAll("\r\n", "\n");
 
 /** Valor de una custom property dentro de un bloque (`:root` o el tema claro). */
 function token(bloque: string, nombre: string): string {

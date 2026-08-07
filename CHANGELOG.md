@@ -587,6 +587,26 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **La cronología resume las repeticiones en vez de listarlas (2026-08-07).** La
+  histéresis quitaba el ruido —de 56 cruces crudos a 37— pero los que quedaban
+  eran **reales**: aguantaron sus 15 minutos. Estaban repartidos en cinco
+  condiciones que entraban y salían, y una condición que cruza once veces **no
+  cuenta once historias, cuenta una**: que hoy está inestable.
+  - Con más de dos cruces se emite **un solo evento** que dice cuántas veces,
+    desde cuándo y cómo está ahora. La cuenta va escrita: agrupar no esconde.
+  - Medido sobre tres sesiones reales: **37/30/29 líneas pasan a 6/6/7**. El corte
+    es **poco sensible** —con 2, 3 o 4 sale lo mismo—, que es lo que se le pide a
+    una constante así.
+  - **Se descartó alargar la permanencia**, que era lo obvio: a 120 minutos quedan
+    11/9/10 —apenas mejor— y cada cruce real tardaría dos horas en aparecer, con lo
+    que la cronología dejaría de ser una cronología para no molestar.
+  - El resumen se coloca en el ÚLTIMO cruce (cuando empezó el estado actual), con
+    el primero en `desde`: el orden sigue significando algo.
+  - No se pudo observar en vivo —el día operativo llevaba una hora y aún no había
+    cruces—; la evidencia es la simulación sobre tres sesiones reales y las
+    pruebas.
+
+
 - **Barrido de coherencia documental, README incluido (2026-08-05).**
   - **El `README.md` no mencionaba la CI en ninguna parte**, tres días después de
     montarla: ni en el árbol del repositorio (faltaban `.github/workflows/`,

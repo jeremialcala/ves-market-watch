@@ -153,7 +153,7 @@ describe("ChispaConTooltip", () => {
 });
 
 describe("la superficie del tooltip", () => {
-  const CSS = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8");
+  const CSS = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8").replaceAll("\r\n", "\n").replaceAll("\r\n", "\n");
   const bloque = CSS.slice(
     CSS.indexOf(".vmw-chispa__tooltip {"),
     CSS.indexOf(".vmw-chispa__hora"),
@@ -189,11 +189,11 @@ describe("la superficie del tooltip", () => {
     const oscuro = readFileSync(
       resolve(process.cwd(), "src/ds/tokens/effects.css"),
       "utf8",
-    );
+    ).replaceAll("\r\n", "\n");
     const claro = readFileSync(
       resolve(process.cwd(), "src/ds/tokens/theme-light.css"),
       "utf8",
-    );
+    ).replaceAll("\r\n", "\n");
     expect(oscuro).toMatch(/--tooltip-bg:\s*rgb\(21 24 27 \/ 94%\)/);
     expect(claro).toMatch(/--tooltip-bg:\s*rgb\(255 255 255 \/ 94%\)/);
   });
