@@ -16,8 +16,9 @@ Verificar que la plataforma mide correctamente la brecha entre la tasa oficial *
 y el mercado P2P **VES/USDT (Binance)**, que los contratos entre servicios se respetan, y que
 los controles de seguridad priorizados en el threat model (T1–T15) se comportan según diseño.
 El plan sirve como criterio de cierre del **Gate 2** y como guía viva para completar lo pendiente
-(los 5 servicios ya tienen código y suite; queda el e2e autenticado en vivo con token real —
-client M2M, HITL — la suite `security` transversal y el pipeline CI).
+(los 5 servicios ya tienen código y suite; el e2e autenticado en vivo con token real
+**quedó cumplido el 2026-08-07** —ver «E2E autenticado en vivo»— y quedan la suite
+`security` transversal y llevarlo al pipeline CI).
 
 ## 2. Estrategia de pruebas
 
@@ -53,8 +54,16 @@ La suite se parte en dos porque los requisitos no son los mismos:
   las aserciones de T11 y T15 y hasta ahora **solo existían como unit tests**: en
   vivo intervienen nginx, el túnel y el proxy, y el `TestClient` de Starlette es
   in-process —con el fallo del handshake puesto, los unit tests pasaban—.
-- **Camino feliz — requiere el client M2M** (HITL): `client_credentials` → REST
-  autenticado → WSS subscribe/ack/ping.
+- **Camino feliz — requiere el client M2M**: `client_credentials` → REST
+  autenticado → WSS subscribe/ack/ping. **Cumplido el 2026-08-07: 6/6.** Los 30 s
+  que tarda son la espera del ping del gateway, que llega a los 30 —no es lentitud,
+  es el contrato—.
+
+  **El client M2M es una aplicación APARTE de la del SPA.** El primer intento usó
+  el `client_id` del SPA, que es público por diseño —viaja en el bundle y está como
+  valor por defecto en `docker-compose.yml`— y es de tipo *Single Page
+  Application*: Auth0 no le permite el grant `client_credentials`. Hace falta una
+  aplicación *Machine to Machine* propia, con sus credenciales.
 
 **La disponibilidad del gateway se resuelve una vez y las suites usan `skipIf`.**
 La primera versión hacía `if (!arriba) return` en cada test y eso reportaba
@@ -104,8 +113,8 @@ Estado observado en el repo (conteo de funciones `test_`):
 | `ingestor-binance` | Implementado | **83** (unit, integration, contract, e2e, `security`) | ~~Cobertura de ramas 75,92 %~~ **99,27 %** (2026-08-04); ~~escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local~~ **elevado**: `integration/test_client_errores.py` lleva el 429 real por HTTP hasta el breaker y comprueba que el ciclo siguiente **no consulta** |
 | `indicator-engine` | Fases 1, 2, señales (RF-4/RF-5, ADR-0015), análisis de la revisión (RF-6, ADR-0019) y lectura del estado de mercado (RF-7, ADR-0021) | **338** (unit, contract, integration, e2e) | Cobertura de ramas **86 %** (medida 2026-08-04 sobre `src/`); recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) y de los dos ejes del régimen (`config/lectura.v1.yaml`); contrastar en vivo la atribución con responsable `oficial` o `ambos` — hace falta un día en que la tasa del BCV cambie de verdad, no solo que esté vigente (ADR-0022 destapó que este hueco se venía describiendo mal: se decía que el fin de semana la suprimía «por diseño», cuando lo que la suprimía era la rancidez mal medida) |
 | `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) — más el histórico de tasas oficiales del BCV (RF-6) y la brecha derivada del lado venta (RF-7), 2026-08-01 | **138** (unit + integración contra TimescaleDB real, incl. las tablas de los servicios vecinos) | ~~Cobertura de ramas 71,71 %~~ **97,22 %** (2026-08-04); ~~integración del cargador de oficiales contra TimescaleDB real~~ **hecha**: `integration/test_tablas_vecinas.py` prueba contra la base real los dos adaptadores que escriben en `official_rates` e `indicators` |
-| `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **124** (unit incl. CORS, refresco del JWKS, profundidad sin outliers y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura **92,65 %** (2026-08-06) |
-| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **500** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores y lectura del mercado con dato real en ES/EN, shell responsive, canarios de paleta, punto de corte y cabeceras CSP, y los cinco bloques del Intradía: criterio de selección, histéresis de los cruces, bloque enfrentado, condiciones del ruleset con su línea de disparo en escala, barra de control con su indicador de frescura, formato único de Δ con sus guardas de fuente, catálogo etiqueta/clave en los dos idiomas, tooltip de los sparklines, estado cero con su nota condicionada al dato, canario de tokens de tema y contrato de la tarjeta de métrica, y el resumen de cruces repetidos) — **88,13 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
+| `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **124** (unit incl. CORS, refresco del JWKS, profundidad sin outliers y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | ~~e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL)~~ **cumplido 2026-08-07**: 6/6 con client M2M propio; marker `security` dedicado; cobertura **92,65 %** (2026-08-06) |
+| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **500** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores y lectura del mercado con dato real en ES/EN, shell responsive, canarios de paleta, punto de corte y cabeceras CSP, y los cinco bloques del Intradía: criterio de selección, histéresis de los cruces, bloque enfrentado, condiciones del ruleset con su línea de disparo en escala, barra de control con su indicador de frescura, formato único de Δ con sus guardas de fuente, catálogo etiqueta/clave en los dos idiomas, tooltip de los sparklines, estado cero con su nota condicionada al dato, canario de tokens de tema y contrato de la tarjeta de métrica, y el resumen de cruces repetidos) — **88,13 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | ~~e2e en vivo `npm run test:e2e:live` (client M2M — HITL)~~ **cumplido 2026-08-07** (6/6); checklist con login real (tokens fuera de storage, renovación 15 min) |
 
 > El plan cubre tanto la **consolidación** de lo existente como la **especificación** de los casos
 > que deben acompañar el código pendiente, para que se escriban junto con la implementación (no
@@ -492,7 +501,7 @@ cierre de la columna «Verificación fase 04-testing».
 
 | Pendiente | Por qué sigue abierto |
 |---|---|
-| e2e autenticado **en vivo** con token real (HITL) | Necesita el client M2M del tenant en el pipeline; hoy corre a mano |
+| Llevar el e2e en vivo **al pipeline** | El test ya pasa 6/6 a mano (2026-08-07). Meterlo en CI exige el `client_secret` del M2M como secreto de GitHub Actions y un gateway alcanzable desde el runner: decisión pendiente, no código pendiente |
 | Deuda de T8: **lockfiles + imágenes por digest** | Cambio de repositorio, no de pipeline: los cinco servicios declaran rangos y las imágenes van por tag (incluida `timescaledb:latest-pg16`) |
 | Deuda de T8: **CVE-2026-59870 (`js-yaml`) aceptado** | Vector no alcanzable (dependencia de desarrollo, entrada propia sin `!!omap`); el arreglo disponible rompe el generador de tipos. Se retira cuando `openapi-typescript` suba a redocly 2.x — revisar 2026-09-06 |
 | Marcador `security` en `api-gateway` | Donde viven T9 y T11; los otros dos servicios ya lo tienen |

@@ -7,6 +7,26 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-07 — El e2e autenticado, cumplido, y un secreto que hubo que rotar
+- **6/6 contra el tenant y el gateway reales.** Los 30 s del camino feliz son la
+  espera del ping del gateway, que llega a los 30: no es lentitud, es el contrato.
+- **El client M2M tiene que ser una aplicación APARTE de la del SPA.** El primer
+  intento usó el `client_id` del SPA —que es público por diseño: viaja en el
+  bundle y está como valor por defecto en `docker-compose.yml`— y es de tipo
+  *Single Page Application*, a la que Auth0 no permite `client_credentials`. No
+  habría funcionado aunque el secreto hubiera sido correcto.
+- **Un secreto acabó en el historial y hubo que rotarlo.** Y la causa fue mía:
+  sugerí la sintaxis `$env:` de PowerShell sin comprobar en qué shell corre el
+  prefijo `!` —corre **bash**—, así que las variables no se pusieron, el test
+  volvió a saltar y el secreto quedó escrito para nada. *Antes de dictar un
+  comando con credenciales, asegúrate de la sintaxis del shell: un comando que
+  falla con un secreto dentro deja el secreto igual de expuesto que uno que
+  funciona.*
+- La forma segura para la próxima: variables por proceso en bash
+  (`VAR=x cmd`) o un `.env.e2e` gitignorado, nunca `$env:`, que además las deja
+  vivas en la sesión.
+
+
 ## 2026-08-07 — El e2e en vivo pasaba con el gateway apagado
 - La suite probaba el camino feliz y **nada de lo que debe fallar**. Añadí los
   rechazos —401 sin token, 401 con token inventado, 4401 del WSS— y resulta que
