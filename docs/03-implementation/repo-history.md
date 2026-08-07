@@ -1,7 +1,7 @@
 # Historial de implementación — Criterio
 
 * **Estado:** review (documentación viva — regenerada por script, no editar a mano)
-* **Fecha:** 2026-08-06
+* **Fecha:** 2026-08-07
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
 * **Versión:** 0.4.0
@@ -200,6 +200,33 @@ gitGraph
     commit id: "c636de0"
     commit id: "4fbada0"
     commit id: "e1f378c"
+    commit id: "6deea55"
+    commit id: "86acb1c"
+    commit id: "7f89626"
+    commit id: "9524c44"
+    commit id: "1ba92bb"
+    commit id: "dd65cfc"
+    commit id: "7ea0705"
+    commit id: "80b2d50"
+    commit id: "3e71f14"
+    commit id: "7f40d03"
+    commit id: "8335285"
+    commit id: "976a54f"
+    commit id: "2ee76c7"
+    commit id: "4aeadaa"
+    commit id: "3859349"
+    commit id: "74c55b5"
+    commit id: "af51136"
+    commit id: "e0b1a95"
+    commit id: "ee5e8c1"
+    commit id: "0856c5c"
+    commit id: "c4149ce"
+    commit id: "b1bfa63"
+    commit id: "f508921"
+    commit id: "8e3baf5"
+    commit id: "9445199"
+    commit id: "a98cf7f"
+    commit id: "ed9f843" type: HIGHLIGHT
 ```
 
 ### Estado actual de las ramas
@@ -207,7 +234,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `e1f378c` | 2026-08-06 | 166 |
+| `develop` | `ed9f843` | 2026-08-07 | 193 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -223,6 +250,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `ed9f843` | merge | — | Jeremi J. Alcalá M. | 2026-08-07 | Merge pull request #1 from jeremialcala/feat-intraday |
+| `a98cf7f` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
 | `9445199` | commit | — | Jeremi Alcala | 2026-08-06 | security(t8): CVE-2026-59870 aceptado por escrito, con caducidad propia |
 | `8e3baf5` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
 | `f508921` | commit | — | Jeremi Alcala | 2026-08-06 | docs: barrido de coherencia y ADR-0025 |
