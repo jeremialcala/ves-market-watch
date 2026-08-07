@@ -42,6 +42,33 @@ contract corren **sin infraestructura por diseño** (MSW + WebSocket mock; fixtu
 check de frescura de tipos en `npm test`), umbral de cobertura ≥ 80 % de ramas aplicado
 en la config, y el e2e en vivo (`npm run test:e2e:live`) hace skip sin credenciales M2M.
 
+### E2E autenticado en vivo (2026-08-07)
+
+La suite se parte en dos porque los requisitos no son los mismos:
+
+- **Rechazos — sin credenciales, corren siempre que el gateway esté arriba.**
+  REST sin token y con token inventado → 401 con `problem+json` y sin decir qué
+  parte de la validación falló (eso sería un oráculo); `health` sigue público; y
+  **WSS sin token o con token falso cierra con 4401**, no con un 1006 mudo. Son
+  las aserciones de T11 y T15 y hasta ahora **solo existían como unit tests**: en
+  vivo intervienen nginx, el túnel y el proxy, y el `TestClient` de Starlette es
+  in-process —con el fallo del handshake puesto, los unit tests pasaban—.
+- **Camino feliz — requiere el client M2M** (HITL): `client_credentials` → REST
+  autenticado → WSS subscribe/ack/ping.
+
+**La disponibilidad del gateway se resuelve una vez y las suites usan `skipIf`.**
+La primera versión hacía `if (!arriba) return` en cada test y eso reportaba
+**PASSED con el gateway apagado**: una suite que certifica nada. Comprobado
+apuntando a un puerto muerto —salían cinco en verde—; ahora salen seis «skipped».
+
+**Lo que falta es aprovisionar (HITL, en el dashboard de Auth0):** una aplicación
+*Machine to Machine* autorizada para la API `https://api.vesmarketwatch/` con los
+**cinco** permisos que el gateway exige —`read:rates`, `read:indicators`,
+`read:signals`, `read:depth`, `stream:events`—. No hay `read:analysis`:
+`/analysis/current` reutiliza `read:indicators` a propósito. Las credenciales
+viajan por entorno (`AUTH0_M2M_CLIENT_ID` / `AUTH0_M2M_CLIENT_SECRET`), nunca al
+repo, y ningún mensaje de error del test las incluye.
+
 ```sh
 python -m pytest -m "not integration and not e2e"   # rápido, sin infraestructura
 docker compose up -d --wait && python -m pytest      # suite completa

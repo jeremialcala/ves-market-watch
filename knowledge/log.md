@@ -7,6 +7,32 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-07 — El e2e en vivo pasaba con el gateway apagado
+- La suite probaba el camino feliz y **nada de lo que debe fallar**. Añadí los
+  rechazos —401 sin token, 401 con token inventado, 4401 del WSS— y resulta que
+  **no hacían falta credenciales para nada de eso**: la mitad más valiosa del e2e
+  llevaba meses esperando a un secreto que no necesitaba.
+- **Y descubrí que la suite pasaba con el gateway apagado.** Cada test hacía
+  `if (!arriba) return`, así que reportaba cinco en verde sin tocar nada. Lo
+  comprobé apuntando a un puerto muerto antes de arreglarlo. *Un `return` dentro
+  de un test es un `expect` que nunca se ejecuta.*
+- Es además el primer sitio donde el **4401 del WSS** se comprueba contra un
+  handshake HTTP real: el `TestClient` de Starlette es in-process y con el fallo
+  puesto los unit tests pasaban. El arreglo de hace unos días queda por fin
+  verificado por una prueba automatizada y no solo por una sesión manual.
+- Del aprovisionamiento sale un dato que la documentación no tenía escrito: los
+  permisos son **cinco**, no seis. `read:analysis` no existe —`/analysis/current`
+  reutiliza `read:indicators` a propósito— y pedirlo en el tenant habría creado
+  un permiso huérfano.
+- **El gate de secretos me cortó el PR, y tenía razón**: el JWT falso escrito
+  como literal dispara `generic-api-key` con entropía 4,65. Lo tentador era una
+  excepción en `.gitleaks.toml`; lo correcto, construir el token en tiempo de
+  ejecución. *Silenciar un hallazgo verdadero-en-forma para meter algo falso le
+  quita los dientes al gate para el próximo, que puede no serlo.* Y como gitleaks
+  escanea la historia, hubo que reescribir la rama: no basta con borrarlo del
+  último commit.
+
+
 ## 2026-08-07 — Los cruces no sobraban: sobraba repetirlos
 - Medí antes de tocar: la sesión de ayer daba **56 cruces crudos y 37 con la
   histéresis**, repartidos en cinco condiciones. **Ninguno era falso** —todos
