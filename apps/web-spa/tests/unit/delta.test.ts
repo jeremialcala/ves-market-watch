@@ -168,7 +168,7 @@ describe("centralización", () => {
   ];
 
   const leer = (ruta: string) =>
-    readFileSync(resolve(process.cwd(), ruta), "utf8");
+    readFileSync(resolve(process.cwd(), ruta), "utf8").replaceAll("\r\n", "\n");
 
   it("todo componente del Intradía que pinta una Δ usa la función común", () => {
     for (const ruta of FUENTES) {

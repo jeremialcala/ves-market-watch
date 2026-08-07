@@ -227,6 +227,7 @@ gitGraph
     commit id: "9445199"
     commit id: "a98cf7f"
     commit id: "ed9f843" type: HIGHLIGHT
+    commit id: "3b6407a"
 ```
 
 ### Estado actual de las ramas
@@ -234,7 +235,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `ed9f843` | 2026-08-07 | 193 |
+| `develop` | `3b6407a` | 2026-08-07 | 194 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -250,6 +251,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `64ed29f` | commit | — | Jeremi Alcala | 2026-08-07 | feat(engine): el mejor precio se publica en par, sin filtrar y filtrado |
+| `3b6407a` | commit | — | Jeremi Alcala | 2026-08-07 | docs(repo-history): regenerar tras el merge del PR #1 |
 | `ed9f843` | merge | — | Jeremi J. Alcalá M. | 2026-08-07 | Merge pull request #1 from jeremialcala/feat-intraday |
 | `a98cf7f` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
 | `9445199` | commit | — | Jeremi Alcala | 2026-08-06 | security(t8): CVE-2026-59870 aceptado por escrito, con caducidad propia |

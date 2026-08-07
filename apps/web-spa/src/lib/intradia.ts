@@ -154,6 +154,11 @@ const BASE_P2P: Record<string, Entrada> = {
   p2p_liquidez: { etiqueta: "serie.liquidez", unidad: "USDT", decimales: 0 },
   p2p_mediana: { etiqueta: "serie.mediana", unidad: "VES", decimales: 4 },
   p2p_mejor_precio: { etiqueta: "serie.mejorPrecio", unidad: "VES", decimales: 4 },
+  p2p_mejor_precio_filtrado: {
+    etiqueta: "serie.mejorPrecioFiltrado",
+    unidad: "VES",
+    decimales: 4,
+  },
   p2p_merchants_pct: { etiqueta: "serie.merchants", unidad: "%", decimales: 2 },
   p2p_outliers_pct: {
     etiqueta: "serie.outliers",

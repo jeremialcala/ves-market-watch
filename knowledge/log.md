@@ -7,6 +7,29 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-07 — El mejor precio contaba media verdad
+- `p2p_mejor_precio` va sin filtrar **a propósito**: es el top of book literal y
+  ocultarlo sería ocultar que alguien pide 920. El problema no era ese, era que
+  **no había con qué compararlo**, así que un anuncio manipulado se leía como
+  precio de mercado. Ahora se publica el par y **la diferencia es el dato**.
+- **La magnitud la dio el dato, no la intuición.** Sobre 318 snapshots por lado:
+  en SELL el primer anuncio estaba marcado como outlier en **103 de 318** —un
+  tercio de las lecturas— y en BUY en 1. Sin medirlo habría tratado los dos lados
+  igual.
+- **Y comprobé un supuesto que nadie había escrito**: `mejor_precio =
+  anuncios[0]` depende de que la fuente ordene por «mejor primero», y nadie
+  ordena —ni el ingestor ni el motor—. Se sostiene: el primero fue el mínimo en
+  318/318 BUY y el máximo en 318/318 SELL. *Un supuesto sobre una API ajena que
+  funciona es igual de frágil que uno que no; la diferencia es si está escrito.*
+- Para verificarlo no esperé al mercado: **reproduje el cálculo sobre el snapshot
+  real** de las 03:40 VET, cuyo top of book era outlier. 871 de escaparate contra
+  860 de libro, 11 VES de diferencia por un anuncio de 141 USDT.
+- Un fallo de prueba que no era del código: el test del foco de `MetricCard`
+  buscaba un selector multilínea con `\n` y git había normalizado el CSS a
+  CRLF al cambiar de rama. **Pasaba en CI (Linux) y fallaba en Windows.** Los
+  ocho tests que leen CSS normalizan ahora al leer.
+
+
 ## 2026-08-06 — El primer PR encontró un CVE, y el arreglo era peor
 - El PR a `develop` dejó 11 de 12 comprobaciones en verde y rompió en `T8 · SCA
   (npm)`: **CVE-2026-59870** en `js-yaml`, un aviso nuevo que llega por
@@ -230,7 +253,9 @@ timestamp: 2026-08-03T12:00:00Z
   `advNo`. La regla se queda donde vive: reimplementar el MAD en el gateway habría
   dado dos versiones obligadas a coincidir. Es el mismo criterio con el que el
   motor publica `reading` y `gap_legs` en vez de dejar que el SPA los derive.
-- **Lo que NO cambié, y por qué**: `p2p_mejor_precio` del motor sigue sin filtrar.
+- **Lo que NO cambié entonces, y por qué**: `p2p_mejor_precio` del motor sigue
+  sin filtrar —y sigue siéndolo—, pero el 2026-08-07 ganó un par filtrado; ver la
+  entrada de ese día.
   `calculos.py` lo dice desde el primer día —«el mejor precio se conserva sin
   filtrar, aparte»— y es defendible: es el top of book literal y ocultarlo sería
   ocultar que alguien pide 920. La diferencia está en el uso: allí el precio **se

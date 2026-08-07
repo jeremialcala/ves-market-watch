@@ -10,7 +10,8 @@ timestamp: 2026-07-26T00:00:00Z
 Definiciones completas: PRD `../../docs/01-requirements/motor-indicadores.md`.
 Implementados en el [indicator-engine](../services/indicator-engine.md) —
 fase 1: `official_rate` y su variación abs/% por moneda; fase 2 (2026-07-20):
-los P2P por snapshot y lado (`p2p_mediana`, `p2p_vwap`, `p2p_mejor_precio`,
+los P2P por snapshot y lado (`p2p_mediana`, `p2p_vwap`, `p2p_mejor_precio` y su
+par `p2p_mejor_precio_filtrado`,
 `p2p_liquidez`, `p2p_merchants_pct`, `p2p_outliers_pct`, `p2p_brecha_abs/pct`)
 más la microestructura entre lados.
 
