@@ -519,6 +519,25 @@ export const ES = {
   "historico.rangoLabel": "{dias} días",
 
   // -- intradía --------------------------------------------------------------
+  // -- Cronología de la sesión (Intradía) -------------------------------------
+  "crono.titulo": "Cronología de la sesión",
+  "crono.bajada": "VET · desde la apertura del día",
+  "crono.aperturaTitulo": "Apertura de la sesión",
+  "crono.aperturaTexto":
+    "Primer bucket del día operativo: desde aquí se mide todo lo demás.",
+  "crono.umbralTitulo": "Umbral del ruleset cruzado",
+  "crono.umbralPasa":
+    "{indicador} pasó a cumplir su condición dentro de la regla.",
+  "crono.umbralDeja":
+    "{indicador} dejó de cumplir su condición dentro de la regla.",
+  "crono.cifrasUmbral": "{indicador} {valor} · umbral {umbral}",
+  "crono.liquidezTitulo": "Salto de liquidez",
+  "crono.liquidezTexto":
+    "El volumen ofrecido del lado {lado} se movió más de {sigmas} veces lo que salta habitualmente entre buckets.",
+  "crono.cifrasLiquidez": "{delta} USDT · total {valor} · {sigmas}σ",
+  "crono.recalculoTitulo": "Último recálculo",
+  "crono.recalculoTexto":
+    "El motor volvió a evaluar el ruleset con el snapshot más reciente.",
   // -- Qué se movió desde la apertura (Intradía) ------------------------------
   "movio.titulo": "Qué se movió desde la apertura",
   "movio.bajada": "{destacadas} de {totales} series explican la sesión",
@@ -1123,6 +1142,23 @@ export const EN: Record<Clave, string> = {
   "historico.sinSerie": "No data in the requested range.",
   "historico.rangoLabel": "{dias} days",
 
+  // -- Session timeline (Intraday) --------------------------------------------
+  "crono.titulo": "Session timeline",
+  "crono.bajada": "VET · since the day's open",
+  "crono.aperturaTitulo": "Session open",
+  "crono.aperturaTexto":
+    "First bucket of the operating day: everything else is measured from here.",
+  "crono.umbralTitulo": "Ruleset threshold crossed",
+  "crono.umbralPasa": "{indicador} started meeting its condition within the rule.",
+  "crono.umbralDeja": "{indicador} stopped meeting its condition within the rule.",
+  "crono.cifrasUmbral": "{indicador} {valor} · threshold {umbral}",
+  "crono.liquidezTitulo": "Liquidity jump",
+  "crono.liquidezTexto":
+    "Offered volume on the {lado} side moved more than {sigmas} times its usual bucket-to-bucket jump.",
+  "crono.cifrasLiquidez": "{delta} USDT · total {valor} · {sigmas}σ",
+  "crono.recalculoTitulo": "Latest recalculation",
+  "crono.recalculoTexto":
+    "The engine re-evaluated the ruleset with the most recent snapshot.",
   // -- What moved since the open (Intraday) -----------------------------------
   "movio.titulo": "What moved since the open",
   "movio.bajada": "{destacadas} of {totales} series explain the session",

@@ -1028,6 +1028,95 @@ body {
   opacity: 0.85;
 }
 
+/* -- cronología de la sesión (Intradía) ------------------------------------- */
+
+.vmw-crono {
+  list-style: none;
+  margin: 0;
+  padding: 26px 28px;
+  border-radius: 28px;
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+}
+
+.vmw-crono__evento {
+  display: grid;
+  grid-template-columns: 62px 18px 1fr;
+  gap: 16px;
+  padding-bottom: 22px;
+}
+
+/* El último no arrastra hueco: cerraría el bloque con un vacío que parece un
+   evento que no llegó. */
+.vmw-crono__evento[data-ultimo="si"] {
+  padding-bottom: 0;
+}
+
+.vmw-crono__hora {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--text-dim);
+  text-align: right;
+  line-height: 1.4;
+}
+
+/* Punto y línea: la línea se estira hasta el evento siguiente, así que el
+   último la deja en cero y el hilo termina donde termina la sesión. */
+.vmw-crono__eje {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.vmw-crono__eje i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+  margin-top: 4px;
+}
+
+.vmw-crono__eje b {
+  flex: 1;
+  width: 1px;
+  background: var(--border);
+}
+
+.vmw-crono__evento[data-ultimo="si"] .vmw-crono__eje b {
+  display: none;
+}
+
+.vmw-crono__contenido {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vmw-crono__titulo-evento {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.vmw-crono__texto {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* Las cifras del momento, en la display: son el respaldo del titular y se leen
+   como dato, no como prosa. */
+.vmw-crono__cifras {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
 /* -- qué se movió desde la apertura (Intradía) ------------------------------ */
 
 /* h3 y bajada en la MISMA línea base: el subtítulo es una aposición del título,

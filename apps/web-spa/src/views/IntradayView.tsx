@@ -35,6 +35,7 @@ import { ApiError } from "../api/problem";
 import { NoDataState } from "../components/NoDataState";
 import { SessionMovers } from "../components/SessionMovers";
 import { SessionReading } from "../components/SessionReading";
+import { SessionTimeline } from "../components/SessionTimeline";
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
 import { formatDecimal, toChartNumber } from "../lib/decimal";
@@ -50,6 +51,7 @@ import {
   type Lado,
   type PuntoIntradia,
 } from "../lib/intradia";
+import { useMarket } from "../state/marketStore";
 import { MONEDAS_BCV } from "../state/resync";
 
 /** Slots categóricos 1/2/3 de la paleta del proyecto. */
@@ -237,6 +239,7 @@ function PanelIndicador({
 
 export function IntradayView() {
   const { t } = useI18n();
+  const { analisis } = useMarket();
   const [moneda, setMoneda] = useState("USD");
   const [intervalo, setIntervalo] = useState<Intervalo>("5m");
   const [series, setSeries] = useState<Map<string, PuntoIntradia[]>>(new Map());
@@ -393,6 +396,8 @@ export function IntradayView() {
           </div>
         ) : null}
 
+        {/* Cierra la vista: lo que pasó, después de los indicadores que lo
+            explican. */}
         {ORDEN_GRUPOS.filter((grupo) => porGrupo.has(grupo)).map((grupo) => (
           <section
             key={grupo}
@@ -415,6 +420,12 @@ export function IntradayView() {
             </div>
           </section>
         ))}
+
+        <SessionTimeline
+          sesion={series}
+          referencia={referencia}
+          analisis={analisis}
+        />
       </div>
     </main>
   );
