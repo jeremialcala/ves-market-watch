@@ -230,9 +230,12 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
-- **El Intradía gana tres bloques que ponen la parrilla en contexto
-  (2026-08-06, rama `feat-intraday`).** Los tres se **derivan del dato**; ninguno
-  cablea lo que afirma.
+- **El Intradía se reordena entero (2026-08-06, rama `feat-intraday`).** De la
+  parrilla original **solo queda la tasa oficial**: cada familia se fue al bloque
+  que responde a su pregunta, y los cinco se **derivan del dato** —ninguno cablea
+  lo que afirma—. Cada bloque decide además **qué codifica su color** —lado en la
+  parrilla, dirección de la Δ en el enfrentado, estado de la condición en
+  microestructura—, y por eso ninguno deja el signo ni el estado solo en el tono.
   - **«Lectura de la sesión»** (bloque rector): qué dice el ruleset ahora — qué
     regla está más cerca, cuántas condiciones cumple y cuál la bloquea. La regla
     más cercana la elige el motor (`summary.closest_rule`), **nunca el SPA**:
@@ -255,9 +258,40 @@ Convención de mantenimiento (inventario por ejecución):
     front—; un lado sin serie se dice en vez de rellenarse. Dentro del bloque el
     lado lo dice la columna, así que el color pasa a la dirección de la Δ: como
     comparte tonos con las cabeceras, el signo va siempre escrito.
-  - 74 pruebas nuevas; el SPA pasa de 348 a 422.
+  - **«Microestructura» deja de ser parrilla: sus cuatro series no son cifras
+    del día sino **condiciones** del ruleset, y lo útil de un vistazo es si están
+    cumplidas y a qué distancia quedan de estarlo. Cada tarjeta lleva estado,
+    línea de disparo y el nombre de la regla con la posición de la condición. El
+    color deja de codificar el lado —estas cuatro no lo tienen— y pasa al estado:
+    **coral cumple, teal no**, que es la inversión que se espera aquí (el coral es
+    del ruleset, lo que dispara, no lo que va bien).
+    - **Cuál de las reglas gobierna a cada indicador hay que elegirlo**: el ratio
+      y el momentum son condición de TRES reglas con umbrales distintos, así que
+      «cumple» no dice nada sin nombrar la regla. Se prefiere `closest_rule` —la
+      que el titular ya destaca— y, sin ella, la primera por orden alfabético:
+      sin desempate estable la tarjeta cambiaba de umbral sola entre refrescos.
+    - **La línea de disparo entra en el dominio de la chispa** aunque la serie no
+      se le acerque: dejarla fuera la recorta del lienzo sin avisar, y una chispa
+      sin línea visible se lee como si el disparo estuviera cerca. Que la serie
+      salga aplanada contra un borde ES la lectura —hoy no dispara, y por mucho—.
+    - **Sin análisis no se pinta ningún estado**: ni coral ni teal, sin pastilla
+      y sin línea. Elegir un color sería afirmar algo que nadie ha calculado.
+  - 90 pruebas nuevas; el SPA pasa de 348 a 438 y de 87,1 a 87,43 % de ramas.
 
 ### Fixed
+
+- **El % de variación mentía el sentido con apertura negativa (2026-08-06).**
+  Salió al pintar las tarjetas de microestructura: `p2p_momentum_bid_3h_pct`
+  abrió en −0,24 y estaba en +0,31 —una subida— y la tarjeta escribía
+  «+0,55 (−232,25 %)», con el signo doble incluido. El cociente es
+  aritméticamente correcto y la frase es falsa: contra una base con signo el
+  porcentaje no describe la dirección del movimiento. `resumenIntradia` lo omite
+  ahora cuando la apertura no es **positiva**, igual que ya hacía con el cero.
+  - Se corrigió ahí y **no en `porcentajeRelativo`**: como aritmética pura,
+    `parte / base` con base negativa está bien y tiene su prueba; lo que no vale
+    es llamar a ese número «variación desde la apertura».
+  - Afecta a los tres bloques que usan el resumen (parrilla, enfrentado y
+    microestructura) y al texto alternativo, que ya no imprime un «(+—)».
 
 - **`etiquetaDiaVET` tenía el locale `es-VE` fijo (2026-08-06):** dentro de una
   frase en inglés salía «operating day jueves, 6 de agosto de 2026». Recibe el

@@ -130,9 +130,22 @@ describe("resumenIntradia", () => {
     expect(resumen?.deltaPct).toBe("0.00");
   });
 
-  it("apertura en cero deja el % en null (se muestra «—»)", () => {
+  it("apertura en cero deja el % en null (se omite)", () => {
     const resumen = resumenIntradia(puntos("0", "5"));
     expect(resumen?.deltaAbs).toBe("5");
+    expect(resumen?.deltaPct).toBeNull();
+  });
+
+  it("apertura negativa también: el % mentiría el sentido", () => {
+    /*
+     * Visto en vivo en `p2p_momentum_bid_3h_pct`: abrió en −0,24 y estaba en
+     * +0,31 —una subida— y la tarjeta escribía «+0,55 (−232,25 %)». El cociente
+     * es aritméticamente correcto y la frase es falsa: contra una base con
+     * signo, el porcentaje no describe la dirección del movimiento.
+     */
+    const resumen = resumenIntradia(puntos("-0.24", "0.31"));
+    expect(resumen?.deltaAbs).toBe("0.55");
+    expect(resumen?.direccion).toBe(1);
     expect(resumen?.deltaPct).toBeNull();
   });
 

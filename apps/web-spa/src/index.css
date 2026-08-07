@@ -1348,6 +1348,112 @@ body {
   color: var(--text-muted);
 }
 
+/* -- microestructura (Intradía) -------------------------------------------- */
+
+/* Aquí el color NO es del lado —estas cuatro no lo tienen— sino del ESTADO de
+   la condición: coral cumple, teal no. Ninguna va en gris: el gris quedaría para
+   la tarjeta sin regla, que es el único caso en el que no hay estado que decir. */
+.vmw-micro__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.vmw-micro__tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: 22px;
+  padding: 22px 24px;
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+}
+
+.vmw-micro__tarjeta[data-estado="cumple"] {
+  border-color: var(--coral-line);
+}
+
+.vmw-micro__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.vmw-micro__metrica {
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+
+.vmw-micro__estado {
+  flex: none;
+  font-size: 12px;
+  border-radius: 100px;
+  padding: 3px 11px;
+}
+
+.vmw-micro__estado[data-estado="cumple"] {
+  background: var(--coral-tint);
+  color: var(--coral);
+}
+
+.vmw-micro__estado[data-estado="no-cumple"] {
+  background: var(--teal-tint);
+  color: var(--teal);
+}
+
+.vmw-micro__cifra-fila {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.vmw-micro__cifra {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+
+/* La variación en tinta: el color de la tarjeta ya lo gasta el estado. */
+.vmw-micro__variacion {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.vmw-micro__spark {
+  width: 100%;
+  height: 48px;
+  display: block;
+}
+
+.vmw-micro__pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.vmw-micro__nota {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.vmw-micro__regla {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
 /* -- lectura de la sesión (Intradía) --------------------------------------- */
 
 /* Bloque rector de la vista: la ÚNICA superficie con tinte coral aquí, igual

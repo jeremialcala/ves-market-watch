@@ -135,9 +135,9 @@ describe("IntradayView", () => {
     render(<IntradayView />);
 
     /*
-     * Compra y venta ya no son dos parrillas: viven enfrentadas en la misma
-     * fila, que es donde se pueden comparar. Los grupos sin contraparte
-     * —oficial y microestructura— siguen como parrilla.
+     * Cada familia en el bloque que le toca: compra y venta enfrentadas en la
+     * misma fila, microestructura como condiciones del ruleset, y solo la tasa
+     * oficial sigue en la parrilla de small multiples.
      */
     await waitFor(() =>
       expect(
@@ -160,10 +160,12 @@ describe("IntradayView", () => {
     // Y la clave canónica de la métrica, sin maquillar.
     expect(fila.querySelector(".vmw-vs__clave")?.textContent).toBe("p2p_mediana");
 
-    // Día plano en un grupo sin contraparte: variación cero, sin signo inventado.
-    expect(
-      screen.getByLabelText("Spread: apertura 2,5, último 2,5, variación 0 (0 %)"),
-    ).toBeTruthy();
+    // Día plano en microestructura: variación cero, sin signo inventado.
+    const spread = document.querySelector(".vmw-micro__tarjeta")!;
+    expect(spread.querySelector(".vmw-micro__cifra")?.textContent).toBe("2,5");
+    expect(spread.querySelector(".vmw-micro__variacion")?.textContent).toBe(
+      "0 (0 %)",
+    );
   });
 
   it("pasa al gráfico el string decimal exacto, no solo la coordenada", async () => {
@@ -171,14 +173,14 @@ describe("IntradayView", () => {
     render(<IntradayView />);
 
     /*
-     * Solo quedan los paneles sin contraparte —tasa oficial y spread—: compra y
-     * venta pasaron al bloque enfrentado, que dibuja su chispa en SVG propio.
+     * Solo queda la tasa oficial en la parrilla: compra y venta pasaron al
+     * bloque enfrentado y el spread a las tarjetas del ruleset, y esos dos
+     * dibujan su chispa en SVG propio.
      */
-    await waitFor(() => expect(screen.getAllByTestId("linechart").length).toBe(2));
+    await waitFor(() => expect(screen.getAllByTestId("linechart").length).toBe(1));
     const puntos = JSON.parse(
       screen.getAllByTestId("linechart")[0].dataset.puntos ?? "[]",
     ) as { valor: number; valorStr: string }[];
-    // El primer panel es el de la tasa oficial (grupo «oficial» va primero).
     expect(puntos).toEqual([
       { t: Date.parse("2026-07-28T04:00:00Z"), valor: 417.03, valorStr: "417.03" },
     ]);

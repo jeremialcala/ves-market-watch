@@ -534,6 +534,25 @@ export const ES = {
     "El mejor precio es el extremo del libro y NO pasa por el filtro de outliers (a diferencia de mediana y VWAP): un solo anuncio absurdo lo mueve.",
   "vs.notaOutliers":
     "Es el porcentaje de anuncios que el filtro descartó, no un error: cuanto más alto, más ruido traía el snapshot de ese lado.",
+  // -- Microestructura (Intradía) ---------------------------------------------
+  "micro.bajada": "las cuatro series que el ruleset vigila · estado de cada condición",
+  "micro.cumple": "Cumple",
+  "micro.noCumple": "No cumple",
+  "micro.apertura": "apertura {valor}",
+  "micro.dispara": "dispara {op} {umbral}",
+  "micro.regla": "{regla} · condición {i} de {n}",
+  "micro.sinRegla": "no es condición de ninguna regla del ruleset vigente",
+  "micro.descripcionSpark": "de {apertura} en la apertura a {ultimo} ahora.",
+  "micro.descripcionSparkUmbral":
+    "de {apertura} en la apertura a {ultimo} ahora, contra un umbral de {umbral}.",
+  "micro.notaDrenaje":
+    "Cuánta oferta queda frente a hace seis horas. Cuanto más negativo, más se está secando — el patrón que precedió a las corridas alcistas del backtest.",
+  "micro.notaMomentum":
+    "Variación de la mediana de venta frente a hace tres horas. Positivo es el bid subiendo; solo distingue arranque de techo cruzado con la oferta y el spread.",
+  "micro.notaRatio":
+    "Liquidez ofrecida entre liquidez demandada. Por debajo de 1 hay más demanda que oferta; por encima de 2 es un muro de oferta que suele preceder a la corrección.",
+  "micro.notaSpread":
+    "Distancia entre las dos medianas, compra y venta. Comprimido es mercado tenso: con el momentum alto, agotamiento de la subida más que fuerza.",
   // -- Cronología de la sesión (Intradía) -------------------------------------
   "crono.titulo": "Cronología de la sesión",
   "crono.bajada": "VET · desde la apertura del día",
@@ -699,7 +718,7 @@ export const ES = {
   "intradia.ladoVenta": "venta",
   "intradia.ladoSinLado": "sin lado",
   "intradia.descripcionPanel":
-    "{etiqueta}: apertura {apertura}, último {ultimo}, variación {delta} ({pct})",
+    "{etiqueta}: apertura {apertura}, último {ultimo}, variación {delta}{pct}",
 
   // -- auth ------------------------------------------------------------------
   // Los cuatro estados del guard de sesión (`auth/RequireAuth.tsx`). Son
@@ -1172,6 +1191,25 @@ export const EN: Record<Clave, string> = {
     "Best price is the edge of the book and does NOT go through the outlier filter (unlike median and VWAP): a single absurd ad moves it.",
   "vs.notaOutliers":
     "This is the share of ads the filter discarded, not an error: the higher it is, the noisier that side's snapshot was.",
+  // -- Microstructure (Intraday) ----------------------------------------------
+  "micro.bajada": "the four series the ruleset watches · status of each condition",
+  "micro.cumple": "Met",
+  "micro.noCumple": "Not met",
+  "micro.apertura": "open {valor}",
+  "micro.dispara": "fires {op} {umbral}",
+  "micro.regla": "{regla} · condition {i} of {n}",
+  "micro.sinRegla": "not a condition of any rule in the active ruleset",
+  "micro.descripcionSpark": "from {apertura} at the open to {ultimo} now.",
+  "micro.descripcionSparkUmbral":
+    "from {apertura} at the open to {ultimo} now, against a threshold of {umbral}.",
+  "micro.notaDrenaje":
+    "How much supply is left versus six hours ago. The more negative, the faster it is drying up — the pattern that preceded the backtest's upward runs.",
+  "micro.notaMomentum":
+    "Change in the sell-side median versus three hours ago. Positive means the bid is climbing; it only tells a start from a top when read alongside supply and spread.",
+  "micro.notaRatio":
+    "Offered liquidity over demanded liquidity. Below 1 there is more demand than supply; above 2 it is a supply wall, which usually precedes the correction.",
+  "micro.notaSpread":
+    "Distance between the two medians, buy and sell. Compressed means a tense market: with high momentum it reads as exhaustion rather than strength.",
   // -- Session timeline (Intraday) --------------------------------------------
   "crono.titulo": "Session timeline",
   "crono.bajada": "VET · since the day's open",
@@ -1329,7 +1367,7 @@ export const EN: Record<Clave, string> = {
   "intradia.ladoVenta": "sell",
   "intradia.ladoSinLado": "no side",
   "intradia.descripcionPanel":
-    "{etiqueta}: open {apertura}, last {ultimo}, change {delta} ({pct})",
+    "{etiqueta}: open {apertura}, last {ultimo}, change {delta}{pct}",
   "auth.verificando": "Checking session…",
   "auth.redirigiendo": "Redirecting to sign in…",
   "auth.entrar": "Sign in",

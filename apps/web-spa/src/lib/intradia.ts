@@ -164,7 +164,15 @@ export interface ResumenIntradia {
   apertura: string;
   ultimo: string;
   deltaAbs: string;
-  /** `null` cuando la apertura es cero: se muestra «—», jamás ∞ ni NaN. */
+  /**
+   * `null` cuando la apertura NO es positiva: se omite el porcentaje.
+   *
+   * Con apertura cero no hay porcentaje que dar (∞), y con apertura negativa el
+   * que sale miente el sentido: el momentum abrió en −0,24 y está en +0,31, una
+   * subida, y el cociente lo escribía «−232 %» junto a una Δ de «+0,55». La
+   * variación en puntos es exacta y no depende del signo de la base; el
+   * porcentaje sobre una base con signo, no.
+   */
   deltaPct: string | null;
   /** Signo de la Δ: -1 baja, 0 plano, 1 sube. */
   direccion: -1 | 0 | 1;
@@ -187,7 +195,8 @@ export function resumenIntradia(
     apertura,
     ultimo,
     deltaAbs,
-    deltaPct: porcentajeRelativo(deltaAbs, apertura),
+    deltaPct:
+      signo(apertura) === 1 ? porcentajeRelativo(deltaAbs, apertura) : null,
     direccion: signo(deltaAbs),
   };
 }

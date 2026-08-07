@@ -26,9 +26,15 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
 - **Histórico**: tasa oficial e indicador canónico por bucket 5m/1h/1d
   (Recharts), rango ≤ 90 días, paginación con progreso/cancelación.
 ## El Intradía se lee de arriba abajo (2026-08-06)
-- Tres bloques nuevos alrededor de la parrilla, los tres **derivados del dato**:
-  «Lectura de la sesión» (veredicto del ruleset), «Qué se movió desde la
-  apertura» (las cuatro series que la explican) y «Cronología de la sesión».
+- De la parrilla original **solo queda la tasa oficial**: cada familia se fue al
+  bloque que responde a su pregunta —«Lectura de la sesión» (veredicto del
+  ruleset), «Qué se movió desde la apertura», «Compra vs. venta»,
+  «Microestructura» y «Cronología de la sesión»—, y los cinco se **derivan del
+  dato**.
+- **Cada bloque decide qué codifica su color, y hay que saberlo para leerlos
+  juntos**: lado en la parrilla, dirección de la Δ en el bloque enfrentado,
+  estado de la condición en microestructura. Por eso ninguno deja el signo ni el
+  estado solo en el color.
 - **El criterio de «qué se movió» se calcula**: `z = |último − apertura| / σ₇d`.
   Normalizar es lo que hace comparables unidades distintas — sin ello la liquidez
   copaba las cuatro tarjetas por el tamaño de la cifra, no por moverse. σ = 0 con
@@ -43,6 +49,31 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   las Δ, el signo va siempre escrito. Tres métricas llevan nota de contexto:
   brecha (los dos lados se miden contra la misma tasa oficial), mejor precio (no
   pasa por el filtro de outliers) y outliers (es lo descartado, no un error).
+- **Microestructura deja de ser parrilla: son CONDICIONES, no cifras del día.**
+  Las cuatro (drenaje 6 h, momentum bid 3 h, ratio oferta/demanda, spread) son
+  condiciones del ruleset, y lo útil de un vistazo es si están cumplidas y a qué
+  distancia quedan. El estado sale de `rule_proximity` —el SPA no compara nada—;
+  el color pasa a codificarlo (coral cumple, teal no), que es la inversión que se
+  espera aquí: el coral es del ruleset, lo que dispara, no lo que va bien.
+  - **Cuál de las reglas gobierna a cada indicador hay que elegirlo**: el ratio y
+    el momentum son condición de TRES reglas con umbrales distintos, así que
+    «cumple» no dice nada sin nombrar la regla. Se prefiere la de
+    `summary.closest_rule` —la que el titular ya destaca— y, sin ella, la primera
+    por orden alfabético: sin desempate estable la tarjeta cambiaba de umbral
+    sola entre refrescos.
+  - **La línea de disparo entra en el dominio de la chispa** aunque la serie no
+    se le acerque. Dejarla fuera la recorta del lienzo sin avisar, y una chispa
+    sin línea visible se lee como si el disparo estuviera cerca —justo lo
+    contrario de lo que pasa—. Que la serie salga aplanada contra un borde ES la
+    lectura: hoy no dispara, y por mucho.
+  - **Sin análisis no se pinta ningún estado**: ni coral ni teal, sin pastilla y
+    sin línea. Elegir un color sería afirmar algo que nadie ha calculado.
+- **El % de variación se omite cuando la apertura no es positiva.** Salió al
+  pintar el momentum: abrió en −0,24 y estaba en +0,31 —una subida— y la tarjeta
+  escribía «+0,55 (−232,25 %)». El cociente es correcto y la frase es falsa:
+  contra una base con signo el porcentaje no describe la dirección. Se corrigió
+  en `resumenIntradia`, no en `porcentajeRelativo`: la aritmética pura está bien,
+  lo que no vale es llamar a eso «variación desde la apertura».
 - **La histéresis de la cronología es de PERMANENCIA, no de amplitud.** Se probó
   primero la banda clásica sobre la σ de 7 días y no vale: en
   `p2p_ratio_oferta_demanda` esa σ es 0,58 frente a un umbral de 0,3, así que la
@@ -267,7 +298,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   14 días»), no una nota bajo la leyenda.
 
 ## Verificación
-- **422 tests** (unit/component/contract con MSW y WS mock) — **87,04 % de ramas**
+- **438 tests** (unit/component/contract con MSW y WS mock) — **87,43 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

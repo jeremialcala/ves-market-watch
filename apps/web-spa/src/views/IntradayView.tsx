@@ -2,21 +2,25 @@
  * Intradía — TODOS los indicadores del día operativo VET.
  *
  * La vista se lee de arriba abajo: la lectura del ruleset, qué se movió, las
- * métricas y la cronología. Compra y venta van **enfrentadas** en su propio
- * bloque (`SideBySide`) porque la pregunta útil es en qué se diferencian; los
- * grupos sin contraparte —oficial y microestructura— siguen como parrilla de
- * small multiples (skill dataviz):
+ * métricas y la cronología. Cada bloque decide qué codifica su color, y eso hay
+ * que saberlo para leerlos juntos:
+ *
+ * - `SideBySide` — compra y venta **enfrentadas**, porque la pregunta útil es en
+ *   qué se diferencian. El lado lo dice la COLUMNA, así que el color pasa a la
+ *   dirección de la Δ y el signo va siempre escrito.
+ * - `MicroCards` — las cuatro de microestructura son CONDICIONES del ruleset y
+ *   no tienen lado: el color es del ESTADO (coral cumple, teal no).
+ * - **La parrilla** —hoy solo oficial— es la que conserva la convención
+ *   original: el color codifica UNA sola cosa, el lado del mercado (azul
+ *   compra, naranja venta, aqua sin lado), nunca el ranking ni el signo de la Δ.
+ *   Los tres slots están validados all-pairs en claro y oscuro (small multiples
+ *   usan la lista completa de pares, que topa en tres slots).
+ *
+ * Lo que NO cambia en ningún bloque (skill dataviz):
  *
  * - Una serie por panel ⇒ ningún panel lleva leyenda: el título lo nombra.
  *   Un solo eje por gráfico; jamás doble escala (los indicadores viven en
  *   unidades distintas, por eso son paneles separados y no un gráfico común).
- * - **En esta parrilla** el color codifica UNA sola cosa, el lado del mercado
- *   (azul compra, naranja venta, aqua sin lado) — nunca el ranking ni el signo
- *   de la Δ. Los tres slots están validados all-pairs en claro y oscuro (small
- *   multiples usan la lista completa de pares, que topa en tres slots). En el
- *   bloque enfrentado el lado lo dice la COLUMNA, así que allí el color pasa a
- *   la dirección de la Δ y el signo va siempre escrito; el matiz vive en el
- *   docstring de `SideBySide`.
  * - El aqua queda bajo 3:1 sobre la superficie clara: aplica la regla de
  *   relieve, y por eso cada panel lleva SIEMPRE etiqueta y valor visibles.
  * - El signo de la Δ va en glifo (▲ ▼ ●) + texto, nunca en color solo; el
@@ -40,6 +44,7 @@ import {
   type Intervalo,
 } from "../api/endpoints";
 import { ApiError } from "../api/problem";
+import { MicroCards } from "../components/MicroCards";
 import { NoDataState } from "../components/NoDataState";
 import { SessionMovers } from "../components/SessionMovers";
 import { SideBySide } from "../components/SideBySide";
@@ -92,9 +97,15 @@ const COLOR_DIRECCION = {
   "1": "var(--dir-alcista)",
 } as const;
 
-/** Los grupos que siguen siendo parrilla: los que no tienen contraparte. */
-const GRUPOS_SIN_LADO: Grupo[] = ORDEN_GRUPOS.filter(
-  (grupo) => grupo !== "compra" && grupo !== "venta",
+/**
+ * Los grupos que siguen siendo parrilla de small multiples.
+ *
+ * Compra y venta se fueron a `SideBySide` (la pregunta útil es en qué se
+ * diferencian) y microestructura a `MicroCards` (no son cifras del día sino
+ * condiciones del ruleset). Queda oficial, que sí es una serie por sí misma.
+ */
+const GRUPOS_PARRILLA: Grupo[] = ORDEN_GRUPOS.filter(
+  (grupo) => grupo === "oficial",
 );
 
 /** El intradía se refresca al ritmo del bucket más fino (5 min). */
@@ -206,11 +217,13 @@ function PanelIndicador({
     maxDecimales: decimales,
     idioma,
   });
+  const signoTexto = resumen.direccion > 0 ? "+" : "";
+  /* Sin porcentaje no se escribe un paréntesis vacío ni un «(+—)»: la Δ en
+     unidades ya es la cifra exacta (ver `ResumenIntradia.deltaPct`). */
   const pctFmt =
     resumen.deltaPct === null
-      ? "—"
-      : `${formatDecimal(resumen.deltaPct, { maxDecimales: 2, idioma })} %`;
-  const signoTexto = resumen.direccion > 0 ? "+" : "";
+      ? ""
+      : ` (${signoTexto}${formatDecimal(resumen.deltaPct, { maxDecimales: 2, idioma })} %)`;
 
   return (
     <figure className="vmw-tarjeta vmw-tarjeta--sm" style={{ margin: 0 }}>
@@ -224,8 +237,8 @@ function PanelIndicador({
           {GLIFO_DIRECCION[clave]}
         </span>{" "}
         {signoTexto}
-        {deltaFmt} ({signoTexto}
-        {pctFmt})
+        {deltaFmt}
+        {pctFmt}
       </p>
       <div
         role="img"
@@ -234,7 +247,7 @@ function PanelIndicador({
           apertura: aperturaFmt,
           ultimo: valorFmt,
           delta: `${signoTexto}${deltaFmt}`,
-          pct: `${signoTexto}${pctFmt}`,
+          pct: pctFmt,
         })}
       >
         <Chispa
@@ -417,7 +430,14 @@ export function IntradayView() {
             no tienen contraparte, así que siguen como parrilla. */}
         <SideBySide series={series} />
 
-        {GRUPOS_SIN_LADO.filter((grupo) => porGrupo.has(grupo)).map((grupo) => (
+        {/* Las cuatro de microestructura son CONDICIONES del ruleset, no cifras
+            del día: el estado de cada una manda sobre su tarjeta. */}
+        <MicroCards
+          indicadores={porGrupo.get("microestructura") ?? []}
+          analisis={analisis}
+        />
+
+        {GRUPOS_PARRILLA.filter((grupo) => porGrupo.has(grupo)).map((grupo) => (
           <section
             key={grupo}
             className="vmw-seccion"

@@ -77,13 +77,20 @@ login y el estado de salud son visibles sin sesión.
   agrupados por oficial / compra / venta / microestructura. Cada panel muestra el
   último valor, su serie del día y la **variación intradía** — Δ absoluta y
   porcentual contra la **apertura** del día, según la define el glosario. La Δ se
-  calcula sobre el string decimal exacto (sin float); si la apertura es cero, el
-  porcentaje se muestra «—», nunca ∞ ni NaN. Un indicador nuevo del motor aparece
-  sin cambios en el front. Refresco manual y automático cada 5 min.
+  calcula sobre el string decimal exacto (sin float). El **porcentaje se omite
+  cuando la apertura no es positiva**: con apertura cero no existe (∞/NaN) y con
+  apertura negativa miente el sentido —el momentum abrió en −0,24 y estaba en
+  +0,31, una subida, y el cociente escribía «−232 %» junto a una Δ de «+0,55»—; la
+  Δ en unidades es exacta y no depende del signo de la base. Un indicador nuevo
+  del motor aparece sin cambios en el front. Refresco manual y automático cada
+  5 min.
 
-  **Ampliación 2026-08-06 — la vista se lee de arriba abajo.** La parrilla es el
-  detalle; delante y detrás van tres bloques que la ponen en contexto, y los tres
-  se **derivan del dato**:
+  **Ampliación 2026-08-06 — la vista se lee de arriba abajo.** De la parrilla
+  original solo queda la tasa oficial: cada familia se fue al bloque que responde
+  a su pregunta, y **los cinco se derivan del dato**. Cada bloque decide además
+  qué codifica su color —lado en la parrilla, dirección de la Δ en el bloque
+  enfrentado, estado de la condición en microestructura—, y por eso ninguno deja
+  el signo ni el estado solo en el color:
 
   1. **«Lectura de la sesión»**, bloque rector: qué dice el ruleset AHORA — qué
      regla está más cerca, cuántas condiciones cumple y cuál la bloquea. Sale de
@@ -110,7 +117,15 @@ login y el estado de salud son visibles sin sesión.
      con un cero. Dentro del bloque el lado lo dice la COLUMNA, así que el color
      pasa a codificar la dirección de la Δ; como comparte tonos con las
      cabeceras, el signo va siempre escrito.
-  4. **«Cronología de la sesión»**: apertura, cruces de umbral del ruleset,
+  4. **«Microestructura»** deja de ser parrilla: sus cuatro series no son cifras
+     del día como las demás, sino **condiciones** del ruleset, y lo que hay que
+     poder leer de un vistazo es si están cumplidas y a qué distancia quedan de
+     estarlo. Cada tarjeta lleva el estado, la línea de disparo dibujada **en la
+     escala de la serie** y el nombre de la regla con la posición de la condición
+     dentro de ella. El estado sale de `rule_proximity` —el SPA no evalúa nada— y
+     sin análisis **no se pinta ningún estado**. El color deja de codificar el
+     lado (estas cuatro no lo tienen) y pasa al estado: coral cumple, teal no.
+  5. **«Cronología de la sesión»**: apertura, cruces de umbral del ruleset,
      saltos de liquidez sobre 2σ y último recálculo. Nada que no se pueda señalar
      en una serie. Los cruces llevan **histéresis por permanencia** —el estado
      nuevo tiene que aguantar 15 minutos— porque sin ella un indicador que oscila

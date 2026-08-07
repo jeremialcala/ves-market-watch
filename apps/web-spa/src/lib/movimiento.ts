@@ -182,6 +182,43 @@ export function areaSparkline(trazo: string, ancho: number, alto: number): strin
   return trazo === "" ? "" : `0,${alto} ${trazo} ${ancho},${alto}`;
 }
 
+/**
+ * Trazo y línea de umbral EN LA MISMA ESCALA.
+ *
+ * El umbral entra en el dominio aunque la serie no se le acerque. Dejarlo fuera
+ * lo recortaría del lienzo sin avisar, y una chispa sin la línea de disparo a la
+ * vista se lee como si el disparo estuviera cerca — que es justo lo contrario de
+ * lo que pasa cuando la línea no cabe. Que la serie salga aplanada contra un
+ * borde ES la lectura: hoy no dispara, y por mucho.
+ *
+ * Con `umbral` nulo se comporta como `trazoSparkline`.
+ */
+export function trazoConUmbral(
+  puntos: readonly PuntoIntradia[],
+  umbral: string | null,
+  ancho: number,
+  alto: number,
+  pad = 4,
+): { trazo: string; yUmbral: number | null } {
+  if (puntos.length === 0) {
+    return { trazo: "", yUmbral: null };
+  }
+  const valores = puntos.map((p) => toChartNumber(p.valor));
+  const limite = umbral === null ? null : toChartNumber(umbral);
+  const dominio = limite === null ? valores : [...valores, limite];
+  const min = Math.min(...dominio);
+  const max = Math.max(...dominio);
+  const span = max - min || 1;
+  const y = (v: number) => alto - pad - ((v - min) / span) * (alto - pad * 2);
+  const divisor = puntos.length > 1 ? puntos.length - 1 : 1;
+  return {
+    trazo: valores
+      .map((v, i) => `${((i / divisor) * ancho).toFixed(1)},${y(v).toFixed(1)}`)
+      .join(" "),
+    yUmbral: limite === null ? null : Number(y(limite).toFixed(1)),
+  };
+}
+
 /** Δ con signo explícito: el color refuerza, nunca codifica solo. */
 export function signoTexto(deltaAbs: string): string {
   return compararDecimales(deltaAbs, "0") === 1 ? "+" : "";

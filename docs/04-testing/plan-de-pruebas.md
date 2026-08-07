@@ -78,7 +78,7 @@ Estado observado en el repo (conteo de funciones `test_`):
 | `indicator-engine` | Fases 1, 2, señales (RF-4/RF-5, ADR-0015), análisis de la revisión (RF-6, ADR-0019) y lectura del estado de mercado (RF-7, ADR-0021) | **335** (unit, contract, integration, e2e) | Cobertura de ramas **86 %** (medida 2026-08-04 sobre `src/`); recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) y de los dos ejes del régimen (`config/lectura.v1.yaml`); contrastar en vivo la atribución con responsable `oficial` o `ambos` — hace falta un día en que la tasa del BCV cambie de verdad, no solo que esté vigente (ADR-0022 destapó que este hueco se venía describiendo mal: se decía que el fin de semana la suprimía «por diseño», cuando lo que la suprimía era la rancidez mal medida) |
 | `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) — más el histórico de tasas oficiales del BCV (RF-6) y la brecha derivada del lado venta (RF-7), 2026-08-01 | **138** (unit + integración contra TimescaleDB real, incl. las tablas de los servicios vecinos) | ~~Cobertura de ramas 71,71 %~~ **97,22 %** (2026-08-04); ~~integración del cargador de oficiales contra TimescaleDB real~~ **hecha**: `integration/test_tablas_vecinas.py` prueba contra la base real los dos adaptadores que escriben en `official_rates` e `indicators` |
 | `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **122** (unit incl. CORS, refresco del JWKS, profundidad sin outliers y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura de ramas **92,80 %** (2026-08-06) |
-| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **422** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores y lectura del mercado con dato real en ES/EN, shell responsive, canarios de paleta, punto de corte y cabeceras CSP, y los cuatro bloques del Intradía con su criterio de selección, la histéresis de los cruces y el bloque enfrentado) — **87,04 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
+| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **438** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores y lectura del mercado con dato real en ES/EN, shell responsive, canarios de paleta, punto de corte y cabeceras CSP, y los cinco bloques del Intradía con su criterio de selección, la histéresis de los cruces, el bloque enfrentado y las condiciones del ruleset con su línea de disparo en escala) — **87,43 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
 
 > El plan cubre tanto la **consolidación** de lo existente como la **especificación** de los casos
 > que deben acompañar el código pendiente, para que se escriban junto con la implementación (no
@@ -393,7 +393,7 @@ cierre de la columna «Verificación fase 04-testing».
    | `ingestor-bcv` | 99,36 % | ✔ |
    | `ingestor-binance` | 99,26 % | ✔ |
    | `api-gateway` | 92,80 % | ✔ |
-   | `web-spa` | 87,04 % | ✔ |
+   | `web-spa` | 87,43 % | ✔ |
    | `indicator-engine` | 85,88 % | ✔ |
    | `ingestor-historico` | 97,22 % | ✔ |
 
@@ -414,7 +414,7 @@ cierre de la columna «Verificación fase 04-testing».
    construido, así que la forma en que el servicio se conecta de verdad no la
    probaba nadie.
 2. Todos los casos de las secciones 5–7 aplicables al alcance entregado, en verde.
-   **Cumplido**: 1 180 tests en verde, los seis proyectos, en cada push desde el
+   **Cumplido**: 1 196 tests en verde, los seis proyectos, en cada push desde el
    2026-08-04. Lo que la pipeline no ejecuta es el e2e autenticado en vivo, que
    depende de credenciales del tenant (punto abierto abajo).
 3. Cada amenaza T1–T15 con su verificación satisfecha (tests o gate de CI).
@@ -454,7 +454,7 @@ público, así que los minutos son gratis).
   `127.0.0.1:5433` y `:5672`, que es lo que publica el mapeo de puertos. El SPA
   suma `typecheck`, `lint`, `check:api-types` y `build` (que usa `tsc -b`, más
   estricto que el typecheck: ya dejó pasar una vez un campo ausente del contrato).
-  Sin filtros por ruta: 1 180 tests son baratos y un filtro mal puesto da verdes
+  Sin filtros por ruta: 1 196 tests son baratos y un filtro mal puesto da verdes
   vacíos.
 - **`seguridad.yml` — los gates de Gate 2, rompiendo el build:**
   - **T6:** `gitleaks` sobre la **historia completa** (`fetch-depth: 0`) — en un

@@ -7,9 +7,10 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
-## 2026-08-06 — El Intradía en tres bloques, y dos criterios que hubo que medir
-- Rama `feat-intraday`. La parrilla pasa a ser el detalle: delante va la lectura
-  del ruleset, en medio qué se movió y detrás la cronología.
+## 2026-08-06 — El Intradía reordenado, y los criterios que hubo que medir
+- Rama `feat-intraday`. De la parrilla original **solo queda la tasa oficial**:
+  cada familia acabó en el bloque que responde a su pregunta —lectura del
+  ruleset, qué se movió, compra vs. venta, microestructura y cronología—.
 - **Lo que más pensé fue el criterio de «qué se movió».** Ordenar por |Δ| a secas
   hacía ganar siempre a la liquidez, que se mide en cientos de miles frente a un
   ratio en centésimas. Normalizando por σ de 7 días lo que ordena es cuánto se
@@ -39,9 +40,30 @@ timestamp: 2026-08-03T12:00:00Z
   coral encabezan las columnas Y colorean las Δ, dos significados para el mismo
   par. Se sostiene porque el signo va escrito; sin eso habría sido un doble
   encoding de los que este proyecto evita.
+- **Microestructura no eran cuatro cifras más: eran cuatro condiciones.** En
+  cuanto se ve así, la pregunta deja de ser «cuánto vale el spread» y pasa a ser
+  «cuánto le falta para disparar», y entonces el color del lado sobra —no lo
+  tienen— y el que hace falta es el del estado. Aquí el coral es el que cumple:
+  suena al revés hasta que recuerdas que en este proyecto el coral es del
+  ruleset, no del «va mal».
+- **La línea de umbral fuera del lienzo es peor que no dibujarla.** Con el
+  dominio ajustado a la serie, un umbral lejano se recorta **en silencio**: la
+  chispa queda igual de bonita y se lee como si el disparo estuviera al lado. Al
+  meter el umbral en el dominio, la serie se aplana contra un borde —y eso ES la
+  lectura—. *Cuando una referencia no cabe, el problema es la escala, no la
+  referencia.*
+- **Un porcentaje aritméticamente correcto y factualmente falso.** El momentum
+  abrió en −0,24 y estaba en +0,31, y la tarjeta escribía «+0,55 (−232,25 %)».
+  El cociente está bien; la frase «variación desde la apertura» no, porque contra
+  una base con signo el porcentaje no dice la dirección. Lo arreglé en el resumen
+  del día y no en la función de aritmética: la división no tenía ningún defecto,
+  el defecto era lo que yo estaba afirmando con ella. *Lo vi porque lo miré en el
+  navegador con dato real; ninguna prueba lo habría cazado, porque yo mismo no
+  había pensado en el caso.*
 - El test de paridad ES/EN cazó una cadena actualizada solo en español, y la
   cobertura destapó que había escrito la lógica de la cronología pero no el
-  componente (34 % de ramas). Con su suite, el SPA vuelve a 87,13 %.
+  componente (34 % de ramas). Con su suite y las de los dos bloques nuevos, el SPA queda en 438 tests y
+  87,43 % de ramas.
 
 ## 2026-08-06 — La profundidad se anclaba en un anuncio manipulado
 - Lo trajo el usuario en una captura: diez barras idénticas de 372 USDT en el lado
