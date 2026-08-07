@@ -223,6 +223,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `3859349` | commit | — | Jeremi Alcala | 2026-08-06 | fix(intradia): tooltip propio para los sparklines, fuera del flujo |
+| `4aeadaa` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
 | `2ee76c7` | commit | — | Jeremi Alcala | 2026-08-06 | feat(intradia): etiqueta legible y clave del contrato, en un solo catalogo |
 | `976a54f` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
 | `8335285` | commit | — | Jeremi Alcala | 2026-08-06 | refactor(intradia): un solo formato para toda variacion |
