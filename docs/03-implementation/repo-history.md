@@ -223,6 +223,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `3e71f14` | commit | — | Jeremi Alcala | 2026-08-06 | feat(intradia): la barra de control dice el estado en vez de ofrecer un boton |
+| `80b2d50` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
 | `7ea0705` | commit | — | Jeremi Alcala | 2026-08-06 | feat(web-spa): microestructura como condiciones del ruleset, no cifras del dia |
 | `dd65cfc` | commit | — | Jeremi Alcala | 2026-08-06 | feat(web-spa): compra y venta enfrentadas metrica por metrica |
 | `1ba92bb` | commit | — | Jeremi Alcala | 2026-08-06 | docs: coherencia de la rama feat-intraday |
