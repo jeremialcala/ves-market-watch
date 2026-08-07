@@ -531,7 +531,7 @@ export const ES = {
   "vs.notaBrecha":
     "Los dos lados se miden contra la MISMA tasa oficial, así que la diferencia entre sus brechas es el spread del P2P, no una discrepancia del BCV.",
   "vs.notaMejorPrecio":
-    "El mejor precio es el extremo del libro y NO pasa por el filtro de outliers (a diferencia de mediana y VWAP): un solo anuncio absurdo lo mueve.",
+    "El extremo del libro, SIN filtrar: es lo que alguien pide de verdad. Compáralo con el filtrado de la fila siguiente — si se separan, esa distancia es lo que el escaparate se aleja del libro real.",
   "vs.notaOutliers":
     "Es el porcentaje de anuncios que el filtro descartó, no un error: cuanto más alto, más ruido traía el snapshot de ese lado.",
   "vs.notaOutliersLimpio":
@@ -714,6 +714,7 @@ export const ES = {
   "serie.liquidez": "Liquidez USDT",
   "serie.mediana": "Mediana VES",
   "serie.mejorPrecio": "Mejor precio VES",
+  "serie.mejorPrecioFiltrado": "Mejor precio filtrado VES",
   "serie.merchants": "Merchants %",
   "serie.outliers": "Outliers %",
   "serie.vwap": "VWAP VES",
@@ -1215,7 +1216,7 @@ export const EN: Record<Clave, string> = {
   "vs.notaBrecha":
     "Both sides are measured against the SAME official rate, so the difference between their gaps is the P2P spread, not a discrepancy at the BCV.",
   "vs.notaMejorPrecio":
-    "Best price is the edge of the book and does NOT go through the outlier filter (unlike median and VWAP): a single absurd ad moves it.",
+    "The edge of the book, UNFILTERED: it is what someone is actually asking. Compare it with the filtered one in the next row — if they diverge, that gap is how far the shop window sits from the real book.",
   "vs.notaOutliers":
     "This is the share of ads the filter discarded, not an error: the higher it is, the noisier that side's snapshot was.",
   "vs.notaOutliersLimpio":
@@ -1390,6 +1391,7 @@ export const EN: Record<Clave, string> = {
   "serie.liquidez": "Liquidity USDT",
   "serie.mediana": "Median VES",
   "serie.mejorPrecio": "Best price VES",
+  "serie.mejorPrecioFiltrado": "Filtered best price VES",
   "serie.merchants": "Merchants %",
   "serie.outliers": "Outliers %",
   "serie.vwap": "VWAP VES",

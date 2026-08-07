@@ -404,7 +404,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   14 días»), no una nota bajo la leyenda.
 
 ## Verificación
-- **494 tests** (unit/component/contract con MSW y WS mock) — **88,19 % de ramas**
+- **495 tests** (unit/component/contract con MSW y WS mock) — **88,19 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

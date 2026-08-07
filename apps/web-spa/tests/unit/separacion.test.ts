@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest";
 
 /** Sin comentarios: la regla vieja se NOMBRA en el comentario que explica por
  *  qué se retiró, y buscarla en crudo daba un falso positivo. */
-const CSS = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8").replace(
+const CSS = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8").replaceAll("\r\n", "\n").replace(
   /\/\*[\s\S]*?\*\//g,
   "",
 );

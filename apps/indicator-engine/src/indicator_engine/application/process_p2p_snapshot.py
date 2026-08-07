@@ -57,6 +57,7 @@ from indicator_engine.domain.models import (
     P2P_LIQUIDEZ,
     P2P_MEDIANA,
     P2P_MEJOR_PRECIO,
+    P2P_MEJOR_PRECIO_FILTRADO,
     P2P_MERCHANTS_PCT,
     P2P_MOMENTUM_BID_3H_PCT,
     P2P_OUTLIERS_PCT,
@@ -138,6 +139,14 @@ class ProcesarSnapshotP2P:
             self._indicador(nombre_por_lado(P2P_VWAP, snap.side), snap, referencia.vwap),
             self._indicador(
                 nombre_por_lado(P2P_MEJOR_PRECIO, snap.side), snap, referencia.mejor_precio
+            ),
+            # Va junto al anterior a proposito: la diferencia entre los dos mide
+            # cuanto se separa el escaparate del libro real. En SELL el top of
+            # book estaba marcado como outlier en 103 de 318 snapshots medidos.
+            self._indicador(
+                nombre_por_lado(P2P_MEJOR_PRECIO_FILTRADO, snap.side),
+                snap,
+                referencia.mejor_precio_filtrado,
             ),
             self._indicador(nombre_por_lado(P2P_LIQUIDEZ, snap.side), snap, referencia.liquidez),
             self._indicador(

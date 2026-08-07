@@ -51,7 +51,15 @@ export interface MovimientoSerie {
  * «qué se movió del mercado»; la calidad del dato se lee en su fila de la tabla,
  * que es donde tiene contexto.
  */
-const FUERA_DEL_RANKING = new Set(["p2p_outliers_pct"]);
+const FUERA_DEL_RANKING = new Set([
+  "p2p_outliers_pct",
+  // `p2p_mejor_precio` va SIN filtrar a proposito: es el top of book literal.
+  // Por eso mismo un unico anuncio manipulado lo mueve entero, y eso no es
+  // movimiento del mercado — medido, en SELL el primer anuncio estaba marcado
+  // como outlier en 103 de 318 snapshots. Su version filtrada SI compite: esa
+  // si es informacion de mercado.
+  "p2p_mejor_precio",
+]);
 
 /** Mínimo de observaciones para que σ signifique algo. */
 export const MUESTRAS_MINIMAS_SIGMA = 24;

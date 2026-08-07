@@ -143,6 +143,7 @@ async def test_primer_snapshot_produce_referencia_y_brecha():
         "p2p_mediana_buy",
         "p2p_vwap_buy",
         "p2p_mejor_precio_buy",
+        "p2p_mejor_precio_filtrado_buy",
         "p2p_liquidez_buy",
         "p2p_merchants_pct_buy",
         "p2p_outliers_pct_buy",

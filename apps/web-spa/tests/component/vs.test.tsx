@@ -161,7 +161,7 @@ describe("SideBySide", () => {
     // necesita, y una nota en cada fila deja de leerse.
     const notas = [...document.querySelectorAll(".vmw-vs__nota")];
     expect(notas).toHaveLength(1);
-    expect(notas[0].textContent).toMatch(/filtro de outliers/i);
+    expect(notas[0].textContent).toMatch(/sin filtrar/i);
   });
 
   it("sin series de lado no se pinta la tabla", () => {

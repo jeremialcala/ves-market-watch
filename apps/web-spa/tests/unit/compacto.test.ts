@@ -14,7 +14,7 @@ import { describe, expect, it } from "vitest";
 
 import { ANCHO_COMPACTO } from "../../src/lib/useCompacto";
 
-const CSS = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8");
+const CSS = readFileSync(resolve(process.cwd(), "src/index.css"), "utf8").replaceAll("\r\n", "\n");
 
 /** Cuerpo de la primera media query `max-width: <ancho>px` del archivo. */
 function bloqueMedia(ancho: number): string | null {

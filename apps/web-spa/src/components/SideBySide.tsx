@@ -41,6 +41,7 @@ const ORDEN = [
   "p2p_liquidez",
   "p2p_mediana",
   "p2p_mejor_precio",
+  "p2p_mejor_precio_filtrado",
   "p2p_merchants_pct",
   "p2p_outliers_pct",
   "p2p_vwap",

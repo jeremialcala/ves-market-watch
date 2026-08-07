@@ -225,4 +225,25 @@ describe("trazoSparkline", () => {
 
     expect(indicadores).toEqual(["p2p_mediana_sell"]);
   });
+  it("el mejor precio SIN filtrar tampoco entra; el filtrado si", () => {
+    /*
+     * `p2p_mejor_precio` es el top of book literal y va sin filtrar a proposito.
+     * Por eso mismo un unico anuncio manipulado lo mueve entero, y eso no es
+     * movimiento del mercado: medido el 2026-08-07, en SELL el primer anuncio
+     * estaba marcado como outlier en 103 de 318 snapshots. El filtrado si es
+     * informacion de mercado y compite como cualquier otra serie.
+     */
+    const sesion = new Map([
+      ["p2p_mejor_precio_sell", serie(["852", "920"])],
+      ["p2p_mejor_precio_filtrado_sell", serie(["852", "858"])],
+    ]);
+    const hist = new Map([
+      ["p2p_mejor_precio_sell", historia(852, 2)],
+      ["p2p_mejor_precio_filtrado_sell", historia(852, 2)],
+    ]);
+
+    const indicadores = movimientosDeSesion(sesion, hist).map((m) => m.indicador);
+
+    expect(indicadores).toEqual(["p2p_mejor_precio_filtrado_sell"]);
+  });
 });
