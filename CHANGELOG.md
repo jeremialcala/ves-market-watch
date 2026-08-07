@@ -248,7 +248,14 @@ Convención de mantenimiento (inventario por ejecución):
   - **«Cronología de la sesión»**: apertura, cruces de umbral, saltos de
     liquidez sobre 2σ y último recálculo, con **histéresis por permanencia** de
     15 minutos en los cruces.
-  - 65 pruebas nuevas; el SPA pasa de 348 a 413.
+  - **«Compra vs. venta, métrica por métrica»** sustituye a las dos parrillas
+    de lado: la pregunta útil es en qué se diferencian, y eso exige la misma
+    fila. Las filas se **derivan** de las series —una lista fija de ocho habría
+    roto la promesa de RF-7 de que un indicador nuevo aparece sin tocar el
+    front—; un lado sin serie se dice en vez de rellenarse. Dentro del bloque el
+    lado lo dice la columna, así que el color pasa a la dirección de la Δ: como
+    comparte tonos con las cabeceras, el signo va siempre escrito.
+  - 74 pruebas nuevas; el SPA pasa de 348 a 422.
 
 ### Fixed
 

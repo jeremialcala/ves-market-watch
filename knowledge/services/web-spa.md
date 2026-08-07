@@ -35,6 +35,14 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   movimiento va arriba del todo (`z = ∞`: la serie no se movía en una semana y
   hoy sí); sin historia se queda **fuera**, no al fondo con un cero que la haría
   parecer tranquila.
+- **Compra y venta dejan de ser dos parrillas** y pasan a un bloque enfrentado,
+  métrica por métrica. Las filas se derivan de las series (RF-7: un indicador
+  nuevo aparece sin tocar el front) con orden declarado; un lado ausente se dice
+  en vez de rellenarse. Ahí el color codifica la DIRECCIÓN y no el lado —el lado
+  lo dice la columna—, y como el par teal/coral encabeza las columnas y colorea
+  las Δ, el signo va siempre escrito. Tres métricas llevan nota de contexto:
+  brecha (los dos lados se miden contra la misma tasa oficial), mejor precio (no
+  pasa por el filtro de outliers) y outliers (es lo descartado, no un error).
 - **La histéresis de la cronología es de PERMANENCIA, no de amplitud.** Se probó
   primero la banda clásica sobre la σ de 7 días y no vale: en
   `p2p_ratio_oferta_demanda` esa σ es 0,58 frente a un umbral de 0,3, así que la
@@ -259,7 +267,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   14 días»), no una nota bajo la leyenda.
 
 ## Verificación
-- **413 tests** (unit/component/contract con MSW y WS mock) — **87,13 % de ramas**
+- **422 tests** (unit/component/contract con MSW y WS mock) — **87,04 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

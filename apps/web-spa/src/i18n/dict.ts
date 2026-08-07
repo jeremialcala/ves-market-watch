@@ -519,6 +519,21 @@ export const ES = {
   "historico.rangoLabel": "{dias} días",
 
   // -- intradía --------------------------------------------------------------
+  // -- Compra vs. venta (Intradía) --------------------------------------------
+  "vs.titulo": "Compra vs. venta, métrica por métrica",
+  "vs.bajada": "la misma serie enfrentada · Δ medida contra la apertura del día",
+  "vs.colMetrica": "Métrica",
+  "vs.colCompra": "Compra (buy)",
+  "vs.colVenta": "Venta (sell)",
+  "vs.apertura": "apertura {valor}",
+  "vs.sinLado": "sin serie de este lado hoy",
+  "vs.descripcionSpark": "de {apertura} en la apertura a {ultimo} ahora.",
+  "vs.notaBrecha":
+    "Los dos lados se miden contra la MISMA tasa oficial, así que la diferencia entre sus brechas es el spread del P2P, no una discrepancia del BCV.",
+  "vs.notaMejorPrecio":
+    "El mejor precio es el extremo del libro y NO pasa por el filtro de outliers (a diferencia de mediana y VWAP): un solo anuncio absurdo lo mueve.",
+  "vs.notaOutliers":
+    "Es el porcentaje de anuncios que el filtro descartó, no un error: cuanto más alto, más ruido traía el snapshot de ese lado.",
   // -- Cronología de la sesión (Intradía) -------------------------------------
   "crono.titulo": "Cronología de la sesión",
   "crono.bajada": "VET · desde la apertura del día",
@@ -1142,6 +1157,21 @@ export const EN: Record<Clave, string> = {
   "historico.sinSerie": "No data in the requested range.",
   "historico.rangoLabel": "{dias} days",
 
+  // -- Buy vs. sell (Intraday) ------------------------------------------------
+  "vs.titulo": "Buy vs. sell, metric by metric",
+  "vs.bajada": "the same series side by side · Δ measured against the day's open",
+  "vs.colMetrica": "Metric",
+  "vs.colCompra": "Buy",
+  "vs.colVenta": "Sell",
+  "vs.apertura": "open {valor}",
+  "vs.sinLado": "no series for this side today",
+  "vs.descripcionSpark": "from {apertura} at the open to {ultimo} now.",
+  "vs.notaBrecha":
+    "Both sides are measured against the SAME official rate, so the difference between their gaps is the P2P spread, not a discrepancy at the BCV.",
+  "vs.notaMejorPrecio":
+    "Best price is the edge of the book and does NOT go through the outlier filter (unlike median and VWAP): a single absurd ad moves it.",
+  "vs.notaOutliers":
+    "This is the share of ads the filter discarded, not an error: the higher it is, the noisier that side's snapshot was.",
   // -- Session timeline (Intraday) --------------------------------------------
   "crono.titulo": "Session timeline",
   "crono.bajada": "VET · since the day's open",

@@ -1,14 +1,22 @@
 /**
- * Intradía — TODOS los indicadores del día operativo VET en una parrilla de
+ * Intradía — TODOS los indicadores del día operativo VET.
+ *
+ * La vista se lee de arriba abajo: la lectura del ruleset, qué se movió, las
+ * métricas y la cronología. Compra y venta van **enfrentadas** en su propio
+ * bloque (`SideBySide`) porque la pregunta útil es en qué se diferencian; los
+ * grupos sin contraparte —oficial y microestructura— siguen como parrilla de
  * small multiples (skill dataviz):
  *
  * - Una serie por panel ⇒ ningún panel lleva leyenda: el título lo nombra.
  *   Un solo eje por gráfico; jamás doble escala (los indicadores viven en
  *   unidades distintas, por eso son paneles separados y no un gráfico común).
- * - El color codifica UNA sola cosa, el lado del mercado (azul compra, naranja
- *   venta, aqua sin lado) — nunca el ranking ni el signo de la Δ. Los tres
- *   slots están validados all-pairs en claro y oscuro (small multiples usan la
- *   lista completa de pares, que topa en tres slots).
+ * - **En esta parrilla** el color codifica UNA sola cosa, el lado del mercado
+ *   (azul compra, naranja venta, aqua sin lado) — nunca el ranking ni el signo
+ *   de la Δ. Los tres slots están validados all-pairs en claro y oscuro (small
+ *   multiples usan la lista completa de pares, que topa en tres slots). En el
+ *   bloque enfrentado el lado lo dice la COLUMNA, así que allí el color pasa a
+ *   la dirección de la Δ y el signo va siempre escrito; el matiz vive en el
+ *   docstring de `SideBySide`.
  * - El aqua queda bajo 3:1 sobre la superficie clara: aplica la regla de
  *   relieve, y por eso cada panel lleva SIEMPRE etiqueta y valor visibles.
  * - El signo de la Δ va en glifo (▲ ▼ ●) + texto, nunca en color solo; el
@@ -34,6 +42,7 @@ import {
 import { ApiError } from "../api/problem";
 import { NoDataState } from "../components/NoDataState";
 import { SessionMovers } from "../components/SessionMovers";
+import { SideBySide } from "../components/SideBySide";
 import { SessionReading } from "../components/SessionReading";
 import { SessionTimeline } from "../components/SessionTimeline";
 import type { Clave } from "../i18n/dict";
@@ -82,6 +91,11 @@ const COLOR_DIRECCION = {
   "0": "var(--dir-neutral)",
   "1": "var(--dir-alcista)",
 } as const;
+
+/** Los grupos que siguen siendo parrilla: los que no tienen contraparte. */
+const GRUPOS_SIN_LADO: Grupo[] = ORDEN_GRUPOS.filter(
+  (grupo) => grupo !== "compra" && grupo !== "venta",
+);
 
 /** El intradía se refresca al ritmo del bucket más fino (5 min). */
 const REFRESCO_MS = 300_000;
@@ -398,7 +412,12 @@ export function IntradayView() {
 
         {/* Cierra la vista: lo que pasó, después de los indicadores que lo
             explican. */}
-        {ORDEN_GRUPOS.filter((grupo) => porGrupo.has(grupo)).map((grupo) => (
+        {/* Compra y venta ya NO son dos parrillas: la pregunta útil es en qué
+            se diferencian, y eso pide la misma fila. Oficial y microestructura
+            no tienen contraparte, así que siguen como parrilla. */}
+        <SideBySide series={series} />
+
+        {GRUPOS_SIN_LADO.filter((grupo) => porGrupo.has(grupo)).map((grupo) => (
           <section
             key={grupo}
             className="vmw-seccion"

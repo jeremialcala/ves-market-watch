@@ -101,7 +101,16 @@ login y el estado de salud son visibles sin sesión.
      hoy se mueve va arriba del todo. La frase «el resto se mantuvo dentro de su
      rango normal» **se cuenta**, no se cablea: el primer día en producción había
      10 series fuera de rango y la frase habría sido falsa.
-  3. **«Cronología de la sesión»**: apertura, cruces de umbral del ruleset,
+  3. **«Compra vs. venta, métrica por métrica»** sustituye a las dos parrillas
+     de lado: la pregunta útil no es cómo va la liquidez de venta sino en qué se
+     diferencian los dos lados, y eso exige la misma fila. Las filas se
+     **derivan** de las series —una lista fija habría roto la promesa de este
+     mismo RF de que un indicador nuevo aparece sin tocar el front—; el orden sí
+     es declarado. Un lado sin serie **se dice**, no se rellena con el otro ni
+     con un cero. Dentro del bloque el lado lo dice la COLUMNA, así que el color
+     pasa a codificar la dirección de la Δ; como comparte tonos con las
+     cabeceras, el signo va siempre escrito.
+  4. **«Cronología de la sesión»**: apertura, cruces de umbral del ruleset,
      saltos de liquidez sobre 2σ y último recálculo. Nada que no se pueda señalar
      en una serie. Los cruces llevan **histéresis por permanencia** —el estado
      nuevo tiene que aguantar 15 minutos— porque sin ella un indicador que oscila

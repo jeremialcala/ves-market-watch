@@ -1028,6 +1028,129 @@ body {
   opacity: 0.85;
 }
 
+/* -- compra vs. venta, métrica por métrica (Intradía) ----------------------- */
+
+/* La tabla no se estrecha por debajo de su ancho legible: en móvil se desplaza
+   en horizontal antes que apilar dos lados que existen para compararse. */
+.vmw-vs {
+  overflow-x: auto;
+  border-radius: 28px;
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+  padding: 8px 26px 20px;
+}
+
+.vmw-vs__tabla {
+  min-width: 660px;
+}
+
+.vmw-vs__cabecera,
+.vmw-vs__fila {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(0, 1.35fr) minmax(0, 1.35fr);
+  gap: 16px;
+}
+
+.vmw-vs__cabecera {
+  padding: 14px 0 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+
+/* El color de la CABECERA es el del lado. En las filas el mismo par de tonos
+   codifica la dirección: por eso el signo de la Δ va siempre escrito. */
+.vmw-vs__col-compra {
+  color: var(--teal);
+}
+
+.vmw-vs__col-venta {
+  color: var(--coral);
+}
+
+.vmw-vs__fila {
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.vmw-vs__fila:last-child {
+  border-bottom: none;
+}
+
+.vmw-vs__metrica {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vmw-vs__nombre {
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.vmw-vs__clave {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  word-break: break-word;
+}
+
+.vmw-vs__celda {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 12px;
+  align-items: center;
+}
+
+.vmw-vs__celda--vacia {
+  display: block;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.vmw-vs__cifras {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.vmw-vs__valor {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.vmw-vs__delta {
+  font-size: 12.5px;
+}
+
+.vmw-vs__apertura {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.vmw-vs__spark {
+  width: 96px;
+  height: 34px;
+  display: block;
+}
+
+/* La nota cruza la fila entera: habla de la métrica, no de uno de los lados. */
+.vmw-vs__nota {
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
 /* -- cronología de la sesión (Intradía) ------------------------------------- */
 
 .vmw-crono {

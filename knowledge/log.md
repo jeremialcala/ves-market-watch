@@ -32,6 +32,13 @@ timestamp: 2026-08-03T12:00:00Z
 - Un error propio caro de ver: pedía la ventana de referencia con el intervalo
   del selector, así que a 5 min eran >40 000 filas y el navegador iba por la
   página 33 con la sección sin pintarse. Va fija a 1 h.
+- **Compra y venta dejan de ser dos parrillas.** Enfrentarlas cambia la pregunta
+  que responde la vista: de «cómo va la liquidez de venta» a «en qué se
+  diferencian los lados». Y obligó a mover el color: dentro del bloque el lado lo
+  dice la columna, así que el tono queda libre para la dirección — pero teal y
+  coral encabezan las columnas Y colorean las Δ, dos significados para el mismo
+  par. Se sostiene porque el signo va escrito; sin eso habría sido un doble
+  encoding de los que este proyecto evita.
 - El test de paridad ES/EN cazó una cadena actualizada solo en español, y la
   cobertura destapó que había escrito la lógica de la cronología pero no el
   componente (34 % de ramas). Con su suite, el SPA vuelve a 87,13 %.

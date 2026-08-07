@@ -134,22 +134,33 @@ describe("IntradayView", () => {
     conSeries();
     render(<IntradayView />);
 
+    /*
+     * Compra y venta ya no son dos parrillas: viven enfrentadas en la misma
+     * fila, que es donde se pueden comparar. Los grupos sin contraparte
+     * —oficial y microestructura— siguen como parrilla.
+     */
     await waitFor(() =>
-      expect(screen.getByLabelText("P2P — compra (buy)")).toBeTruthy(),
+      expect(
+        screen.getByLabelText("Compra vs. venta, métrica por métrica"),
+      ).toBeTruthy(),
     );
-    expect(screen.getByLabelText("P2P — venta (sell)")).toBeTruthy();
+    expect(screen.queryByLabelText("P2P — compra (buy)")).toBeNull();
+    expect(screen.queryByLabelText("P2P — venta (sell)")).toBeNull();
     expect(screen.getByLabelText("Tasa oficial (BCV)")).toBeTruthy();
     expect(screen.getByLabelText("Microestructura")).toBeTruthy();
 
-    // La Δ va contra la apertura (100), no contra el bucket previo, y el
-    // resumen accesible lleva apertura + último + variación.
-    expect(
-      screen.getByLabelText("Mediana: apertura 100, último 120, variación +20 (+20 %)"),
-    ).toBeTruthy();
-    expect(
-      screen.getByLabelText("Mediana: apertura 100, último 95, variación -5 (-5 %)"),
-    ).toBeTruthy();
-    // Día plano: variación cero, sin signo inventado.
+    // La Δ va contra la apertura (100), no contra el bucket previo, y cada lado
+    // la lleva en su columna con el signo escrito.
+    const fila = document.querySelector(".vmw-vs__fila")!;
+    const [compra, venta] = [...fila.querySelectorAll(".vmw-vs__celda")];
+    expect(compra.querySelector(".vmw-vs__valor")?.textContent).toBe("120");
+    expect(compra.querySelector(".vmw-vs__delta")?.textContent).toBe("+20 (+20 %)");
+    expect(venta.querySelector(".vmw-vs__valor")?.textContent).toBe("95");
+    expect(venta.querySelector(".vmw-vs__delta")?.textContent).toBe("-5 (-5 %)");
+    // Y la clave canónica de la métrica, sin maquillar.
+    expect(fila.querySelector(".vmw-vs__clave")?.textContent).toBe("p2p_mediana");
+
+    // Día plano en un grupo sin contraparte: variación cero, sin signo inventado.
     expect(
       screen.getByLabelText("Spread: apertura 2,5, último 2,5, variación 0 (0 %)"),
     ).toBeTruthy();
@@ -159,7 +170,11 @@ describe("IntradayView", () => {
     conSeries();
     render(<IntradayView />);
 
-    await waitFor(() => expect(screen.getAllByTestId("linechart").length).toBe(4));
+    /*
+     * Solo quedan los paneles sin contraparte —tasa oficial y spread—: compra y
+     * venta pasaron al bloque enfrentado, que dibuja su chispa en SVG propio.
+     */
+    await waitFor(() => expect(screen.getAllByTestId("linechart").length).toBe(2));
     const puntos = JSON.parse(
       screen.getAllByTestId("linechart")[0].dataset.puntos ?? "[]",
     ) as { valor: number; valorStr: string }[];
@@ -270,9 +285,9 @@ describe("IntradayView", () => {
     );
     render(<IntradayView />);
 
-    // La parrilla llega; «qué se movió» y la cronología de saltos, no.
+    // El contenido llega; «qué se movió» y la cronología de saltos, no.
     await waitFor(() =>
-      expect(document.querySelector(".vmw-tarjeta--sm")).toBeTruthy(),
+      expect(document.querySelector(".vmw-vs__fila")).toBeTruthy(),
     );
     expect(document.querySelector(".vmw-movio__rejilla")).toBeNull();
     // Y ningún error se le echa encima al usuario: la vista no falló.
