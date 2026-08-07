@@ -223,6 +223,8 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `c4149ce` | commit | — | Jeremi Alcala | 2026-08-06 | refactor(intradia): una sola tarjeta de metrica para todos los bloques |
+| `0856c5c` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
 | `ee5e8c1` | commit | — | Jeremi Alcala | 2026-08-06 | style(intradia): ritmo vertical normalizado, y siete blancos que no eran blancos |
 | `e0b1a95` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
 | `af51136` | commit | — | Jeremi Alcala | 2026-08-06 | feat(intradia): el cero de outliers es un resultado, no un hueco |
