@@ -7,6 +7,35 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-06 — El Intradía en tres bloques, y dos criterios que hubo que medir
+- Rama `feat-intraday`. La parrilla pasa a ser el detalle: delante va la lectura
+  del ruleset, en medio qué se movió y detrás la cronología.
+- **Lo que más pensé fue el criterio de «qué se movió».** Ordenar por |Δ| a secas
+  hacía ganar siempre a la liquidez, que se mide en cientos de miles frente a un
+  ratio en centésimas. Normalizando por σ de 7 días lo que ordena es cuánto se
+  salió cada serie de SU normalidad. Dos límites con respuesta explícita: σ = 0
+  con movimiento va arriba del todo —no se movía en una semana y hoy sí, que es
+  lo más inusual que le puede pasar— y sin historia queda fuera, porque un cero
+  la haría parecer tranquila y eso es una afirmación.
+- **La histéresis clásica no servía, y lo dijo el dato.** Probé la banda de
+  amplitud sobre σ de 7 días: en `p2p_ratio_oferta_demanda` esa σ es 0,58 contra
+  un umbral de 0,3, así que la banda se comía el umbral entero. La σ larga mide
+  cambios de régimen, no el temblor local. Lo que separa un cruce de un temblor
+  es que **aguante**: 15 minutos, elegidos simulando sobre la sesión real —de 21
+  cruces crudos quedan 8, y se estabiliza entre 3 y 6 buckets—. *Antes de elegir
+  una constante, mídela contra el dato que va a filtrar.*
+- **Dos frases que estuve a punto de cablear y habrían mentido el primer día.**
+  «El resto se mantuvo dentro de su rango normal» se cuenta: había 10 series
+  fuera. Y la cronología parecía repetir líneas hasta que vi que
+  `p2p_ratio_oferta_demanda` tiene TRES condiciones en tres reglas (`lt 0.2`,
+  `lt 0.3`, `gt 2`): no era un fallo de deduplicación, faltaba nombrar la regla.
+- Un error propio caro de ver: pedía la ventana de referencia con el intervalo
+  del selector, así que a 5 min eran >40 000 filas y el navegador iba por la
+  página 33 con la sección sin pintarse. Va fija a 1 h.
+- El test de paridad ES/EN cazó una cadena actualizada solo en español, y la
+  cobertura destapó que había escrito la lógica de la cronología pero no el
+  componente (34 % de ramas). Con su suite, el SPA vuelve a 87,13 %.
+
 ## 2026-08-06 — La profundidad se anclaba en un anuncio manipulado
 - Lo trajo el usuario en una captura: diez barras idénticas de 372 USDT en el lado
   venta. Comprobado contra el crudo con SQL, **las cifras eran correctas**: había

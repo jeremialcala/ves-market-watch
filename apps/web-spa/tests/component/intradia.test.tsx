@@ -236,6 +236,49 @@ describe("IntradayView", () => {
     await waitFor(() => expect(monedasDelDia).toEqual(["USD", "EUR"]));
   });
 
+  it("si la ventana de referencia falla, la parrilla sigue", async () => {
+    /*
+     * La referencia solo alimenta «qué se movió» y los saltos de la cronología.
+     * Si no llega, esas secciones no se pintan —no hay con qué normalizar— pero
+     * el intradía es el contenido principal de la vista y tiene que seguir.
+     */
+    servidor.use(
+      http.get(`${BASE}/indicators/history`, ({ request }) => {
+        const params = new URL(request.url).searchParams;
+        const ventana =
+          Date.parse(params.get("to") ?? "") - Date.parse(params.get("from") ?? "");
+        if (ventana > 2 * 86_400_000) {
+          return HttpResponse.json({ title: "Rango no procesable", status: 422 }, {
+            status: 422,
+            headers: { "content-type": "application/problem+json" },
+          });
+        }
+        return HttpResponse.json({
+          data: [
+            {
+              as_of: "2026-08-06T12:00:00Z",
+              indicator: "p2p_brecha_pct_buy",
+              currency: "VES",
+              value: "12.5",
+              calc_version: 1,
+            },
+          ],
+          pagination: { page: 1, page_size: 500, total_items: 1, has_more: false },
+          interval: "5m",
+        });
+      }),
+    );
+    render(<IntradayView />);
+
+    // La parrilla llega; «qué se movió» y la cronología de saltos, no.
+    await waitFor(() =>
+      expect(document.querySelector(".vmw-tarjeta--sm")).toBeTruthy(),
+    );
+    expect(document.querySelector(".vmw-movio__rejilla")).toBeNull();
+    // Y ningún error se le echa encima al usuario: la vista no falló.
+    expect(screen.queryByText(/rango no procesable/i)).toBeNull();
+  });
+
   it("la ventana de referencia se pide aparte y cubre 7 días", async () => {
     /*
      * «Qué se movió» normaliza contra la desviación típica de 7 días, así que

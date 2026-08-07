@@ -230,6 +230,32 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **El Intradía gana tres bloques que ponen la parrilla en contexto
+  (2026-08-06, rama `feat-intraday`).** Los tres se **derivan del dato**; ninguno
+  cablea lo que afirma.
+  - **«Lectura de la sesión»** (bloque rector): qué dice el ruleset ahora — qué
+    regla está más cerca, cuántas condiciones cumple y cuál la bloquea. La regla
+    más cercana la elige el motor (`summary.closest_rule`), **nunca el SPA**:
+    recalcularla aquí crearía la segunda fuente de verdad que `RuleDistance` ya
+    documenta. Absorbe la frase de día operativo, que colgaba suelta.
+    «Exportar sesión» vuelca cada bucket con el valor exacto; «Vigilar esta
+    regla» va **deshabilitada y explicándose**, como «Crear alerta» (ADR-0021).
+  - **«Qué se movió desde la apertura»**: las cuatro series que explican la
+    sesión, elegidas por `z = |último − apertura| / σ₇d`. Normalizar es lo que
+    permite comparar unidades distintas — sin ello la liquidez copaba las cuatro
+    tarjetas por el tamaño de la cifra, no por moverse. Sin historia una serie
+    queda **fuera** del ranking; con σ = 0 y movimiento va arriba del todo.
+  - **«Cronología de la sesión»**: apertura, cruces de umbral, saltos de
+    liquidez sobre 2σ y último recálculo, con **histéresis por permanencia** de
+    15 minutos en los cruces.
+  - 65 pruebas nuevas; el SPA pasa de 348 a 413.
+
+### Fixed
+
+- **`etiquetaDiaVET` tenía el locale `es-VE` fijo (2026-08-06):** dentro de una
+  frase en inglés salía «operating day jueves, 6 de agosto de 2026». Recibe el
+  idioma y usa formato corto.
+
 - **`ingestor-historico` pasa de 71,71 % a 97,22 % (2026-08-04): el criterio de
   salida 1 de Gate 2 queda CUMPLIDO en los seis servicios.** 98 → 138 tests.
   - **`__main__.py` era el fichero más grande del servicio y estaba al 0 %** (178

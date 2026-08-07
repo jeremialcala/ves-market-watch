@@ -25,6 +25,33 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   **resync REST en cada (re)conexión** (push best-effort — ADR-0016).
 - **Histórico**: tasa oficial e indicador canónico por bucket 5m/1h/1d
   (Recharts), rango ≤ 90 días, paginación con progreso/cancelación.
+## El Intradía se lee de arriba abajo (2026-08-06)
+- Tres bloques nuevos alrededor de la parrilla, los tres **derivados del dato**:
+  «Lectura de la sesión» (veredicto del ruleset), «Qué se movió desde la
+  apertura» (las cuatro series que la explican) y «Cronología de la sesión».
+- **El criterio de «qué se movió» se calcula**: `z = |último − apertura| / σ₇d`.
+  Normalizar es lo que hace comparables unidades distintas — sin ello la liquidez
+  copaba las cuatro tarjetas por el tamaño de la cifra, no por moverse. σ = 0 con
+  movimiento va arriba del todo (`z = ∞`: la serie no se movía en una semana y
+  hoy sí); sin historia se queda **fuera**, no al fondo con un cero que la haría
+  parecer tranquila.
+- **La histéresis de la cronología es de PERMANENCIA, no de amplitud.** Se probó
+  primero la banda clásica sobre la σ de 7 días y no vale: en
+  `p2p_ratio_oferta_demanda` esa σ es 0,58 frente a un umbral de 0,3, así que la
+  banda se comía el umbral. La σ larga mide cambios de régimen, no el temblor
+  local; lo que distingue un cruce de un temblor es que **aguante**. 15 minutos,
+  elegidos midiendo: de 21 cruces crudos quedan 8, y se estabiliza entre 3 y 6
+  buckets.
+- Un cruce recién ocurrido **no se pinta** hasta cumplir el plazo: un evento que
+  aparece y desaparece al refrescar es peor que uno que llega tarde.
+- La ventana de referencia se pide aparte y **en bucket de 1 h**. Con el del
+  selector (5 min) son >40 000 filas y se vio en vivo paginando por la 33 con la
+  sección sin pintarse.
+- **Lo que no se cableó**: «el resto se mantuvo dentro de su rango normal» se
+  cuenta; el primer día había 10 series fuera y la frase habría sido falsa.
+  «Vigilar esta regla» va deshabilitada y explicándose (ADR-0021), como «Crear
+  alerta».
+
 - **Intradía (2026-07-29)**: parrilla de small multiples con TODOS los
   indicadores del día operativo VET (UTC−4 fijo), agrupados en oficial /
   compra / venta / microestructura. Cada panel lleva último valor, sparkline
@@ -232,7 +259,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   14 días»), no una nota bajo la leyenda.
 
 ## Verificación
-- **348 tests** (unit/component/contract con MSW y WS mock) — **87,43 % de ramas**
+- **413 tests** (unit/component/contract con MSW y WS mock) — **87,13 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

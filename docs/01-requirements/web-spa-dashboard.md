@@ -81,6 +81,35 @@ login y el estado de salud son visibles sin sesión.
   porcentaje se muestra «—», nunca ∞ ni NaN. Un indicador nuevo del motor aparece
   sin cambios en el front. Refresco manual y automático cada 5 min.
 
+  **Ampliación 2026-08-06 — la vista se lee de arriba abajo.** La parrilla es el
+  detalle; delante y detrás van tres bloques que la ponen en contexto, y los tres
+  se **derivan del dato**:
+
+  1. **«Lectura de la sesión»**, bloque rector: qué dice el ruleset AHORA — qué
+     regla está más cerca, cuántas condiciones cumple y cuál la bloquea. Sale de
+     `analisis` (`summary` + `rule_proximity`); la regla más cercana la elige el
+     motor vía `summary.closest_rule`, **nunca el SPA**. Absorbe la frase de día
+     operativo, con la apertura de la sesión y lo transcurrido. «Exportar sesión»
+     vuelca cada bucket con el valor exacto; «Vigilar esta regla» va
+     **deshabilitada y explicándose**, igual que «Crear alerta» (ADR-0021).
+  2. **«Qué se movió desde la apertura»**: las cuatro series que explican la
+     sesión. El criterio **se calcula**: `z = |último − apertura| / σ₇d`, con σ
+     sobre los valores de los últimos 7 días. Normalizar es lo que permite
+     comparar unidades distintas — sin ello la liquidez copaba las cuatro
+     tarjetas por el mero tamaño de la cifra. Una serie sin historia queda fuera
+     del ranking (no hay con qué compararla) y una que llevaba 7 días quieta y
+     hoy se mueve va arriba del todo. La frase «el resto se mantuvo dentro de su
+     rango normal» **se cuenta**, no se cablea: el primer día en producción había
+     10 series fuera de rango y la frase habría sido falsa.
+  3. **«Cronología de la sesión»**: apertura, cruces de umbral del ruleset,
+     saltos de liquidez sobre 2σ y último recálculo. Nada que no se pueda señalar
+     en una serie. Los cruces llevan **histéresis por permanencia** —el estado
+     nuevo tiene que aguantar 15 minutos— porque sin ella un indicador que oscila
+     junto a su umbral generaba un evento por temblor: 50 líneas, 48 de ellas
+     cuatro indicadores vibrando. La ventana de referencia de 7 días se pide
+     **aparte y en bucket de 1 h**, no en el del selector: a 5 min son más de
+     40 000 filas.
+
 - **RF-8 — Vista de análisis** (2026-07-31, ADR-0018): lectura del mercado con
   escenarios y riesgos. Los números que la plataforma sirve (presión de liquidez,
   merchants, spread) son reales; la prosa, las probabilidades y los umbrales de
