@@ -40,6 +40,13 @@ export interface EventoSesion {
   regla?: string;
   /** Múltiplo de σ del salto, para poder decir cuán grande fue. */
   sigmas?: number;
+  /**
+   * Cuántas veces cruzó esa condición en la sesión, cuando el evento **resume**
+   * varios en vez de ser uno suelto. Ausente en los cruces individuales.
+   */
+  repeticiones?: number;
+  /** Instante del PRIMER cruce del grupo, para poder decir «desde las…». */
+  desde?: number;
 }
 
 /** Un salto de liquidez entra en la cronología a partir de este múltiplo. */
@@ -60,6 +67,26 @@ export const SIGMAS_SALTO = 2;
  * larga mide cambios de régimen, no el temblor local.
  */
 export const PERMANENCIA_MS = 15 * 60_000;
+
+/**
+ * Cruces por condición a partir de los cuales se RESUME en vez de listar.
+ *
+ * La histéresis quita el ruido —de 56 cruces crudos a 37 en la sesión del 6-ago—
+ * pero los que quedan son reales: aguantaron sus 15 minutos. El problema es otro:
+ * **una condición que entra y sale once veces no cuenta once historias, cuenta
+ * una**, y es «hoy está inestable». Listarlas todas entierra los cruces que sí
+ * son un acontecimiento.
+ *
+ * Dos es el corte natural: un cruce es un hecho, dos son entrar y salir —todavía
+ * una historia— y tres o más son un patrón. Es además un corte **poco sensible**,
+ * que es lo que se le pide a una constante así: medido sobre tres sesiones
+ * reales, con 2, 3 o 4 salen 6/6/7 líneas frente a las 37/30/29 de antes.
+ *
+ * Se descartó alargar la permanencia, que era lo obvio: a 120 minutos quedan
+ * 11/9/10 líneas —peor— y **cada cruce real tardaría dos horas en aparecer**, con
+ * lo que la cronología deja de ser una cronología.
+ */
+export const CRUCES_PARA_RESUMIR = 2;
 
 const LIQUIDEZ = ["p2p_liquidez_buy", "p2p_liquidez_sell"];
 
@@ -208,6 +235,7 @@ function crucesDeUmbral(
       const estado = (i: number) =>
         cumpleCondicion(toChartNumber(puntos[i].valor), condicion.op, umbral);
 
+      const deLaCondicion: EventoSesion[] = [];
       let confirmado: boolean | null = null;
       for (let i = 0; i < puntos.length; i += 1) {
         const ahora = estado(i);
@@ -219,7 +247,7 @@ function crucesDeUmbral(
           continue;
         }
         confirmado = ahora;
-        eventos.push({
+        deLaCondicion.push({
           // El instante es el del CRUCE, no el de su confirmación: lo que se
           // señala es cuándo pasó, no cuándo se pudo asegurar.
           t: puntos[i].t,
@@ -229,6 +257,23 @@ function crucesDeUmbral(
           umbral: condicion.threshold,
           cumple: ahora,
           regla: regla.rule,
+        });
+      }
+
+      /*
+       * Pocos cruces se cuentan uno a uno; muchos se RESUMEN en el último. El
+       * resumen se coloca en el instante del último cruce porque es cuando
+       * empezó el estado actual —la cronología sigue siendo cronológica— y lleva
+       * el `desde` del primero para poder decir en qué tramo estuvo oscilando.
+       * No se esconde nada: la cuenta va escrita.
+       */
+      if (deLaCondicion.length <= CRUCES_PARA_RESUMIR) {
+        eventos.push(...deLaCondicion);
+      } else {
+        eventos.push({
+          ...deLaCondicion[deLaCondicion.length - 1],
+          repeticiones: deLaCondicion.length,
+          desde: deLaCondicion[0].t,
         });
       }
     }

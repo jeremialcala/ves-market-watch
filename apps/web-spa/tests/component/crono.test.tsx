@@ -261,4 +261,33 @@ describe("SessionTimeline", () => {
     expect(cruce).not.toContain("-");
     expect(cruce).not.toContain(".10523657");
   });
+  it("un resumen se anuncia como INESTABLE, no como un cruce mas", () => {
+    /*
+     * El titulo importa: «umbral cruzado» repetido cinco veces se lee como
+     * cinco acontecimientos. «Condicion inestable» dice lo que de verdad pasa.
+     */
+    const sesion = new Map([
+      [
+        "p2p_momentum_bid_3h_pct",
+        serie([
+          "0.2", "0.7", "0.7", "0.7",
+          "0.2", "0.2", "0.2", "0.9",
+          "0.9", "0.9", "0.2", "0.2", "0.2",
+        ]),
+      ],
+    ]);
+
+    render(
+      <SessionTimeline sesion={sesion} referencia={new Map()} analisis={ANALISIS} />,
+    );
+
+    expect(screen.getByText("Condición inestable")).toBeTruthy();
+    expect(screen.queryByText("Umbral del ruleset cruzado")).toBeNull();
+    // Y el texto dice la cuenta y el tramo: agrupar no es esconder.
+    const texto = [...document.querySelectorAll(".vmw-crono__texto")]
+      .map((t) => t.textContent ?? "")
+      .find((t) => /entró y salió/.test(t))!;
+    expect(texto).toMatch(/4 veces/);
+    expect(texto).toMatch(/desde las \d{2}:\d{2}/);
+  });
 });

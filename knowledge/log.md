@@ -7,6 +7,25 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-07 — Los cruces no sobraban: sobraba repetirlos
+- Medí antes de tocar: la sesión de ayer daba **56 cruces crudos y 37 con la
+  histéresis**, repartidos en cinco condiciones. **Ninguno era falso** —todos
+  aguantaron sus 15 minutos—, así que el problema no era el filtro.
+- **Lo obvio habría sido apretar la permanencia, y es peor.** A 120 minutos
+  quedan 11/9/10 líneas en tres sesiones —no mucho menos— **y cada cruce real
+  tardaría dos horas en aparecer**: la cronología dejaría de ser una cronología
+  para no molestar. *Cuando el remedio ataca la mitad correcta del problema, hay
+  que preguntarse cuál es la otra mitad.*
+- La otra mitad era la repetición: **una condición que entra y sale once veces no
+  cuenta once historias, cuenta una**, y es que hoy está inestable. Resumiendo
+  por encima de dos cruces, 37/30/29 pasan a **6/6/7** sin tocar la histéresis.
+- **El corte elegido es poco sensible, y eso es la mitad de su valor**: con 2, 3
+  o 4 sale prácticamente lo mismo. Una constante cuyo resultado cambia mucho al
+  moverla un punto está mal elegida aunque acierte hoy.
+- Agrupar no es esconder: el evento dice cuántas veces, desde cuándo y cómo está
+  ahora, y se coloca en el último cruce para que el orden siga significando algo.
+- No se pudo ver en vivo: el día operativo llevaba una hora y aún no había
+  cruces. La evidencia es la simulación sobre tres sesiones reales y las pruebas.
 ## 2026-08-07 — El mejor precio contaba media verdad
 - `p2p_mejor_precio` va sin filtrar **a propósito**: es el top of book literal y
   ocultarlo sería ocultar que alguien pide 920. El problema no era ese, era que

@@ -180,6 +180,19 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   contra una base con signo el porcentaje no describe la dirección. Se corrigió
   en `resumenIntradia`, no en `porcentajeRelativo`: la aritmética pura está bien,
   lo que no vale es llamar a eso «variación desde la apertura».
+- **La histéresis no bastaba: hacía falta resumir la repetición.** Quedaban 37
+  cruces en una sesión, y ninguno era falso —todos aguantaron sus 15 minutos—.
+  Estaban repartidos en cinco condiciones que entraban y salían, y **una condición
+  que cruza once veces cuenta una historia, no once**. Con más de dos cruces se
+  emite un solo evento con la cuenta y el tramo: **37/30/29 líneas pasan a 6/6/7**
+  en tres sesiones reales.
+  - El corte en 2 es **poco sensible** —con 2, 3 o 4 sale lo mismo—, que es lo que
+    se le pide a una constante así.
+  - **Alargar la permanencia era lo obvio y es peor**: a 120 minutos quedan
+    11/9/10 líneas y cada cruce real tardaría dos horas en aparecer, con lo que la
+    cronología deja de ser una cronología.
+  - El resumen se coloca en el ÚLTIMO cruce —cuando empezó el estado actual— con
+    el primero en `desde`: la cronología sigue siendo cronológica.
 - **La histéresis de la cronología es de PERMANENCIA, no de amplitud.** Se probó
   primero la banda clásica sobre la σ de 7 días y no vale: en
   `p2p_ratio_oferta_demanda` esa σ es 0,58 frente a un umbral de 0,3, así que la
@@ -404,7 +417,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   14 días»), no una nota bajo la leyenda.
 
 ## Verificación
-- **495 tests** (unit/component/contract con MSW y WS mock) — **88,19 % de ramas**
+- **500 tests** (unit/component/contract con MSW y WS mock) — **88,13 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

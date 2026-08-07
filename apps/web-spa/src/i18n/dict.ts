@@ -562,6 +562,11 @@ export const ES = {
   "crono.aperturaTexto":
     "Primer bucket del día operativo: desde aquí se mide todo lo demás.",
   "crono.umbralTitulo": "Umbral del ruleset cruzado",
+  "crono.inestableTitulo": "Condición inestable",
+  "crono.inestableTexto":
+    "{indicador} entró y salió de su condición {veces} veces desde las {desde}; ahora {estado}.",
+  "crono.inestableCumple": "la cumple",
+  "crono.inestableNoCumple": "no la cumple",
   "crono.umbralPasa":
     "{indicador} pasó a cumplir su condición dentro de la regla.",
   "crono.umbralDeja":
@@ -1247,6 +1252,11 @@ export const EN: Record<Clave, string> = {
   "crono.aperturaTexto":
     "First bucket of the operating day: everything else is measured from here.",
   "crono.umbralTitulo": "Ruleset threshold crossed",
+  "crono.inestableTitulo": "Unstable condition",
+  "crono.inestableTexto":
+    "{indicador} moved in and out of its condition {veces} times since {desde}; it {estado} now.",
+  "crono.inestableCumple": "meets it",
+  "crono.inestableNoCumple": "does not meet it",
   "crono.umbralPasa": "{indicador} started meeting its condition within the rule.",
   "crono.umbralDeja": "{indicador} stopped meeting its condition within the rule.",
   "crono.cifrasUmbral": "{regla} · {indicador} {valor} · threshold {umbral}",

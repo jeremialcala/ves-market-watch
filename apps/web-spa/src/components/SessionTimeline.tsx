@@ -73,7 +73,13 @@ export function SessionTimeline({
             </span>
             <div className="vmw-crono__contenido">
               <p className="vmw-crono__titulo-evento">
-                {t(TITULO_CLASE[evento.clase])}
+                {/* Un resumen de varios cruces no es «umbral cruzado»: lo que
+                    cuenta es la inestabilidad, no cada ida y vuelta. */}
+                {t(
+                  evento.repeticiones === undefined
+                    ? TITULO_CLASE[evento.clase]
+                    : "crono.inestableTitulo",
+                )}
               </p>
               <p className="vmw-crono__texto">{texto(evento, t)}</p>
               {cifras(evento, t, idioma) !== "" && (
@@ -98,6 +104,20 @@ function texto(evento: EventoSesion, t: Traducir): string {
     case "apertura":
       return t("crono.aperturaTexto");
     case "umbral":
+      // Un resumen no dice «cruzó»: dice cuántas veces y desde cuándo. La cuenta
+      // va escrita, así que agrupar no esconde nada.
+      if (evento.repeticiones !== undefined) {
+        return t("crono.inestableTexto", {
+          indicador: legible,
+          veces: evento.repeticiones,
+          desde: horaVET(evento.desde ?? evento.t),
+          estado: t(
+            evento.cumple === true
+              ? "crono.inestableCumple"
+              : "crono.inestableNoCumple",
+          ),
+        });
+      }
       return t(
         evento.cumple === true ? "crono.umbralPasa" : "crono.umbralDeja",
         { indicador: legible },
