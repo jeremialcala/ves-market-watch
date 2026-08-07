@@ -7,6 +7,29 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-06 — El primer PR encontró un CVE, y el arreglo era peor
+- El PR a `develop` dejó 11 de 12 comprobaciones en verde y rompió en `T8 · SCA
+  (npm)`: **CVE-2026-59870** en `js-yaml`, un aviso nuevo que llega por
+  `openapi-typescript → @redocly/openapi-core`. No lo traía la rama; el gate
+  simplemente hizo su trabajo el día que se publicó.
+- **Casi doy por bueno un arreglo que rompía la herramienta.** El override a
+  `js-yaml@5` dejó el audit en cero vulnerabilidades, y mi comprobación de que
+  los tipos generados seguían siendo idénticos dio «sí, byte a byte»… porque el
+  generador **había muerto antes de escribir el fichero**. js-yaml 5 retiró
+  `types.merge` y redocly falla al cargar. *Un «no cambió nada» puede significar
+  «no llegó a pasar nada»: comprueba que el proceso terminó, no solo su salida.*
+- **`npm audit` no sabe de allowlists**, y las dos salidas fáciles —bajar el
+  umbral o `--omit=dev`— desactivaban el control para todo el árbol de
+  desarrollo, que es justo lo que el comentario del workflow decía que no se
+  quería. El script propio silencia solo lo aceptado por escrito y resuelve la
+  cadena de `via`, para no tener que aceptar por separado paquetes que solo son
+  vulnerables por depender del aceptado.
+- **La excepción caduca sola: si deja de aplicar, el gate falla.** Sin eso, una
+  excepción sobrevive a su motivo y acaba cubriendo en silencio lo siguiente que
+  aparezca con el mismo id. Verificado por mutación en los tres estados —y de
+  paso me pillé leyendo el `$?` de un `tail` en vez del de `node`—.
+
+
 ## 2026-08-06 — Barrido de coherencia: dos cifras mías estaban mal
 - **El `api-gateway` no subía a 93 %: bajó a 92,65.** Leí el «93%» redondeado de
   la terminal y lo escribí como «93,00». Añadir el `15m` añadió código y las dos

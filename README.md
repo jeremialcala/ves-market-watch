@@ -109,7 +109,9 @@ build es cualquier retroceso desde donde está hoy cada uno.
   97,22 · `web-spa` 94,87 · `api-gateway` 92,65 · `indicator-engine` 85,88; la más
   baja en ramas solas es 82,71 (`indicator-engine`). 1 254
   tests en total. Quedan abiertos el e2e autenticado en vivo con token real (HITL)
-  y la deuda del control de T8 —lockfiles y digests—; detalle en
+  y la deuda del control de T8 —lockfiles, digests y un CVE aceptado por escrito
+  (CVE-2026-59870 en `js-yaml`, dependencia de desarrollo, revisión 2026-09-06)—;
+  detalle en
   `docs/04-testing/plan-de-pruebas.md` §10 y §12.
 - Gate 0 (requisitos): aprobado — `.ai-dlc/gates/gate-0-requirements.md`
 - Gate 1 (diseño): aprobado, sin pendientes desde la ratificación del DREAD de T15

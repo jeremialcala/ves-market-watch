@@ -1,0 +1,46 @@
+{
+  "_lea_esto_antes_de_anadir": [
+    "Cada entrada es un riesgo ACEPTADO POR ESCRITO, no una molestia silenciada.",
+    "Para anadir una hacen falta las cuatro cosas: por que el vector no es",
+    "alcanzable en ESTE sistema, quien lo acepta, cuando, y que tiene que pasar",
+    "para retirarla. Sin la ultima, la excepcion se queda para siempre.",
+    "El auditor FALLA si una excepcion deja de aplicar: eso obliga a borrarla el",
+    "dia que el arreglo llegue, en vez de dejarla cubriendo lo siguiente."
+  ],
+  "advisories": [
+    {
+      "id": "GHSA-5p4m-2wfm-xmqj",
+      "cve": "CVE-2026-59870",
+      "paquete": "js-yaml",
+      "severidad": "high",
+      "aceptado_por": "Jeremi Alcala",
+      "fecha": "2026-08-06",
+      "cadena": "openapi-typescript@7.13.0 -> @redocly/openapi-core@1.34.18 -> js-yaml@4.x",
+      "motivo": [
+        "El vector es consumo cuadratico de CPU al resolver `!!omap` en un YAML.",
+        "La unica entrada que este paquete parsea es apps/api-gateway/docs/openapi.yaml,",
+        "un fichero DEL REPO que no contiene `!!omap` y que ningun tercero controla:",
+        "no hay superficie por la que llegue entrada de un atacante.",
+        "Ademas es dependencia de DESARROLLO: openapi-typescript genera types.gen.ts",
+        "en build y no entra en el bundle que se sirve. Un `npm ls --omit=dev` no lo",
+        "encuentra."
+      ],
+      "por_que_no_se_arregla_ya": [
+        "js-yaml solo corrige en 5.x (el aviso dice que no se retroporto a 4.x).",
+        "Se probo el override `@redocly/openapi-core > js-yaml@^5.2.3`: deja el audit",
+        "en cero vulnerabilidades y ROMPE el generador — js-yaml 5 retiro",
+        "`types.merge` y redocly falla al cargar. Un gate en verde con la herramienta",
+        "rota es peor que uno en rojo.",
+        "openapi-typescript@7.13.0 ya es la ultima publicada y fija redocly en 1.34.x."
+      ],
+      "condicion_de_retirada": [
+        "Que openapi-typescript publique una version que dependa de",
+        "@redocly/openapi-core@2.x (que ya usa js-yaml parcheado).",
+        "Al actualizar, este fichero deja de aplicar y el auditor lo dira: borrar la",
+        "entrada y comprobar que `npm run generate:api` sigue dando el mismo",
+        "types.gen.ts byte a byte."
+      ],
+      "revisar": "2026-09-06"
+    }
+  ]
+}

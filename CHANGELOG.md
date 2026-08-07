@@ -19,6 +19,27 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Security
 
+- **CVE-2026-59870 (`js-yaml`) aceptado por escrito, con caducidad (2026-08-06).**
+  Lo destapó el primer PR de la rama: es un aviso nuevo que llega por
+  `openapi-typescript → @redocly/openapi-core → js-yaml@4.x`, no algo que traiga
+  el código. Se acepta porque el vector —consumo cuadrático de CPU al resolver
+  `!!omap`— **no es alcanzable**: lo único que ese paquete parsea es el OpenAPI
+  del propio repo, sin `!!omap` y sin control de terceros, y es dependencia de
+  desarrollo que no entra en el bundle.
+  - **El arreglo disponible rompe la herramienta.** `js-yaml` solo corrige en 5.x;
+    con el override el audit queda en cero y el generador de tipos **revienta**
+    (js-yaml 5 retiró `types.merge`). Un gate en verde con la herramienta rota es
+    peor que uno en rojo, así que se revirtió.
+  - **La excepción caduca sola.** `npm audit` no sabe de allowlists —o pasa
+    entero o falla entero—, y bajar el umbral o poner `--omit=dev` habría
+    desactivado el control para todo el árbol de desarrollo. En su lugar,
+    `scripts/auditar-npm.mjs` solo silencia lo aceptado en
+    `scripts/npm-audit-excepciones.json` **y falla también cuando una excepción
+    deja de aplicar**, para que se borre el día del arreglo en vez de cubrir en
+    silencio lo siguiente. Verificado por mutación en los tres estados.
+  - Se retira cuando `openapi-typescript` publique con `@redocly/openapi-core@2.x`.
+    Revisión anotada: **2026-09-06**.
+
 - **Ratificado el DREAD de T15, último pendiente de diseño del Gate 1
   (2026-08-04).** Puntuación 2/2/2/2/2 = **10** (Jeremi Alcalá), verificada contra
   el código y no contra la ficha: 14 endpoints, todos `GET`, `allow_methods=["GET"]`,

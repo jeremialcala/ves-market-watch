@@ -433,8 +433,28 @@ cierre de la columna «Verificación fase 04-testing».
 4. Contract tests en verde en **productor y consumidor** para cada evento con schema.
    **Cumplido** y verificado en cada push.
 5. Gates de CI: **secrets scanning** (T6) y **SCA** (T8) sin hallazgos por encima
-   del umbral. **Cumplido**: los tres gates rompen el build y están en verde. El
-   SCA cerró de paso 3 vulnerabilidades `high` que ya estaban en el `web-spa`.
+   del umbral. **Cumplido con una excepción aceptada**: los tres gates rompen el
+   build y están en verde. El SCA cerró de paso 3 vulnerabilidades `high` que ya
+   estaban en el `web-spa`.
+
+   **Riesgo aceptado (2026-08-06, Jeremi Alcalá) — CVE-2026-59870 en `js-yaml`.**
+   Llega por `openapi-typescript → @redocly/openapi-core → js-yaml@4.x`. Se acepta
+   porque el vector —consumo cuadrático de CPU al resolver `!!omap`— **no es
+   alcanzable aquí**: lo único que ese paquete parsea es
+   `apps/api-gateway/docs/openapi.yaml`, un fichero del repo sin `!!omap` que
+   ningún tercero controla; y es dependencia de desarrollo que genera
+   `types.gen.ts` en build, no entra en el bundle.
+
+   **No se arregla ya porque el arreglo rompe la herramienta.** `js-yaml` solo
+   corrige en 5.x y se probó el override: deja el audit en cero y **revienta el
+   generador** —js-yaml 5 retiró `types.merge` y redocly falla al cargar—. Un gate
+   en verde con la herramienta rota es peor que uno en rojo.
+   `openapi-typescript@7.13.0` ya es la última y fija redocly en 1.34.x.
+
+   **Se retira** cuando `openapi-typescript` publique una versión con
+   `@redocly/openapi-core@2.x`; el propio gate lo exigirá al dejar de aplicar la
+   excepción. Revisión anotada para el **2026-09-06**. Al actualizar, comprobar que
+   `npm run generate:api` sigue dando el mismo `types.gen.ts` byte a byte.
 6. Sin tests marcados `xfail`/`skip` salvo los de infraestructura documentados.
    **Cumplido**: cero `xfail` y cero `skip` incondicionales en el monorepo; los
    únicos saltos son los de infraestructura ausente, y desde el 2026-08-04 **solo
@@ -447,6 +467,7 @@ cierre de la columna «Verificación fase 04-testing».
 |---|---|
 | e2e autenticado **en vivo** con token real (HITL) | Necesita el client M2M del tenant en el pipeline; hoy corre a mano |
 | Deuda de T8: **lockfiles + imágenes por digest** | Cambio de repositorio, no de pipeline: los cinco servicios declaran rangos y las imágenes van por tag (incluida `timescaledb:latest-pg16`) |
+| Deuda de T8: **CVE-2026-59870 (`js-yaml`) aceptado** | Vector no alcanzable (dependencia de desarrollo, entrada propia sin `!!omap`); el arreglo disponible rompe el generador de tipos. Se retira cuando `openapi-typescript` suba a redocly 2.x — revisar 2026-09-06 |
 | Marcador `security` en `api-gateway` | Donde viven T9 y T11; los otros dos servicios ya lo tienen |
 | Recalibración **HITL** de umbrales (ruleset y régimen) | Decisión humana con datos de producción |
 
@@ -469,10 +490,25 @@ público, así que los minutos son gratis).
     repo público, un secreto borrado al commit siguiente sigue ahí. Con
     `--redact`, para que el hallazgo no sea una segunda fuga en unos logs
     públicos.
-  - **T8:** `pip-audit` en un venv por servicio (`--skip-editable --strict`) y
-    `npm audit --audit-level=high` en el SPA. Umbral de Python: **cero
-    vulnerabilidades conocidas**, con excepciones explícitas si hace falta — más
-    estricto que un corte por severidad, y con mejor rastro de auditoría.
+  - **T8:** `pip-audit` en un venv por servicio (`--skip-editable --strict`) y,
+    en el SPA, `scripts/auditar-npm.mjs` sobre `npm audit --json` con umbral
+    `high`. Umbral de Python: **cero vulnerabilidades conocidas**, con excepciones
+    explícitas si hace falta — más estricto que un corte por severidad, y con
+    mejor rastro de auditoría.
+
+    **Por qué no es `npm audit` pelado.** No sabe de allowlists: o pasa entero o
+    falla entero, y las dos salidas fáciles —bajar el umbral, añadir `--omit=dev`—
+    desactivan el control para todo el árbol de desarrollo. El script solo silencia
+    lo que esté aceptado por escrito en `scripts/npm-audit-excepciones.json`, con
+    su motivo, quien lo acepta y su condición de retirada; resuelve la cadena de
+    `via`, así que aceptar un aviso cubre los paquetes que solo son vulnerables por
+    depender de él, sin pedir una excepción por eslabón.
+
+    **Y falla también cuando una excepción deja de aplicar.** Es la propiedad que
+    impide que se pudra: el día que llegue el arreglo, el gate obliga a borrar la
+    entrada en vez de dejarla cubriendo en silencio lo siguiente que aparezca con
+    el mismo id. Verificado por mutación en los tres estados —sin excepción falla,
+    con excepción muerta falla, con el árbol real pasa—.
   - **T9:** CodeQL (`security-and-quality`) para Python y TypeScript. **CodeQL por
     sí solo no rompe el build**: deja una alerta y sigue. Un paso posterior lee el
     SARIF y falla ante hallazgos de nivel `error` — ese es el umbral de severidad;
