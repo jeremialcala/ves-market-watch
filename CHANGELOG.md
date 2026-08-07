@@ -19,6 +19,31 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Security
 
+- **El e2e en vivo gana la mitad que faltaba: los rechazos (2026-08-07).** La
+  suite solo probaba el camino feliz y **nada de lo que debe fallar**. Ahora, sin
+  necesidad de credenciales: REST sin token y con token inventado → 401 con
+  `problem+json` y **sin revelar qué parte de la validación falló** —eso sería un
+  oráculo para quien pruebe el borde—, `health` público, y **WSS con o sin token
+  falso cerrando con 4401**.
+  - Son las aserciones de T11 y T15, y **solo existían como unit tests**. En vivo
+    intervienen nginx, el túnel y el proxy; el `TestClient` de Starlette es
+    in-process y con el fallo del handshake puesto los unit tests pasaban. Este
+    es el primer sitio donde el 4401 se comprueba contra un handshake real.
+  - **La suite reportaba PASSED con el gateway apagado.** Cada test hacía
+    `if (!arriba) return`: cinco en verde certificando nada. Comprobado apuntando
+    a un puerto muerto. Con `skipIf` ahora salen seis «skipped», que es la verdad.
+  - Queda por aprovisionar (HITL) el client M2M con los **cinco** permisos reales
+    del gateway: `read:rates`, `read:indicators`, `read:signals`, `read:depth` y
+    `stream:events`. No hay `read:analysis` —`/analysis/current` reutiliza
+    `read:indicators`—.
+  - **El gate de secretos cortó el primer intento**, y con razón: el JWT falso
+    escrito como literal disparaba `generic-api-key` con entropía 4,65. Se
+    resuelve **construyéndolo en tiempo de ejecución** en vez de añadir una
+    excepción a `.gitleaks.toml`: silenciar un hallazgo verdadero-en-forma para
+    meter un token de mentira le quita los dientes al gate para el próximo. La
+    rama se reescribió para que el literal no quede en el historial, que es lo que
+    gitleaks escanea.
+
 - **CVE-2026-59870 (`js-yaml`) aceptado por escrito, con caducidad (2026-08-06).**
   Lo destapó el primer PR de la rama: es un aviso nuevo que llega por
   `openapi-typescript → @redocly/openapi-core → js-yaml@4.x`, no algo que traiga

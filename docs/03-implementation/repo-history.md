@@ -236,6 +236,7 @@ gitGraph
     commit id: "eb6fbfb" type: HIGHLIGHT
     commit id: "4917d03"
     commit id: "df2da0b" type: HIGHLIGHT
+    commit id: "3be72cb"
 ```
 
 ### Estado actual de las ramas
@@ -243,7 +244,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `df2da0b` | 2026-08-07 | 202 |
+| `develop` | `3be72cb` | 2026-08-07 | 203 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -259,6 +260,10 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `4c25643` | commit | — | Jeremi Alcala | 2026-08-07 | test(e2e): los rechazos en vivo, que no necesitaban credenciales |
+| `a3f5e73` | commit | — | Jeremi Alcala | 2026-08-07 | docs(repo-history): regenerar |
+| `e79ba7d` | commit | — | Jeremi Alcala | 2026-08-07 | test(e2e): los rechazos en vivo, que no necesitaban credenciales |
+| `3be72cb` | commit | — | Jeremi Alcala | 2026-08-07 | docs(repo-history): regenerar tras los merges de los PR #2 y #3 |
 | `df2da0b` | merge | — | Jeremi J. Alcalá M. | 2026-08-07 | Merge pull request #3 from jeremialcala/fix-cronologia-repeticion |
 | `4917d03` | commit | — | Jeremi Alcala | 2026-08-07 | docs(repo-history): regenerar |
 | `eb6fbfb` | merge | — | Jeremi Alcala | 2026-08-07 | Merge develop en fix-cronologia-repeticion: resolver la normalizacion duplicada |
