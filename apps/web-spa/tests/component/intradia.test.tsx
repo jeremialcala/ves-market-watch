@@ -2,7 +2,7 @@
  * agrupado por familia, la Δ contra la apertura y los estados vacío/error —
  * no el dibujo SVG. */
 
-import { cleanup, screen, waitFor } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
@@ -100,41 +100,93 @@ function conSeries() {
   );
 }
 
+/**
+ * Separa las dos consultas que hace la vista: la del día operativo y la ventana
+ * de referencia de 7 días. Contarlas juntas escondía cuál se estaba repitiendo.
+ */
+function espiarPeticiones() {
+  const monedasDelDia: string[] = [];
+  const ventanas: { ms: number; intervalo: string | null }[] = [];
+  servidor.use(
+    http.get(`${BASE}/indicators/history`, ({ request }) => {
+      const params = new URL(request.url).searchParams;
+      const moneda = params.get("currency");
+      const desde = Date.parse(params.get("from") ?? "");
+      const hasta = Date.parse(params.get("to") ?? "");
+      const ventana = hasta - desde;
+      ventanas.push({ ms: ventana, intervalo: params.get("interval") });
+      // Solo la del día operativo, y solo la moneda oficial (los p2p_* van en VES).
+      if (moneda !== null && moneda !== "VES" && ventana < 2 * 86_400_000) {
+        monedasDelDia.push(moneda);
+      }
+      return HttpResponse.json({
+        data: [],
+        pagination: { page: 1, page_size: 500, total_items: 0, has_more: false },
+        interval: "5m",
+      });
+    }),
+  );
+  return { monedasDelDia, ventanas };
+}
+
 describe("IntradayView", () => {
   it("agrupa por familia y mide la Δ contra la apertura del día", async () => {
     conSeries();
     render(<IntradayView />);
 
+    /*
+     * Cada familia en el bloque que le toca: compra y venta enfrentadas en la
+     * misma fila, microestructura como condiciones del ruleset, y solo la tasa
+     * oficial sigue en la parrilla de small multiples.
+     */
     await waitFor(() =>
-      expect(screen.getByLabelText("P2P — compra (buy)")).toBeTruthy(),
+      expect(
+        screen.getByLabelText("Compra vs. venta, métrica por métrica"),
+      ).toBeTruthy(),
     );
-    expect(screen.getByLabelText("P2P — venta (sell)")).toBeTruthy();
+    expect(screen.queryByLabelText("P2P — compra (buy)")).toBeNull();
+    expect(screen.queryByLabelText("P2P — venta (sell)")).toBeNull();
     expect(screen.getByLabelText("Tasa oficial (BCV)")).toBeTruthy();
     expect(screen.getByLabelText("Microestructura")).toBeTruthy();
 
-    // La Δ va contra la apertura (100), no contra el bucket previo, y el
-    // resumen accesible lleva apertura + último + variación.
-    expect(
-      screen.getByLabelText("Mediana: apertura 100, último 120, variación +20 (+20 %)"),
-    ).toBeTruthy();
-    expect(
-      screen.getByLabelText("Mediana: apertura 100, último 95, variación -5 (-5 %)"),
-    ).toBeTruthy();
-    // Día plano: variación cero, sin signo inventado.
-    expect(
-      screen.getByLabelText("Spread: apertura 2,5, último 2,5, variación 0 (0 %)"),
-    ).toBeTruthy();
+    // La Δ va contra la apertura (100), no contra el bucket previo, y cada lado
+    // la lleva en su columna con el signo escrito.
+    const fila = document.querySelector(".vmw-vs__fila")!;
+    const [compra, venta] = [...fila.querySelectorAll(".vmw-vs__celda")];
+    // Formato ÚNICO de `lib/delta.ts`: menos tipográfico, «+» solo en positivos
+    // y la unidad pegada a la cifra con espacio duro.
+    expect(compra.querySelector(".vmw-vs__valor")?.textContent).toBe("120 VES");
+    expect(compra.querySelector(".vmw-vs__delta")?.textContent).toBe(
+      "+20 VES (+20 %)",
+    );
+    expect(venta.querySelector(".vmw-vs__valor")?.textContent).toBe("95 VES");
+    expect(venta.querySelector(".vmw-vs__delta")?.textContent).toBe(
+      "−5 VES (−5 %)",
+    );
+    // Y la clave canónica de la métrica, sin maquillar.
+    expect(fila.querySelector(".vmw-vs__clave")?.textContent).toBe("p2p_mediana");
+
+    // Día plano: se DICE que no cambió, en vez de un «0 (0 %)» que parece un dato.
+    const spread = document.querySelector(".vmw-metrica")!;
+    expect(spread.querySelector(".vmw-metrica__cifra")?.textContent).toBe("2,5 %");
+    expect(spread.querySelector(".vmw-metrica__delta")?.textContent).toBe(
+      "— sin cambio",
+    );
   });
 
   it("pasa al gráfico el string decimal exacto, no solo la coordenada", async () => {
     conSeries();
     render(<IntradayView />);
 
-    await waitFor(() => expect(screen.getAllByTestId("linechart").length).toBe(4));
+    /*
+     * Solo queda la tasa oficial en la parrilla: compra y venta pasaron al
+     * bloque enfrentado y el spread a las tarjetas del ruleset, y esos dos
+     * dibujan su chispa en SVG propio.
+     */
+    await waitFor(() => expect(screen.getAllByTestId("linechart").length).toBe(1));
     const puntos = JSON.parse(
       screen.getAllByTestId("linechart")[0].dataset.puntos ?? "[]",
     ) as { valor: number; valorStr: string }[];
-    // El primer panel es el de la tasa oficial (grupo «oficial» va primero).
     expect(puntos).toEqual([
       { t: Date.parse("2026-07-28T04:00:00Z"), valor: 417.03, valorStr: "417.03" },
     ]);
@@ -159,8 +211,13 @@ describe("IntradayView", () => {
       }),
     );
     render(<IntradayView />);
+    /*
+     * La fila nombra la FAMILIA: el sufijo `_buy` pertenece a la columna, no al
+     * indicador de la fila. Y sin rótulo inventado —RF-7 promete que aparece,
+     * no que tenga etiqueta—.
+     */
     await waitFor(() =>
-      expect(screen.getByText("p2p_metrica_nueva_buy")).toBeTruthy(),
+      expect(screen.getByText("p2p_metrica_nueva")).toBeTruthy(),
     );
   });
 
@@ -196,27 +253,238 @@ describe("IntradayView", () => {
   });
 
   it("cambiar la moneda vuelve a pedir el intradía de esa moneda", async () => {
-    const monedas: string[] = [];
-    servidor.use(
-      http.get(`${BASE}/indicators/history`, ({ request }) => {
-        const moneda = new URL(request.url).searchParams.get("currency");
-        if (moneda !== null && moneda !== "VES") {
-          monedas.push(moneda);
-        }
-        return HttpResponse.json({
-          data: [],
-          pagination: { page: 1, page_size: 500, total_items: 0, has_more: false },
-          interval: "5m",
-        });
-      }),
-    );
+    const { monedasDelDia } = espiarPeticiones();
     render(<IntradayView />);
-    await waitFor(() => expect(monedas).toEqual(["USD"]));
+    await waitFor(() => expect(monedasDelDia).toEqual(["USD"]));
 
     await userEvent.selectOptions(
       screen.getByLabelText("Moneda de la tasa oficial"),
       "EUR",
     );
-    await waitFor(() => expect(monedas).toEqual(["USD", "EUR"]));
+    await waitFor(() => expect(monedasDelDia).toEqual(["USD", "EUR"]));
+  });
+
+  it("si la ventana de referencia falla, la parrilla sigue", async () => {
+    /*
+     * La referencia solo alimenta «qué se movió» y los saltos de la cronología.
+     * Si no llega, esas secciones no se pintan —no hay con qué normalizar— pero
+     * el intradía es el contenido principal de la vista y tiene que seguir.
+     */
+    servidor.use(
+      http.get(`${BASE}/indicators/history`, ({ request }) => {
+        const params = new URL(request.url).searchParams;
+        const ventana =
+          Date.parse(params.get("to") ?? "") - Date.parse(params.get("from") ?? "");
+        if (ventana > 2 * 86_400_000) {
+          return HttpResponse.json({ title: "Rango no procesable", status: 422 }, {
+            status: 422,
+            headers: { "content-type": "application/problem+json" },
+          });
+        }
+        return HttpResponse.json({
+          data: [
+            {
+              as_of: "2026-08-06T12:00:00Z",
+              indicator: "p2p_brecha_pct_buy",
+              currency: "VES",
+              value: "12.5",
+              calc_version: 1,
+            },
+          ],
+          pagination: { page: 1, page_size: 500, total_items: 1, has_more: false },
+          interval: "5m",
+        });
+      }),
+    );
+    render(<IntradayView />);
+
+    // El contenido llega; «qué se movió» y la cronología de saltos, no.
+    await waitFor(() =>
+      expect(document.querySelector(".vmw-vs__fila")).toBeTruthy(),
+    );
+    expect(document.querySelector(".vmw-metrica__rejilla")).toBeNull();
+    // Y ningún error se le echa encima al usuario: la vista no falló.
+    expect(screen.queryByText(/rango no procesable/i)).toBeNull();
+  });
+
+  it("la ventana de referencia se pide aparte y cubre 7 días", async () => {
+    /*
+     * «Qué se movió» normaliza contra la desviación típica de 7 días, así que
+     * hace falta una segunda consulta con otra ventana: la del día operativo no
+     * sirve para medir qué es normal en esa serie.
+     */
+    const { ventanas } = espiarPeticiones();
+    render(<IntradayView />);
+
+    await waitFor(() => expect(ventanas.length).toBeGreaterThanOrEqual(2));
+    const dias = ventanas.map((v) => Math.round(v.ms / 86_400_000));
+    expect(dias).toContain(7);
+    expect(Math.min(...dias)).toBeLessThanOrEqual(1); // la del día operativo
+
+    /*
+     * Y SIEMPRE en bucket de 1 h, ignore lo que diga el selector: con 5 min son
+     * ~2 000 buckets por serie y 7 días pasan de 40 000 filas. Se vio en vivo
+     * paginando por la 33 mientras la sección seguía sin pintarse.
+     */
+    const referencia = ventanas.find((v) => v.ms > 6 * 86_400_000)!;
+    expect(referencia.intervalo).toBe("1h");
+  });
+  it("las tres granularidades son UNA eleccion, no tres botones sueltos", async () => {
+    /*
+     * Excluyentes de verdad: `radiogroup` + `aria-checked`. Tres botones sin
+     * relacion se anuncian como tres acciones independientes, y lo que hay es
+     * una sola decision con tres opciones.
+     */
+    const { ventanas } = espiarPeticiones();
+    render(<IntradayView />);
+    await waitFor(() => expect(ventanas.length).toBeGreaterThanOrEqual(1));
+
+    const grupo = screen.getByRole("radiogroup", {
+      name: "Granularidad del bucket",
+    });
+    const opciones = within(grupo).getAllByRole("radio");
+
+    expect(opciones.map((o) => o.textContent)).toEqual(["5 min", "15 min", "1 h"]);
+    expect(opciones.filter((o) => o.getAttribute("aria-checked") === "true")).toHaveLength(1);
+    expect(opciones[0].getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("elegir 15 min lo pide asi al gateway", async () => {
+    /*
+     * La pastilla del medio no existia en el contrato: `interval` solo aceptaba
+     * 5m/1h/1d y un 15m se habria ido en 422. Esta prueba es la que ata la
+     * ampliacion del gateway con la UI que la usa.
+     */
+    const { ventanas } = espiarPeticiones();
+    render(<IntradayView />);
+    await waitFor(() => expect(ventanas.length).toBeGreaterThanOrEqual(1));
+
+    await userEvent.click(screen.getByRole("radio", { name: "15 min" }));
+
+    await waitFor(() =>
+      expect(
+        ventanas.some((v) => v.intervalo === "15m" && v.ms < 2 * 86_400_000),
+      ).toBe(true),
+    );
+    // Y la de referencia sigue fija en 1 h: el selector no la toca.
+    expect(
+      ventanas.filter((v) => v.ms > 6 * 86_400_000).every((v) => v.intervalo === "1h"),
+    ).toBe(true);
+  });
+
+  it("el punto de frescura no dice «en vivo» cuando la carga falla", async () => {
+    /*
+     * El punto late en salvia para afirmar que el dato esta llegando. Si la
+     * carga falla y sigue latiendo, afirma que hay vida donde no la hay — y ese
+     * es justo el momento en que alguien lo mira.
+     */
+    servidor.use(
+      http.get(`${BASE}/indicators/history`, () =>
+        HttpResponse.json(
+          { title: "Servicio no disponible", status: 503 },
+          { status: 503, headers: { "content-type": "application/problem+json" } },
+        ),
+      ),
+    );
+    render(<IntradayView />);
+
+    await waitFor(() =>
+      expect(document.querySelector(".vmw-frescura__punto")?.getAttribute("data-vivo")).toBe("no"),
+    );
+    expect(document.querySelector(".vmw-frescura")?.textContent).not.toMatch(/en vivo/i);
+  });
+
+  it("con dato fresco si lo dice, con la hora en VET", async () => {
+    conSeries();
+    render(<IntradayView />);
+
+    await waitFor(() =>
+      expect(document.querySelector(".vmw-frescura__punto")?.getAttribute("data-vivo")).toBe("si"),
+    );
+    expect(document.querySelector(".vmw-frescura")?.textContent).toMatch(
+      /en vivo · actualizado \d{2}:\d{2} VET/,
+    );
+  });
+  it("ninguna cifra de la vista imprime un guion ASCII", async () => {
+    /*
+     * La guarda de conjunto. El hueco que destapo mirando la pagina en vivo: la
+     * cronologia pintaba el string CRUDO del contrato en los cruces de umbral
+     * («-57.10523657 · umbral -40»), con guion ASCII y punto decimal, al lado de
+     * cifras ya formateadas. Ningun test unitario lo habria visto: cada uno
+     * miraba su componente y este es un defecto de la vista entera.
+     *
+     * Con este fixture NO hay analisis ni ventana de referencia, asi que la
+     * cronologia y «que se movio» no se pintan: sus selectores estan en la lista
+     * para cuando los haya, pero quien cubre el caso del cruce es
+     * `crono.test.tsx`.
+     */
+    conSeries();
+    render(<IntradayView />);
+    await waitFor(() => expect(screen.getAllByText(/VES/).length).toBeGreaterThan(0));
+
+    const cifras = [
+      ".vmw-vs__valor", ".vmw-vs__delta", ".vmw-vs__apertura",
+      ".vmw-metrica__cifra", ".vmw-metrica__delta", ".vmw-metrica__pie",
+      ".vmw-metrica__cifra", ".vmw-metrica__delta",
+      ".vmw-crono__cifras", ".intradia-valor", ".intradia-delta",
+    ].flatMap((selector) =>
+      [...document.querySelectorAll(selector)].map((e) => ({
+        selector,
+        texto: e.textContent ?? "",
+      })),
+    );
+
+    expect(cifras.length).toBeGreaterThan(0);
+    for (const { selector, texto } of cifras) {
+      expect(texto, `${selector}: ${texto}`).not.toContain("-");
+      // Y nunca dos signos seguidos, que es como se vio el «+−382,85 %».
+      expect(texto, `${selector}: ${texto}`).not.toMatch(/[+−]{2}/);
+    }
+  });
+  it("los bloques nombran la misma serie con las mismas palabras", async () => {
+    /*
+     * La promesa del diccionario unico. Antes cada bloque componia su rotulo
+     * («SPREAD · %» en una tarjeta, «Spread» en otra) y en ingles salian todos
+     * en espanol, porque las etiquetas estaban cableadas en `lib/intradia.ts`.
+     */
+    conSeries();
+    render(<IntradayView />);
+    await waitFor(() => expect(screen.getAllByText("Spread").length).toBeGreaterThan(0));
+
+    // La tarjeta de microestructura: etiqueta legible + clave del contrato.
+    const micro = document.querySelector(".vmw-metrica__nombre-serie")!;
+    expect(micro.querySelector(".vmw-metrica__etiqueta")?.textContent).toBe("Spread");
+    expect(micro.querySelector(".vmw-serie__clave")?.textContent).toBe(
+      "p2p_spread_pct",
+    );
+
+    // La fila de la tabla, con la misma etiqueta del catalogo.
+    const fila = document.querySelector(".vmw-vs__fila")!;
+    expect(fila.querySelector(".vmw-vs__nombre")?.textContent).toBe("Mediana VES");
+    expect(fila.querySelector(".vmw-vs__clave")?.textContent).toBe("p2p_mediana");
+
+    // Y la parrilla oficial.
+    const panel = document.querySelector(".intradia-titulo")!;
+    expect(panel.querySelector(".intradia-etiqueta")?.textContent).toBe(
+      "Tasa oficial VES",
+    );
+    expect(panel.querySelector(".vmw-serie__clave")?.textContent).toBe(
+      "official_rate",
+    );
+  });
+
+  it("en ingles las etiquetas se traducen y las claves NO", async () => {
+    /*
+     * El hueco que arrastraba la vista desde julio: en ingles los rotulos
+     * seguian en espanol. La clave, en cambio, es vocabulario del contrato y
+     * RF-9 dice expresamente que no se traduce.
+     */
+    conSeries();
+    render(<IntradayView />, { idioma: "en" });
+    await waitFor(() => expect(screen.getAllByText("Spread").length).toBeGreaterThan(0));
+
+    expect(screen.getByText("Median VES")).toBeTruthy();
+    expect(screen.queryByText("Mediana VES")).toBeNull();
+    expect(screen.getAllByText("p2p_mediana").length).toBeGreaterThan(0);
   });
 });

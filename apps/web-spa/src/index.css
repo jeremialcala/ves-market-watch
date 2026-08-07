@@ -153,6 +153,13 @@ body {
   margin-top: 24px;
 }
 
+/* Ritmo de Intradía: 46 px entre bloques. La regla base (24 px) la comparten
+   las otras tres vistas, así que esto va en un modificador en vez de mover el
+   ritmo de todo el producto de refilón. */
+.vmw-vista--intradia > .vmw-contenedor > * + * {
+  margin-top: 46px;
+}
+
 .vmw-seccion__cabecera {
   display: flex;
   flex-wrap: wrap;
@@ -1028,6 +1035,398 @@ body {
   opacity: 0.85;
 }
 
+/* -- compra vs. venta, métrica por métrica (Intradía) ----------------------- */
+
+/* La tabla no se estrecha por debajo de su ancho legible: en móvil se desplaza
+   en horizontal antes que apilar dos lados que existen para compararse. */
+.vmw-vs {
+  overflow-x: auto;
+  border-radius: 28px;
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+  padding: 8px 26px 20px;
+}
+
+.vmw-vs__tabla {
+  min-width: 660px;
+}
+
+.vmw-vs__cabecera,
+.vmw-vs__fila {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(0, 1.35fr) minmax(0, 1.35fr);
+  gap: 16px;
+}
+
+.vmw-vs__cabecera {
+  padding: 14px 0 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+
+/* El color de la CABECERA es el del lado. En las filas el mismo par de tonos
+   codifica la dirección: por eso el signo de la Δ va siempre escrito. */
+.vmw-vs__col-compra {
+  color: var(--teal);
+}
+
+.vmw-vs__col-venta {
+  color: var(--coral);
+}
+
+.vmw-vs__fila {
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.vmw-vs__fila:last-child {
+  border-bottom: none;
+}
+
+.vmw-vs__metrica {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vmw-vs__nombre {
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--white);
+}
+
+/* La clave técnica del contrato, idéntica en todos los bloques del Intradía.
+   Space Grotesk porque es un identificador, no prosa: se lee carácter a
+   carácter y a menudo se copia. */
+.vmw-serie__clave,
+.vmw-vs__clave {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  color: var(--text-dim);
+  word-break: break-word;
+}
+
+.vmw-vs__celda {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 12px;
+  align-items: center;
+}
+
+.vmw-vs__celda--vacia {
+  display: block;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.vmw-vs__cifras {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.vmw-vs__valor {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--white);
+}
+
+.vmw-vs__delta {
+  font-size: 12.5px;
+}
+
+.vmw-vs__apertura {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.vmw-vs__spark {
+  width: 96px;
+  height: 34px;
+  display: block;
+}
+
+/* La nota cruza la fila entera: habla de la métrica, no de uno de los lados. */
+.vmw-vs__nota {
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* -- cronología de la sesión (Intradía) ------------------------------------- */
+
+.vmw-crono {
+  list-style: none;
+  margin: 0;
+  padding: 26px 28px;
+  border-radius: 28px;
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+}
+
+.vmw-crono__evento {
+  display: grid;
+  grid-template-columns: 62px 18px 1fr;
+  gap: 16px;
+  padding-bottom: 22px;
+}
+
+/* El último no arrastra hueco: cerraría el bloque con un vacío que parece un
+   evento que no llegó. */
+.vmw-crono__evento[data-ultimo="si"] {
+  padding-bottom: 0;
+}
+
+.vmw-crono__hora {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--text-dim);
+  text-align: right;
+  line-height: 1.4;
+}
+
+/* Punto y línea: la línea se estira hasta el evento siguiente, así que el
+   último la deja en cero y el hilo termina donde termina la sesión. */
+.vmw-crono__eje {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.vmw-crono__eje i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+  margin-top: 4px;
+}
+
+.vmw-crono__eje b {
+  flex: 1;
+  width: 1px;
+  background: var(--border);
+}
+
+.vmw-crono__evento[data-ultimo="si"] .vmw-crono__eje b {
+  display: none;
+}
+
+.vmw-crono__contenido {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vmw-crono__titulo-evento {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--white);
+}
+
+.vmw-crono__texto {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* Las cifras del momento, en la display: son el respaldo del titular y se leen
+   como dato, no como prosa. */
+.vmw-crono__cifras {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+/* -- qué se movió desde la apertura (Intradía) ------------------------------ */
+
+/* -- microestructura (Intradía) -------------------------------------------- */
+
+/* Aquí el color NO es del lado —estas cuatro no lo tienen— sino del ESTADO de
+   la condición: coral cumple, teal no. Ninguna va en gris: el gris quedaría para
+   la tarjeta sin regla, que es el único caso en el que no hay estado que decir. */
+/* -- lectura de la sesión (Intradía) --------------------------------------- */
+
+/* Bloque rector de la vista: la ÚNICA superficie con tinte coral aquí, igual
+   que «Lectura de hoy» es la única con tinte teal en el dashboard. El coral es
+   del ruleset —lo que dispara—, no un adorno. */
+.vmw-sesion {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-radius: 28px;
+  padding: 24px 28px;
+  background: linear-gradient(160deg, var(--coral-tint), var(--dark-2));
+  border: 1px solid var(--coral-line);
+}
+
+.vmw-sesion__fila1 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.vmw-sesion__eyebrow {
+  font-size: 12.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--coral);
+  font-weight: 600;
+}
+
+.vmw-sesion__sello {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.vmw-sesion__empuje {
+  flex: 1;
+}
+
+.vmw-sesion__accion {
+  border-radius: 100px;
+  min-height: 40px;
+  padding: 0 18px;
+  font: inherit;
+  font-size: var(--fs-meta);
+  color: var(--text);
+  background: var(--overlay-soft);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.vmw-sesion__accion--coral {
+  background: var(--coral-tint);
+  border-color: var(--coral-line);
+  color: var(--coral);
+}
+
+.vmw-sesion__accion:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.vmw-sesion__fila2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vmw-sesion__punto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--coral);
+  color: var(--coral); /* `currentcolor` del halo */
+  box-shadow: var(--glow-dot);
+}
+
+.vmw-sesion__veredicto {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3.4vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--white);
+}
+
+.vmw-sesion__prosa {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text);
+  max-width: 820px;
+}
+
+.vmw-sesion__hechos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vmw-sesion__hecho {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 100px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--overlay-soft);
+  border: 1px solid var(--border);
+}
+
+.vmw-sesion__hecho i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--coral);
+}
+
+/* Las condiciones cierran el bloque tras un hairline: son el detalle que
+   sostiene el titular, no una lista aparte. */
+.vmw-sesion__condiciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.vmw-sesion__condicion {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* snake_case sin retocar: es el nombre del contrato. */
+.vmw-sesion__cond-nombre {
+  font-size: 13px;
+  color: var(--text-muted);
+  word-break: break-word;
+}
+
+.vmw-sesion__cond-valor {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* El color dice si la condición está cumplida; el texto de abajo lo dice
+   también, para que no dependa solo del tono. */
+.vmw-sesion__condicion[data-cumple="si"] .vmw-sesion__cond-valor {
+  color: var(--teal);
+}
+
+.vmw-sesion__condicion[data-cumple="no"] .vmw-sesion__cond-valor {
+  color: var(--coral);
+}
+
+.vmw-sesion__cond-umbral {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
 /* -- mapa de calor --------------------------------------------------------- */
 
 .vmw-calor {
@@ -1264,6 +1663,333 @@ body {
   border-radius: var(--radius-lg);
   background: var(--surface-panel);
   border: var(--border-width) solid var(--border);
+}
+
+/* -- tarjeta de metrica (movers, microestructura y lo que venga) ----------- */
+
+/* Una sola definicion para todos los bloques. Antes eran dos con el mismo
+   dibujo y valores que ya habian empezado a divergir (gap 10 contra 12, trazo
+   1,6 contra 1,8), y esa deriva es la que dejo cuatro titulos en blanco sobre
+   blanco durante ocho commits.
+
+   Todo en tokens que ya valian lo pedido: --border es el 8 %, --border-2 el
+   14 %, --lift son -4px y --dur-card 0,25 s. Sin sombra en reposo, sin scale y
+   sin estado de pulsado: el sistema no los define. Sin degradado y sin borde
+   lateral de color; el relieve lo dan el borde y la elevacion. */
+/* Rejilla comun de tarjetas: 18 px, y el minimo que hace que quepan tres en
+   ancho de escritorio sin apretar la nota. */
+.vmw-metrica__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.vmw-metrica {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: 22px;
+  padding: 22px 24px;
+  background: var(--dark-3);
+  border: var(--border-width) solid var(--border);
+  transition:
+    border-color var(--dur-card) var(--ease-out-expo),
+    transform var(--dur-card) var(--ease-out-expo);
+}
+
+.vmw-metrica:hover {
+  border-color: var(--border-2);
+  transform: var(--lift);
+}
+
+/* El movimiento del hover se anula con el ajuste del sistema; el cambio de
+   borde se queda, porque no es movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  .vmw-metrica {
+    transition: border-color var(--dur-card) var(--ease-out-expo);
+  }
+
+  .vmw-metrica:hover {
+    transform: none;
+  }
+}
+
+/* Foco visible: obligatorio y con separacion, para que el anillo no se coma el
+   borde de la tarjeta. `focus-within` ademas, porque lo que hoy recibe el foco
+   es lo que la tarjeta contenga, no ella. */
+.vmw-metrica:focus-visible,
+.vmw-metrica:focus-within {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.vmw-metrica[data-tono="alerta"] {
+  border-color: var(--coral-line);
+}
+
+.vmw-metrica__cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.vmw-metrica__nombre-serie {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.vmw-metrica__etiqueta {
+  display: block;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.vmw-metrica__pastilla {
+  flex: none;
+  font-size: 12px;
+  border-radius: var(--radius-pill);
+  padding: 3px 11px;
+  background: var(--overlay-soft);
+  color: var(--text-muted);
+}
+
+.vmw-metrica__pastilla[data-tono="alerta"] {
+  background: var(--coral-tint);
+  color: var(--coral);
+}
+
+.vmw-metrica__pastilla[data-tono="calma"] {
+  background: var(--teal-tint);
+  color: var(--teal);
+}
+
+.vmw-metrica__cifra-fila {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.vmw-metrica__cifra {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.03em;
+  color: var(--white);
+}
+
+.vmw-metrica__delta {
+  font-size: 13px;
+}
+
+.vmw-metrica__spark {
+  width: 100%;
+  height: 48px;
+  display: block;
+}
+
+.vmw-metrica__pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.vmw-metrica__nota {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* Regla del ruleset a la que pertenece la condicion. Display porque es un
+   identificador, como la clave de la serie. */
+.vmw-metrica__regla {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+/* -- estado cero de una serie ---------------------------------------------- */
+
+/* Ocupa el hueco de la chispa: sin salto de layout al pasar de una serie con
+   movimiento a una en cero. La linea dice que HAY dato y es constante; el hueco
+   vacio diria que falta. */
+.vmw-cero {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.vmw-cero__linea {
+  width: 100%;
+  height: var(--border-width);
+  background: var(--border);
+}
+
+/* Salvia: el color con el que el proyecto marca la validacion. El cero de
+   outliers no es una ausencia, es el filtro habiendo hecho su trabajo. */
+.vmw-cero__etiqueta {
+  font-size: 12.5px;
+  color: var(--sage);
+}
+
+/* -- tooltip de los sparklines -------------------------------------------- */
+
+/* El hueco del sparkline es el sistema de referencia: el tooltip sale del flujo
+   y aparecer no mueve un pixel de la tarjeta. */
+.vmw-chispa {
+  position: relative;
+}
+
+/* Desenfoque: el MISMO tratamiento que la barra de navegacion, que es el otro
+   unico sitio del sistema que lo usa (`--blur-nav`). Dos superficies flotantes,
+   un solo lenguaje. */
+.vmw-chispa__tooltip {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--tooltip-bg);
+  backdrop-filter: var(--blur-nav);
+  border: var(--border-width) solid var(--border);
+  /* No captura el puntero: si lo hiciera, entrar en el tooltip seria salir del
+     grafico y el tooltip parpadearia. */
+  pointer-events: none;
+  white-space: nowrap;
+  transform: translate(-50%, -100%);
+}
+
+/* Cerca del borde del viewport se ancla por su lado en vez de centrarse. */
+.vmw-chispa__tooltip[data-voltear="der"] {
+  transform: translate(-100%, -100%);
+}
+
+.vmw-chispa__tooltip[data-voltear="izq"] {
+  transform: translate(0, -100%);
+}
+
+.vmw-chispa__hora {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.vmw-chispa__valor {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* -- par etiqueta/clave en la parrilla ------------------------------------- */
+
+.intradia-titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.intradia-etiqueta {
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+/* -- barra de control del Intradía ----------------------------------------- */
+
+/* Modificador, no cambio de la base: `.vmw-controles` la comparte Histórico y
+   allí la barra sigue siendo la de antes. */
+.vmw-controles--intradia {
+  padding: 14px 18px;
+  border-radius: 22px;
+  /* El fondo ya es `--dark-2`: `--surface-panel` es su alias semántico y la base
+     lo usa. No se repite el token crudo. */
+}
+
+/* Grupo excluyente. `role="radiogroup"` + `aria-checked` en los botones: para
+   quien navega con lector, tres pastillas sueltas serían tres botones sin
+   relación, y lo que hay es UNA elección con tres opciones. */
+.vmw-bucket {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.vmw-bucket__opcion {
+  min-height: 40px;
+  padding: 9px 18px;
+  border-radius: 100px;
+  background: var(--overlay-soft);
+  border: var(--border-width) solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-xs);
+  cursor: pointer;
+}
+
+.vmw-bucket__opcion[aria-checked="true"] {
+  background: var(--teal-tint);
+  border-color: var(--teal-line);
+  color: var(--teal);
+}
+
+/* Empujado al extremo: es un estado, no un control, y no compite con ellos. */
+.vmw-frescura {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.vmw-frescura__punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--sage);
+  color: var(--sage); /* `currentcolor` del halo */
+  box-shadow: var(--glow-dot);
+  animation: vmw-pulso 2.4s ease-in-out infinite;
+}
+
+/* Sin dato fresco el punto NO late ni va en salvia: un latido verde mientras la
+   carga falla afirma que hay vida donde no la hay. */
+.vmw-frescura__punto[data-vivo="no"] {
+  background: var(--text-dim);
+  box-shadow: none;
+  animation: none;
+}
+
+@keyframes vmw-pulso {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vmw-frescura__punto {
+    animation: none;
+  }
 }
 
 .vmw-chip {

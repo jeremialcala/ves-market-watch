@@ -19,6 +19,27 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Security
 
+- **CVE-2026-59870 (`js-yaml`) aceptado por escrito, con caducidad (2026-08-06).**
+  Lo destapó el primer PR de la rama: es un aviso nuevo que llega por
+  `openapi-typescript → @redocly/openapi-core → js-yaml@4.x`, no algo que traiga
+  el código. Se acepta porque el vector —consumo cuadrático de CPU al resolver
+  `!!omap`— **no es alcanzable**: lo único que ese paquete parsea es el OpenAPI
+  del propio repo, sin `!!omap` y sin control de terceros, y es dependencia de
+  desarrollo que no entra en el bundle.
+  - **El arreglo disponible rompe la herramienta.** `js-yaml` solo corrige en 5.x;
+    con el override el audit queda en cero y el generador de tipos **revienta**
+    (js-yaml 5 retiró `types.merge`). Un gate en verde con la herramienta rota es
+    peor que uno en rojo, así que se revirtió.
+  - **La excepción caduca sola.** `npm audit` no sabe de allowlists —o pasa
+    entero o falla entero—, y bajar el umbral o poner `--omit=dev` habría
+    desactivado el control para todo el árbol de desarrollo. En su lugar,
+    `scripts/auditar-npm.mjs` solo silencia lo aceptado en
+    `scripts/npm-audit-excepciones.json` **y falla también cuando una excepción
+    deja de aplicar**, para que se borre el día del arreglo en vez de cubrir en
+    silencio lo siguiente. Verificado por mutación en los tres estados.
+  - Se retira cuando `openapi-typescript` publique con `@redocly/openapi-core@2.x`.
+    Revisión anotada: **2026-09-06**.
+
 - **Ratificado el DREAD de T15, último pendiente de diseño del Gate 1
   (2026-08-04).** Puntuación 2/2/2/2/2 = **10** (Jeremi Alcalá), verificada contra
   el código y no contra la ficha: 14 endpoints, todos `GET`, `allow_methods=["GET"]`,
@@ -229,6 +250,206 @@ Convención de mantenimiento (inventario por ejecución):
   lo tenía activo, junto con la rotación de refresh tokens. Corregido en todos.
 
 ### Added
+
+- **`interval` del historial acepta `15m` (2026-08-06).** Ampliación **compatible**
+  del enum del contrato (`5m` / `15m` / `1h` / `1d`), pedida por las tres
+  pastillas de granularidad del intradia: sin ella, la del medio se habría ido en
+  422. Son tres líneas —mapa de `timedelta`, `Literal` de FastAPI y enum del
+  OpenAPI— porque `time_bucket` corre en crudo sobre la hipertabla, sin agregado
+  continuo que hubiera que crear.
+  - Lo prueban dos tests que antes no existían: **ninguno ejercitaba `interval`**.
+    Uno de contrato con los cuatro valores y el rechazo (400 con problem+json, no
+    el 422 por defecto de FastAPI) y uno de integración contra TimescaleDB real
+    que comprueba que 15 min **agrupa**, contrastando su total con el de 1 h sobre
+    las mismas capturas —si el intervalo no llegara al `time_bucket`, los dos
+    coincidirían y la prueba no diría nada—.
+  - En el SPA, `Intervalo` pasa a **derivarse** de
+    `components["parameters"]["Interval"]` en vez de repetirse a mano: estaba
+    duplicado y por eso se quedó corto. Es la misma regla que el archivo ya
+    aplicaba a `Banda`.
+
+- **El Intradía se reordena entero (2026-08-06, rama `feat-intraday`; ADR-0025).** De la
+  parrilla original **solo queda la tasa oficial**: cada familia se fue al bloque
+  que responde a su pregunta, y los cinco se **derivan del dato** —ninguno cablea
+  lo que afirma—. Cada bloque decide además **qué codifica su color** —lado en la
+  parrilla, dirección de la Δ en el enfrentado, estado de la condición en
+  microestructura—, y por eso ninguno deja el signo ni el estado solo en el tono.
+  - **«Lectura de la sesión»** (bloque rector): qué dice el ruleset ahora — qué
+    regla está más cerca, cuántas condiciones cumple y cuál la bloquea. La regla
+    más cercana la elige el motor (`summary.closest_rule`), **nunca el SPA**:
+    recalcularla aquí crearía la segunda fuente de verdad que `RuleDistance` ya
+    documenta. Absorbe la frase de día operativo, que colgaba suelta.
+    «Exportar sesión» vuelca cada bucket con el valor exacto; «Vigilar esta
+    regla» va **deshabilitada y explicándose**, como «Crear alerta» (ADR-0021).
+  - **«Qué se movió desde la apertura»**: las cuatro series que explican la
+    sesión, elegidas por `z = |último − apertura| / σ₇d`. Normalizar es lo que
+    permite comparar unidades distintas — sin ello la liquidez copaba las cuatro
+    tarjetas por el tamaño de la cifra, no por moverse. Sin historia una serie
+    queda **fuera** del ranking; con σ = 0 y movimiento va arriba del todo.
+  - **«Cronología de la sesión»**: apertura, cruces de umbral, saltos de
+    liquidez sobre 2σ y último recálculo, con **histéresis por permanencia** de
+    15 minutos en los cruces.
+  - **«Compra vs. venta, métrica por métrica»** sustituye a las dos parrillas
+    de lado: la pregunta útil es en qué se diferencian, y eso exige la misma
+    fila. Las filas se **derivan** de las series —una lista fija de ocho habría
+    roto la promesa de RF-7 de que un indicador nuevo aparece sin tocar el
+    front—; un lado sin serie se dice en vez de rellenarse. Dentro del bloque el
+    lado lo dice la columna, así que el color pasa a la dirección de la Δ: como
+    comparte tonos con las cabeceras, el signo va siempre escrito.
+  - **«Microestructura» deja de ser parrilla: sus cuatro series no son cifras
+    del día sino **condiciones** del ruleset, y lo útil de un vistazo es si están
+    cumplidas y a qué distancia quedan de estarlo. Cada tarjeta lleva estado,
+    línea de disparo y el nombre de la regla con la posición de la condición. El
+    color deja de codificar el lado —estas cuatro no lo tienen— y pasa al estado:
+    **coral cumple, teal no**, que es la inversión que se espera aquí (el coral es
+    del ruleset, lo que dispara, no lo que va bien).
+    - **Cuál de las reglas gobierna a cada indicador hay que elegirlo**: el ratio
+      y el momentum son condición de TRES reglas con umbrales distintos, así que
+      «cumple» no dice nada sin nombrar la regla. Se prefiere `closest_rule` —la
+      que el titular ya destaca— y, sin ella, la primera por orden alfabético:
+      sin desempate estable la tarjeta cambiaba de umbral sola entre refrescos.
+    - **La línea de disparo entra en el dominio de la chispa** aunque la serie no
+      se le acerque: dejarla fuera la recorta del lienzo sin avisar, y una chispa
+      sin línea visible se lee como si el disparo estuviera cerca. Que la serie
+      salga aplanada contra un borde ES la lectura —hoy no dispara, y por mucho—.
+    - **Sin análisis no se pinta ningún estado**: ni coral ni teal, sin pastilla
+      y sin línea. Elegir un color sería afirmar algo que nadie ha calculado.
+  - **La barra de control dice el estado, no ofrece un botón.** Fuera
+    «Actualizar»: la vista ya se recarga sola cada 5 min, así que lo que faltaba
+    no era un control sino saber si eso está pasando. El bucket pasa de `<select>`
+    a tres pastillas excluyentes (5/15/60 min) anunciadas como `radiogroup`.
+    - **El punto de frescura sólo late en salvia con dato fresco de verdad**: si
+      la carga falla se apaga y el texto dice desde cuándo no se actualiza. Un
+      latido verde mientras la carga falla afirma que hay vida donde no la hay, y
+      es justo el momento en que alguien lo mira.
+    - El pulso se detiene con `prefers-reduced-motion: reduce`, y el test no
+      protege sólo a esa animación: exige que **cualquier** animación en bucle
+      del CSS esté exceptuada.
+  - **Todo formato de Δ pasa por una sola función (`lib/delta.ts`).** Estaba
+    repetido en cinco componentes con cinco criterios, y por ahí se colaron los
+    dos defectos que llegaron a pantalla: un porcentaje que contradecía el signo
+    que tenía al lado y un signo duplicado. No eran fallos de aritmética: eran
+    cinco formateos distintos del mismo hecho.
+    - Menos tipográfico **U+2212**, «+» solo en positivos, unidad pegada al valor
+      con espacio duro, «— sin cambio» cuando no se movió y **sin triángulos de
+      dirección** —eran un tercer canal que repetía lo que ya dicen el signo
+      escrito y el color—.
+    - **Una condición sustituye a dos**: el porcentaje se omite si la apertura no
+      llega a 0,5, lo que cubre de golpe el cero, la apertura pequeña («+133 %»
+      de casi nada) y la negativa (invierte el sentido).
+    - **El signo del porcentaje se COMPONE, no se copia** del que devuelve la
+      división: dirección de la Δ + magnitud del cociente. Así el «+−382,85 %»
+      deja de ser un caso que recordar y pasa a ser inexpresable.
+    - Lo vigilan tres pruebas de fuente (los seis componentes importan la
+      función, no queda ningún triángulo, nadie compone un porcentaje a mano) y
+      una de vista que barre las cifras de todos los bloques.
+  - **Etiqueta y clave, separadas y en un solo catálogo.** Cada serie se nombra
+    con una etiqueta legible en caja de oración («Brecha VES», «Drenaje oferta
+    6 h») y debajo su clave técnica en snake_case, las dos del mismo sitio: la
+    tabla enfrentada, «qué se movió», microestructura y la cronología nombran la
+    misma serie igual. Cierra un hueco de RF-9 que arrastraba desde julio —las
+    etiquetas estaban cableadas en español y en inglés salían en español—.
+    - **La clave mostrada EXISTE en `indicators`**: `p2p_brecha_abs`,
+      `p2p_liquidez`, `p2p_drenaje_oferta_6h_pct`. Se descartó un juego de claves
+      más legible (`p2p_brecha_ves`, `micro_drenaje_oferta_6h`) porque ninguna
+      existe: se leería como identificador y fallaría en la primera consulta.
+    - Familia en la tabla (la fila cubre los dos lados) y serie en las tarjetas:
+      la clave identifica exactamente lo que se está viendo.
+  - **Tooltip propio para los 27 sparklines.** El único que había era el de
+    Recharts en la parrilla, y vivía **dentro del flujo** de la tarjeta: aparecer
+    empujaba el layout y tapaba la línea de apertura. Los 24 SVG de la tabla
+    enfrentada, «qué se movió» y microestructura no tenían ninguno —la serie se
+    veía y no se podía leer un valor—.
+    - `absolute` sobre el hueco del sparkline (sale del flujo, no mueve un
+      píxel) y `pointer-events: none`, que es lo que evita el parpadeo clásico.
+    - Se ancla con las **mismas coordenadas que dibuja la línea**:
+      `coordenadasSparkline` se extrajo de `trazoSparkline` para que no puedan
+      separarse. Voltea a menos de 120 px del borde del viewport.
+    - Desenfoque **compartido con la barra de navegación** vía `--blur-nav`, y
+      fondo en un token que se voltea con el tema: cableado a la tinta oscura
+      sería una caja negra sobre papel en tema claro.
+    - **En táctil no aparece**: sin hover no habría forma de cerrarlo. La vía sin
+      puntero es «Exportar sesión».
+  - **El cero de `p2p_outliers_pct` se pinta como RESULTADO, no como hueco.** Con
+    la serie entera a cero, el área del sparkline pasa a una línea hairline
+    centrada y la frase «sin outliers en la sesión» en salvia —el color de la
+    validación—: el filtro MAD/IQR no tuvo que descartar nada. Ni chispa plana,
+    que se lee igual que un dato que falta, ni «(—)».
+    - **Se dispara con TODOS los puntos a cero**, no con «no se movió»: la frase
+      habla del día entero. Y la nota interpretativa de la tabla exige que **los
+      dos lados** lo cumplan: cablearla habría escrito «el filtro no descartó
+      nada hoy» el mismo día en que descartó —el 6-ago hubo 17 lecturas no nulas
+      en compra y 128 en venta, comprobado en la base antes de implementarlo—.
+    - **Solo donde hay lectura escrita del cero**: una mediana en cero no es
+      «limpio», es que algo va mal.
+  - **`p2p_outliers_pct` queda fuera del ranking de «qué se movió», siempre.**
+    Mide la calidad del snapshot, no el mercado, y con una σ de 7 días diminuta
+    cualquier microcambio le daba una z enorme: se vio en vivo ocupando la primera
+    tarjeta con un «−0,50 (−100 %)». Al excluirla, las cuatro pasaron a ser series
+    de mercado.
+  - **Ritmo vertical normalizado**: 46 px entre bloques, 18 px de cabecera a
+    contenido y entre tarjetas hermanas; contenedor a 1180 px con 24 px de aire
+    lateral y `clamp(24px,4vw,44px)` / 96 px. Los 46 px van en un **modificador de
+    vista**: la regla base de 24 px la comparten Dashboard, Análisis e Histórico.
+  - **Fuera las pastillas «compra», «venta» y «sin lado» de las cabeceras.** No
+    informaban: «sin lado» repetía una obviedad del título y el lado de una
+    tarjeta ya lo dice su clave (`p2p_vwap_sell`). En su lugar, cada sección lleva
+    un subtítulo que dice **qué mira el bloque**.
+  - **Una sola tarjeta de métrica (`MetricCard`)** para «qué se movió»,
+    microestructura y cualquier bloque futuro. Eran dos componentes con el mismo
+    dibujo cuyos valores **ya habían empezado a divergir** —gap 10 contra 12,
+    trazo 1,6 contra 1,8—, el mismo patrón que dejó cuatro títulos invisibles.
+    - Contrato: etiqueta y clave **del catálogo** (la identidad entra como
+      `indicador`, no como dos cadenas sueltas), valor, Δ con su color, apertura y
+      serie; opcionales el umbral, la pastilla, la nota y el pie derecho.
+    - Estilo fijo **en tokens que ya valían lo pedido**: `--border` era el 8 %,
+      `--border-2` el 14 %, `--lift` los −4 px y `--dur-card` los 0,25 s. Sin
+      sombra en reposo, sin scale, sin `:active`, sin degradado y sin borde
+      lateral de color. Foco con `outline` 2 px y `outline-offset` 3 px.
+    - Se retiraron **25 reglas CSS** que quedaron huérfanas y las dos rejillas
+      idénticas pasaron a una.
+  - 146 pruebas nuevas; el SPA pasa de 348 a 494 y de 87,1 a 88,19 % de ramas.
+
+### Fixed
+
+- **Toda la vista de Intradía estaba rota en TEMA CLARO (2026-08-06).** Los
+  prompts de la rama decían «blanco» y se escribió `color: #fff` **siete veces**
+  en vez de `var(--white)`, que es el token de máximo contraste y vale `#15181b`
+  en claro. El veredicto de la sesión, cuatro títulos de sección, las cifras de
+  las tarjetas y los valores de la tabla quedaron en blanco sobre fondo blanco,
+  a contraste 1:1, durante ocho commits.
+  - **Ninguna prueba se enteró**: todas corren en oscuro, que es el tema por
+    defecto. El canario nuevo (`unit/tema-tokens.test.ts`) no mide píxeles —no se
+    puede sin renderizar los dos temas— sino que **ningún `color:` de la hoja sea
+    un literal** y que `--white` siga volteándose. Verificado por mutación.
+  - Lo destapó unificar los títulos de sección: había **dos definiciones del
+    mismo elemento** con la misma tipografía y distinto color, y solo una usaba el
+    token. Verificado en vivo: 26 elementos se voltean ahora en los dos temas.
+
+- **La cronología volcaba el string CRUDO del contrato (2026-08-06).** Los
+  cruces de umbral escribían «p2p_drenaje_oferta_6h_pct -57.10523657 · umbral
+  -40» —guion ASCII y punto decimal— al lado de tarjetas que ya escribían
+  «−57,10 %». **Ningún test unitario podía verlo**: cada uno mira su componente y
+  esto era un defecto de coherencia de la vista entera. Apareció recorriendo la
+  página en vivo; ahora hay una guarda que barre las cifras de todos los bloques
+  buscando guiones ASCII y signos dobles.
+
+- **El % de variación mentía el sentido con apertura negativa (2026-08-06).**
+  Salió al pintar las tarjetas de microestructura: `p2p_momentum_bid_3h_pct`
+  abrió en −0,24 y estaba en +0,31 —una subida— y la tarjeta escribía
+  «+0,55 (−232,25 %)», con el signo doble incluido. El cociente es
+  aritméticamente correcto y la frase es falsa: contra una base con signo el
+  porcentaje no describe la dirección del movimiento. `resumenIntradia` lo omite
+  ahora cuando la apertura no es **positiva**, igual que ya hacía con el cero.
+  - Se corrigió ahí y **no en `porcentajeRelativo`**: como aritmética pura,
+    `parte / base` con base negativa está bien y tiene su prueba; lo que no vale
+    es llamar a ese número «variación desde la apertura».
+  - Afecta a los tres bloques que usan el resumen (parrilla, enfrentado y
+    microestructura) y al texto alternativo, que ya no imprime un «(+—)».
+
+- **`etiquetaDiaVET` tenía el locale `es-VE` fijo (2026-08-06):** dentro de una
+  frase en inglés salía «operating day jueves, 6 de agosto de 2026». Recibe el
+  idioma y usa formato corto.
 
 - **`ingestor-historico` pasa de 71,71 % a 97,22 % (2026-08-04): el criterio de
   salida 1 de Gate 2 queda CUMPLIDO en los seis servicios.** 98 → 138 tests.

@@ -182,6 +182,41 @@ def test_historial_indicadores_cumple_schema(cliente, repositorio, auth):
     validar_contra("IndicatorHistoryPage", r.json())
 
 
+def test_historial_indicadores_acepta_los_intervalos_del_contrato(
+    cliente, repositorio, auth
+):
+    """Los cuatro del enum entran y cualquier otro se rechaza.
+
+    `15m` se anadio para la barra del intradia; sin esta prueba, quitarlo del
+    `Literal` dejaria la pastilla del medio devolviendo 422 y nadie se enteraria
+    hasta verlo en pantalla.
+    """
+    ahora = datetime.now(UTC)
+    repositorio.historial_ind = []
+    ventana = {
+        "from": (ahora - timedelta(days=1)).isoformat(),
+        "to": ahora.isoformat(),
+    }
+    for intervalo in ("5m", "15m", "1h", "1d"):
+        r = cliente.get(
+            "/api/v1/indicators/history",
+            headers=auth,
+            params={**ventana, "interval": intervalo},
+        )
+        assert r.status_code == 200, intervalo
+        assert r.json()["interval"] == intervalo
+
+    # Fuera del enum: 400 con problem+json, que es lo que dice el contrato para
+    # parametro invalido (no el 422 por defecto de FastAPI).
+    r = cliente.get(
+        "/api/v1/indicators/history",
+        headers=auth,
+        params={**ventana, "interval": "7m"},
+    )
+    assert r.status_code == 400
+    assert r.headers["content-type"].startswith("application/problem+json")
+
+
 def test_historial_indicadores_filtra_por_indicador_y_moneda(
     cliente, repositorio, auth
 ):

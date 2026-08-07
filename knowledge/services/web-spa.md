@@ -25,6 +25,178 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   **resync REST en cada (re)conexión** (push best-effort — ADR-0016).
 - **Histórico**: tasa oficial e indicador canónico por bucket 5m/1h/1d
   (Recharts), rango ≤ 90 días, paginación con progreso/cancelación.
+## El Intradía se lee de arriba abajo (2026-08-06, ADR-0025)
+- De la parrilla original **solo queda la tasa oficial**: cada familia se fue al
+  bloque que responde a su pregunta —«Lectura de la sesión» (veredicto del
+  ruleset), «Qué se movió desde la apertura», «Compra vs. venta»,
+  «Microestructura» y «Cronología de la sesión»—, y los cinco se **derivan del
+  dato**.
+- **Cada bloque decide qué codifica su color, y hay que saberlo para leerlos
+  juntos**: lado en la parrilla, dirección de la Δ en el bloque enfrentado,
+  estado de la condición en microestructura. Por eso ninguno deja el signo ni el
+  estado solo en el color.
+- **El criterio de «qué se movió» se calcula**: `z = |último − apertura| / σ₇d`.
+  Normalizar es lo que hace comparables unidades distintas — sin ello la liquidez
+  copaba las cuatro tarjetas por el tamaño de la cifra, no por moverse. σ = 0 con
+  movimiento va arriba del todo (`z = ∞`: la serie no se movía en una semana y
+  hoy sí); sin historia se queda **fuera**, no al fondo con un cero que la haría
+  parecer tranquila.
+- **Compra y venta dejan de ser dos parrillas** y pasan a un bloque enfrentado,
+  métrica por métrica. Las filas se derivan de las series (RF-7: un indicador
+  nuevo aparece sin tocar el front) con orden declarado; un lado ausente se dice
+  en vez de rellenarse. Ahí el color codifica la DIRECCIÓN y no el lado —el lado
+  lo dice la columna—, y como el par teal/coral encabeza las columnas y colorea
+  las Δ, el signo va siempre escrito. Tres métricas llevan nota de contexto:
+  brecha (los dos lados se miden contra la misma tasa oficial), mejor precio (no
+  pasa por el filtro de outliers) y outliers (es lo descartado, no un error).
+- **Una sola tarjeta de métrica (`MetricCard`)** para movers, microestructura y
+  lo que venga. Eran dos componentes con el mismo dibujo y valores que **ya habían
+  empezado a divergir** —gap 10 contra 12, trazo 1,6 contra 1,8—, que es el mismo
+  patrón que dejó cuatro títulos en blanco sobre blanco.
+  - La identidad entra como `indicador` y el par etiqueta/clave sale del
+    catálogo: pasarlos por props reabriría la divergencia que se cerró.
+  - Estilo fijo en tokens que **ya valían lo pedido** (`--border` 8 %,
+    `--border-2` 14 %, `--lift` −4 px, `--dur-card` 0,25 s). Sin sombra en
+    reposo, sin scale, sin `:active`, sin degradado y sin borde lateral de color.
+  - **El foco está escrito pero hoy no se alcanza**: la tarjeta no es un control
+    y no se le añadió `tabIndex` —serían ~28 paradas de tabulación sin nada que
+    activar, un empeoramiento para quien navega con teclado—. La regla lleva
+    `:focus-within` para cubrir el día que la tarjeta contenga algo enfocable.
+  - Al extraerla quedaron **25 reglas CSS huérfanas**; se retiraron, y las dos
+    rejillas idénticas pasaron a una.
+- **Siete elementos de Intradía estaban en blanco sobre blanco en tema claro.**
+  Los prompts decían «blanco» y se escribió `color: #fff` en vez de
+  `var(--white)`, que vale `#15181b` en claro: el veredicto de la sesión, cuatro
+  títulos de sección, las cifras de las tarjetas y los valores de la tabla, todos
+  a contraste 1:1. **Ninguna prueba se enteró porque todas corrían en oscuro.**
+  - Lo destapó unificar los títulos: había **dos definiciones del mismo
+    elemento** (`.vmw-movio__titulo` junto a `.vmw-seccion__titulo`) y solo una
+    usaba el token. *Duplicar una regla de estilo es duplicar el sitio donde
+    puede divergir.*
+  - Canario en `unit/tema-tokens.test.ts`: ningún `color:` de la hoja puede ser un
+    literal, y `--white` tiene que seguir volteándose. Verificado por mutación.
+- **Ritmo vertical de Intradía**: 46 px entre bloques (en un modificador de
+  vista, porque la regla base de 24 px la comparten las otras tres), 18 px de
+  cabecera a contenido y entre tarjetas. Fuera las pastillas de lado: «sin lado»
+  repetía el título y el lado de una tarjeta ya lo dice su clave. Cada sección
+  gana un subtítulo que dice qué mira.
+- **El cero de `p2p_outliers_pct` es un RESULTADO, no un hueco.** Con la serie
+  entera a cero, el área del sparkline pasa a una línea hairline y la frase «sin
+  outliers en la sesión» en salvia: el filtro MAD/IQR no tuvo que descartar nada.
+  Una chispa plana se lee igual que un dato que falta.
+  - **Todos los puntos a cero**, no «no se movió»: la frase habla del día entero.
+    Y la nota de la tabla exige que **los dos lados** lo cumplan —cablearla habría
+    escrito «no descartó nada hoy» el 6-ago, que tuvo 17 lecturas no nulas en
+    compra y 128 en venta—.
+  - Solo donde hay lectura escrita del cero (`etiquetaCero`): una mediana en cero
+    no es «limpio», es que algo va mal.
+- **`p2p_outliers_pct` no entra en «qué se movió», nunca.** Mide la calidad del
+  snapshot, no el mercado; con σ diminuta cualquier microcambio le daba z enorme
+  y compraba una de las cuatro tarjetas —visto en vivo en la primera—. Al
+  excluirla, las cuatro pasaron a ser series de mercado.
+- **Los 27 sparklines comparten un tooltip propio.** El de Recharts —el único
+  que había, en la parrilla— vivía dentro del flujo de la tarjeta: aparecer
+  empujaba el layout y tapaba la línea de apertura. Los 24 SVG no tenían ninguno.
+  - `absolute` sobre el hueco del sparkline (sale del flujo) + `pointer-events:
+    none` (no roba el puntero, que es lo que provoca el parpadeo clásico:
+    entra el tooltip → sale del gráfico → se cierra → vuelve).
+  - Se ancla con las **mismas coordenadas que dibuja la línea**
+    (`coordenadasSparkline`, extraída de `trazoSparkline` para que no puedan
+    separarse). Un tooltip que señala otro punto es peor que ninguno.
+  - **Desenfoque compartido con la barra** vía `--blur-nav`, el otro único sitio
+    del sistema que lo usa, y fondo en un token que **se voltea con el tema**:
+    `rgba(21,24,27,.94)` cableado sería una caja negra sobre papel en claro.
+  - **En táctil no se muestra**: sin hover no hay forma de cerrarlo salvo tocando
+    otra cosa. La vía que sí funciona sin puntero es «Exportar sesión».
+- **Etiqueta y clave viven en un solo catálogo** (`presentacionDe`): etiqueta
+  legible traducible + clave canónica. Los cuatro bloques del Intradía nombran la
+  misma serie igual porque leen de ahí, y de paso cierra un hueco de RF-9 que
+  arrastraba desde julio —las etiquetas estaban cableadas en español y en inglés
+  salían en español—.
+  - **La clave mostrada existe en `indicators`**: `p2p_brecha_abs`,
+    `p2p_liquidez`, `p2p_drenaje_oferta_6h_pct`. Un rótulo más bonito
+    —`p2p_brecha_ves`, `micro_drenaje_oferta_6h`— se leería como identificador y
+    fallaría en cuanto alguien lo copiara a una consulta; RF-9 dice además que el
+    vocabulario del contrato no se traduce ni se maquilla. Hay un test que lo ata.
+  - Familia en la tabla (`p2p_mediana`, la fila cubre los dos lados) y serie en
+    las tarjetas (`p2p_mediana_sell`): la clave identifica lo que se está viendo.
+- **Todo formato de Δ vive en `lib/delta.ts`, una sola función.** Estaba
+  repetido en cinco componentes con cinco criterios, y por ahí llegaron a
+  pantalla un porcentaje que contradecía su propio signo y un signo duplicado.
+  Menos tipográfico U+2212, «+» solo en positivos, unidad pegada con espacio
+  duro, «— sin cambio» cuando no se movió y sin triángulos de dirección.
+  - **Una condición para el porcentaje: apertura ≥ 0,5.** Cubre los tres casos
+    malos de golpe —cero (no existe), pequeña («+133 %» de casi nada) y negativa
+    (invierte el sentido)—. Antes había dos reglas distintas en dos sitios.
+  - **El signo del porcentaje se COMPONE, no se copia** del que devuelve la
+    división: se toma la dirección de la Δ y la magnitud del cociente. Es lo que
+    hace estructuralmente imposible volver a imprimir «+−382,85 %».
+  - Lo vigilan tres pruebas de fuente: que los seis componentes importen la
+    función, que no quede ningún triángulo y que nadie componga un porcentaje a
+    mano en una plantilla.
+- **La cronología volcaba el string CRUDO del contrato** en los cruces de umbral
+  —«−57.10523657 · umbral -40», con guion ASCII y punto decimal— al lado de
+  tarjetas ya formateadas. **Ningún test unitario lo habría visto**: cada uno
+  miraba su componente y era un defecto de la vista entera. Apareció recorriendo
+  la página en vivo y ahora hay una guarda que barre las cifras de todos los
+  bloques buscando guiones ASCII.
+- **La barra de control dice el ESTADO, no ofrece un botón.** Fuera «Actualizar»:
+  la vista ya se recarga sola cada 5 min, así que lo que faltaba no era un
+  control sino saber si eso está pasando. El bucket pasa de `<select>` a tres
+  pastillas excluyentes (5/15/60 min) anunciadas como `radiogroup` —tres botones
+  sueltos se leerían como tres acciones independientes, y es UNA elección—.
+  - **El punto solo late en salvia con dato fresco de verdad.** Si la carga
+    falla, se apaga y el texto dice desde cuándo no se actualiza. Un latido verde
+    mientras la carga falla afirma que hay vida donde no la hay, y es justo el
+    momento en que alguien mira ese punto.
+  - **`15m` no existía en el contrato**: `interval` sólo aceptaba 5m/1h/1d y la
+    pastilla del medio se habría ido en 422. Se amplió el enum del gateway (ver
+    [api-gateway](api-gateway.md)) y `Intervalo` pasó a **derivarse** de
+    `components.parameters.Interval` en vez de repetirse a mano: estaba duplicado
+    y por eso se quedó corto. Ahora una opción que el gateway no acepte no
+    compila.
+- **Microestructura deja de ser parrilla: son CONDICIONES, no cifras del día.**
+  Las cuatro (drenaje 6 h, momentum bid 3 h, ratio oferta/demanda, spread) son
+  condiciones del ruleset, y lo útil de un vistazo es si están cumplidas y a qué
+  distancia quedan. El estado sale de `rule_proximity` —el SPA no compara nada—;
+  el color pasa a codificarlo (coral cumple, teal no), que es la inversión que se
+  espera aquí: el coral es del ruleset, lo que dispara, no lo que va bien.
+  - **Cuál de las reglas gobierna a cada indicador hay que elegirlo**: el ratio y
+    el momentum son condición de TRES reglas con umbrales distintos, así que
+    «cumple» no dice nada sin nombrar la regla. Se prefiere la de
+    `summary.closest_rule` —la que el titular ya destaca— y, sin ella, la primera
+    por orden alfabético: sin desempate estable la tarjeta cambiaba de umbral
+    sola entre refrescos.
+  - **La línea de disparo entra en el dominio de la chispa** aunque la serie no
+    se le acerque. Dejarla fuera la recorta del lienzo sin avisar, y una chispa
+    sin línea visible se lee como si el disparo estuviera cerca —justo lo
+    contrario de lo que pasa—. Que la serie salga aplanada contra un borde ES la
+    lectura: hoy no dispara, y por mucho.
+  - **Sin análisis no se pinta ningún estado**: ni coral ni teal, sin pastilla y
+    sin línea. Elegir un color sería afirmar algo que nadie ha calculado.
+- **El % de variación se omite cuando la apertura no es positiva.** Salió al
+  pintar el momentum: abrió en −0,24 y estaba en +0,31 —una subida— y la tarjeta
+  escribía «+0,55 (−232,25 %)». El cociente es correcto y la frase es falsa:
+  contra una base con signo el porcentaje no describe la dirección. Se corrigió
+  en `resumenIntradia`, no en `porcentajeRelativo`: la aritmética pura está bien,
+  lo que no vale es llamar a eso «variación desde la apertura».
+- **La histéresis de la cronología es de PERMANENCIA, no de amplitud.** Se probó
+  primero la banda clásica sobre la σ de 7 días y no vale: en
+  `p2p_ratio_oferta_demanda` esa σ es 0,58 frente a un umbral de 0,3, así que la
+  banda se comía el umbral. La σ larga mide cambios de régimen, no el temblor
+  local; lo que distingue un cruce de un temblor es que **aguante**. 15 minutos,
+  elegidos midiendo: de 21 cruces crudos quedan 8, y se estabiliza entre 3 y 6
+  buckets.
+- Un cruce recién ocurrido **no se pinta** hasta cumplir el plazo: un evento que
+  aparece y desaparece al refrescar es peor que uno que llega tarde.
+- La ventana de referencia se pide aparte y **en bucket de 1 h**. Con el del
+  selector (5 min) son >40 000 filas y se vio en vivo paginando por la 33 con la
+  sección sin pintarse.
+- **Lo que no se cableó**: «el resto se mantuvo dentro de su rango normal» se
+  cuenta; el primer día había 10 series fuera y la frase habría sido falsa.
+  «Vigilar esta regla» va deshabilitada y explicándose (ADR-0021), como «Crear
+  alerta».
+
 - **Intradía (2026-07-29)**: parrilla de small multiples con TODOS los
   indicadores del día operativo VET (UTC−4 fijo), agrupados en oficial /
   compra / venta / microestructura. Cada panel lleva último valor, sparkline
@@ -232,7 +404,7 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   14 días»), no una nota bajo la leyenda.
 
 ## Verificación
-- **348 tests** (unit/component/contract con MSW y WS mock) — **87,43 % de ramas**
+- **494 tests** (unit/component/contract con MSW y WS mock) — **88,19 % de ramas**
   (umbral Gate 2: 80 %). `tests/component/medidores.test.tsx` fija el panel con
   lectura real en ambos idiomas y `tests/component/lectura.test.tsx` la tarjeta de
   régimen, ambas incluida la **ausencia del sello demo**; la segunda comprueba

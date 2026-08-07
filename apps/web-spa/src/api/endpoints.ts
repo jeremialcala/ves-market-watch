@@ -32,7 +32,9 @@ export type ProximidadRegla = Schemas["RuleProximity"];
 export type Banda = LecturaMedidor["band"];
 
 export type Lado = "buy" | "sell";
-export type Intervalo = "5m" | "1h" | "1d";
+/** Mismo criterio que `Banda`: sale del contrato, no de una lista a mano. Estaba
+ *  duplicado y se quedó corto al añadir 15m; así no puede volver a pasar. */
+export type Intervalo = components["parameters"]["Interval"];
 
 export const RANGO_MAX_DIAS = 90;
 const PAGE_SIZE_MAX = 500;
@@ -289,9 +291,32 @@ export async function historialIntradia(
   monedaOficial: string,
   intervalo: Intervalo,
   ahora: Date,
+  opciones: OpcionesPaginado = {},
+): Promise<Map<string, PuntoIntradia[]>> {
+  return seriesDeVentana(
+    monedaOficial,
+    intervalo,
+    inicioDiaVET(ahora),
+    ahora,
+    opciones,
+  );
+}
+
+/**
+ * Las mismas series en una ventana arbitraria.
+ *
+ * La usa el intradía para el día operativo y «qué se movió» para los 7 días con
+ * los que normaliza. Es la misma consulta: no filtra por indicador —una ventana
+ * los devuelve todos de una vez— pero sí por moneda, o se paginarían las cinco
+ * del BCV para dibujar una.
+ */
+export async function seriesDeVentana(
+  monedaOficial: string,
+  intervalo: Intervalo,
+  desde: Date,
+  hasta: Date,
   { signal, alProgresar }: OpcionesPaginado = {},
 ): Promise<Map<string, PuntoIntradia[]>> {
-  const desde = inicioDiaVET(ahora);
   const monedas = [...new Set([MONEDA_P2P, monedaOficial])];
   const avance = monedas.map(() => ({ paginas: 0, items: 0, hayMas: false }));
   const reportar =
@@ -309,7 +334,7 @@ export async function historialIntradia(
     monedas.map((moneda, indice) =>
       historialIndicadores(
         desde,
-        ahora,
+        hasta,
         intervalo,
         { moneda },
         { signal, alProgresar: reportar(indice) },

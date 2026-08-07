@@ -55,6 +55,17 @@ describe("horaVET y etiquetaDiaVET", () => {
     // 02:00 UTC del 29 todavía es el 28 en Caracas.
     expect(etiquetaDiaVET(new Date("2026-07-29T02:00:00Z"))).toContain("28");
   });
+
+  it("la etiqueta se escribe en el idioma de la interfaz", () => {
+    // Dentro de una frase en inglés, un «28 de julio» delata que la fecha se
+    // formateó en otro sitio: el idioma es parámetro, no constante.
+    const instante = new Date("2026-07-29T02:00:00Z");
+    expect(etiquetaDiaVET(instante, "es")).toMatch(/jul/i);
+    expect(etiquetaDiaVET(instante, "en")).toMatch(/jul/i);
+    expect(etiquetaDiaVET(instante, "es")).not.toBe(
+      etiquetaDiaVET(instante, "en"),
+    );
+  });
 });
 
 describe("clasificación de indicadores", () => {
@@ -79,17 +90,51 @@ describe("clasificación de indicadores", () => {
     expect(ladoDeGrupo("venta")).toBe("venta");
   });
 
-  it("un indicador desconocido se dibuja igual, con su nombre canónico", () => {
+  it("un indicador desconocido no tiene etiqueta, y su clave es su nombre", () => {
+    /*
+     * RF-7: aparece igual sin tocar el catálogo. Lo que NO se hace es inventarle
+     * un rótulo: `etiqueta` en null y el componente pinta el nombre canónico una
+     * sola vez, sin repetirlo debajo.
+     */
     const presentacion = presentacionDe("p2p_metrica_futura_buy");
-    expect(presentacion.etiqueta).toBe("p2p_metrica_futura_buy");
+    expect(presentacion.etiqueta).toBeNull();
+    expect(presentacion.clave).toBe("p2p_metrica_futura_buy");
     expect(presentacion.unidad).toBe("");
   });
 
-  it("la presentación de un p2p_* no depende del lado", () => {
-    expect(presentacionDe("p2p_mediana_buy")).toEqual(
-      presentacionDe("p2p_mediana_sell"),
-    );
+  it("la etiqueta de un p2p_* no depende del lado, pero la CLAVE sí", () => {
+    /*
+     * La etiqueta nombra la familia («Mediana VES») y es la misma en los dos
+     * lados; la clave identifica la SERIE, y `p2p_mediana_buy` no es
+     * `p2p_mediana_sell`. Devolver la misma para las dos sería dar un
+     * identificador que no distingue lo que está en pantalla.
+     */
+    const compra = presentacionDe("p2p_mediana_buy");
+    const venta = presentacionDe("p2p_mediana_sell");
+
+    expect(compra.etiqueta).toBe(venta.etiqueta);
+    expect(compra.unidad).toBe(venta.unidad);
+    expect(compra.clave).toBe("p2p_mediana_buy");
+    expect(venta.clave).toBe("p2p_mediana_sell");
     expect(presentacionDe("p2p_brecha_pct_buy").unidad).toBe("%");
+  });
+
+  it("la clave que se muestra EXISTE en el contrato", () => {
+    /*
+     * La guarda contra el rótulo bonito. Los nombres reales de `indicators` son
+     * `p2p_brecha_abs`, `p2p_liquidez`, `p2p_drenaje_oferta_6h_pct`— no
+     * `p2p_brecha_ves` ni `micro_drenaje_oferta_6h`. Una clave inventada se lee
+     * como un identificador y falla en cuanto alguien la copia a una consulta.
+     */
+    for (const canonico of [
+      "p2p_brecha_abs_buy",
+      "p2p_liquidez_sell",
+      "p2p_drenaje_oferta_6h_pct",
+      "p2p_ratio_oferta_demanda",
+    ]) {
+      expect(presentacionDe(canonico).clave).toBe(canonico);
+      expect(presentacionDe(canonico).etiqueta).not.toBeNull();
+    }
   });
 });
 
@@ -119,9 +164,22 @@ describe("resumenIntradia", () => {
     expect(resumen?.deltaPct).toBe("0.00");
   });
 
-  it("apertura en cero deja el % en null (se muestra «—»)", () => {
+  it("apertura en cero deja el % en null (se omite)", () => {
     const resumen = resumenIntradia(puntos("0", "5"));
     expect(resumen?.deltaAbs).toBe("5");
+    expect(resumen?.deltaPct).toBeNull();
+  });
+
+  it("apertura negativa también: el % mentiría el sentido", () => {
+    /*
+     * Visto en vivo en `p2p_momentum_bid_3h_pct`: abrió en −0,24 y estaba en
+     * +0,31 —una subida— y la tarjeta escribía «+0,55 (−232,25 %)». El cociente
+     * es aritméticamente correcto y la frase es falsa: contra una base con
+     * signo, el porcentaje no describe la dirección del movimiento.
+     */
+    const resumen = resumenIntradia(puntos("-0.24", "0.31"));
+    expect(resumen?.deltaAbs).toBe("0.55");
+    expect(resumen?.direccion).toBe(1);
     expect(resumen?.deltaPct).toBeNull();
   });
 

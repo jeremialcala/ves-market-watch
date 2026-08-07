@@ -199,6 +199,7 @@ gitGraph
     commit id: "8c6ca8e"
     commit id: "c636de0"
     commit id: "4fbada0"
+    commit id: "e1f378c"
 ```
 
 ### Estado actual de las ramas
@@ -206,7 +207,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `4fbada0` | 2026-08-06 | 165 |
+| `develop` | `e1f378c` | 2026-08-06 | 166 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -222,6 +223,32 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `9445199` | commit | — | Jeremi Alcala | 2026-08-06 | security(t8): CVE-2026-59870 aceptado por escrito, con caducidad propia |
+| `8e3baf5` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
+| `f508921` | commit | — | Jeremi Alcala | 2026-08-06 | docs: barrido de coherencia y ADR-0025 |
+| `b1bfa63` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
+| `c4149ce` | commit | — | Jeremi Alcala | 2026-08-06 | refactor(intradia): una sola tarjeta de metrica para todos los bloques |
+| `0856c5c` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
+| `ee5e8c1` | commit | — | Jeremi Alcala | 2026-08-06 | style(intradia): ritmo vertical normalizado, y siete blancos que no eran blancos |
+| `e0b1a95` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
+| `af51136` | commit | — | Jeremi Alcala | 2026-08-06 | feat(intradia): el cero de outliers es un resultado, no un hueco |
+| `74c55b5` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
+| `3859349` | commit | — | Jeremi Alcala | 2026-08-06 | fix(intradia): tooltip propio para los sparklines, fuera del flujo |
+| `4aeadaa` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
+| `2ee76c7` | commit | — | Jeremi Alcala | 2026-08-06 | feat(intradia): etiqueta legible y clave del contrato, en un solo catalogo |
+| `976a54f` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
+| `8335285` | commit | — | Jeremi Alcala | 2026-08-06 | refactor(intradia): un solo formato para toda variacion |
+| `7f40d03` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
+| `3e71f14` | commit | — | Jeremi Alcala | 2026-08-06 | feat(intradia): la barra de control dice el estado en vez de ofrecer un boton |
+| `80b2d50` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
+| `7ea0705` | commit | — | Jeremi Alcala | 2026-08-06 | feat(web-spa): microestructura como condiciones del ruleset, no cifras del dia |
+| `dd65cfc` | commit | — | Jeremi Alcala | 2026-08-06 | feat(web-spa): compra y venta enfrentadas metrica por metrica |
+| `1ba92bb` | commit | — | Jeremi Alcala | 2026-08-06 | docs: coherencia de la rama feat-intraday |
+| `9524c44` | commit | — | Jeremi Alcala | 2026-08-06 | feat(web-spa): histeresis por permanencia en los cruces de la cronologia |
+| `7f89626` | commit | — | Jeremi Alcala | 2026-08-06 | feat(web-spa): seccion «Cronologia de la sesion» como ultimo bloque del Intradia |
+| `86acb1c` | commit | — | Jeremi Alcala | 2026-08-06 | feat(web-spa): seccion «Que se movio desde la apertura» en el Intradia |
+| `6deea55` | commit | — | Jeremi Alcala | 2026-08-06 | feat(web-spa): panel «Lectura de la sesion» como primer bloque del Intradia |
+| `e1f378c` | commit | — | Jeremi Alcala | 2026-08-06 | docs(repo-history): regenerar |
 | `4fbada0` | commit | — | Jeremi Alcala | 2026-08-06 | fix: la profundidad se anclaba en un anuncio manipulado (T2) |
 | `c636de0` | commit | — | Jeremi Alcala | 2026-08-06 | ci: apretar el trinquete del gateway a 92 (era 90) |
 | `8c6ca8e` | commit | — | Jeremi Alcala | 2026-08-06 | fix(api-gateway): un fallo transitorio de JWKS mataba la autenticacion 60 s |

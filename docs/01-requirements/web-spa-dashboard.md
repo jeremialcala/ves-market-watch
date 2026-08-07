@@ -77,9 +77,189 @@ login y el estado de salud son visibles sin sesión.
   agrupados por oficial / compra / venta / microestructura. Cada panel muestra el
   último valor, su serie del día y la **variación intradía** — Δ absoluta y
   porcentual contra la **apertura** del día, según la define el glosario. La Δ se
-  calcula sobre el string decimal exacto (sin float); si la apertura es cero, el
-  porcentaje se muestra «—», nunca ∞ ni NaN. Un indicador nuevo del motor aparece
-  sin cambios en el front. Refresco manual y automático cada 5 min.
+  calcula sobre el string decimal exacto (sin float). El **porcentaje se omite
+  cuando la apertura no es positiva**: con apertura cero no existe (∞/NaN) y con
+  apertura negativa miente el sentido —el momentum abrió en −0,24 y estaba en
+  +0,31, una subida, y el cociente escribía «−232 %» junto a una Δ de «+0,55»—; la
+  Δ en unidades es exacta y no depende del signo de la base. Un indicador nuevo
+  del motor aparece sin cambios en el front. Refresco automático cada 5 min, con
+  la granularidad elegible entre **5 min, 15 min y 1 h**.
+
+  **Todo formato de Δ pasa por una sola función (`lib/delta.ts`, 2026-08-06).**
+  Estaba repetido en cinco componentes con cinco criterios, y por ahí se colaron
+  dos cosas que llegaron a pantalla: un porcentaje que contradecía el signo que
+  tenía al lado y un signo duplicado. Las reglas:
+
+  - **Menos tipográfico U+2212**, nunca el guion ASCII; separadores del idioma.
+  - **«+» explícito solo en positivos**, y siempre escrito: el color no puede ser
+    la única pista de la dirección.
+  - **El porcentaje se omite si la apertura no llega a 0,5.** Una condición cubre
+    los tres casos malos: apertura cero (no existe el cociente), pequeña (un
+    movimiento de nada sale como «+133 %») y **negativa** (el cociente invierte el
+    sentido). La Δ en unidades es exacta siempre.
+  - **Sin cambio se dice** («— sin cambio»), no se pinta un «+0» que parece una
+    medición.
+  - **La unidad viaja pegada al valor** con espacio duro, nunca colgada del nombre
+    de la métrica.
+  - **Sin triángulos de dirección**: eran un tercer canal que repetía lo que ya
+    dicen el signo escrito y el color.
+
+  **Etiqueta y clave, separadas y en un solo catálogo (2026-08-06).** Cada serie
+  se nombra con una **etiqueta legible** en caja de oración («Brecha VES»,
+  «Drenaje oferta 6 h») y, debajo, su **clave técnica en snake_case**. Las dos
+  salen del mismo catálogo (`presentacionDe`), así que la tabla enfrentada, «qué
+  se movió», microestructura y la cronología nombran la misma serie igual. Cierra
+  además un hueco de RF-9 que arrastraba desde julio: las etiquetas estaban
+  cableadas en `lib/intradia.ts` y en inglés salían en español.
+
+  - **La clave es la del CONTRATO, no una decorativa.** `p2p_brecha_abs`,
+    `p2p_liquidez`, `p2p_drenaje_oferta_6h_pct` —los nombres reales de la tabla
+    `indicators`—. Es lo que se escribe en una consulta, en un ticket o lo que
+    sale en el CSV; un rótulo que no exista ahí sería un identificador que falla
+    en cuanto alguien lo copia. Un test lo fija.
+  - En la tabla la clave es la de la **familia** (`p2p_mediana`), porque la fila
+    cubre los dos lados y el sufijo pertenece a la columna; en las tarjetas y en
+    la cronología es la de la **serie** (`p2p_mediana_sell`), que es lo que ahí
+    se está mirando.
+  - Un indicador fuera del catálogo aparece con su nombre canónico y **sin
+    segunda línea**: repetir la misma cadena dos veces no informa.
+
+  **Tooltip propio para los sparklines (2026-08-06).** El único que había era el
+  de Recharts, en los paneles de la parrilla: se pintaba **dentro del flujo** de
+  la tarjeta —aparecer empujaba el layout— y tapaba la línea de apertura. Los 24
+  sparklines de la tabla enfrentada, «qué se movió» y microestructura no tenían
+  ninguno: la serie se veía pero no se podía leer un valor. Ahora los 27 comparten
+  uno:
+
+  - `position: absolute` sobre el hueco del sparkline, así que **sale del flujo**
+    y aparecer no mueve un píxel; `pointer-events: none`, para no robar el puntero
+    y provocar el parpadeo clásico.
+  - Se ancla sobre el punto con `translate(-50%, -100%)` y 8 px, usando las
+    **mismas coordenadas que dibuja la línea**: un tooltip que señala un punto
+    distinto del que se ve es peor que no tenerlo.
+  - **Voltea** a menos de 120 px del borde del viewport en vez de salirse.
+  - Superficie con el **mismo tratamiento que la barra de navegación**, que es el
+    otro único sitio del sistema con desenfoque (`--blur-nav`). El fondo es un
+    token que se voltea con el tema, como `--nav-bg`: cableado a la tinta oscura
+    sería una caja negra sobre papel en tema claro.
+  - **En táctil no aparece**: sin hover no habría forma de cerrarlo salvo tocando
+    otra cosa, y taparía la tarjeta que se acaba de tocar. El dato exacto de cada
+    bucket sale por «Exportar sesión», que sí funciona sin puntero.
+
+  **El cero como resultado, no como hueco (2026-08-06).** En `p2p_outliers_pct`
+  el cero **es lo deseado**: significa que el filtro MAD/IQR no tuvo que descartar
+  ningún anuncio. Cuando la serie entera vale cero, el área del sparkline se
+  sustituye por una línea hairline centrada y la frase «sin outliers en la
+  sesión» en salvia —el color con el que el proyecto marca la validación—; ni
+  chispa plana, que se lee igual que un dato que falta, ni «(—)».
+
+  - **Se dispara con TODOS los puntos a cero**, no con «no se movió» ni «el
+    último es cero»: la frase habla del día entero y una serie que tuvo outliers a
+    media mañana la desmentiría. En la tabla, la nota interpretativa
+    («snapshot limpio en ambos lados…») exige que **los dos lados** lo cumplan.
+    Cablearla habría escrito «el filtro no descartó nada hoy» el mismo día en que
+    descartó: el 6-ago hubo 17 lecturas no nulas en compra y 128 en venta.
+  - **Solo donde el proyecto tiene una lectura del cero** (`etiquetaCero` del
+    catálogo). Una mediana en cero no es «limpio», es que algo va mal; inventarle
+    una frase sería afirmar algo que nadie ha interpretado.
+  - **`p2p_outliers_pct` queda FUERA del ranking de «qué se movió»**, se mueva lo
+    que se mueva. Mide la calidad del snapshot, no el mercado, y como su σ de 7
+    días es diminuta cualquier microcambio le daba una z enorme: se vio en vivo
+    ocupando la primera tarjeta con un «−0,50 (−100 %)» que no decía nada del
+    mercado. Su sitio es su fila de la tabla, donde tiene contexto.
+
+  **Ritmo vertical normalizado (2026-08-06).** 46 px entre bloques, 18 px entre
+  la cabecera de sección y su contenido, 18 px entre tarjetas hermanas; el
+  contenedor mantiene 1180 px, 24 px de aire lateral y
+  `clamp(24px,4vw,44px)` / 96 px arriba y abajo. La cabecera es una fila flex a
+  línea base con h3 en caja de oración y, al lado, **un subtítulo que dice qué
+  mira el bloque**.
+
+  - **Fuera las pastillas «compra», «venta» y «sin lado».** No informaban: «sin
+    lado» repetía una obviedad del título y el lado de una tarjeta ya lo dice su
+    clave (`p2p_vwap_sell`). Cada sección gana en su sitio una frase que sí dice
+    algo.
+  - Los 46 px van en un **modificador de la vista**: la regla base de separación
+    (24 px) la comparten Dashboard, Análisis e Histórico, y ahí el ritmo medido es
+    otro.
+
+  **Una sola tarjeta de métrica (2026-08-06).** `MetricCard` la usan «qué se
+  movió» y microestructura, y es la que debe usar cualquier bloque futuro.
+  Contrato: etiqueta y clave **derivadas del catálogo**, valor, Δ con su color de
+  dirección, apertura, serie, y como opcionales umbral, pastilla, nota y pie
+  derecho.
+
+  - **La identidad entra como `indicador`, no como etiqueta + clave sueltas.** El
+    catálogo es el único dueño de ese par; aceptarlo por props reabriría la puerta
+    a que dos bloques nombren la misma serie distinto.
+  - Estilo **fijo y no personalizable por bloque**, todo en tokens que ya valían
+    lo pedido: `--dark-3`, radio 22, padding 22/24, gap 12, `--border` (8 %) y en
+    hover `--border-2` (14 %) con `--lift` (−4 px) en `--dur-card` (0,25 s).
+    **Sin sombra en reposo, sin scale y sin estado de pulsado** —el sistema no los
+    define—, **sin degradado y sin borde lateral de color**. Foco visible
+    obligatorio con `outline` de 2 px y `outline-offset` 3 px.
+  - El movimiento del hover se anula con `prefers-reduced-motion`; el cambio de
+    borde se queda, porque no es movimiento.
+
+  **La barra de control dice el estado, no ofrece un botón (2026-08-06).** El
+  botón «Actualizar» desaparece: la vista ya se recarga sola, así que lo que
+  faltaba no era un control sino saber si eso está pasando. En su sitio va un
+  indicador de frescura, y **solo late en salvia cuando hay dato fresco de
+  verdad**: si la carga falla, el punto se apaga y el texto dice desde cuándo no
+  se actualiza. Un latido verde mientras la carga falla afirma que hay vida donde
+  no la hay, justo en el momento en que alguien mira ese punto. El pulso se
+  detiene con `prefers-reduced-motion: reduce` —es la única animación en bucle de
+  la aplicación, y hay un test que exige que cualquier otra futura también se
+  exceptúe—.
+
+  **Ampliación 2026-08-06 — la vista se lee de arriba abajo (ADR-0025).** De la parrilla
+  original solo queda la tasa oficial: cada familia se fue al bloque que responde
+  a su pregunta, y **los cinco se derivan del dato**. Cada bloque decide además
+  qué codifica su color —lado en la parrilla, dirección de la Δ en el bloque
+  enfrentado, estado de la condición en microestructura—, y por eso ninguno deja
+  el signo ni el estado solo en el color:
+
+  1. **«Lectura de la sesión»**, bloque rector: qué dice el ruleset AHORA — qué
+     regla está más cerca, cuántas condiciones cumple y cuál la bloquea. Sale de
+     `analisis` (`summary` + `rule_proximity`); la regla más cercana la elige el
+     motor vía `summary.closest_rule`, **nunca el SPA**. Absorbe la frase de día
+     operativo, con la apertura de la sesión y lo transcurrido. «Exportar sesión»
+     vuelca cada bucket con el valor exacto; «Vigilar esta regla» va
+     **deshabilitada y explicándose**, igual que «Crear alerta» (ADR-0021).
+  2. **«Qué se movió desde la apertura»**: las cuatro series que explican la
+     sesión. El criterio **se calcula**: `z = |último − apertura| / σ₇d`, con σ
+     sobre los valores de los últimos 7 días. Normalizar es lo que permite
+     comparar unidades distintas — sin ello la liquidez copaba las cuatro
+     tarjetas por el mero tamaño de la cifra. Una serie sin historia queda fuera
+     del ranking (no hay con qué compararla) y una que llevaba 7 días quieta y
+     hoy se mueve va arriba del todo. La frase «el resto se mantuvo dentro de su
+     rango normal» **se cuenta**, no se cablea: el primer día en producción había
+     10 series fuera de rango y la frase habría sido falsa.
+  3. **«Compra vs. venta, métrica por métrica»** sustituye a las dos parrillas
+     de lado: la pregunta útil no es cómo va la liquidez de venta sino en qué se
+     diferencian los dos lados, y eso exige la misma fila. Las filas se
+     **derivan** de las series —una lista fija habría roto la promesa de este
+     mismo RF de que un indicador nuevo aparece sin tocar el front—; el orden sí
+     es declarado. Un lado sin serie **se dice**, no se rellena con el otro ni
+     con un cero. Dentro del bloque el lado lo dice la COLUMNA, así que el color
+     pasa a codificar la dirección de la Δ; como comparte tonos con las
+     cabeceras, el signo va siempre escrito.
+  4. **«Microestructura»** deja de ser parrilla: sus cuatro series no son cifras
+     del día como las demás, sino **condiciones** del ruleset, y lo que hay que
+     poder leer de un vistazo es si están cumplidas y a qué distancia quedan de
+     estarlo. Cada tarjeta lleva el estado, la línea de disparo dibujada **en la
+     escala de la serie** y el nombre de la regla con la posición de la condición
+     dentro de ella. El estado sale de `rule_proximity` —el SPA no evalúa nada— y
+     sin análisis **no se pinta ningún estado**. El color deja de codificar el
+     lado (estas cuatro no lo tienen) y pasa al estado: coral cumple, teal no.
+  5. **«Cronología de la sesión»**: apertura, cruces de umbral del ruleset,
+     saltos de liquidez sobre 2σ y último recálculo. Nada que no se pueda señalar
+     en una serie. Los cruces llevan **histéresis por permanencia** —el estado
+     nuevo tiene que aguantar 15 minutos— porque sin ella un indicador que oscila
+     junto a su umbral generaba un evento por temblor: 50 líneas, 48 de ellas
+     cuatro indicadores vibrando. La ventana de referencia de 7 días se pide
+     **aparte y en bucket de 1 h**, no en el del selector: a 5 min son más de
+     40 000 filas.
 
 - **RF-8 — Vista de análisis** (2026-07-31, ADR-0018): lectura del mercado con
   escenarios y riesgos. Los números que la plataforma sirve (presión de liquidez,

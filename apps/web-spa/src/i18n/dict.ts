@@ -519,6 +519,129 @@ export const ES = {
   "historico.rangoLabel": "{dias} días",
 
   // -- intradía --------------------------------------------------------------
+  // -- Compra vs. venta (Intradía) --------------------------------------------
+  "vs.titulo": "Compra vs. venta, métrica por métrica",
+  "vs.bajada": "la misma serie enfrentada · Δ medida contra la apertura del día",
+  "vs.colMetrica": "Métrica",
+  "vs.colCompra": "Compra (buy)",
+  "vs.colVenta": "Venta (sell)",
+  "vs.apertura": "apertura {valor}",
+  "vs.sinLado": "sin serie de este lado hoy",
+  "vs.descripcionSpark": "de {apertura} en la apertura a {ultimo} ahora.",
+  "vs.notaBrecha":
+    "Los dos lados se miden contra la MISMA tasa oficial, así que la diferencia entre sus brechas es el spread del P2P, no una discrepancia del BCV.",
+  "vs.notaMejorPrecio":
+    "El mejor precio es el extremo del libro y NO pasa por el filtro de outliers (a diferencia de mediana y VWAP): un solo anuncio absurdo lo mueve.",
+  "vs.notaOutliers":
+    "Es el porcentaje de anuncios que el filtro descartó, no un error: cuanto más alto, más ruido traía el snapshot de ese lado.",
+  "vs.notaOutliersLimpio":
+    "Snapshot limpio en ambos lados: el filtro no descartó nada hoy, la lectura no arrastra reserva de calidad.",
+  // -- Microestructura (Intradía) ---------------------------------------------
+  "micro.bajada": "las cuatro series que el ruleset vigila · estado de cada condición",
+  "micro.cumple": "Cumple",
+  "micro.noCumple": "No cumple",
+  "micro.apertura": "apertura {valor}",
+  "micro.dispara": "dispara {op} {umbral}",
+  "micro.regla": "{regla} · condición {i} de {n}",
+  "micro.sinRegla": "no es condición de ninguna regla del ruleset vigente",
+  "micro.descripcionSpark": "de {apertura} en la apertura a {ultimo} ahora.",
+  "micro.descripcionSparkUmbral":
+    "de {apertura} en la apertura a {ultimo} ahora, contra un umbral de {umbral}.",
+  "micro.notaDrenaje":
+    "Cuánta oferta queda frente a hace seis horas. Cuanto más negativo, más se está secando — el patrón que precedió a las corridas alcistas del backtest.",
+  "micro.notaMomentum":
+    "Variación de la mediana de venta frente a hace tres horas. Positivo es el bid subiendo; solo distingue arranque de techo cruzado con la oferta y el spread.",
+  "micro.notaRatio":
+    "Liquidez ofrecida entre liquidez demandada. Por debajo de 1 hay más demanda que oferta; por encima de 2 es un muro de oferta que suele preceder a la corrección.",
+  "micro.notaSpread":
+    "Distancia entre las dos medianas, compra y venta. Comprimido es mercado tenso: con el momentum alto, agotamiento de la subida más que fuerza.",
+  // -- Cronología de la sesión (Intradía) -------------------------------------
+  "crono.titulo": "Cronología de la sesión",
+  "crono.bajada": "VET · desde la apertura del día",
+  "crono.aperturaTitulo": "Apertura de la sesión",
+  "crono.aperturaTexto":
+    "Primer bucket del día operativo: desde aquí se mide todo lo demás.",
+  "crono.umbralTitulo": "Umbral del ruleset cruzado",
+  "crono.umbralPasa":
+    "{indicador} pasó a cumplir su condición dentro de la regla.",
+  "crono.umbralDeja":
+    "{indicador} dejó de cumplir su condición dentro de la regla.",
+  "crono.cifrasUmbral": "{regla} · {indicador} {valor} · umbral {umbral}",
+  "crono.liquidezTitulo": "Salto de liquidez",
+  "crono.liquidezTexto":
+    "El volumen ofrecido del lado {lado} se movió más de {sigmas} veces lo que salta habitualmente entre buckets.",
+  "crono.cifrasLiquidez": "{delta} · total {valor} · {sigmas}σ",
+  "crono.recalculoTitulo": "Último recálculo",
+  "crono.recalculoTexto":
+    "El motor volvió a evaluar el ruleset con el snapshot más reciente.",
+  // -- Qué se movió desde la apertura (Intradía) ------------------------------
+  "movio.titulo": "Qué se movió desde la apertura",
+  "movio.bajada": "{destacadas} de {totales} series explican la sesión",
+  "movio.restoNormal": "el resto se mantuvo dentro de su rango normal",
+  "movio.restoInquieto":
+    "otras {n} también se salieron de su rango normal",
+  "movio.apertura": "apertura {valor}",
+  "movio.ahora": "ahora",
+  "movio.descripcionSpark":
+    "{etiqueta}: de {apertura} en la apertura a {ultimo} ahora.",
+  "movio.magnitud": "Se movió {veces} veces su variación típica de 7 días.",
+  "movio.magnitudQuieta":
+    "No se había movido en los últimos 7 días; hoy sí.",
+  "movio.brechaAbre":
+    "La brecha se abrió: el paralelo se alejó del oficial durante la sesión.",
+  "movio.brechaComprime":
+    "La brecha se comprimió: el paralelo se acercó al oficial.",
+  "movio.liquidezSube":
+    "Hay más volumen ofrecido que al abrir: el libro aguanta órdenes mayores.",
+  "movio.liquidezBaja":
+    "Queda menos volumen ofrecido que al abrir: el libro se vacía.",
+  "movio.spreadSube":
+    "Comprar y vender se separaron: cruzar el mercado cuesta más que al abrir.",
+  "movio.spreadBaja":
+    "Comprar y vender se acercaron: cruzar el mercado cuesta menos que al abrir.",
+  "movio.outliersSube":
+    "Más anuncios quedaron fuera del filtro: el snapshot trae más ruido.",
+  "movio.outliersBaja":
+    "Menos anuncios quedaron fuera del filtro: el snapshot está más limpio.",
+  // -- Lectura de la sesión (Intradía) ---------------------------------------
+  "sesion.titulo": "Lectura de la sesión",
+  "sesion.sello": "día operativo {dia} · apertura {hora} VET · {transcurrido} transcurridas",
+  "sesion.selloSinSesion": "día operativo {dia} · sin datos todavía",
+  "sesion.transcurridoHm": "{h} h {m} m",
+  "sesion.transcurridoM": "{m} m",
+  "sesion.exportar": "Exportar sesión",
+  "sesion.vigilar": "Vigilar esta regla",
+  "sesion.vigilarNoDisponible":
+    "Vigilar una regla necesita persistencia por usuario, evaluación en el motor y un canal de aviso: es una funcionalidad, no un botón. Queda fuera de alcance (ADR-0021).",
+  "sesion.veredictoSinAnalisis": "Todavía no hay análisis de esta revisión",
+  "sesion.veredictoSinRegla": "Ninguna regla es evaluable ahora mismo",
+  "sesion.veredictoCumple": "Se cumple {regla}",
+  "sesion.veredictoCerca": "{regla} cumple {cumplidas} de {totales} condiciones",
+  "sesion.prosaSinRegla":
+    "Sin una regla evaluable no hay proximidad que contar: alguno de sus indicadores no está vigente, o la confianza del snapshot es baja.",
+  "sesion.prosaSinBloqueo":
+    "Las condiciones de {regla} se cumplen todas; que llegue a emitirse depende del cooldown del ruleset, que vive en la cronología de señales.",
+  "sesion.prosaBloqueoSinDistancia":
+    "La condición de {indicador} no se puede evaluar: su indicador no está vigente, y sin valor no hay distancia que medir.",
+  "sesion.prosaFaltaSubir":
+    "Falta que {indicador} suba {distancia} hasta pasar de {umbral}: mientras no lo haga, la regla no dispara por mucho que el resto se mantenga.",
+  "sesion.prosaFaltaBajar":
+    "Falta que {indicador} baje {distancia} hasta quedar por debajo de {umbral}: mientras no lo haga, la regla no dispara por mucho que el resto se mantenga.",
+  "sesion.hechoCondiciones": "{cumplidas} de {totales} condiciones",
+  "sesion.hechoLiquidez": "liquidez {valor} · {delta} en la sesión",
+  "sesion.hechoMomentum": "momentum bid 3 h {valor} %",
+  "sesion.hechoFrescura": "datos {cuando} · confianza {confianza}",
+  "sesion.confianzaNormal": "normal",
+  "sesion.confianzaBaja": "baja",
+  "sesion.necesitaPorEncima": "necesita > {umbral}",
+  "sesion.necesitaPorDebajo": "necesita < {umbral}",
+  "sesion.condCumple": "cumplida",
+  "sesion.condFalta": "falta {distancia}",
+  "sesion.condSinValor": "sin valor vigente",
+  "sesion.csv.indicador": "indicador",
+  "sesion.csv.instante": "instante_utc",
+  "sesion.csv.horaVet": "hora_vet",
+  "sesion.csv.valor": "valor",
   "intradia.titulo": "Intradía · día operativo VET",
   "intradia.grupoOficial": "Tasa oficial (BCV)",
   "intradia.grupoCompra": "P2P — compra (buy)",
@@ -585,21 +708,44 @@ export const ES = {
   "historico.bucket1d": "1 día",
   "intradia.controles": "Controles del intradía",
   "intradia.monedaOficial": "Moneda de la tasa oficial",
+  // -- Catálogo de series (etiqueta legible; la clave canónica NO se traduce) --
+  "serie.brechaAbs": "Brecha VES",
+  "serie.brechaPct": "Brecha %",
+  "serie.liquidez": "Liquidez USDT",
+  "serie.mediana": "Mediana VES",
+  "serie.mejorPrecio": "Mejor precio VES",
+  "serie.merchants": "Merchants %",
+  "serie.outliers": "Outliers %",
+  "serie.vwap": "VWAP VES",
+  "serie.drenaje": "Drenaje oferta 6 h",
+  "serie.momentum": "Momentum bid 3 h",
+  "serie.ratio": "Ratio oferta/demanda",
+  "serie.spread": "Spread",
+  "serie.oficial": "Tasa oficial VES",
+  "serie.oficialDeltaAbs": "Δ oficial VES",
+  "serie.oficialDeltaPct": "Δ oficial %",
+  // -- Estado cero: el cero como resultado, no como hueco --------------------
+  "cero.sinOutliers": "sin outliers en la sesión",
+  // -- Tarjeta de métrica (común a los bloques del Intradía) ------------------
+  "metrica.apertura": "apertura {valor}",
+  "metrica.ahora": "ahora",
+  "delta.sinCambio": "— sin cambio",
+  "intradia.bajadaOficial": "la tasa del BCV y su variación dentro del día",
   "intradia.bucket5m": "5 min",
-  "intradia.actualizar": "Actualizar",
-  "intradia.actualizado": "actualizado {hora} VET",
-  "intradia.dia":
-    "Día operativo (VET): {dia} — la Δ de cada panel se mide contra la apertura del día.",
+  "intradia.bucket15m": "15 min",
+  "intradia.bucket1h": "1 h",
+  "intradia.granularidad": "Granularidad del bucket",
+  "intradia.enVivo": "en vivo · actualizado {hora} VET",
+  "intradia.sinRefrescoAun": "cargando el día operativo…",
+  "intradia.frescuraDetenida": "sin actualizar desde las {hora} VET",
   "intradia.sinDia": "Todavía no hay indicadores para el día operativo en curso.",
   "intradia.sinHoy": "Sin datos hoy.",
   "intradia.apertura": "apertura {valor}",
-  "intradia.valor": "valor",
   "intradia.error": "No se pudo cargar el intradía.",
   "intradia.ladoCompra": "compra",
   "intradia.ladoVenta": "venta",
-  "intradia.ladoSinLado": "sin lado",
   "intradia.descripcionPanel":
-    "{etiqueta}: apertura {apertura}, último {ultimo}, variación {delta} ({pct})",
+    "{etiqueta}: apertura {apertura}, último {ultimo}, variación {delta}",
 
   // -- auth ------------------------------------------------------------------
   // Los cuatro estados del guard de sesión (`auth/RequireAuth.tsx`). Son
@@ -1057,6 +1203,125 @@ export const EN: Record<Clave, string> = {
   "historico.sinSerie": "No data in the requested range.",
   "historico.rangoLabel": "{dias} days",
 
+  // -- Buy vs. sell (Intraday) ------------------------------------------------
+  "vs.titulo": "Buy vs. sell, metric by metric",
+  "vs.bajada": "the same series side by side · Δ measured against the day's open",
+  "vs.colMetrica": "Metric",
+  "vs.colCompra": "Buy",
+  "vs.colVenta": "Sell",
+  "vs.apertura": "open {valor}",
+  "vs.sinLado": "no series for this side today",
+  "vs.descripcionSpark": "from {apertura} at the open to {ultimo} now.",
+  "vs.notaBrecha":
+    "Both sides are measured against the SAME official rate, so the difference between their gaps is the P2P spread, not a discrepancy at the BCV.",
+  "vs.notaMejorPrecio":
+    "Best price is the edge of the book and does NOT go through the outlier filter (unlike median and VWAP): a single absurd ad moves it.",
+  "vs.notaOutliers":
+    "This is the share of ads the filter discarded, not an error: the higher it is, the noisier that side's snapshot was.",
+  "vs.notaOutliersLimpio":
+    "Clean snapshot on both sides: the filter discarded nothing today, so the reading carries no quality caveat.",
+  // -- Microstructure (Intraday) ----------------------------------------------
+  "micro.bajada": "the four series the ruleset watches · status of each condition",
+  "micro.cumple": "Met",
+  "micro.noCumple": "Not met",
+  "micro.apertura": "open {valor}",
+  "micro.dispara": "fires {op} {umbral}",
+  "micro.regla": "{regla} · condition {i} of {n}",
+  "micro.sinRegla": "not a condition of any rule in the active ruleset",
+  "micro.descripcionSpark": "from {apertura} at the open to {ultimo} now.",
+  "micro.descripcionSparkUmbral":
+    "from {apertura} at the open to {ultimo} now, against a threshold of {umbral}.",
+  "micro.notaDrenaje":
+    "How much supply is left versus six hours ago. The more negative, the faster it is drying up — the pattern that preceded the backtest's upward runs.",
+  "micro.notaMomentum":
+    "Change in the sell-side median versus three hours ago. Positive means the bid is climbing; it only tells a start from a top when read alongside supply and spread.",
+  "micro.notaRatio":
+    "Offered liquidity over demanded liquidity. Below 1 there is more demand than supply; above 2 it is a supply wall, which usually precedes the correction.",
+  "micro.notaSpread":
+    "Distance between the two medians, buy and sell. Compressed means a tense market: with high momentum it reads as exhaustion rather than strength.",
+  // -- Session timeline (Intraday) --------------------------------------------
+  "crono.titulo": "Session timeline",
+  "crono.bajada": "VET · since the day's open",
+  "crono.aperturaTitulo": "Session open",
+  "crono.aperturaTexto":
+    "First bucket of the operating day: everything else is measured from here.",
+  "crono.umbralTitulo": "Ruleset threshold crossed",
+  "crono.umbralPasa": "{indicador} started meeting its condition within the rule.",
+  "crono.umbralDeja": "{indicador} stopped meeting its condition within the rule.",
+  "crono.cifrasUmbral": "{regla} · {indicador} {valor} · threshold {umbral}",
+  "crono.liquidezTitulo": "Liquidity jump",
+  "crono.liquidezTexto":
+    "Offered volume on the {lado} side moved more than {sigmas} times its usual bucket-to-bucket jump.",
+  "crono.cifrasLiquidez": "{delta} · total {valor} · {sigmas}σ",
+  "crono.recalculoTitulo": "Latest recalculation",
+  "crono.recalculoTexto":
+    "The engine re-evaluated the ruleset with the most recent snapshot.",
+  // -- What moved since the open (Intraday) -----------------------------------
+  "movio.titulo": "What moved since the open",
+  "movio.bajada": "{destacadas} of {totales} series explain the session",
+  "movio.restoNormal": "the rest stayed within their normal range",
+  "movio.restoInquieto": "another {n} also moved out of their normal range",
+  "movio.apertura": "open {valor}",
+  "movio.ahora": "now",
+  "movio.descripcionSpark":
+    "{etiqueta}: from {apertura} at the open to {ultimo} now.",
+  "movio.magnitud": "It moved {veces} times its typical 7-day variation.",
+  "movio.magnitudQuieta": "It had not moved in the last 7 days; today it did.",
+  "movio.brechaAbre":
+    "The gap widened: the parallel rate pulled away from the official one.",
+  "movio.brechaComprime":
+    "The gap narrowed: the parallel rate moved closer to the official one.",
+  "movio.liquidezSube":
+    "There is more volume on offer than at the open: the book absorbs larger orders.",
+  "movio.liquidezBaja":
+    "There is less volume on offer than at the open: the book is thinning out.",
+  "movio.spreadSube":
+    "Buy and sell drifted apart: crossing the market costs more than at the open.",
+  "movio.spreadBaja":
+    "Buy and sell moved closer: crossing the market costs less than at the open.",
+  "movio.outliersSube":
+    "More ads fell outside the filter: the snapshot carries more noise.",
+  "movio.outliersBaja":
+    "Fewer ads fell outside the filter: the snapshot is cleaner.",
+  // -- Session reading (Intraday) --------------------------------------------
+  "sesion.titulo": "Session reading",
+  "sesion.sello": "operating day {dia} · open {hora} VET · {transcurrido} elapsed",
+  "sesion.selloSinSesion": "operating day {dia} · no data yet",
+  "sesion.transcurridoHm": "{h} h {m} m",
+  "sesion.transcurridoM": "{m} m",
+  "sesion.exportar": "Export session",
+  "sesion.vigilar": "Watch this rule",
+  "sesion.vigilarNoDisponible":
+    "Watching a rule needs per-user persistence, engine-side evaluation and a notification channel: it is a feature, not a button. Out of scope (ADR-0021).",
+  "sesion.veredictoSinAnalisis": "No analysis for this revision yet",
+  "sesion.veredictoSinRegla": "No rule is evaluable right now",
+  "sesion.veredictoCumple": "{regla} is met",
+  "sesion.veredictoCerca": "{regla} meets {cumplidas} of {totales} conditions",
+  "sesion.prosaSinRegla":
+    "With no evaluable rule there is no proximity to report: one of its indicators is not current, or the snapshot confidence is low.",
+  "sesion.prosaSinBloqueo":
+    "Every condition of {regla} is met; whether it actually fires depends on the ruleset cooldown, which lives in the signals timeline.",
+  "sesion.prosaBloqueoSinDistancia":
+    "The {indicador} condition cannot be evaluated: its indicator is not current, and without a value there is no distance to measure.",
+  "sesion.prosaFaltaSubir":
+    "{indicador} still has to rise {distancia} to clear {umbral}: until it does, the rule will not fire however steady the rest stays.",
+  "sesion.prosaFaltaBajar":
+    "{indicador} still has to fall {distancia} to drop below {umbral}: until it does, the rule will not fire however steady the rest stays.",
+  "sesion.hechoCondiciones": "{cumplidas} of {totales} conditions",
+  "sesion.hechoLiquidez": "liquidity {valor} · {delta} this session",
+  "sesion.hechoMomentum": "3 h bid momentum {valor} %",
+  "sesion.hechoFrescura": "data {cuando} · {confianza} confidence",
+  "sesion.confianzaNormal": "normal",
+  "sesion.confianzaBaja": "low",
+  "sesion.necesitaPorEncima": "needs > {umbral}",
+  "sesion.necesitaPorDebajo": "needs < {umbral}",
+  "sesion.condCumple": "met",
+  "sesion.condFalta": "{distancia} to go",
+  "sesion.condSinValor": "no current value",
+  "sesion.csv.indicador": "indicator",
+  "sesion.csv.instante": "instant_utc",
+  "sesion.csv.horaVet": "vet_time",
+  "sesion.csv.valor": "value",
   "intradia.titulo": "Intraday · VET operating day",
   "intradia.grupoOficial": "Official rate (BCV)",
   "intradia.grupoCompra": "P2P — buy",
@@ -1119,21 +1384,44 @@ export const EN: Record<Clave, string> = {
   "historico.bucket1d": "1 day",
   "intradia.controles": "Intraday controls",
   "intradia.monedaOficial": "Official rate currency",
+  // -- Series catalogue (readable label; the canonical key is NOT translated) --
+  "serie.brechaAbs": "Gap VES",
+  "serie.brechaPct": "Gap %",
+  "serie.liquidez": "Liquidity USDT",
+  "serie.mediana": "Median VES",
+  "serie.mejorPrecio": "Best price VES",
+  "serie.merchants": "Merchants %",
+  "serie.outliers": "Outliers %",
+  "serie.vwap": "VWAP VES",
+  "serie.drenaje": "Supply drain 6 h",
+  "serie.momentum": "Bid momentum 3 h",
+  "serie.ratio": "Supply/demand ratio",
+  "serie.spread": "Spread",
+  "serie.oficial": "Official rate VES",
+  "serie.oficialDeltaAbs": "Official Δ VES",
+  "serie.oficialDeltaPct": "Official Δ %",
+  // -- Zero state: zero as an outcome, not a gap -----------------------------
+  "cero.sinOutliers": "no outliers this session",
+  // -- Metric card (shared by the Intraday blocks) ----------------------------
+  "metrica.apertura": "open {valor}",
+  "metrica.ahora": "now",
+  "delta.sinCambio": "— no change",
+  "intradia.bajadaOficial": "the BCV rate and its change within the day",
   "intradia.bucket5m": "5 min",
-  "intradia.actualizar": "Refresh",
-  "intradia.actualizado": "updated {hora} VET",
-  "intradia.dia":
-    "Operating day (VET): {dia} — each panel's change is measured against the day's open.",
+  "intradia.bucket15m": "15 min",
+  "intradia.bucket1h": "1 h",
+  "intradia.granularidad": "Bucket granularity",
+  "intradia.enVivo": "live · updated {hora} VET",
+  "intradia.sinRefrescoAun": "loading the operating day…",
+  "intradia.frescuraDetenida": "not updated since {hora} VET",
   "intradia.sinDia": "No indicators for the current operating day yet.",
   "intradia.sinHoy": "No data today.",
   "intradia.apertura": "open {valor}",
-  "intradia.valor": "value",
   "intradia.error": "Could not load the intraday view.",
   "intradia.ladoCompra": "buy",
   "intradia.ladoVenta": "sell",
-  "intradia.ladoSinLado": "no side",
   "intradia.descripcionPanel":
-    "{etiqueta}: open {apertura}, last {ultimo}, change {delta} ({pct})",
+    "{etiqueta}: open {apertura}, last {ultimo}, change {delta}",
   "auth.verificando": "Checking session…",
   "auth.redirigiendo": "Redirecting to sign in…",
   "auth.entrar": "Sign in",

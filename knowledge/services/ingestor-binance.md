@@ -33,8 +33,8 @@ perspectiva del taker), normaliza, **etiqueta** outliers y publica
   ID crudos jamás tocan disco ni bus. `MERCHANT_HMAC_KEY` requerida (fail fast).
 - Defensas de red: TLS estricto, timeout, tope de bytes por streaming (zip-bomb).
 - Páginas incompletas → snapshot `partial=true`; CLI `python -m ingestor_binance
-  [--once] [--dry-run]`. 79 tests (unit/contract/integration/e2e/`security`),
-  99,26 % de ramas sobre `src/` (medido 2026-08-04; umbral Gate 2: 80 %).
+  [--once] [--dry-run]`. 83 tests (unit/contract/integration/e2e/`security`),
+  99,27 % de ramas sobre `src/` (medido 2026-08-04; umbral Gate 2: 80 %).
 
 ## Referencias
 - PRD: `../../docs/01-requirements/ingesta-binance-p2p.md` · Diseño: `../../apps/ingestor-binance/docs/design.md`

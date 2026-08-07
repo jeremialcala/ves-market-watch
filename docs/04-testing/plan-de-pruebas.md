@@ -74,11 +74,11 @@ Estado observado en el repo (conteo de funciones `test_`):
 | Servicio | Estado código | Tests actuales | Huecos de prueba |
 |---|---|---|---|
 | `ingestor-bcv` | Implementado | **80** (unit, integration, contract, e2e, `security`) | ~~Cobertura de ramas 76 %~~ **99,36 %** (2026-08-04); ~~añadir marcador `security` para escenarios T1~~ **añadido**: seis casos de HTML alterado en `unit/test_parser_html_alterado.py`, corren con `-m security` |
-| `ingestor-binance` | Implementado | **79** (unit, integration, contract, e2e, `security`) | ~~Cobertura de ramas 75,92 %~~ **99,26 %** (2026-08-04); ~~escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local~~ **elevado**: `integration/test_client_errores.py` lleva el 429 real por HTTP hasta el breaker y comprueba que el ciclo siguiente **no consulta** |
+| `ingestor-binance` | Implementado | **83** (unit, integration, contract, e2e, `security`) | ~~Cobertura de ramas 75,92 %~~ **99,27 %** (2026-08-04); ~~escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local~~ **elevado**: `integration/test_client_errores.py` lleva el 429 real por HTTP hasta el breaker y comprueba que el ciclo siguiente **no consulta** |
 | `indicator-engine` | Fases 1, 2, señales (RF-4/RF-5, ADR-0015), análisis de la revisión (RF-6, ADR-0019) y lectura del estado de mercado (RF-7, ADR-0021) | **335** (unit, contract, integration, e2e) | Cobertura de ramas **86 %** (medida 2026-08-04 sobre `src/`); recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) y de los dos ejes del régimen (`config/lectura.v1.yaml`); contrastar en vivo la atribución con responsable `oficial` o `ambos` — hace falta un día en que la tasa del BCV cambie de verdad, no solo que esté vigente (ADR-0022 destapó que este hueco se venía describiendo mal: se decía que el fin de semana la suprimía «por diseño», cuando lo que la suprimía era la rancidez mal medida) |
 | `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) — más el histórico de tasas oficiales del BCV (RF-6) y la brecha derivada del lado venta (RF-7), 2026-08-01 | **138** (unit + integración contra TimescaleDB real, incl. las tablas de los servicios vecinos) | ~~Cobertura de ramas 71,71 %~~ **97,22 %** (2026-08-04); ~~integración del cargador de oficiales contra TimescaleDB real~~ **hecha**: `integration/test_tablas_vecinas.py` prueba contra la base real los dos adaptadores que escriben en `official_rates` e `indicators` |
-| `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **118** (unit incl. CORS, refresco del JWKS y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura de ramas **92,80 %** (2026-08-06) |
-| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **348** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores y lectura del mercado con dato real en ES/EN, shell responsive y canarios de paleta, punto de corte y cabeceras CSP) — **87,43 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
+| `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **124** (unit incl. CORS, refresco del JWKS, profundidad sin outliers y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura **92,65 %** (2026-08-06) |
+| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **494** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores y lectura del mercado con dato real en ES/EN, shell responsive, canarios de paleta, punto de corte y cabeceras CSP, y los cinco bloques del Intradía: criterio de selección, histéresis de los cruces, bloque enfrentado, condiciones del ruleset con su línea de disparo en escala, barra de control con su indicador de frescura, formato único de Δ con sus guardas de fuente, catálogo etiqueta/clave en los dos idiomas, tooltip de los sparklines, estado cero con su nota condicionada al dato, canario de tokens de tema y contrato de la tarjeta de métrica) — **88,19 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | e2e en vivo `npm run test:e2e:live` (client M2M — HITL); checklist con login real (tokens fuera de storage, renovación 15 min) |
 
 > El plan cubre tanto la **consolidación** de lo existente como la **especificación** de los casos
 > que deben acompañar el código pendiente, para que se escriban junto con la implementación (no
@@ -388,14 +388,22 @@ cierre de la columna «Verificación fase 04-testing».
    ya venía haciendo con `include: ["src/**"]`— aparecieron tres por debajo, y se
    cubrieron:
 
-   | Servicio | Ramas (solo fuente) | ≥ 80 % |
-   |---|---|---|
-   | `ingestor-bcv` | 99,36 % | ✔ |
-   | `ingestor-binance` | 99,26 % | ✔ |
-   | `api-gateway` | 92,80 % | ✔ |
-   | `web-spa` | 87,43 % | ✔ |
-   | `indicator-engine` | 85,88 % | ✔ |
-   | `ingestor-historico` | 97,22 % | ✔ |
+   **Qué mide cada columna, porque no era lo mismo en las seis filas.** En los
+   cinco servicios Python la cifra que se venía citando es la **combinada** de
+   `coverage` (`percent_covered`: sentencias + ramas sobre `src/`), no las ramas
+   solas; en el SPA, `vitest` sí reporta ramas aparte y es esa la que se cita y la
+   que aplica el umbral de `vite.config.ts`. Se separan aquí para que la
+   comparación entre filas signifique algo. **El criterio de salida se cumple con
+   cualquiera de las dos**: la más baja en ramas puras es 82,71 %.
+
+   | Servicio | Combinada (`src/`) | Ramas solas | ≥ 80 % |
+   |---|---|---|---|
+   | `ingestor-bcv` | 99,36 % | 96,94 % (95/98) | ✔ |
+   | `ingestor-binance` | 99,27 % | 96,77 % (60/62) | ✔ |
+   | `ingestor-historico` | 97,22 % | 93,43 % (185/198) | ✔ |
+   | `api-gateway` | 92,65 % | 84,38 % (135/160) | ✔ |
+   | `web-spa` | 94,87 % | **88,19 %** (1143/1296) | ✔ |
+   | `indicator-engine` | 85,88 % | 82,71 % (311/376) | ✔ |
 
    Cifras de la propia pipeline (2026-08-04), no de una ejecución a mano: **el
    punto 5 de esta lista deja de estar pendiente para la cobertura**.
@@ -414,7 +422,7 @@ cierre de la columna «Verificación fase 04-testing».
    construido, así que la forma en que el servicio se conecta de verdad no la
    probaba nadie.
 2. Todos los casos de las secciones 5–7 aplicables al alcance entregado, en verde.
-   **Cumplido**: 1 088 tests en verde, los seis proyectos, en cada push desde el
+   **Cumplido**: 1 254 tests en verde, los seis proyectos, en cada push desde el
    2026-08-04. Lo que la pipeline no ejecuta es el e2e autenticado en vivo, que
    depende de credenciales del tenant (punto abierto abajo).
 3. Cada amenaza T1–T15 con su verificación satisfecha (tests o gate de CI).
@@ -425,8 +433,28 @@ cierre de la columna «Verificación fase 04-testing».
 4. Contract tests en verde en **productor y consumidor** para cada evento con schema.
    **Cumplido** y verificado en cada push.
 5. Gates de CI: **secrets scanning** (T6) y **SCA** (T8) sin hallazgos por encima
-   del umbral. **Cumplido**: los tres gates rompen el build y están en verde. El
-   SCA cerró de paso 3 vulnerabilidades `high` que ya estaban en el `web-spa`.
+   del umbral. **Cumplido con una excepción aceptada**: los tres gates rompen el
+   build y están en verde. El SCA cerró de paso 3 vulnerabilidades `high` que ya
+   estaban en el `web-spa`.
+
+   **Riesgo aceptado (2026-08-06, Jeremi Alcalá) — CVE-2026-59870 en `js-yaml`.**
+   Llega por `openapi-typescript → @redocly/openapi-core → js-yaml@4.x`. Se acepta
+   porque el vector —consumo cuadrático de CPU al resolver `!!omap`— **no es
+   alcanzable aquí**: lo único que ese paquete parsea es
+   `apps/api-gateway/docs/openapi.yaml`, un fichero del repo sin `!!omap` que
+   ningún tercero controla; y es dependencia de desarrollo que genera
+   `types.gen.ts` en build, no entra en el bundle.
+
+   **No se arregla ya porque el arreglo rompe la herramienta.** `js-yaml` solo
+   corrige en 5.x y se probó el override: deja el audit en cero y **revienta el
+   generador** —js-yaml 5 retiró `types.merge` y redocly falla al cargar—. Un gate
+   en verde con la herramienta rota es peor que uno en rojo.
+   `openapi-typescript@7.13.0` ya es la última y fija redocly en 1.34.x.
+
+   **Se retira** cuando `openapi-typescript` publique una versión con
+   `@redocly/openapi-core@2.x`; el propio gate lo exigirá al dejar de aplicar la
+   excepción. Revisión anotada para el **2026-09-06**. Al actualizar, comprobar que
+   `npm run generate:api` sigue dando el mismo `types.gen.ts` byte a byte.
 6. Sin tests marcados `xfail`/`skip` salvo los de infraestructura documentados.
    **Cumplido**: cero `xfail` y cero `skip` incondicionales en el monorepo; los
    únicos saltos son los de infraestructura ausente, y desde el 2026-08-04 **solo
@@ -439,6 +467,7 @@ cierre de la columna «Verificación fase 04-testing».
 |---|---|
 | e2e autenticado **en vivo** con token real (HITL) | Necesita el client M2M del tenant en el pipeline; hoy corre a mano |
 | Deuda de T8: **lockfiles + imágenes por digest** | Cambio de repositorio, no de pipeline: los cinco servicios declaran rangos y las imágenes van por tag (incluida `timescaledb:latest-pg16`) |
+| Deuda de T8: **CVE-2026-59870 (`js-yaml`) aceptado** | Vector no alcanzable (dependencia de desarrollo, entrada propia sin `!!omap`); el arreglo disponible rompe el generador de tipos. Se retira cuando `openapi-typescript` suba a redocly 2.x — revisar 2026-09-06 |
 | Marcador `security` en `api-gateway` | Donde viven T9 y T11; los otros dos servicios ya lo tienen |
 | Recalibración **HITL** de umbrales (ruleset y régimen) | Decisión humana con datos de producción |
 
@@ -454,17 +483,32 @@ público, así que los minutos son gratis).
   `127.0.0.1:5433` y `:5672`, que es lo que publica el mapeo de puertos. El SPA
   suma `typecheck`, `lint`, `check:api-types` y `build` (que usa `tsc -b`, más
   estricto que el typecheck: ya dejó pasar una vez un campo ausente del contrato).
-  Sin filtros por ruta: 1 088 tests son baratos y un filtro mal puesto da verdes
+  Sin filtros por ruta: 1 254 tests son baratos y un filtro mal puesto da verdes
   vacíos.
 - **`seguridad.yml` — los gates de Gate 2, rompiendo el build:**
   - **T6:** `gitleaks` sobre la **historia completa** (`fetch-depth: 0`) — en un
     repo público, un secreto borrado al commit siguiente sigue ahí. Con
     `--redact`, para que el hallazgo no sea una segunda fuga en unos logs
     públicos.
-  - **T8:** `pip-audit` en un venv por servicio (`--skip-editable --strict`) y
-    `npm audit --audit-level=high` en el SPA. Umbral de Python: **cero
-    vulnerabilidades conocidas**, con excepciones explícitas si hace falta — más
-    estricto que un corte por severidad, y con mejor rastro de auditoría.
+  - **T8:** `pip-audit` en un venv por servicio (`--skip-editable --strict`) y,
+    en el SPA, `scripts/auditar-npm.mjs` sobre `npm audit --json` con umbral
+    `high`. Umbral de Python: **cero vulnerabilidades conocidas**, con excepciones
+    explícitas si hace falta — más estricto que un corte por severidad, y con
+    mejor rastro de auditoría.
+
+    **Por qué no es `npm audit` pelado.** No sabe de allowlists: o pasa entero o
+    falla entero, y las dos salidas fáciles —bajar el umbral, añadir `--omit=dev`—
+    desactivan el control para todo el árbol de desarrollo. El script solo silencia
+    lo que esté aceptado por escrito en `scripts/npm-audit-excepciones.json`, con
+    su motivo, quien lo acepta y su condición de retirada; resuelve la cadena de
+    `via`, así que aceptar un aviso cubre los paquetes que solo son vulnerables por
+    depender de él, sin pedir una excepción por eslabón.
+
+    **Y falla también cuando una excepción deja de aplicar.** Es la propiedad que
+    impide que se pudra: el día que llegue el arreglo, el gate obliga a borrar la
+    entrada en vez de dejarla cubriendo en silencio lo siguiente que aparezca con
+    el mismo id. Verificado por mutación en los tres estados —sin excepción falla,
+    con excepción muerta falla, con el árbol real pasa—.
   - **T9:** CodeQL (`security-and-quality`) para Python y TypeScript. **CodeQL por
     sí solo no rompe el build**: deja una alerta y sigue. Un paso posterior lee el
     SARIF y falla ante hallazgos de nivel `error` — ese es el umbral de severidad;

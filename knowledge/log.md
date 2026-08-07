@@ -7,6 +7,214 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-06 — El primer PR encontró un CVE, y el arreglo era peor
+- El PR a `develop` dejó 11 de 12 comprobaciones en verde y rompió en `T8 · SCA
+  (npm)`: **CVE-2026-59870** en `js-yaml`, un aviso nuevo que llega por
+  `openapi-typescript → @redocly/openapi-core`. No lo traía la rama; el gate
+  simplemente hizo su trabajo el día que se publicó.
+- **Casi doy por bueno un arreglo que rompía la herramienta.** El override a
+  `js-yaml@5` dejó el audit en cero vulnerabilidades, y mi comprobación de que
+  los tipos generados seguían siendo idénticos dio «sí, byte a byte»… porque el
+  generador **había muerto antes de escribir el fichero**. js-yaml 5 retiró
+  `types.merge` y redocly falla al cargar. *Un «no cambió nada» puede significar
+  «no llegó a pasar nada»: comprueba que el proceso terminó, no solo su salida.*
+- **`npm audit` no sabe de allowlists**, y las dos salidas fáciles —bajar el
+  umbral o `--omit=dev`— desactivaban el control para todo el árbol de
+  desarrollo, que es justo lo que el comentario del workflow decía que no se
+  quería. El script propio silencia solo lo aceptado por escrito y resuelve la
+  cadena de `via`, para no tener que aceptar por separado paquetes que solo son
+  vulnerables por depender del aceptado.
+- **La excepción caduca sola: si deja de aplicar, el gate falla.** Sin eso, una
+  excepción sobrevive a su motivo y acaba cubriendo en silencio lo siguiente que
+  aparezca con el mismo id. Verificado por mutación en los tres estados —y de
+  paso me pillé leyendo el `$?` de un `tail` en vez del de `node`—.
+
+
+## 2026-08-06 — Barrido de coherencia: dos cifras mías estaban mal
+- **El `api-gateway` no subía a 93 %: bajó a 92,65.** Leí el «93%» redondeado de
+  la terminal y lo escribí como «93,00». Añadir el `15m` añadió código y las dos
+  pruebas nuevas no lo cubrieron en proporción. *Redondear hacia arriba una cifra
+  propia es la forma más fácil de documentar una mejora que no ocurrió.*
+- **La columna decía «Ramas» y no eran ramas.** Los cinco servicios Python
+  citaban `percent_covered` de `coverage` —sentencias + ramas— y el SPA sí citaba
+  ramas puras: seis filas de la misma tabla comparando cosas distintas. Ahora van
+  las dos columnas. El criterio de salida se cumple con cualquiera de ellas; la
+  más baja en ramas solas es 82,71 %.
+- Y la enumeración del plan de pruebas había perdido las comas de tanto editarla
+  seguido: seis añadidos, cada uno pegado al anterior.
+- ADR-0025 recoge lo que la rama decidió, que era lo único que faltaba del
+  registro: la vista, los cinco puntos de duplicación cerrados, la clave del
+  contrato y la ampliación a `15m`.
+
+
+## 2026-08-06 — El Intradía reordenado, y los criterios que hubo que medir
+- Rama `feat-intraday`. De la parrilla original **solo queda la tasa oficial**:
+  cada familia acabó en el bloque que responde a su pregunta —lectura del
+  ruleset, qué se movió, compra vs. venta, microestructura y cronología—.
+- **Lo que más pensé fue el criterio de «qué se movió».** Ordenar por |Δ| a secas
+  hacía ganar siempre a la liquidez, que se mide en cientos de miles frente a un
+  ratio en centésimas. Normalizando por σ de 7 días lo que ordena es cuánto se
+  salió cada serie de SU normalidad. Dos límites con respuesta explícita: σ = 0
+  con movimiento va arriba del todo —no se movía en una semana y hoy sí, que es
+  lo más inusual que le puede pasar— y sin historia queda fuera, porque un cero
+  la haría parecer tranquila y eso es una afirmación.
+- **La histéresis clásica no servía, y lo dijo el dato.** Probé la banda de
+  amplitud sobre σ de 7 días: en `p2p_ratio_oferta_demanda` esa σ es 0,58 contra
+  un umbral de 0,3, así que la banda se comía el umbral entero. La σ larga mide
+  cambios de régimen, no el temblor local. Lo que separa un cruce de un temblor
+  es que **aguante**: 15 minutos, elegidos simulando sobre la sesión real —de 21
+  cruces crudos quedan 8, y se estabiliza entre 3 y 6 buckets—. *Antes de elegir
+  una constante, mídela contra el dato que va a filtrar.*
+- **Dos frases que estuve a punto de cablear y habrían mentido el primer día.**
+  «El resto se mantuvo dentro de su rango normal» se cuenta: había 10 series
+  fuera. Y la cronología parecía repetir líneas hasta que vi que
+  `p2p_ratio_oferta_demanda` tiene TRES condiciones en tres reglas (`lt 0.2`,
+  `lt 0.3`, `gt 2`): no era un fallo de deduplicación, faltaba nombrar la regla.
+- Un error propio caro de ver: pedía la ventana de referencia con el intervalo
+  del selector, así que a 5 min eran >40 000 filas y el navegador iba por la
+  página 33 con la sección sin pintarse. Va fija a 1 h.
+- **Compra y venta dejan de ser dos parrillas.** Enfrentarlas cambia la pregunta
+  que responde la vista: de «cómo va la liquidez de venta» a «en qué se
+  diferencian los lados». Y obligó a mover el color: dentro del bloque el lado lo
+  dice la columna, así que el tono queda libre para la dirección — pero teal y
+  coral encabezan las columnas Y colorean las Δ, dos significados para el mismo
+  par. Se sostiene porque el signo va escrito; sin eso habría sido un doble
+  encoding de los que este proyecto evita.
+- **Microestructura no eran cuatro cifras más: eran cuatro condiciones.** En
+  cuanto se ve así, la pregunta deja de ser «cuánto vale el spread» y pasa a ser
+  «cuánto le falta para disparar», y entonces el color del lado sobra —no lo
+  tienen— y el que hace falta es el del estado. Aquí el coral es el que cumple:
+  suena al revés hasta que recuerdas que en este proyecto el coral es del
+  ruleset, no del «va mal».
+- **La línea de umbral fuera del lienzo es peor que no dibujarla.** Con el
+  dominio ajustado a la serie, un umbral lejano se recorta **en silencio**: la
+  chispa queda igual de bonita y se lee como si el disparo estuviera al lado. Al
+  meter el umbral en el dominio, la serie se aplana contra un borde —y eso ES la
+  lectura—. *Cuando una referencia no cabe, el problema es la escala, no la
+  referencia.*
+- **Un porcentaje aritméticamente correcto y factualmente falso.** El momentum
+  abrió en −0,24 y estaba en +0,31, y la tarjeta escribía «+0,55 (−232,25 %)».
+  El cociente está bien; la frase «variación desde la apertura» no, porque contra
+  una base con signo el porcentaje no dice la dirección. Lo arreglé en el resumen
+  del día y no en la función de aritmética: la división no tenía ningún defecto,
+  el defecto era lo que yo estaba afirmando con ella. *Lo vi porque lo miré en el
+  navegador con dato real; ninguna prueba lo habría cazado, porque yo mismo no
+  había pensado en el caso.*
+- **Las dos tarjetas ya habían empezado a divergir antes de unificarlas**: gap
+  10 contra 12, trazo 1,6 contra 1,8, la misma cifra con dos clases. Es el mismo
+  patrón que el de los títulos, cazado antes de que costara nada.
+- **Todo el «estilo fijo» que se pidió ya existía en tokens con ese valor**:
+  `--border` era el 8 %, `--border-2` el 14 %, `--lift` los −4 px y `--dur-card`
+  los 0,25 s. Escribirlos a mano habría creado una segunda fuente para los
+  mismos números. *Antes de escribir una constante, busca si el sistema ya la
+  tiene con nombre.*
+- **El foco visible es correcto y hoy inalcanzable.** La tarjeta no es un
+  control; añadirle `tabIndex` habría metido ~28 paradas de tabulación sin nada
+  que activar, que empeora la vida justo a quien la regla protege. Está escrita,
+  con `:focus-within`, para el día que la tarjeta gane una acción.
+- **`PainCard` y `SlaCard` no existen en este repo** —son del proyecto de
+  diseño—, así que la premisa «los únicos degradados del sistema» no describe
+  este código: aquí hay seis, y uno es el panel de sesión pedido en esta misma
+  rama. La prohibición se aplicó a la tarjeta; la premisa se anotó.
+- **Toda la vista de Intradía estaba rota en tema claro y llevaba así ocho
+  commits.** Los prompts decían «blanco» y yo escribí `#fff` siete veces en vez
+  de `var(--white)`, que es el token de máximo contraste y vale tinta oscura en
+  claro. Resultado: veredicto, cuatro títulos, cifras y valores en blanco sobre
+  fondo blanco. *Un literal que casualmente coincide con el token en el tema en
+  que trabajas no es un color: es una bomba de relojería.*
+- **Ninguna prueba lo vio porque todas corren en oscuro**, que es el tema por
+  defecto del producto. El canario nuevo no comprueba píxeles: comprueba que el
+  color venga de un token, que es lo único verificable sin renderizar los dos
+  temas.
+- **Lo destapó unificar los títulos, no buscarlo.** Había dos definiciones del
+  mismo elemento —`.vmw-movio__titulo` y `.vmw-seccion__titulo`— con la misma
+  tipografía y distinto color; al ir a borrar la duplicada saltó la diferencia.
+  Duplicar una regla de estilo es duplicar el sitio donde puede divergir.
+- **La nota del «snapshot limpio» habría sido falsa el día que la escribí.**
+  Antes de implementarla miré el dato: el día operativo llevaba 17 lecturas de
+  outliers no nulas en compra y 128 en venta. Cablearla a la métrica —que es lo
+  que pedía la letra— habría puesto «el filtro no descartó nada hoy» en pantalla
+  mientras descartaba. Va condicionada a que los DOS lados vengan a cero el día
+  entero. *La tercera vez que una frase de esta vista habría mentido el primer
+  día por darla por hecha en vez de contarla.*
+- **Y «sin variación» no es lo mismo que «en cero».** Una serie plana en 3,5 %
+  no está «sin outliers»; el estado cero exige TODOS los puntos a cero, porque
+  la frase habla del día entero, no del último bucket.
+- **Sacar outliers de «qué se movió» liberó una tarjeta.** Con σ de 7 días
+  diminuta, pasar de 0,5 % a 0 le daba una z enorme y compraba el primer puesto
+  con un movimiento que no dice nada del mercado: es el filtro trabajando. La
+  sección responde «qué se movió del MERCADO»; la calidad del dato se lee en su
+  fila, con contexto. Tras excluirla, las cuatro tarjetas son series de mercado.
+- **El tooltip que había que arreglar no era el que faltaba.** El único que
+  existía era el de Recharts en la parrilla —tres paneles— y vivía dentro del
+  flujo: aparecer empujaba la tarjeta. Los otros 24 sparklines no tenían
+  ninguno, así que arreglar el roto y añadir los que faltaban era el mismo
+  trabajo si se hacía uno solo.
+- **Extraje `coordenadasSparkline` de `trazoSparkline` en vez de recalcular.**
+  El tooltip necesita el punto exacto que dibuja la línea; con dos cálculos
+  paralelos, el día que cambiara el `pad` el tooltip señalaría a un sitio y la
+  línea estaría en otro. *Dos formas de calcular lo mismo es la duplicación que
+  este proyecto ya pagó con el formato de Δ.*
+- **`rgba(21,24,27,.94)` cableado habría sido una caja negra sobre papel.** El
+  valor pedido es la tinta oscura; en tema claro hacía falta su reflejo, igual
+  que `--nav-bg` ya lo tiene. La superficie es un token, no un literal.
+- Verificando en vivo me dio dos falsos negativos míos: `pointerleave` sintético
+  no llega a React —que lo implementa sobre `pointerout`— y leí el `data-voltear`
+  de un tooltip anterior que seguía montado por culpa de eso. *Cuando la prueba
+  en vivo contradice a la unitaria, sospecha primero del arnés.*
+- **Me pidieron claves que no existen y no las inventé.** La lista pedía
+  `p2p_brecha_ves`, `p2p_liquidez_usdt`, `micro_drenaje_oferta_6h`; los nombres
+  reales de `indicators` son `p2p_brecha_abs`, `p2p_liquidez` y
+  `p2p_drenaje_oferta_6h_pct`, y el prefijo `micro_` no aparece en ninguna
+  parte. Lo comprobé contra la base antes de decirlo. Una clave inventada no es
+  un detalle estético: se lee como identificador, invita a copiarla y falla en
+  la primera consulta. *Un identificador decorativo es peor que ninguno.*
+- Separar etiqueta de clave cerró de paso el hueco de i18n que yo mismo había
+  señalado dos entregas antes: las etiquetas estaban cableadas en español dentro
+  de `lib/intradia.ts`, así que en inglés la vista decía «DRENAJE OFERTA 6 H».
+  El arreglo no fue traducir cadenas sueltas sino mover el par a un catálogo
+  único: el hueco existía porque el rótulo no tenía dueño.
+- **Centralizar el formato de Δ no era cosmético: era la causa de los dos
+  defectos.** Estaba repetido en cinco componentes, y los dos errores que
+  llegaron a pantalla —un porcentaje que contradecía su propio signo, un signo
+  duplicado— no eran fallos de aritmética sino cinco formateos distintos del
+  mismo hecho. *Cuando el mismo defecto aparece dos veces en sitios distintos,
+  el defecto es la duplicación.*
+- **El signo del porcentaje ahora se COMPONE en vez de copiarse.** Se toma la
+  dirección de la Δ y la magnitud del cociente, nunca el signo que devuelve la
+  división. Así el «+−382,85 %» no es un caso que haya que recordar evitar: es
+  inexpresable.
+- **Y una condición sustituyó a dos.** Tenía «apertura ≤ 0» en un sitio; con
+  «apertura < 0,5» se cubren de golpe el cero, la apertura pequeña y la
+  negativa, que son el mismo problema visto desde tres lados.
+- **La cronología seguía volcando el string crudo del contrato** y no lo vi
+  hasta recorrer la página en vivo: «−57.10523657 · umbral -40» junto a tarjetas
+  que ya escribían «−57,10 %». Ningún test unitario podía verlo —cada uno mira
+  su componente y esto era un defecto de la vista entera—. *Los defectos de
+  coherencia solo se ven mirando el conjunto.*
+- **La barra de control tenía un botón que sobraba y le faltaba un estado.** La
+  vista se recarga sola cada 5 min, así que «Actualizar» no resolvía nada que no
+  estuviera ya resuelto; lo que no había era forma de saber si eso estaba
+  pasando. Cambiar un control por un indicador suena a menos, y es más.
+- **El punto de frescura no late si el dato no llega.** Era fácil dejarlo
+  latiendo siempre —es decorativo, parece inofensivo—, pero un latido verde
+  mientras la carga falla afirma que hay vida donde no la hay, y es exactamente
+  el momento en que alguien mira ese punto. *Un adorno que codifica un estado
+  deja de ser un adorno.*
+- **La pastilla de 15 min no existía en el contrato.** El `interval` sólo
+  aceptaba 5m/1h/1d, así que pintarla habría dado un 422 al primer clic. Amplié
+  el enum del gateway porque era barato de verdad —`time_bucket` corre en crudo,
+  sin agregado continuo—, pero lo revelador fue mirar los tests: **ninguno
+  ejercitaba `interval`**, ni el selector viejo ni el botón de refresco tenían
+  prueba. Quitarlos no rompió nada, y eso no era buena señal.
+- Y el tipo `Intervalo` estaba escrito a mano al lado de un comentario que
+  explicaba por qué `Banda` se deriva del contrato. Por eso se quedó corto: la
+  regla estaba enunciada justo encima y no se había aplicado.
+- El test de paridad ES/EN cazó una cadena actualizada solo en español, y la
+  cobertura destapó que había escrito la lógica de la cronología pero no el
+  componente (34 % de ramas). Con su suite y las de los dos bloques nuevos, el SPA queda en 494 tests y
+  88,19 % de ramas.
+
 ## 2026-08-06 — La profundidad se anclaba en un anuncio manipulado
 - Lo trajo el usuario en una captura: diez barras idénticas de 372 USDT en el lado
   venta. Comprobado contra el crudo con SQL, **las cifras eran correctas**: había

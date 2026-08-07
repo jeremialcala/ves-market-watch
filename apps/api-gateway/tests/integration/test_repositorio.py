@@ -94,6 +94,34 @@ async def test_historial_indicadores_agrega_por_bucket(pool, repo):
     assert [f["value"] for f in filas] == ["102.00000000", "101.00000000"]
 
 
+async def test_historial_indicadores_agrega_por_bucket_de_15_min(pool, repo):
+    """El bucket de 15 min agrupa DE VERDAD, no solo se acepta.
+
+    Se anadio para la barra del intradia (tres pastillas 5/15/60 min) y el
+    contrato solo tenia 5m/1h/1d: un 15m se iba en 422. Cuatro capturas dentro
+    de la misma hora tienen que caer en dos buckets de 15 min y en uno solo de
+    1 h — si el intervalo no llegara al `time_bucket`, los dos totales
+    coincidirian y la prueba no diria nada.
+    """
+    base = AHORA.replace(minute=0, second=0, microsecond=0) - timedelta(hours=2)
+    for minuto, valor in ((1, "100.00"), (7, "101.00"), (16, "102.00"), (29, "103.00")):
+        await pool.execute(
+            "INSERT INTO indicators (as_of, indicator, currency, value, calc_version)"
+            " VALUES ($1, 'official_rate', 'USD', $2, 1)",
+            base + timedelta(minutes=minuto),
+            valor,
+        )
+    desde, hasta = base - timedelta(minutes=1), base + timedelta(hours=1)
+
+    filas, total = await repo.historial_indicadores(desde, hasta, "15m", None, None, 0, 100)
+    assert total == 2
+    # Bucket reciente primero; dentro de cada uno gana la ultima captura.
+    assert [f["value"] for f in filas] == ["103.00000000", "101.00000000"]
+
+    _, total_1h = await repo.historial_indicadores(desde, hasta, "1h", None, None, 0, 100)
+    assert total_1h == 1
+
+
 async def test_historial_indicadores_filtra_en_servidor(pool, repo):
     """El filtro por indicador/moneda es del SQL, no del cliente: sin él, un
     dashboard paginaría toda la tabla y agotaría su cuota (visto en vivo)."""

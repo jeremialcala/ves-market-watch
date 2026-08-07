@@ -112,12 +112,18 @@ jobs:
       # Aquí SÍ hay lockfile, así que se audita exactamente lo que se instala.
       # Umbral en `high`: por debajo hay ruido de herramientas de desarrollo que
       # no llega al bundle, y un gate que se ignora deja de ser un gate.
+      #
+      # No es `npm audit` pelado porque no sabe de allowlists: o pasa entero o
+      # falla entero. Bajar el umbral o añadir `--omit=dev` habría desactivado el
+      # control para todo el árbol de desarrollo. El script solo silencia lo que
+      # esté aceptado POR ESCRITO en `scripts/npm-audit-excepciones.json`, y
+      # **falla también cuando una excepción deja de aplicar**, para que se borre
+      # el día que llegue el arreglo en vez de cubrir lo siguiente en silencio.
       - name: Auditar el web-spa
         if: matrix.ecosistema == 'npm'
-        working-directory: apps/web-spa
         run: |
-          npm ci
-          npm audit --audit-level=high
+          npm --prefix apps/web-spa ci
+          node scripts/auditar-npm.mjs apps/web-spa high
 
   sast:
     name: T9 · SAST (${{ matrix.lenguaje }})

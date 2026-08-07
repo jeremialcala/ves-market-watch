@@ -349,7 +349,7 @@ export interface components {
             data: components["schemas"]["IndicatorHistoryItem"][];
             pagination: components["schemas"]["PageMeta"];
             /** @enum {string} */
-            interval: "5m" | "1h" | "1d";
+            interval: "5m" | "15m" | "1h" | "1d";
         };
         DepthLevel: {
             /** @description Límite (o centro) de la banda de precio. */
@@ -915,7 +915,7 @@ export interface components {
         /** @description Lado del mercado. */
         Side: "buy" | "sell";
         /** @description Granularidad de agregación. */
-        Interval: "5m" | "1h" | "1d";
+        Interval: "5m" | "15m" | "1h" | "1d";
         /** @description Código ISO 4217 de la moneda base (frente a VES). */
         Currency: string;
         /**
