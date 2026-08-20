@@ -70,6 +70,13 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Security
 
+- **`nanoid` a 3.3.18 (GHSA-2v37-7h3g-55p8, 2026-08-20).** Aviso nuevo, ajeno a
+  esta rama: lo destapó el T8 del PR del pipeline, que es para lo que está. Llega
+  por `vite → postcss → nanoid` y el arreglo cabía dentro del rango que declara
+  postcss, así que **un bump del lockfile de tres líneas** en vez de una excepción
+  por escrito. El vector —bucle infinito con un generador propio y `size` cero—
+  tampoco era alcanzable, pero una excepción es deuda y el parche era gratis.
+
 - **El e2e en vivo gana la mitad que faltaba: los rechazos (2026-08-07).** La
   suite solo probaba el camino feliz y **nada de lo que debe fallar**. Ahora, sin
   necesidad de credenciales: REST sin token y con token inventado → 401 con
