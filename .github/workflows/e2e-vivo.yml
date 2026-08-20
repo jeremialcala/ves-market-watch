@@ -1,0 +1,117 @@
+# E2E contra el gateway REAL y el tenant Auth0 REAL.
+#
+# El archivo tiene un solo job porque el trabajo es uno —levantar el gateway y
+# correr la suite—, pero cubre dos comprobaciones de naturaleza distinta, y esa
+# diferencia es la que decide los disparadores:
+#
+# - **Rechazos** (5 tests, sin credenciales) prueban CÓDIGO: que el 401 sea 401 y
+#   que el WSS cierre con 4401 y no con un 1006 mudo. Eso sí se rompe con un
+#   commit, así que va en cada PR.
+# - **Camino feliz** (1 test, con el client M2M) prueba la CONFIGURACIÓN del
+#   tenant: que la app M2M exista, que tenga el grant `client_credentials`, que
+#   la audiencia esté puesta y los permisos atados. Eso NO se rompe con un
+#   commit: se rompe cuando alguien toca el panel de Auth0, un martes cualquiera
+#   sin PR de por medio. Por eso va en push a main/develop y en un cron
+#   nocturno, con el mismo razonamiento que la pasada semanal de `seguridad.yml`.
+#
+# Se levanta el stack en el propio runner en vez de apuntar al túnel de
+# `criterio-dev`: ese gateway vive en una máquina de desarrollo y ataría el verde
+# de CI a que esté encendida. El precio es que aquí **no** intervienen nginx ni
+# Cloudflare —el runner habla con el contenedor a pelo—, así que la corrida
+# manual contra `criterio-dev` no desaparece: pasa de ser la única comprobación a
+# ser la del despliegue.
+#
+# Nota: los `schedule` de GitHub solo disparan desde la rama por defecto (`main`),
+# así que el nocturno no empieza a correr hasta que esto llegue allí.
+name: E2E en vivo
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  schedule:
+    # 06:00 UTC = 02:00 VET. Diario y no semanal: la config de un tenant la
+    # cambia una persona, y conviene enterarse al día siguiente, no el lunes.
+    - cron: "0 6 * * *"
+
+concurrency:
+  group: e2e-vivo-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  vivo:
+    name: gateway real + tenant Auth0
+    runs-on: ubuntu-latest
+    env:
+      # El compose interpola el archivo ENTERO aunque solo se pida un servicio:
+      # sin esto, el `${MERCHANT_HMAC_KEY:?…}` del ingestor-binance —que aquí ni
+      # se levanta— aborta el parseo antes de mirar qué se pidió. Relleno
+      # explícito, no un secreto: el servicio que lo usa no arranca en este job.
+      # Valor de diccionario y corto a conciencia: la regla `generic-api-key`
+      # de gitleaks dispara sobre `…KEY: <valor>` por encima de 3,5 bits de
+      # entropía, y este se queda en 3,04. Un relleno con pinta de secreto
+      # obligaría a una excepción en `.gitleaks.toml`, que es justo lo que no se
+      # hace por un valor de mentira.
+      MERCHANT_HMAC_KEY: no-se-usa-en-este-job
+      # Lo que publica el compose en el host del runner.
+      VITE_API_BASE_URL: http://localhost:8800
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: apps/web-spa/package-lock.json
+
+      - run: npm ci
+        working-directory: apps/web-spa
+
+      - name: Levantar el gateway real con su DB y su bus
+        # `--wait` y no un `sleep`: la condición de verdad es el healthcheck que
+        # el compose declara para `api-gateway`. Antes no lo tenía, y `--wait`
+        # devolvía con uvicorn a medio arrancar.
+        #
+        # Se pide solo `api-gateway`; el `depends_on` arrastra timescaledb —que
+        # nace con el esquema aplicado por los montajes de initdb— y rabbitmq.
+        # La DB sale VACÍA a propósito: sin datos, `/indicators/current`
+        # responde 404 problem+json, que es una respuesta VÁLIDA del contrato
+        # (RF-5: no tener dato fresco no es un error) y el test acepta 200 y 404.
+        run: docker compose up -d --build --wait --wait-timeout 300 api-gateway
+
+      - name: Suite en vivo
+        working-directory: apps/web-spa
+        env:
+          # En un PR de fork —repo público— estos llegan VACÍOS, porque Actions
+          # no da secretos a código que no controla el repo. Ahí el camino feliz
+          # salta y quedan los rechazos, que no necesitan credenciales. Es
+          # deliberado que el secreto no sea alcanzable desde ningún evento de
+          # PR: solo desde push a rama protegida y desde el cron.
+          AUTH0_M2M_CLIENT_ID: ${{ secrets.AUTH0_M2M_CLIENT_ID }}
+          AUTH0_M2M_CLIENT_SECRET: ${{ secrets.AUTH0_M2M_CLIENT_SECRET }}
+          # Fuera de los PR el entorno está garantizado: lo monta este job y los
+          # secretos están puestos. Si aun así faltara algo —secreto rotado y no
+          # actualizado, contenedor que no arrancó—, un skip daría verde
+          # certificando nada, que es el fallo que esta suite ya tuvo una vez.
+          # Con la bandera, el propio test lo convierte en rojo.
+          #
+          # Escrito con el `'1'` en la rama VERDADERA a propósito. La forma
+          # espejo —`== 'pull_request' && '0' || '1'`— depende de si Actions
+          # considera truthy la cadena «0»: si no lo es, el `||` se la come y
+          # devuelve «1» SIEMPRE, exigiendo el secreto también en los PR de fork,
+          # que nunca lo tienen. Con el único valor falsy en la posición de
+          # respaldo, la ambigüedad no existe.
+          E2E_LIVE_EXIGIDO: ${{ github.event_name != 'pull_request' && '1' || '' }}
+        run: npm run test:e2e:live
+
+      - name: Logs del gateway si algo falló
+        if: failure()
+        # Volcarlos es seguro en un repo público: `__main__.py` instala un filtro
+        # que redacta `token=…` en los access logs de uvicorn —comprobado sobre
+        # logs reales, sale `token=[REDACTADO]`—, y el `client_secret` viaja como
+        # secreto registrado, que Actions enmascara por su cuenta.
+        run: docker compose logs --no-color --tail 200

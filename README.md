@@ -11,7 +11,7 @@ ves-market-watch/            # el repositorio conserva el nombre viejo (ADR-0024
 ├── .ai-dlc/                  # Metodología: gates y plantillas
 │   ├── gates/                # Checklists de gates (0 y 1 creados; siguientes al cerrar cada fase)
 │   └── templates/            # prd, adr, threat-model
-├── .github/workflows/        # CI: `ci.yml` (matriz de los 6 proyectos) y `seguridad.yml`
+├── .github/workflows/        # CI: `ci.yml` (matriz de los 6 proyectos), `seguridad.yml` y `e2e-vivo.yml`
 ├── .gitleaks.toml            # Excepciones del escaneo de secretos, una a una y con motivo
 ├── knowledge/                # Contexto del proyecto en Open Knowledge Format (ADR-0010)
 ├── schemas/                  # Contratos de eventos del bus (JSON Schema 2020-12)
@@ -65,17 +65,24 @@ otro error es la suite rota y se dice así.
 
 ### Integración continua
 
-Dos workflows en `.github/workflows/`, ambos en cada push y cada PR:
+Tres workflows en `.github/workflows/`:
 
 - **`ci.yml`** — matriz de los seis proyectos con la suite **completa**
   (`integration` y `e2e` incluidas) contra TimescaleDB y RabbitMQ levantados como
   `services:` del trabajo. Umbral de cobertura por servicio y reporte como
-  artefacto, también cuando falla.
+  artefacto, también cuando falla. En cada push y cada PR.
 - **`seguridad.yml`** — los gates de Gate 2 **rompiendo el build**, no avisando:
   `gitleaks` sobre la historia completa (T6), `pip-audit` por servicio y
   `npm audit --audit-level=high` (T8), y CodeQL con umbral de severidad sobre el
-  SARIF (T9). Además, una pasada semanal: una dependencia no cambia, pero lo que
-  se sabe de ella sí.
+  SARIF (T9). En cada push y cada PR, más una pasada semanal: una dependencia no
+  cambia, pero lo que se sabe de ella sí.
+- **`e2e-vivo.yml`** — el gateway de verdad, levantado con compose en el propio
+  runner. Los **rechazos** (401 del REST, cierre 4401 del WSS) prueban código y
+  van en cada PR; el **camino feliz** con el client M2M prueba la configuración
+  del tenant de Auth0 —que no se rompe con un commit, sino cuando alguien toca su
+  panel— y va en push a main/develop y en un cron a las **06:00 UTC**. Requiere
+  `AUTH0_M2M_CLIENT_ID` y `AUTH0_M2M_CLIENT_SECRET` como secretos de Actions.
+  Nginx y el túnel quedan fuera: eso sigue siendo la corrida manual.
 
 Los umbrales de cobertura son un **trinquete** en el valor actual de cada
 servicio, no el 80 % plano: el criterio de Gate 2 es el 80 %, pero lo que rompe el

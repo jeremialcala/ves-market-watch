@@ -17,6 +17,57 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **El e2e en vivo entra al pipeline: `e2e-vivo.yml` (2026-08-20).** El trabajo
+  levanta `api-gateway` con `docker compose up --wait` en el propio runner —lo que
+  arrastra timescaledb, que nace con el esquema por los montajes de initdb, y
+  rabbitmq— y corre la suite contra `localhost:8800`. Se descartó apuntar al túnel
+  de `criterio-dev`: ese gateway vive en una máquina de desarrollo y ataría el
+  verde de CI a que esté encendida.
+  - **Los disparadores salen de que las dos suites prueban cosas distintas.** Los
+    rechazos prueban **código** —que el 401 sea 401, que el WSS cierre con 4401— y
+    eso se rompe con un commit: van en cada PR. El camino feliz prueba la
+    **configuración del tenant** —que la app M2M exista, con su grant y sus
+    permisos— y eso no se rompe con un commit, sino cuando alguien toca el panel
+    de Auth0 un martes cualquiera: va en push a main/develop y en un cron a las
+    **06:00 UTC**. En cada PR se ejecutaría cuando no hace falta y no se
+    ejecutaría cuando sí.
+  - **En CI, «no estaba el entorno» tiene que ser rojo.** El archivo entero está
+    construido sobre `skipIf`, correcto en local y del revés aquí: el job monta el
+    entorno, así que si algo falta —secreto rotado y no actualizado, contenedor
+    que no arrancó— un skip sería verde certificando nada, el mismo fallo que esta
+    suite ya tuvo. Con `E2E_LIVE_EXIGIDO=1` el test lo convierte en fallo de
+    carga del módulo. Comprobado ejecutándolo en los dos modos de ausencia: sin
+    credenciales y contra un puerto muerto, ambos en rojo con el motivo escrito.
+  - **Vacío cuenta como ausente, y no es cosmética.** En Actions un secreto que no
+    existe interpola a **cadena vacía**, no a variable sin definir: con el
+    `=== undefined` anterior, el PR de un fork —que no recibe secretos por ser el
+    repo público— habría entrado al camino feliz con credenciales vacías y muerto
+    contra el 401 de Auth0, que se lee como «el tenant está mal».
+  - **La bandera se escribe con el `'1'` en la rama verdadera** a propósito: la
+    forma espejo depende de si Actions considera *truthy* la cadena «0», y si no
+    lo es, el `||` se la come y devuelve «1» siempre —exigiendo el secreto también
+    en los PR de fork, que nunca lo tienen—.
+  - **Lo que este trabajo no cubre:** nginx y el túnel de Cloudflare. El runner
+    habla con el contenedor a pelo, así que la corrida manual contra
+    `criterio-dev` no desaparece: pasa de ser la única comprobación a ser la del
+    despliegue. Y los `schedule` de GitHub solo disparan desde la rama por
+    defecto, así que el nocturno no arranca hasta que esto llegue a `main`.
+
+### Fixed
+
+- **`docker compose up -d --wait` mentía sobre el gateway (2026-08-20).**
+  `api-gateway` era el único servicio del compose **sin healthcheck**, y compose da
+  por bueno un servicio que no lo declara en cuanto el contenedor corre: `--wait`
+  devolvía con uvicorn todavía arrancando. Lo pagaba quien encadenara algo detrás
+  —el e2e del pipeline lo hace— con un «connection refused» que parecía del
+  gateway y era del reloj. Se comprobó en la propia máquina de desarrollo: antes
+  `Up 13 hours` sin `(healthy)`; ahora `--wait` espera de verdad. `python -c
+  urllib.request…` y no `curl`, que la imagen `python:3.12-slim` no trae.
+  - El 503 de `database: down` cuenta como no listo y el 200 de `degraded`
+    —broker o JWKS caídos— cuenta como listo, que es la verdad: el REST sirve.
+
 ### Security
 
 - **El e2e en vivo gana la mitad que faltaba: los rechazos (2026-08-07).** La

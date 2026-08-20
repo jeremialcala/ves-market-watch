@@ -7,6 +7,37 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-20 — El e2e al pipeline, y el `--wait` que no esperaba
+- **La pregunta no era «cómo meto el test en CI» sino «qué prueba cada mitad».**
+  Los rechazos prueban código y se rompen con un commit → cada PR. El camino
+  feliz prueba la **configuración del tenant de Auth0**, que no se rompe con un
+  commit sino cuando alguien toca su panel → cron nocturno. *Un test cuyo sujeto
+  es una configuración externa no pertenece al gate del PR: allí se ejecuta
+  cuando no hace falta y no se ejecuta cuando sí.*
+- **`docker compose up -d --wait` daba por bueno el gateway a medio arrancar.**
+  Era el único servicio del compose sin healthcheck, y compose no espera a lo que
+  no sabe medir. Llevaba así desde siempre y afectaba también al desarrollo local;
+  lo destapó preguntarme de qué depende exactamente el `--wait`, no un fallo.
+  *Un `--wait` sobre un servicio sin healthcheck es un `sleep 0` con buena
+  prensa.*
+- **En el pipeline, el `skipIf` cambia de bando.** Todo el archivo está construido
+  sobre «si no hay entorno, salta», que es lo correcto en local; en CI el entorno
+  lo monta el propio trabajo, así que su ausencia es un defecto y saltar sería el
+  mismo verde vacío que esta suite ya tuvo una vez, con otra ropa. La bandera
+  `E2E_LIVE_EXIGIDO` lo invierte, y **verifiqué los dos modos de ausencia**
+  ejecutándolos —sin credenciales y contra un puerto muerto—, no leyendo el
+  código.
+- **En Actions un secreto que no existe interpola a cadena vacía, no a variable
+  sin definir.** El `=== undefined` del test habría dejado entrar al camino feliz
+  de un PR de fork con credenciales vacías, y el 401 de Auth0 se lee como «el
+  tenant está mal» cuando lo que pasa es que no hay credenciales. *Ausente y
+  vacío son lo mismo para una credencial.*
+- Antes de proponer volcar los logs del gateway en unos logs **públicos**,
+  comprobé que el filtro de `__main__.py` redacta de verdad: sale
+  `token=[REDACTADO]` sobre logs reales. La comprobación era barata y la
+  alternativa era publicar un access token.
+
+
 ## 2026-08-07 — El e2e autenticado, cumplido, y un secreto que hubo que rotar
 - **6/6 contra el tenant y el gateway reales.** Los 30 s del camino feliz son la
   espera del ping del gateway, que llega a los 30: no es lentitud, es el contrato.

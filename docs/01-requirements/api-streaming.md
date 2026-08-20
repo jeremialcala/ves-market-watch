@@ -1,8 +1,9 @@
 # PRD — API REST y Streaming WSS
 
 - **Estado:** approved (Gate 0, HITL 2026-07-11; cubre la versión actualizada por
-  ADR-0012) — **implementado** en `apps/api-gateway` (2026-07-26, ADR-0016); pendiente
-  solo el e2e con login real (client M2M del tenant — HITL)
+  ADR-0012) — **implementado** en `apps/api-gateway` (2026-07-26, ADR-0016) y
+  **verificado en vivo** con el client M2M del tenant (2026-08-07, 6/6; en el
+  pipeline desde 2026-08-20)
 - **Fecha:** 2026-07-11
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 01-requirements
