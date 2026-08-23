@@ -12,6 +12,7 @@
 import { expDelToken, obtenerToken } from "../auth/tokenProvider";
 import { wsUrl } from "../config";
 import {
+  CIERRE_NO_AUTENTICADO,
   esPush,
   TOPICOS,
   type MensajeServidor,
@@ -38,6 +39,8 @@ export class StreamClient {
   private ws: WebSocket | null = null;
   private callbacks: CallbacksStream | null = null;
   private intento = 0;
+  /** 4401 seguidos sin que ninguna conexión llegue a dar señales de vida. */
+  private fallosAuth = 0;
   private activo = false;
   private forzarRefresh = false;
   private timerReintento: Temporizador | null = null;
@@ -88,7 +91,20 @@ export class StreamClient {
     this.ws = ws;
 
     ws.onopen = () => {
-      this.intento = 0;
+      /*
+       * Aquí NO se ponen a cero los contadores, y es la mitad del arreglo del
+       * bucle de 4401.
+       *
+       * El gateway ACEPTA el handshake antes de validar el token, a propósito:
+       * sin aceptar, Starlette aborta con un HTTP 403 y el navegador recibe un
+       * 1006 mudo, con lo que el 4401 del contrato sería inalcanzable. La
+       * consecuencia es que `onopen` dispara SIEMPRE, también cuando el token
+       * va a ser rechazado un instante después. Poner `intento = 0` aquí
+       * dejaba el backoff clavado en su valor base para siempre: cada intento
+       * fallido se creía el primero.
+       *
+       * Un socket abierto no prueba nada; el primer mensaje del servidor, sí.
+       */
       ws.send(JSON.stringify({ action: "subscribe", topics: [...TOPICOS] }));
       this.callbacks?.alCambiarEstado("conectado");
       // El estado consultable vive en REST: reponer en cada (re)conexión.
@@ -98,6 +114,10 @@ export class StreamClient {
     };
 
     ws.onmessage = (evento: MessageEvent<string>) => {
+      // Primer byte del servidor = la conexión existe de verdad. Es el punto
+      // donde el ciclo de reintentos vuelve a cero, no el handshake.
+      this.intento = 0;
+      this.fallosAuth = 0;
       this.rearmarWatchdog();
       let mensaje: MensajeServidor;
       try {
@@ -118,10 +138,13 @@ export class StreamClient {
       if (!this.activo) {
         return;
       }
+      this.fallosAuth =
+        evento.code === CIERRE_NO_AUTENTICADO ? this.fallosAuth + 1 : 0;
       const decision = decidirTrasCierre(
         evento.code,
         this.intento,
         Math.random(),
+        this.fallosAuth,
       );
       this.intento += 1;
       switch (decision.accion) {
@@ -134,6 +157,9 @@ export class StreamClient {
           this.callbacks?.alCambiarEstado("detenido", decision.motivo);
           return;
         case "esperar":
+          if (decision.refrescar === true) {
+            this.forzarRefresh = true;
+          }
           this.callbacks?.alCambiarEstado("reconectando", decision.motivo);
           this.timerReintento = setTimeout(
             () => void this.conectar(),

@@ -17,6 +17,38 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Fixed
+
+- **El SPA respondía a un 401 con 16 000 peticiones en 18 minutos (2026-08-22).**
+  Salió de una avería real: el reloj del host se fue **37 s atrás** —el servicio
+  de hora de Windows estaba parado—, así que el `iat` de los tokens de Auth0
+  llegaba «en el futuro» y el gateway los rechazaba (`The token is not yet valid
+  (iat)`); su tolerancia son 30 s. El reloj se arregló fuera del repositorio,
+  pero lo que el cliente hizo con esos 401 es defecto propio.
+  - **El 4401 era el único cierre que se saltaba el backoff.** `politicas.ts`
+    devolvía `refrescar-y-reconectar` sin espera ni tope, y como cada conexión
+    dispara un resync REST completo, el ciclo era: 4401 → token nuevo a Auth0 →
+    reconectar → 14 llamadas REST → las 14 en 401 → otra vez, **sin esperar**.
+    Medido en los logs: ~1235 resyncs completos, uno cada 0,87 s con dos
+    pestañas abiertas, y el endpoint de token de Auth0 al mismo ritmo con
+    `cacheMode: "off"` —a un rato de que el tenant nos frenara—. Ahora el primer
+    4401 sigue siendo inmediato (es el caso corriente: token caducado) y del
+    segundo en adelante entra en el backoff exponencial que ya existía, hasta
+    detenerse con un motivo legible tras seis fallos seguidos (~31 s).
+  - **Y el backoff no habría servido de nada**, porque `StreamClient` ponía
+    `intento = 0` en `onopen`. El gateway **acepta el handshake antes de
+    validar** —a propósito: sin aceptar, Starlette aborta con un 403 y el
+    navegador ve un 1006 mudo—, así que `onopen` dispara también cuando el token
+    va a ser rechazado un instante después. Cada intento se creía el primero y
+    el backoff quedaba clavado en su valor base **para todos los códigos de
+    cierre**, no solo el 4401. El contador lo reinicia ahora el primer mensaje
+    del servidor: un socket abierto no prueba nada.
+  - Seis tests nuevos, los tres cambios verificados por mutación: revertir la
+    política tumba cuatro, devolver el `intento = 0` a `onopen` tumba uno y
+    quitar el reinicio del contador de fallos tumba otro. Los dos últimos
+    necesitaron rehacerse: la primera versión de cada uno pasaba con el defecto
+    puesto.
+
 ### Security
 
 - **El e2e en vivo gana la mitad que faltaba: los rechazos (2026-08-07).** La

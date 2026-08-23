@@ -7,6 +7,32 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-22 — «Criterio está roto» eran 37 segundos de reloj, y un bucle nuestro
+- **El diagnóstico salió de los logs, no de la aplicación.** «Está roto» con la
+  infraestructura entera en verde: `health` ok/ok/ok, el motor publicando cada
+  minuto. Lo cerró una línea del gateway —`The token is not yet valid (iat)`— y
+  comparar el reloj local contra dos fuentes de internet. *Cuando el síntoma es
+  «no funciona» y todo mide bien, mide algo que no sea el sistema.*
+- **El servicio de hora de Windows estaba parado** y la deriva llegó a 37 s. El
+  gateway tolera 30 y ya lo tenía escrito con su motivo, así que el margen no
+  era el problema: subirlo habría sido tapar un reloj que sigue corriéndose.
+- **El defecto de verdad lo encontré midiendo el incidente, no leyendo código.**
+  Contar las peticiones del periodo averiado dio 16 000 en 18 minutos con una
+  distribución idéntica por endpoint —×1235 cada uno—, que es la firma de un
+  bucle, no de un uso. *Un incidente deja números; leerlos antes de opinar sale
+  más barato que buscar la causa en el editor.*
+- **La corrección obvia no habría funcionado.** Puse backoff en el 4401 y seguía
+  sin frenar: `onopen` reiniciaba el contador de intentos, y como el gateway
+  acepta el handshake ANTES de validar, ese `onopen` dispara también en la
+  conexión que va a ser rechazada. *Un arreglo que no puedes ver fallar cuando lo
+  quitas no está verificado: dos de mis tres tests pasaban con el defecto puesto
+  y hubo que rehacerlos.*
+- **El límite de tasa no defiende de esto**: se aplica por `sub`, después de
+  validar el token, así que un cliente con un token rechazado no consume cuota y
+  llama sin freno. Anotado en T4 — el modelo prometía «cuotas por token/IP» y la
+  parte de IP no existe.
+
+
 ## 2026-08-07 — El e2e autenticado, cumplido, y un secreto que hubo que rotar
 - **6/6 contra el tenant y el gateway reales.** Los 30 s del camino feliz son la
   espera del ping del gateway, que llega a los 30: no es lentitud, es el contrato.
