@@ -151,6 +151,48 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  cloudflared:
+    # Publica el dev por el túnel de Cloudflare, y existe aquí por una razón
+    # concreta: **para que el ingress apunte a nombres de servicio y no a una IP**.
+    #
+    # Hasta el 2026-08-23 el conector corría suelto en la red `bridge`, sin
+    # acceso a esta red, así que las reglas del panel tenían que apuntar a la IP
+    # de LAN del host. Esa IP es de DHCP: cambió de `192.168.1.43` a `.46` y se
+    # llevó por delante el entorno entero —la regla del API acabó apuntando al
+    # puerto del SPA, con lo que cada llamada del cliente recibía un `index.html`
+    # y el WSS nunca hacía upgrade—. Desde esta red, `web-spa` y `api-gateway`
+    # resuelven por nombre y no dependen de la red de nadie.
+    #
+    # `profiles` porque no todo el que levanta el stack quiere —ni puede—
+    # exponerlo:  docker compose --profile tunel up -d
+    profiles: [tunel]
+    # Fijada a la versión que ya corría: el `latest` de un conector se actualiza
+    # solo y aquí no interesa descubrir una versión nueva un lunes.
+    image: cloudflare/cloudflared:2026.6.0
+    command: tunnel --no-autoupdate run
+    environment:
+      # El token AUTORIZA a servir el túnel: es un secreto, vive en el .env de la
+      # raíz (gitignorado) y nunca en este archivo.
+      #
+      # Va por entorno y no como argumento del `command` porque en la línea de
+      # órdenes lo ve cualquiera que haga `docker inspect` —así se filtró uno el
+      # 2026-08-23—. Que quede claro: por entorno TAMPOCO es un escondite,
+      # `docker inspect` también lo muestra; lo que protege es el .env.
+      #
+      # Sin `:?` a propósito: el compose interpola el archivo ENTERO aunque el
+      # servicio no se levante, y un `:?` rompería `docker compose up` a todo el
+      # que no use el túnel.
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      # Con el healthcheck del gateway, esperar a `service_healthy` evita los
+      # `connection refused` del arranque, que en el log del conector parecen un
+      # problema de red y son el reloj.
+      api-gateway:
+        condition: service_healthy
+      web-spa:
+        condition: service_started
+    restart: unless-stopped
+
   web-spa:
     build:
       context: .

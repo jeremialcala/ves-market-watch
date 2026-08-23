@@ -55,6 +55,39 @@ cd apps/<servicio> && pip install -e .[dev] && python -m pytest
 Front-end: `cd apps/web-spa && npm install && npm run dev` (http://localhost:5173;
 el compose lo sirve compilado en http://localhost:8080; `npm test` corre su suite).
 
+### El túnel de Cloudflare (ADR-0020)
+
+El flujo de login bueno —HTTPS real, sin consentimiento y con sesión que aguanta
+un F5— necesita los dos hostnames del túnel, y el conector va **en el compose**,
+tras un perfil para no imponérselo a quien no lo use:
+
+```sh
+CLOUDFLARE_TUNNEL_TOKEN=… docker compose --profile tunel up -d --wait
+```
+
+El token es un secreto y su sitio es el `.env` de la raíz, que está gitignorado.
+
+**El ingress se configura en el panel de Cloudflare Zero Trust** (el conector
+arranca con `--token`, así que las reglas no viven en el repositorio) y tiene que
+apuntar a **nombres de servicio**, que es la razón de que el conector esté en esta
+red:
+
+| Public hostname | Service |
+|---|---|
+| `criterio-dev.higerotech.com` | `http://web-spa:80` |
+| `criterio-api-dev.higerotech.com` | `http://api-gateway:8000` |
+
+Antes apuntaban a la IP de LAN del host, que es de DHCP: el 2026-08-23 cambió y
+se llevó por delante el entorno. Si un día la SPA se queda con los datos
+congelados, la comprobación que lo identifica en un segundo es
+
+```sh
+curl -s -o /dev/null -w "%{content_type}" https://criterio-api-dev.higerotech.com/api/v1/health
+```
+
+`application/json` es lo correcto; **`text/html` significa que ese hostname está
+sirviendo el SPA** y ninguna llamada del cliente llega al gateway.
+
 Cada servicio tiene CLI propio: `python -m ingestor_bcv [--once] [--dry-run]` (más el
 subcomando de operador `revalidar`), `python -m ingestor_binance [--once] [--dry-run]`,
 `python -m indicator_engine [--drain]` y
