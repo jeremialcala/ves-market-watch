@@ -7,30 +7,35 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
-## 2026-08-22 — «Criterio está roto» eran 37 segundos de reloj, y un bucle nuestro
-- **El diagnóstico salió de los logs, no de la aplicación.** «Está roto» con la
-  infraestructura entera en verde: `health` ok/ok/ok, el motor publicando cada
-  minuto. Lo cerró una línea del gateway —`The token is not yet valid (iat)`— y
-  comparar el reloj local contra dos fuentes de internet. *Cuando el síntoma es
-  «no funciona» y todo mide bien, mide algo que no sea el sistema.*
-- **El servicio de hora de Windows estaba parado** y la deriva llegó a 37 s. El
-  gateway tolera 30 y ya lo tenía escrito con su motivo, así que el margen no
-  era el problema: subirlo habría sido tapar un reloj que sigue corriéndose.
-- **El defecto de verdad lo encontré midiendo el incidente, no leyendo código.**
-  Contar las peticiones del periodo averiado dio 16 000 en 18 minutos con una
-  distribución idéntica por endpoint —×1235 cada uno—, que es la firma de un
-  bucle, no de un uso. *Un incidente deja números; leerlos antes de opinar sale
-  más barato que buscar la causa en el editor.*
-- **La corrección obvia no habría funcionado.** Puse backoff en el 4401 y seguía
-  sin frenar: `onopen` reiniciaba el contador de intentos, y como el gateway
-  acepta el handshake ANTES de validar, ese `onopen` dispara también en la
-  conexión que va a ser rechazada. *Un arreglo que no puedes ver fallar cuando lo
-  quitas no está verificado: dos de mis tres tests pasaban con el defecto puesto
-  y hubo que rehacerlos.*
-- **El límite de tasa no defiende de esto**: se aplica por `sub`, después de
-  validar el token, así que un cliente con un token rechazado no consume cuota y
-  llama sin freno. Anotado en T4 — el modelo prometía «cuotas por token/IP» y la
-  parte de IP no existe.
+## 2026-08-20 — El e2e al pipeline, y el `--wait` que no esperaba
+- **La pregunta no era «cómo meto el test en CI» sino «qué prueba cada mitad».**
+  Los rechazos prueban código y se rompen con un commit → cada PR. El camino
+  feliz prueba la **configuración del tenant de Auth0**, que no se rompe con un
+  commit sino cuando alguien toca su panel → cron nocturno. *Un test cuyo sujeto
+  es una configuración externa no pertenece al gate del PR: allí se ejecuta
+  cuando no hace falta y no se ejecuta cuando sí.*
+- **`docker compose up -d --wait` daba por bueno el gateway a medio arrancar.**
+  Era el único servicio del compose sin healthcheck, y compose no espera a lo que
+  no sabe medir. Llevaba así desde siempre y afectaba también al desarrollo local;
+  lo destapó preguntarme de qué depende exactamente el `--wait`, no un fallo.
+  *Un `--wait` sobre un servicio sin healthcheck es un `sleep 0` con buena
+  prensa.*
+- **En el pipeline, el `skipIf` cambia de bando.** Todo el archivo está construido
+  sobre «si no hay entorno, salta», que es lo correcto en local; en CI el entorno
+  lo monta el propio trabajo, así que su ausencia es un defecto y saltar sería el
+  mismo verde vacío que esta suite ya tuvo una vez, con otra ropa. La bandera
+  `E2E_LIVE_EXIGIDO` lo invierte, y **verifiqué los dos modos de ausencia**
+  ejecutándolos —sin credenciales y contra un puerto muerto—, no leyendo el
+  código.
+- **En Actions un secreto que no existe interpola a cadena vacía, no a variable
+  sin definir.** El `=== undefined` del test habría dejado entrar al camino feliz
+  de un PR de fork con credenciales vacías, y el 401 de Auth0 se lee como «el
+  tenant está mal» cuando lo que pasa es que no hay credenciales. *Ausente y
+  vacío son lo mismo para una credencial.*
+- Antes de proponer volcar los logs del gateway en unos logs **públicos**,
+  comprobé que el filtro de `__main__.py` redacta de verdad: sale
+  `token=[REDACTADO]` sobre logs reales. La comprobación era barata y la
+  alternativa era publicar un access token.
 
 
 ## 2026-08-07 — El e2e autenticado, cumplido, y un secreto que hubo que rotar

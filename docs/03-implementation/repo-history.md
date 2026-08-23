@@ -1,7 +1,7 @@
 # Historial de implementación — Criterio
 
 * **Estado:** review (documentación viva — regenerada por script, no editar a mano)
-* **Fecha:** 2026-08-07
+* **Fecha:** 2026-08-20
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
 * **Versión:** 0.4.0
@@ -264,6 +264,9 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `819557c` | commit | — | Jeremi Alcala | 2026-08-20 | ci(e2e): llevar el e2e en vivo al pipeline |
+| `abd3c2a` | merge | — | Jeremi J. Alcalá M. | 2026-08-07 | Merge pull request #5 from jeremialcala/docs-e2e-cumplido |
+| `3b68d49` | commit | — | Jeremi Alcala | 2026-08-07 | docs(repo-history): regenerar |
 | `39a3076` | commit | — | Jeremi Alcala | 2026-08-07 | docs(gate-2): el e2e autenticado en vivo queda cumplido |
 | `ae49831` | commit | — | Jeremi Alcala | 2026-08-07 | docs(repo-history): regenerar tras el merge del PR #4 |
 | `8ef0624` | merge | — | Jeremi J. Alcalá M. | 2026-08-07 | Merge pull request #4 from jeremialcala/feat-e2e-autenticado |

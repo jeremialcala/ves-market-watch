@@ -35,7 +35,9 @@ ejecutar la suite con o sin `docker compose`.
 | **security** | Escenarios de abuso de los PRDs y amenazas del threat model | según caso | `security` *(a introducir en api-gateway)* |
 
 Regla transversal (ya vigente): **sin infraestructura, los tests que la requieren hacen `skip`
-elegante con instrucciones**, nunca fallan por ausencia de compose.
+elegante con instrucciones**, nunca fallan por ausencia de compose. La regla vale
+en local y **se invierte en el pipeline**: allí el entorno lo monta el propio
+trabajo, así que su ausencia es un defecto y no una circunstancia (§11).
 
 El front-end (`apps/web-spa`, ADR-0017) replica la pirámide en **vitest**: unit/component/
 contract corren **sin infraestructura por diseño** (MSW + WebSocket mock; fixtures
@@ -69,9 +71,17 @@ La suite se parte en dos porque los requisitos no son los mismos:
 La primera versión hacía `if (!arriba) return` en cada test y eso reportaba
 **PASSED con el gateway apagado**: una suite que certifica nada. Comprobado
 apuntando a un puerto muerto —salían cinco en verde—; ahora salen seis «skipped».
+En el pipeline esa misma decisión se invierte con `E2E_LIVE_EXIGIDO=1`, porque
+allí el entorno lo monta el trabajo y su ausencia es un defecto (§11).
 
-**Lo que falta es aprovisionar (HITL, en el dashboard de Auth0):** una aplicación
-*Machine to Machine* autorizada para la API `https://api.vesmarketwatch/` con los
+**Desde el 2026-08-20 corre en el pipeline** (`e2e-vivo.yml`): los rechazos en
+cada PR, el camino feliz en push a main/develop y en el cron de las 06:00 UTC.
+Sigue haciendo falta la corrida manual contra `criterio-dev` para lo que CI no
+puede montar —nginx y el túnel—.
+
+**Qué tiene que tener el client M2M** (aprovisionado el 2026-08-07 en el
+dashboard de Auth0): una aplicación *Machine to Machine* autorizada para la API
+`https://api.vesmarketwatch/` con los
 **cinco** permisos que el gateway exige —`read:rates`, `read:indicators`,
 `read:signals`, `read:depth`, `stream:events`—. No hay `read:analysis`:
 `/analysis/current` reutiliza `read:indicators` a propósito. Las credenciales
@@ -501,7 +511,7 @@ cierre de la columna «Verificación fase 04-testing».
 
 | Pendiente | Por qué sigue abierto |
 |---|---|
-| Llevar el e2e en vivo **al pipeline** | El test ya pasa 6/6 a mano (2026-08-07). Meterlo en CI exige el `client_secret` del M2M como secreto de GitHub Actions y un gateway alcanzable desde el runner: decisión pendiente, no código pendiente |
+| ~~Llevar el e2e en vivo **al pipeline**~~ **hecho 2026-08-20** | `e2e-vivo.yml` levanta el gateway con compose en el propio runner (§11). Queda un paso **HITL**: dar de alta `AUTH0_M2M_CLIENT_ID` y `AUTH0_M2M_CLIENT_SECRET` en *Settings → Secrets → Actions*. Sin ellos, los PR siguen verdes con los rechazos y el camino feliz **falla** en push y en el nocturno, que es lo que se quiere: la ausencia se ve, no se calla |
 | Deuda de T8: **lockfiles + imágenes por digest** | Cambio de repositorio, no de pipeline: los cinco servicios declaran rangos y las imágenes van por tag (incluida `timescaledb:latest-pg16`) |
 | Deuda de T8: **CVE-2026-59870 (`js-yaml`) aceptado** | Vector no alcanzable (dependencia de desarrollo, entrada propia sin `!!omap`); el arreglo disponible rompe el generador de tipos. Se retira cuando `openapi-typescript` suba a redocly 2.x — revisar 2026-09-06 |
 | Marcador `security` en `api-gateway` | Donde viven T9 y T11; los otros dos servicios ya lo tienen |
@@ -521,6 +531,43 @@ público, así que los minutos son gratis).
   estricto que el typecheck: ya dejó pasar una vez un campo ausente del contrato).
   Sin filtros por ruta: 1 263 tests son baratos y un filtro mal puesto da verdes
   vacíos.
+- **`e2e-vivo.yml` — el gateway y el tenant de verdad (2026-08-20):** un solo
+  trabajo que levanta `api-gateway` con `docker compose up --wait` en el runner
+  —arrastrando timescaledb, que nace con el esquema por los montajes de initdb, y
+  rabbitmq— y corre `npm run test:e2e:live` contra `localhost:8800`.
+
+  **Los disparadores salen de que las dos suites prueban cosas distintas.** Los
+  rechazos prueban CÓDIGO (que el 401 sea 401, que el WSS cierre con 4401) y eso
+  se rompe con un commit: van en **cada PR**. El camino feliz prueba la
+  CONFIGURACIÓN del tenant —que la app M2M exista, con su grant y sus permisos— y
+  eso no se rompe con un commit sino cuando alguien toca el panel de Auth0 un
+  martes cualquiera: va en **push a main/develop y en un cron a las 06:00 UTC**,
+  con el mismo razonamiento que la pasada semanal de `seguridad.yml`. Ponerlo en
+  cada PR lo ejecutaría cuando no hace falta y no lo ejecutaría cuando sí.
+
+  **En CI, «no estaba el entorno» tiene que ser rojo.** Todo el archivo de tests
+  está construido sobre `skipIf`, que es lo correcto en local y se invierte aquí:
+  el job monta el entorno, así que si algo falta —secreto rotado y no
+  actualizado, contenedor que no arrancó— un skip sería verde certificando nada,
+  el mismo fallo que la suite ya tuvo. El job pasa `E2E_LIVE_EXIGIDO=1` fuera de
+  los PR y el test lo convierte en fallo de carga del módulo. Comprobado
+  ejecutándolo en los dos modos de ausencia: sin credenciales y con el gateway
+  apagado, ambos salen en rojo con el motivo escrito.
+
+  **El secreto no es alcanzable desde ningún evento de PR.** El repo es público:
+  un PR de fork no recibe secretos, así que allí el camino feliz salta —vacío
+  cuenta como ausente: en Actions un secreto que no existe interpola a **cadena
+  vacía**, no a variable sin definir, y con `=== undefined` el fork habría entrado
+  al camino feliz con credenciales vacías—. Volcar los logs del gateway al fallar
+  también es seguro: `__main__.py` redacta `token=…` de los access logs, y se
+  comprobó sobre logs reales que sale `token=[REDACTADO]`.
+
+  **Lo que este trabajo NO cubre:** nginx y el túnel de Cloudflare. El runner
+  habla con el contenedor a pelo, así que la corrida manual contra
+  `criterio-dev` no desaparece — pasa de ser la única comprobación a ser la del
+  despliegue. Y los `schedule` de GitHub solo disparan desde la rama por defecto,
+  así que el nocturno no empieza hasta que esto llegue a `main`.
+
 - **`seguridad.yml` — los gates de Gate 2, rompiendo el build:**
   - **T6:** `gitleaks` sobre la **historia completa** (`fetch-depth: 0`) — en un
     repo público, un secreto borrado al commit siguiente sigue ahí. Con

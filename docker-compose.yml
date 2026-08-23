@@ -124,6 +124,26 @@ services:
     ports:
       # 8800 en el host: el 8000 suele estar ocupado por otro proyecto local.
       - "8800:8000" # REST /api/v1 + WSS /ws/v1 (health público: /api/v1/health)
+    # Sin esto, `up -d --wait` devuelve con uvicorn todavía arrancando: compose
+    # da por bueno un servicio sin healthcheck en cuanto el contenedor corre.
+    # Lo pagaba quien encadenara algo detrás —el e2e en vivo del pipeline lo
+    # hace— viendo un «connection refused» que parecía del gateway y era del
+    # reloj. `urlopen` levanta en cualquier código != 2xx, así que el 503 de
+    # `database: down` cuenta como no listo; el 200 de `degraded` (broker o
+    # JWKS caídos) cuenta como listo, que es la verdad: el REST está sirviendo.
+    # Python y no curl porque la imagen es `python:3.12-slim` y no lo trae.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3)",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     depends_on:
       rabbitmq:
         condition: service_healthy

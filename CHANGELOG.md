@@ -17,39 +17,65 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **El e2e en vivo entra al pipeline: `e2e-vivo.yml` (2026-08-20).** El trabajo
+  levanta `api-gateway` con `docker compose up --wait` en el propio runner —lo que
+  arrastra timescaledb, que nace con el esquema por los montajes de initdb, y
+  rabbitmq— y corre la suite contra `localhost:8800`. Se descartó apuntar al túnel
+  de `criterio-dev`: ese gateway vive en una máquina de desarrollo y ataría el
+  verde de CI a que esté encendida.
+  - **Los disparadores salen de que las dos suites prueban cosas distintas.** Los
+    rechazos prueban **código** —que el 401 sea 401, que el WSS cierre con 4401— y
+    eso se rompe con un commit: van en cada PR. El camino feliz prueba la
+    **configuración del tenant** —que la app M2M exista, con su grant y sus
+    permisos— y eso no se rompe con un commit, sino cuando alguien toca el panel
+    de Auth0 un martes cualquiera: va en push a main/develop y en un cron a las
+    **06:00 UTC**. En cada PR se ejecutaría cuando no hace falta y no se
+    ejecutaría cuando sí.
+  - **En CI, «no estaba el entorno» tiene que ser rojo.** El archivo entero está
+    construido sobre `skipIf`, correcto en local y del revés aquí: el job monta el
+    entorno, así que si algo falta —secreto rotado y no actualizado, contenedor
+    que no arrancó— un skip sería verde certificando nada, el mismo fallo que esta
+    suite ya tuvo. Con `E2E_LIVE_EXIGIDO=1` el test lo convierte en fallo de
+    carga del módulo. Comprobado ejecutándolo en los dos modos de ausencia: sin
+    credenciales y contra un puerto muerto, ambos en rojo con el motivo escrito.
+  - **Vacío cuenta como ausente, y no es cosmética.** En Actions un secreto que no
+    existe interpola a **cadena vacía**, no a variable sin definir: con el
+    `=== undefined` anterior, el PR de un fork —que no recibe secretos por ser el
+    repo público— habría entrado al camino feliz con credenciales vacías y muerto
+    contra el 401 de Auth0, que se lee como «el tenant está mal».
+  - **La bandera se escribe con el `'1'` en la rama verdadera** a propósito: la
+    forma espejo depende de si Actions considera *truthy* la cadena «0», y si no
+    lo es, el `||` se la come y devuelve «1» siempre —exigiendo el secreto también
+    en los PR de fork, que nunca lo tienen—.
+  - **Lo que este trabajo no cubre:** nginx y el túnel de Cloudflare. El runner
+    habla con el contenedor a pelo, así que la corrida manual contra
+    `criterio-dev` no desaparece: pasa de ser la única comprobación a ser la del
+    despliegue. Y los `schedule` de GitHub solo disparan desde la rama por
+    defecto, así que el nocturno no arranca hasta que esto llegue a `main`.
+
 ### Fixed
 
-- **El SPA respondía a un 401 con 16 000 peticiones en 18 minutos (2026-08-22).**
-  Salió de una avería real: el reloj del host se fue **37 s atrás** —el servicio
-  de hora de Windows estaba parado—, así que el `iat` de los tokens de Auth0
-  llegaba «en el futuro» y el gateway los rechazaba (`The token is not yet valid
-  (iat)`); su tolerancia son 30 s. El reloj se arregló fuera del repositorio,
-  pero lo que el cliente hizo con esos 401 es defecto propio.
-  - **El 4401 era el único cierre que se saltaba el backoff.** `politicas.ts`
-    devolvía `refrescar-y-reconectar` sin espera ni tope, y como cada conexión
-    dispara un resync REST completo, el ciclo era: 4401 → token nuevo a Auth0 →
-    reconectar → 14 llamadas REST → las 14 en 401 → otra vez, **sin esperar**.
-    Medido en los logs: ~1235 resyncs completos, uno cada 0,87 s con dos
-    pestañas abiertas, y el endpoint de token de Auth0 al mismo ritmo con
-    `cacheMode: "off"` —a un rato de que el tenant nos frenara—. Ahora el primer
-    4401 sigue siendo inmediato (es el caso corriente: token caducado) y del
-    segundo en adelante entra en el backoff exponencial que ya existía, hasta
-    detenerse con un motivo legible tras seis fallos seguidos (~31 s).
-  - **Y el backoff no habría servido de nada**, porque `StreamClient` ponía
-    `intento = 0` en `onopen`. El gateway **acepta el handshake antes de
-    validar** —a propósito: sin aceptar, Starlette aborta con un 403 y el
-    navegador ve un 1006 mudo—, así que `onopen` dispara también cuando el token
-    va a ser rechazado un instante después. Cada intento se creía el primero y
-    el backoff quedaba clavado en su valor base **para todos los códigos de
-    cierre**, no solo el 4401. El contador lo reinicia ahora el primer mensaje
-    del servidor: un socket abierto no prueba nada.
-  - Seis tests nuevos, los tres cambios verificados por mutación: revertir la
-    política tumba cuatro, devolver el `intento = 0` a `onopen` tumba uno y
-    quitar el reinicio del contador de fallos tumba otro. Los dos últimos
-    necesitaron rehacerse: la primera versión de cada uno pasaba con el defecto
-    puesto.
+- **`docker compose up -d --wait` mentía sobre el gateway (2026-08-20).**
+  `api-gateway` era el único servicio del compose **sin healthcheck**, y compose da
+  por bueno un servicio que no lo declara en cuanto el contenedor corre: `--wait`
+  devolvía con uvicorn todavía arrancando. Lo pagaba quien encadenara algo detrás
+  —el e2e del pipeline lo hace— con un «connection refused» que parecía del
+  gateway y era del reloj. Se comprobó en la propia máquina de desarrollo: antes
+  `Up 13 hours` sin `(healthy)`; ahora `--wait` espera de verdad. `python -c
+  urllib.request…` y no `curl`, que la imagen `python:3.12-slim` no trae.
+  - El 503 de `database: down` cuenta como no listo y el 200 de `degraded`
+    —broker o JWKS caídos— cuenta como listo, que es la verdad: el REST sirve.
 
 ### Security
+
+- **`nanoid` a 3.3.18 (GHSA-2v37-7h3g-55p8, 2026-08-20).** Aviso nuevo, ajeno a
+  esta rama: lo destapó el T8 del PR del pipeline, que es para lo que está. Llega
+  por `vite → postcss → nanoid` y el arreglo cabía dentro del rango que declara
+  postcss, así que **un bump del lockfile de tres líneas** en vez de una excepción
+  por escrito. El vector —bucle infinito con un generador propio y `size` cero—
+  tampoco era alcanzable, pero una excepción es deuda y el parche era gratis.
 
 - **El e2e en vivo gana la mitad que faltaba: los rechazos (2026-08-07).** La
   suite solo probaba el camino feliz y **nada de lo que debe fallar**. Ahora, sin

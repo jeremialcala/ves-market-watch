@@ -19,6 +19,15 @@
  * El secreto no vive en el repo ni se imprime: viaja por entorno y ningún
  * mensaje de error lo incluye.
  *
+ * **En el pipeline** lo corre `.github/workflows/e2e-vivo.yml`, que levanta el
+ * gateway con docker compose en el propio runner. Los rechazos van en cada PR;
+ * el camino feliz solo en push a main/develop y en el cron nocturno, porque lo
+ * que comprueba es la CONFIGURACIÓN del tenant —que la app M2M siga existiendo,
+ * con su grant y sus permisos— y eso no se rompe con un commit sino cuando
+ * alguien toca el panel de Auth0. Lo que CI **no** cubre es nginx ni el túnel de
+ * Cloudflare: el runner habla con el contenedor del gateway a pelo, así que la
+ * corrida manual contra `criterio-dev` sigue siendo la del despliegue.
+ *
  * **La disponibilidad del gateway se resuelve UNA vez y las suites usan
  * `skipIf`.** La primera versión hacía `if (!arriba) return` dentro de cada
  * test, y eso reportaba **PASSED** con el gateway apagado: una suite que
@@ -138,12 +147,42 @@ describe.skipIf(!GATEWAY_VIVO)(
   },
 );
 
+/*
+ * Vacío cuenta como ausente, y no es una sutileza: en GitHub Actions un secreto
+ * que no existe **interpola a cadena vacía**, no a variable sin definir. Con
+ * `=== undefined` el PR de un fork —que no recibe secretos— habría entrado al
+ * camino feliz con credenciales vacías y muerto contra el 401 de Auth0, que se
+ * lee como «el tenant está mal» cuando lo que pasa es que no hay credenciales.
+ * Vale igual para un `export AUTH0_M2M_CLIENT_SECRET=` en cualquier shell.
+ */
 const razonSkip =
-  CLIENT_ID === undefined || CLIENT_SECRET === undefined
+  !CLIENT_ID || !CLIENT_SECRET
     ? "sin AUTH0_M2M_CLIENT_ID/SECRET en el entorno (aprovisionar F1 — ADR-0017)"
     : !GATEWAY_VIVO
       ? "gateway no disponible"
       : null;
+
+/**
+ * En el pipeline, «no estaba el entorno» NO es un skip: es un fallo.
+ *
+ * Todo este archivo está construido sobre `skipIf`, y en local es lo correcto
+ * —quien no tenga el gateway arriba no debería ver cinco rojos—. En CI se
+ * invierte: el job levanta el gateway y le pone las credenciales, así que si
+ * algo falta, falta por un defecto —el secreto rotado y no actualizado, el
+ * contenedor que no arrancó— y un skip lo convertiría en verde. Es el MISMO
+ * fallo que ya tuvo esta suite cuando reportaba PASSED con el gateway apagado,
+ * solo que disfrazado de «skipped».
+ *
+ * Se lanza en la carga del módulo para que ni siquiera dependa de que un test
+ * llegue a ejecutarse.
+ */
+if (process.env.E2E_LIVE_EXIGIDO === "1" && razonSkip !== null) {
+  throw new Error(
+    `e2e en vivo EXIGIDO y no ejecutable: ${razonSkip}. ` +
+      "El job de CI lo pide con E2E_LIVE_EXIGIDO=1: revisar los secretos " +
+      "AUTH0_M2M_CLIENT_ID/SECRET y el arranque del gateway.",
+  );
+}
 
 describe.skipIf(razonSkip !== null)(
   `e2e en vivo · camino feliz${razonSkip ? ` — SKIP: ${razonSkip}` : ""}`,
