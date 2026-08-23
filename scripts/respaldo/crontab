@@ -1,0 +1,11 @@
+# Horas en TZ=America/Caracas (VET), que es el día operativo del proyecto.
+#
+# El incremental va en punto; el full a las 03:30, cuando el P2P está más
+# tranquilo y no se cruza con el incremental de las 03:00.
+0  *  * * *  respaldar incremental >> /proc/1/fd/1 2>&1
+30 3  * * *  respaldar full        >> /proc/1/fd/1 2>&1
+# Agregados sin snapshots crudos, para la retención larga (ver README.md).
+0  4  1 * *  respaldar agregados   >> /proc/1/fd/1 2>&1
+# Una restauración de verdad cada semana. Un respaldo que nunca se restaura no
+# es un respaldo, es una carpeta con archivos.
+0  5  * * 0  verificar             >> /proc/1/fd/1 2>&1

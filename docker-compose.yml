@@ -36,6 +36,19 @@ services:
       # 5433 en el host: el 5432 suele estar ocupado por un PostgreSQL local/WSL.
       - "5433:5432"
     volumes:
+      # Volumen CON NOMBRE para los datos, y esta línea tiene una fecha detrás.
+      #
+      # Hasta el 2026-08-23 no estaba, así que los datos vivían en el volumen
+      # anónimo que crea la imagen. La cabecera de este archivo decía —y decía
+      # verdad cuando se escribió— que la infraestructura era «efímera a
+      # propósito»; para cuando dejó de serlo, nadie actualizó la línea. Un
+      # `docker compose up` recreó los contenedores y se llevó por delante nueve
+      # meses de serie: 1.017.655 indicadores y el histórico del BCV desde 2020.
+      # Se recuperaron del volumen huérfano, de pura suerte.
+      #
+      # Con nombre, el volumen sobrevive a `up`, a `down` y a un cambio de rama.
+      # Solo `docker compose down -v` lo borra, y eso ya es una decisión.
+      - ves_market_datos:/var/lib/postgresql/data
       # La DB de desarrollo nace con el esquema del ingestor aplicado.
       # Archivo individual (no el directorio): montar el directorio completo
       # aplastaría el init propio de la imagen (000_install_timescaledb.sh),
@@ -214,3 +227,50 @@ services:
       api-gateway:
         condition: service_started
     restart: unless-stopped
+
+  respaldo:
+    # Respaldo a Google Drive: incremental cada hora, full cada 24 h y una
+    # restauración de verdad cada domingo. El detalle está en
+    # `scripts/respaldo/README.md`; lo que hay que saber aquí es por qué existe.
+    #
+    # El 2026-08-23 un `docker compose up` recreó los contenedores y se llevó la
+    # base entera —`timescaledb` no declara volumen y el anónimo que crea la
+    # imagen no sobrevive a una recreación—. Se recuperó del volumen huérfano,
+    # de suerte: nadie la había respaldado nunca.
+    #
+    # Tras un perfil, como el túnel: quien levante el stack para trastear no
+    # tiene por qué subir nada a ningún sitio.
+    #   docker compose --profile respaldo up -d
+    profiles: [respaldo]
+    build:
+      context: .
+      dockerfile: scripts/respaldo/Dockerfile
+    environment:
+      PGHOST: timescaledb
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: ves_market
+      # Remoto `crypt` de rclone: Drive guarda contenido que no puede leer. La
+      # base tiene datos Interno y la clasificación no dice nada sobre sacarlos
+      # a un tercero, así que se cifra en cliente y la pregunta no se plantea.
+      #
+      # Sin `:?` a propósito: el compose interpola el archivo ENTERO aunque el
+      # servicio no se levante, y rompería `up` a quien no use el respaldo.
+      RCLONE_REMOTE: ${RCLONE_REMOTE:-}
+      RCLONE_CONFIG: /config/rclone/rclone.conf
+    volumes:
+      # La autorización de Google vive aquí: se hace una vez con `rclone config`
+      # y persiste. Contiene credenciales, así que es un volumen con nombre y no
+      # un bind al repositorio.
+      - rclone_config:/config/rclone
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  # Los datos de TimescaleDB. Ver el comentario en el servicio: antes eran un
+  # volumen anónimo y una recreación de contenedores se los llevó.
+  ves_market_datos:
+  rclone_config:
