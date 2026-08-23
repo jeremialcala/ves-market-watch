@@ -17,6 +17,30 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Changed
+
+- **El conector del túnel entra en el `docker-compose.yml` (2026-08-23).** Corría
+  suelto, fuera del proyecto y en la red `bridge`, así que el ingress de
+  Cloudflare no podía nombrar servicios y apuntaba a la **IP de LAN del host**.
+  Esa IP es de DHCP y cambió —`192.168.1.43` → `.46`—, llevándose por delante el
+  entorno entero: al recomponer las reglas, la del API quedó apuntando al puerto
+  del SPA, así que cada llamada del cliente recibía un `index.html`, el preflight
+  de CORS moría en 405 y el WSS nunca hacía upgrade. **El gateway no vio una sola
+  petición** mientras el dashboard aparecía «congelado» con la base de datos al
+  día. Nada de eso se veía en el repositorio.
+  - Ahora es un servicio bajo el perfil `tunel` —`docker compose --profile tunel
+    up -d`— para no imponérselo a quien no lo use, con la imagen fijada a
+    `2026.6.0` y el token por `.env`. Comprobado desde la red del proyecto:
+    `http://api-gateway:8000/api/v1/health` responde `200 application/json` y
+    `http://web-spa:80/` responde `200 text/html`, que son exactamente los dos
+    destinos que el ingress debe declarar.
+  - **El compose no basta**: las reglas siguen viviendo en el panel de Cloudflare
+    porque el conector arranca con `--token`. Hay que repuntarlas una vez a
+    `http://web-spa:80` y `http://api-gateway:8000`; a partir de ahí son inmunes
+    al DHCP. Queda escrito en el README, con el `curl` que distingue el fallo en
+    un segundo: `application/json` bien, **`text/html` significa que el hostname
+    del API está sirviendo el SPA**.
+
 ### Added
 
 - **El e2e en vivo entra al pipeline: `e2e-vivo.yml` (2026-08-20).** El trabajo

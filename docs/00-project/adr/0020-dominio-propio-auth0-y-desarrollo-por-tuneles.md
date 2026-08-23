@@ -71,6 +71,20 @@ decía lo contrario estaba desfasada.
    sirviendo para desarrollo, pero **ahí el consentimiento y la falta de
    persistencia son inevitables**, y eso es correcto, no un fallo.
 
+> **Enmienda 2026-08-23: el conector entra en la red del compose.** El túnel se
+> montó con `cloudflared` corriendo suelto, fuera del proyecto, así que el
+> ingress no podía nombrar servicios y tenía que apuntar a la **IP de LAN del
+> host**. Esa IP es de DHCP: cambió de `192.168.1.43` a `.46` y tumbó el entorno
+> —al recomponer las reglas, la del API quedó con el puerto del SPA, con lo que
+> cada llamada del cliente recibía un `index.html`, el preflight moría en 405 y
+> el WSS nunca hacía upgrade; el gateway no vio **una sola petición**—. El
+> conector pasa a ser un servicio del `docker-compose.yml` bajo el perfil
+> `tunel`, y el ingress apunta a `http://web-spa:80` y
+> `http://api-gateway:8000`. Nombres de servicio, inmunes al DHCP.
+>
+> La decisión de fondo no cambia: los dos hostnames y el porqué siguen siendo los
+> de abajo. Lo que cambia es **dónde vive el conector**.
+
 4. **`worker-src 'self' blob:` en la CSP.** Ampliación mínima y acotada: un
    `blob:` solo puede contener código del propio origen y `script-src 'self'`
    queda intacto. Lo fija un test.
@@ -126,6 +140,12 @@ decía lo contrario estaba desfasada.
   ser activo crítico del sistema de identidad.
 - (−) **El desarrollo depende de un túnel activo.** Sin `cloudflared` corriendo,
   el flujo bueno no está disponible; queda `localhost:8080` con sus limitaciones.
+- (−) **El ingress no vive en el repositorio.** El conector arranca con `--token`
+  y las reglas se editan en el panel de Cloudflare, así que un cambio ahí puede
+  romper el entorno sin que aparezca en ningún diff. Es lo que pasó el
+  2026-08-23. Meter el conector en el compose quita la dependencia de la IP, no
+  esta: para eso haría falta pasar a `--config` con las credenciales en archivo,
+  que es otro modelo de operación.
 - (−) Los hosts del túnel son de esta máquina y viven en el `.env` (gitignorado):
   otra persona necesita los suyos y registrarlos en Auth0.
 - (−) Cambiar el issuer invalida los tokens en vuelo. En dev es un no-evento

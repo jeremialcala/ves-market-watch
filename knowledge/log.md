@@ -7,6 +7,29 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-23 — El dashboard congelado con la base de datos al día
+- **«El web-spa no actualiza» y el web-spa no tenía nada.** Indicadores en la
+  base con 40 s, análisis con 2 s, gateway `ok/ok/ok`… y **el gateway sin recibir
+  una sola petición en media hora**. Ese hueco —datos frescos y cero tráfico— es
+  el que apunta fuera de la aplicación.
+- **Lo cerró un `content_type`.** `https://criterio-api-dev…/api/v1/health`
+  devolvía `text/html` de 471 bytes: el `index.html` del propio SPA. El hostname
+  del API estaba enrutado al SPA. *Cuando sospechas del enrutado, mira el tipo de
+  contenido antes que el código de estado: un 200 puede ser la página equivocada.*
+- **La prueba estaba en el log del conector**, en dos versiones de configuración
+  separadas por diez segundos: la primera con el API en `:8800` y la segunda con
+  el API en `:8080`. La IP de LAN había cambiado por DHCP y al recomponer las
+  reglas se copió el puerto del SPA.
+- **La causa de fondo era topológica**: el conector vivía fuera del compose, en
+  otra red, así que el ingress no podía usar nombres de servicio y estaba
+  obligado a nombrar una IP que no controla nadie. *Una configuración que apunta
+  a una IP de DHCP no está configurada, está apostada.*
+- **Y filtré el token del túnel** haciendo `docker inspect` del `Config.Cmd` para
+  leer la configuración. Segunda credencial que expongo en este proyecto. *Antes
+  de volcar la configuración de un contenedor, pregúntate si arranca con
+  credenciales en la línea de órdenes — los conectores y los agentes casi
+  siempre lo hacen.* Pedir solo `.NetworkSettings` habría bastado.
+
 ## 2026-08-20 — El e2e al pipeline, y el `--wait` que no esperaba
 - **La pregunta no era «cómo meto el test en CI» sino «qué prueba cada mitad».**
   Los rechazos prueban código y se rompen con un commit → cada PR. El camino

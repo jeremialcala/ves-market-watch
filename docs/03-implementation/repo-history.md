@@ -1,7 +1,7 @@
 # Historial de implementación — Criterio
 
 * **Estado:** review (documentación viva — regenerada por script, no editar a mano)
-* **Fecha:** 2026-08-20
+* **Fecha:** 2026-08-23
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
 * **Versión:** 0.4.0
@@ -264,6 +264,13 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `60c7264` | commit | — | Jeremi Alcala | 2026-08-23 | chore(dev): el conector del túnel entra en el compose |
+| `9d639e3` | merge | — | Jeremi J. Alcalá M. | 2026-08-23 | Merge pull request #6 from jeremialcala/ci-e2e-vivo |
+| `f19a490` | merge | — | Jeremi J. Alcalá M. | 2026-08-23 | Merge branch 'develop' into ci-e2e-vivo |
+| `c4b7b33` | merge | — | Jeremi J. Alcalá M. | 2026-08-23 | Merge pull request #7 from jeremialcala/fix-bucle-4401 |
+| `e215e3b` | commit | — | Jeremi Alcala | 2026-08-23 | fix(spa): el 4401 encadenado ya no reconecta en bucle |
+| `fc93042` | commit | — | Jeremi Alcala | 2026-08-20 | fix(seguridad): nanoid a 3.3.18 (GHSA-2v37-7h3g-55p8) |
+| `cf66855` | commit | — | Jeremi Alcala | 2026-08-20 | docs(repo-history): regenerar |
 | `819557c` | commit | — | Jeremi Alcala | 2026-08-20 | ci(e2e): llevar el e2e en vivo al pipeline |
 | `abd3c2a` | merge | — | Jeremi J. Alcalá M. | 2026-08-07 | Merge pull request #5 from jeremialcala/docs-e2e-cumplido |
 | `3b68d49` | commit | — | Jeremi Alcala | 2026-08-07 | docs(repo-history): regenerar |
