@@ -84,12 +84,24 @@ case "$MODO" in
     # La ventana sale del RELOJ, no de un fichero de marca. Así una hora que no
     # se respaldó se ve como un archivo que falta, en vez de quedar tapada por
     # una marca que avanzó igual.
-    FIN="$(date -u '+%Y-%m-%dT%H:00:00')"
-    ETIQUETA="$(date -u -d '1 hour ago' '+%Y-%m-%dT%H')"
-    # Cinco minutos de solape, por si una fila entra con el `as_of` justo en el
-    # borde. Todas las tablas tienen clave primaria, así que reponer dos veces
-    # la misma fila no duplica nada (ver restaurar.sh).
-    INICIO="$(date -u -d '65 minutes ago' '+%Y-%m-%dT%H:%M:00')"
+    # Todo se calcula desde el filo de la hora, en epoch, y NO desde «ahora».
+    #
+    # La primera versión mezclaba las dos cosas: `FIN` al filo de la hora e
+    # `INICIO` a «hace 65 minutos». Coinciden solo si el trabajo arranca en
+    # punto —que es lo que hace el cron—, así que habría pasado por bueno
+    # durante meses; en la primera ejecución a mano, a y 35, la ventana salió de
+    # 30 minutos, y a y 55 habría sido de CINCO. Un respaldo que se encoge
+    # cuando el cron se retrasa es exactamente el que falla el día que hace
+    # falta.
+    AHORA_EPOCH="$(date -u +%s)"
+    FIN_EPOCH=$(( AHORA_EPOCH / 3600 * 3600 ))
+    # 3900 s = 1 h + 5 min de solape, por si una fila entra con el `as_of` justo
+    # en el borde. Todas las tablas tienen clave primaria, así que reponer dos
+    # veces la misma fila no duplica nada (ver restaurar.sh).
+    INICIO_EPOCH=$(( FIN_EPOCH - 3900 ))
+    FIN="$(date -u -d "@$FIN_EPOCH" '+%Y-%m-%dT%H:%M:00')"
+    INICIO="$(date -u -d "@$INICIO_EPOCH" '+%Y-%m-%dT%H:%M:00')"
+    ETIQUETA="$(date -u -d "@$(( FIN_EPOCH - 3600 ))" '+%Y-%m-%dT%H')"
     log "ventana [$INICIO, $FIN)"
 
     LOTE="$TRABAJO/$ETIQUETA"
