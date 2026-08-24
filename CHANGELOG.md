@@ -17,6 +17,30 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Fixed
+
+- **Los errores que gastan cuota ya llevan las cabeceras `X-RateLimit-*`
+  (2026-08-23).** El gateway solo las ponía en las respuestas que el handler
+  **devolvía**: cuando lanzaba —un 404 de «todavía no hay datos»— la respuesta la
+  construía `problem.py` desde cero y las cabeceras se perdían, aunque el
+  limitador ya hubiera contado la petición. Ahora viajan por `request.state` y
+  los manejadores de 404, 400 y 422 las incluyen.
+  - **Importa más de lo que parece:** un cliente que sondea un endpoint todavía
+    sin datos gasta su límite sin poder verlo y se estrella contra un 429 que no
+    vio venir. Es justo lo que hace el SPA al arrancar un mercado nuevo.
+  - **Los 401 y 403 siguen sin llevarlas, a propósito:** el limitador corre
+    DESPUÉS de validar token y permiso, así que esas peticiones no gastan cuota y
+    darles una cifra sería inventarla.
+  - **El contrato se contradecía a sí mismo** y también queda arreglado: la prosa
+    prometía las cabeceras en «cada respuesta» mientras el esquema solo las
+    declaraba en los 200. Ahora la prosa dice lo que el gateway hace —toda
+    respuesta que consuma cuota— y `BadRequest`, `NotFound` y `UnprocessableRange`
+    las declaran.
+  - **Lo encontró el e2e en vivo la primera vez que corrió en CI.** En desarrollo
+    la base siempre tiene datos y ese endpoint nunca devuelve 404; contra una base
+    recién creada y vacía, sí. Año y medio invisible por no haber ejecutado nunca
+    ese camino contra un entorno limpio.
+
 ### Changed
 
 - **El conector del túnel entra en el `docker-compose.yml` (2026-08-23).** Corría

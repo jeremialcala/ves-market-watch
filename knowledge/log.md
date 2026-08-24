@@ -7,6 +7,25 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-23 — El e2e corrió en CI por primera vez y encontró algo en el acto
+- **El defecto llevaba año y medio ahí y era invisible por el entorno**, no por
+  el código: el gateway perdía las cabeceras de cuota en las respuestas que
+  lanzaba excepción, y en desarrollo la base siempre tiene datos, así que ese
+  endpoint nunca devolvía 404. En CI la base sale vacía. *Un test que solo corre
+  donde hay datos no prueba el camino sin datos, por muchas veces que pase.*
+- **El contrato se contradecía a sí mismo** y nadie lo había leído entero: la
+  prosa prometía las cabeceras en «cada respuesta», el esquema solo las declaraba
+  en los 200. Mi test siguió la prosa y el gateway el esquema. *Cuando código y
+  contrato discrepan, mira si el contrato discrepa consigo mismo antes de decidir
+  quién tiene razón.*
+- **Y corrijo una afirmación de seguridad que di por buena sin comprobarla.**
+  Escribí —en un PR y en el plan de pruebas— que «el secreto no es alcanzable
+  desde ningún evento de PR». Falso: el job inyecta `secrets.*` en todos los
+  eventos; lo que los retiene es GitHub, y solo para los PR de **fork**. Los del
+  propio repositorio sí los reciben. *Una propiedad de seguridad que no has visto
+  fallar es una hipótesis, y escribirla en un documento no la convierte en
+  garantía.*
+
 ## 2026-08-23 — El dashboard congelado con la base de datos al día
 - **«El web-spa no actualiza» y el web-spa no tenía nada.** Indicadores en la
   base con 40 s, análisis con 2 s, gateway `ok/ok/ok`… y **el gateway sin recibir
