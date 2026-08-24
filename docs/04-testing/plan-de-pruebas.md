@@ -554,13 +554,25 @@ público, así que los minutos son gratis).
   ejecutándolo en los dos modos de ausencia: sin credenciales y con el gateway
   apagado, ambos salen en rojo con el motivo escrito.
 
-  **El secreto no es alcanzable desde ningún evento de PR.** El repo es público:
-  un PR de fork no recibe secretos, así que allí el camino feliz salta —vacío
-  cuenta como ausente: en Actions un secreto que no existe interpola a **cadena
-  vacía**, no a variable sin definir, y con `=== undefined` el fork habría entrado
-  al camino feliz con credenciales vacías—. Volcar los logs del gateway al fallar
-  también es seguro: `__main__.py` redacta `token=…` de los access logs, y se
-  comprobó sobre logs reales que sale `token=[REDACTADO]`.
+  **Qué eventos alcanzan el secreto.** Aquí hubo una afirmación equivocada que
+  conviene dejar corregida y no borrada: se escribió que «el secreto no es
+  alcanzable desde ningún evento de PR», y **es falso**. El job inyecta
+  `secrets.*` en el entorno en **todos** los eventos; lo único condicionado es
+  `E2E_LIVE_EXIGIDO`. Lo que de verdad decide es GitHub: un PR de **fork** no
+  recibe secretos —el repo es público—, pero un PR del **propio repositorio sí**.
+  Se comprobó el 2026-08-23, cuando el camino feliz corrió en un PR y falló.
+
+  En la práctica el efecto es bueno: el camino feliz se ejercita en cada PR
+  interno y así apareció el hueco de las cabeceras de cuota en el 404. Pero la
+  garantía que se prometía no era la que da el diseño.
+
+  **Vacío cuenta como ausente**: en Actions un secreto que no existe interpola a
+  **cadena vacía**, no a variable sin definir, y con `=== undefined` un PR de
+  fork habría entrado al camino feliz con credenciales vacías.
+
+  Volcar los logs del gateway al fallar es seguro: `__main__.py` redacta
+  `token=…` de los access logs, y se comprobó sobre logs reales que sale
+  `token=[REDACTADO]`.
 
   **Lo que este trabajo NO cubre:** nginx y el túnel de Cloudflare. El runner
   habla con el contenedor a pelo, así que la corrida manual contra

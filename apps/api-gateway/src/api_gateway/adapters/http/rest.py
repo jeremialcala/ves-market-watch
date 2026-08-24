@@ -36,7 +36,16 @@ def _protegido(permiso: str):
         usuario = await request.app.state.validador.validar(token.strip())
         usuario.exigir(permiso)
         cuota = request.app.state.limitador.consumir(usuario.sub)
-        response.headers.update(cuota.como_headers())
+        cabeceras = cuota.como_headers()
+        response.headers.update(cabeceras)
+        # Y también en `request.state`, para que los manejadores de error las
+        # encuentren: el `Response` de arriba solo llega al cliente cuando el
+        # handler DEVUELVE. Si lanza —un 404 de «sin datos frescos», por
+        # ejemplo—, la respuesta la construye `problem.py` desde cero y estas
+        # cabeceras se perdían, aunque la petición ya hubiera gastado cuota.
+        # Lo destapó el e2e en vivo la primera vez que corrió contra una base
+        # vacía: en desarrollo siempre hay datos y nunca se veía el 404.
+        request.state.cabeceras_cuota = cabeceras
         return usuario
 
     return Depends(dependencia)

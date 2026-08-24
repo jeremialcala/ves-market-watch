@@ -34,7 +34,10 @@ info:
       request de 90 días (violarlo → 422).
     - Errores en formato **RFC 7807** (`application/problem+json`) sin detalles
       internos.
-    - Rate limit por token/IP; cada respuesta lleva cabeceras `X-RateLimit-*`.
+    - Rate limit por token; **toda respuesta que consuma cuota lleva cabeceras
+      `X-RateLimit-*`**, incluidas las de error (404, 400, 422 y el propio 429).
+      Los 401 y 403 no las llevan porque no gastan cuota: el limitador corre
+      después de validar token y permiso.
   contact:
     name: Jeremi Alcalá
   license:
@@ -491,6 +494,12 @@ components:
   responses:
     BadRequest:
       description: Parámetros inválidos.
+      # Con cuota: si la petición pasó autenticación y permiso, el limitador ya
+      # la contó aunque el parámetro fuera inválido.
+      headers:
+        X-RateLimit-Limit: { $ref: '#/components/headers/XRateLimitLimit' }
+        X-RateLimit-Remaining: { $ref: '#/components/headers/XRateLimitRemaining' }
+        X-RateLimit-Reset: { $ref: '#/components/headers/XRateLimitReset' }
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
@@ -521,6 +530,13 @@ components:
             detail: "Se requiere el permiso 'read:signals'."
     NotFound:
       description: El recurso aún no tiene datos que servir.
+      # Un 404 SÍ gasta cuota: el limitador corre en la dependencia, antes de
+      # que el handler sepa si hay datos. Quien sondea un endpoint todavía sin
+      # datos tiene que poder ver cuánto le queda, o llega al 429 a ciegas.
+      headers:
+        X-RateLimit-Limit: { $ref: '#/components/headers/XRateLimitLimit' }
+        X-RateLimit-Remaining: { $ref: '#/components/headers/XRateLimitRemaining' }
+        X-RateLimit-Reset: { $ref: '#/components/headers/XRateLimitReset' }
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
@@ -531,6 +547,10 @@ components:
             detail: Sin tasa oficial registrada para USD.
     UnprocessableRange:
       description: Rango de fechas inválido o mayor a 90 días.
+      headers:
+        X-RateLimit-Limit: { $ref: '#/components/headers/XRateLimitLimit' }
+        X-RateLimit-Remaining: { $ref: '#/components/headers/XRateLimitRemaining' }
+        X-RateLimit-Reset: { $ref: '#/components/headers/XRateLimitReset' }
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
