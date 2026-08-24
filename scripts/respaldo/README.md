@@ -9,17 +9,60 @@ por suerte —nadie los había respaldado nunca—.
 
 ## Qué se respalda y cuánto pesa
 
-Medido sobre la base real el 2026-08-23, no estimado:
+Medido **ejecutando el respaldo**, no estimado:
 
-| Pieza | Cadencia | Tamaño | Retención |
-|---|---|---|---|
-| `incremental/<hora>.tar.gz` | cada hora | **~2,5 MB** | 14 días |
-| `full/ves_market-<sello>.dump` | cada 24 h (03:30 VET) | **~326 MB** | **90 días** |
-| `agregados/<mes>.dump` | cada mes | ~470 MB | 24 meses |
+| Pieza | Cadencia | Tamaño | Duración | Retención |
+|---|---|---|---|---|
+| `incremental/<hora>.tar.gz` | cada hora | **2,9 MB** | segundos | 14 días |
+| `full/ves_market-<sello>.dump` | cada 24 h (03:30 VET) | **2,3 GB** | **~12 min** | **90 días** |
+| `agregados/<mes>.dump` | cada mes | *sin medir* | — | 24 meses |
 
-Régimen estable en Drive: **unos 4 GB**. El incremental es pequeño porque casi
-todo el volumen del sistema son los snapshots crudos —4.631 MB de 5.126— y en
-una hora solo entran 64.
+Régimen estable en Drive: **unos 208 GB** —207 de fulls y algo menos de 1 de
+incrementales—. Cabe de sobra en un plan de 2 TB, que es donde está.
+
+El incremental es diminuto porque casi todo el volumen son los snapshots crudos
+—4.631 MB de 5.126— y en una hora solo entran 64.
+
+> **Aquí hubo una cifra mal dada, y conviene que quede escrita.** La primera
+> versión de este documento decía **326 MB** para el full y «unos 4 GB» de
+> régimen estable. Salió de medir así:
+>
+> ```sh
+> pg_dump ... -f /tmp/full.dump 2>/dev/null; ls -lh /tmp/full.dump
+> ```
+>
+> Con `stderr` a `/dev/null` y encadenado con `;`, un fallo del `pg_dump` no se
+> ve y el código de salida es el del `ls`. La cifra buena —2,3 GB— salió de la
+> primera ejecución de verdad, con el tamaño releído en destino. *Una medición
+> que no comprueba el código de salida de lo que midió no es una medición.*
+>
+> No es cosmético: con 326 MB, 90 días de retención parecían 30 GB; con 2,3 GB
+> son **207**. La cadencia se mantiene porque el destino tiene 2 TB, pero la
+> decisión se tomó con el número correcto.
+
+**La verificación semanal tarda ~18 min** y crea una base desechable de unos
+5 GB en el mismo servidor, que borra al terminar. No es gratis: si el domingo a
+las 05:00 hubiera algo más corriendo, se notaría. Medido de punta a punta el
+2026-08-24, con este resultado:
+
+```
+timescaledb_post_restore → t
+indicators=1038498  official_rates=41214  p2p_snapshots_raw=107040
+chunks registrados=402
+antigüedad del dato más nuevo: 0 días
+OK: el respaldo restaura y contiene lo que dice
+```
+
+Los **402 chunks registrados** son el dato que de verdad cierra el círculo: es lo
+que distingue una restauración buena de una hecha sin `timescaledb_pre_restore()`,
+donde las filas se cuentan igual y las hipertablas quedan descolgadas.
+
+**Con 2 TB el límite no es el espacio, es la subida.** Son 2,3 GB cada noche: a
+20 Mbps de subida, unos 16 minutos; a 5 Mbps, cerca de una hora. Si eso llegara a
+estorbar, la salida no es recortar la retención sino **espaciar los fulls**: los
+incrementales cubren *cada hora*, así que un full semanal más los incrementales
+posteriores ya es una cadena de recuperación completa. Los fulls diarios solo
+compran velocidad de restauración.
 
 ## Por qué la retención del full es 90 días y existe «agregados»
 

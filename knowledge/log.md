@@ -7,6 +7,27 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-08-24 — Correr el respaldo una vez encontró lo que leerlo diez no
+- **Se mergeó sin haberse ejecutado nunca**, y a la primera corrida salieron dos
+  cosas: la ventana del incremental se encogía si el trabajo no arrancaba en
+  punto, y el full pesaba **siete veces** lo documentado. Ninguna de las dos se
+  ve leyendo el guion. *La primera ejecución de algo vale más que la décima
+  relectura.*
+- **La ventana habría pasado por buena durante meses**, porque el error solo
+  aparece fuera de las horas en punto y el cron dispara en punto. *Un defecto
+  que el caso normal esconde no es menos defecto: es peor, porque solo se
+  manifiesta el día raro.*
+- **Y los 326 MB del full eran míos y estaban mal.** Los medí con
+  `pg_dump ... 2>/dev/null; ls -lh`: stderr tapado y encadenado con `;`, así que
+  el código de salida venía del `ls`. Es la MISMA forma del error de leer el
+  `$?` de un `tail` a través de una tubería, dos veces en la misma semana.
+  *Cuando midas algo, comprueba el código de salida de lo que mide, no el del
+  comando que imprime el resultado.*
+- La consecuencia no era cosmética: con la cifra mala, 90 días de retención
+  parecían 30 GB; con la buena son 207. La cadencia acabó siendo la misma, pero
+  por una razón distinta —el destino tiene 2 TB— y eso ya es una decisión
+  tomada, no una suerte.
+
 ## 2026-08-23 — El e2e corrió en CI por primera vez y encontró algo en el acto
 - **El defecto llevaba año y medio ahí y era invisible por el entorno**, no por
   el código: el gateway perdía las cabeceras de cuota en las respuestas que

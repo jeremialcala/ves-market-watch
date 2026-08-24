@@ -19,6 +19,25 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Fixed
 
+- **Ejecutar el respaldo por primera vez encontró dos cosas (2026-08-24).** El
+  esquema se mergeó sin haberse corrido nunca; a la primera ejecución salieron
+  las dos.
+  - **La ventana del incremental se encogía si el trabajo no arrancaba en
+    punto.** Mezclaba dos referencias —`FIN` al filo de la hora, `INICIO` a
+    «hace 65 minutos»—, que coinciden solo a las en punto, que es justo cuando
+    dispara el cron: habría pasado por bueno durante meses. A y 35 la ventana
+    salió de **30 minutos**; a y 55 habrían sido cinco. Y en silencio: el
+    archivo se sube, pesa lo suyo y aparece en la lista. Ahora sale entera del
+    filo de la hora con aritmética de epoch.
+  - **El full pesa 2,3 GB, no los 326 MB documentados.** La cifra vieja se midió
+    con `pg_dump ... 2>/dev/null; ls -lh`: con `stderr` tapado y encadenado con
+    `;`, un fallo del volcado no se ve y el código de salida es el del `ls`. La
+    buena salió de la primera corrida real, con el tamaño releído en destino. No
+    es cosmético: 90 días de retención pasan de parecer 30 GB a ser **207**. La
+    cadencia se mantiene —el destino tiene 2 TB—, pero ahora la decisión está
+    tomada con el número correcto, y el README explica qué hacer si algún día
+    estorba la subida.
+
 - **Los errores que gastan cuota ya llevan las cabeceras `X-RateLimit-*`
   (2026-08-23).** El gateway solo las ponía en las respuestas que el handler
   **devolvía**: cuando lanzaba —un 404 de «todavía no hay datos»— la respuesta la
