@@ -782,6 +782,9 @@ export interface components {
         /** @description Parámetros inválidos. */
         BadRequest: {
             headers: {
+                "X-RateLimit-Limit": components["headers"]["XRateLimitLimit"];
+                "X-RateLimit-Remaining": components["headers"]["XRateLimitRemaining"];
+                "X-RateLimit-Reset": components["headers"]["XRateLimitReset"];
                 [name: string]: unknown;
             };
             content: {
@@ -833,6 +836,9 @@ export interface components {
         /** @description El recurso aún no tiene datos que servir. */
         NotFound: {
             headers: {
+                "X-RateLimit-Limit": components["headers"]["XRateLimitLimit"];
+                "X-RateLimit-Remaining": components["headers"]["XRateLimitRemaining"];
+                "X-RateLimit-Reset": components["headers"]["XRateLimitReset"];
                 [name: string]: unknown;
             };
             content: {
@@ -850,6 +856,9 @@ export interface components {
         /** @description Rango de fechas inválido o mayor a 90 días. */
         UnprocessableRange: {
             headers: {
+                "X-RateLimit-Limit": components["headers"]["XRateLimitLimit"];
+                "X-RateLimit-Remaining": components["headers"]["XRateLimitRemaining"];
+                "X-RateLimit-Reset": components["headers"]["XRateLimitReset"];
                 [name: string]: unknown;
             };
             content: {
