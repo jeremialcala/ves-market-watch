@@ -93,32 +93,98 @@ clasificación de datos, no darla por hecha.
 
 ## Puesta en marcha
 
-Hace falta `rclone` autorizado contra tu Drive **una vez**. Es interactivo (abre
-el navegador para el consentimiento de Google), así que **lo tienes que hacer
-tú**:
+Hace falta `rclone` autorizado contra tu Drive **una vez**. El consentimiento de
+Google abre el navegador, así que **ese paso lo tienes que hacer tú**.
 
-```sh
-docker run --rm -it -v criterio_rclone:/config/rclone rclone/rclone config
+**Hazlo en el host, no en un contenedor.** rclone escucha el callback del OAuth
+en `127.0.0.1:53682`; publicar ese puerto con `-p` no sirve, porque Docker
+reenvía a la IP del contenedor y no a su loopback. El consentimiento se
+completa, el redirect se pierde y rclone guarda el remoto **con el token
+vacío** — sin error visible. Se perdió una tarde así el 2026-08-31.
+
+```powershell
+winget install Rclone.Rclone
 ```
 
-1. `n` → nombre `drive` → tipo `drive` → seguir el asistente de Google.
-2. `n` → nombre `criterio-cifrado` → tipo `crypt`
-   - `remote` = `drive:criterio-respaldos`
-   - cifrar nombres de archivo: sí
-   - **guarda la contraseña en tu gestor**: sin ella los respaldos no se
-     recuperan, y no la tiene nadie más.
+### 1. Antes de tocar rclone: la pantalla de consentimiento
 
-Después, en el `.env` de la raíz:
+En Google Cloud Console, sobre el proyecto que tenga el cliente OAuth:
+
+- **Publica la app** (*Pantalla de consentimiento → Estado de publicación → Publicar*).
+  Dejarla en *Testing* parece funcionar y **caduca el refresh token a los 7 días**:
+  el respaldo correría una semana y luego fallaría solo. Publicar **no dispara
+  verificación de Google** porque el único scope es `drive.file`, que no es
+  sensible ni restringido.
+- Habilita la **Google Drive API** en ese proyecto.
+
+### 2. Los dos remotos, por comandos y no por asistente
+
+El asistente interactivo pregunta *«Edit advanced config?»* y ahí vive
+`service_account_file`. Contestar que sí y rellenarlo hace que rclone **ni
+intente el OAuth**: da por hecho que usas una cuenta de servicio. El remoto
+queda creado, sin token, y el fallo aparece mucho después. Con `config create`
+y `clave=valor` esa pregunta no existe:
+
+```powershell
+$rc = "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\Rclone.Rclone_Microsoft.Winget.Source_8wekyb3d8bbwe\rclone-v1.75.0-windows-amd64\rclone.exe"
+
+# Drive. Único paso que abre el navegador.
+& $rc config create drive drive scope=drive.file client_id=TU_ID client_secret=TU_SECRET
+
+# Comprobar el token ANTES de seguir: si esto falla, el resto no tiene sentido.
+& $rc about drive:
+
+# El crypt encima. Sin navegador.
+$p = Read-Host "Password del crypt" -AsSecureString
+$plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($p))
+& $rc config create criterio-cifrado crypt remote=drive:criterio-respaldos filename_encryption=standard directory_name_encryption=true password=$plain --obscure
+$plain = $null
+
+& $rc listremotes   # tienen que salir DOS
+```
+
+`scope=drive.file` es deliberado: limita a rclone a los archivos que él mismo
+crea. Efecto lateral que no es un fallo: `rclone lsd drive:` sale vacío, porque
+no puede listar lo que no creó. Para ver los respaldos, `rclone lsl
+criterio-cifrado:full`.
+
+**La contraseña del `crypt` va a tu gestor.** Sin ella los respaldos son ruido
+irrecuperable, y no la tiene nadie más.
+
+### 3. Llevar el config al volumen del compose
+
+El contenedor lee el config de un volumen con nombre, **`ves-market-watch_rclone_config`**
+(el `rclone_config` del compose, con el prefijo del proyecto). No es el mismo
+sitio donde `rclone` del host escribe:
+
+```powershell
+docker run -d --name rclone-copia -v ves-market-watch_rclone_config:/config/rclone alpine:3 sleep 120
+docker cp "$env:APPDATA\rclone\rclone.conf" rclone-copia:/config/rclone/rclone.conf
+docker exec rclone-copia chmod 600 /config/rclone/rclone.conf
+docker rm -f rclone-copia
+```
+
+### 4. El `.env` de la raíz
 
 ```
 RCLONE_REMOTE=criterio-cifrado:
+RCLONE_CONFIG_PASS=<contraseña del rclone.conf>
 ```
 
-Y a correr:
+`RCLONE_CONFIG_PASS` solo hace falta si cifraste el `rclone.conf` con contraseña
+de rclone, que es lo recomendable. El cron corre desatendido: sin esta variable,
+cada ejecución se quedaría esperando una contraseña que nadie va a teclear. Ver
+el comentario del servicio en el compose sobre qué protege y qué no.
+
+### 5. A correr
 
 ```sh
-docker compose --profile respaldo up -d
+docker compose --profile respaldo up -d --no-deps respaldo
+docker compose exec respaldo respaldar incremental   # comprobar de entrada
 ```
+
+El `--no-deps` no es cosmético: `up` sin él evalúa también `timescaledb`, y una
+recreación de ese contenedor es justo lo que borró la base el 2026-08-23.
 
 ## Operación
 

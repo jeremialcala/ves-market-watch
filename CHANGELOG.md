@@ -17,6 +17,56 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **El respaldo está corriendo de verdad contra Drive (2026-08-31).** Hasta hoy
+  el esquema existía, estaba probado y **no se había levantado nunca**: el
+  contenedor del perfil `respaldo` ni siquiera existía, y la pata de Google
+  Drive —autorización, remoto cifrado, una subida— no se había ejercitado. Las
+  cifras del README del 2026-08-24 son reales, pero salieron de una corrida a un
+  volumen local (`respaldo_prueba`), no de Drive.
+  - **Primer incremental en Drive:** ventana `[2026-08-31T23:55, 2026-09-01T01:00)`
+    —65 minutos anclados al filo de la hora, o sea el arreglo de `2de91a4`
+    comportándose en producción—, `2 859 317` bytes, código de salida 0. Las seis
+    tablas con contenido y ninguna a cero, que es la trampa del `COPY` sobre
+    hipertabla. Verificado además desde fuera del script: `gzip -t` en verde y el
+    `tar` listado tras descargarlo de Drive.
+  - **El cifrado en cliente hace lo que dice.** Lo que Google almacena de ese
+    archivo es `hlnj11oq8vjhaknv6tmu6d9k70/crh55afpdubh2te13hcerb4212he2cfuo7rcsglme1aja4l79u6g`:
+    nombre de archivo y de carpeta cifrados, no solo el contenido.
+- **`RCLONE_CONFIG_PASS` en el servicio `respaldo` del compose.** El
+  `rclone.conf` va cifrado con contraseña de rclone y el cron corre desatendido:
+  sin la variable, cada ejecución esperaría una contraseña que nadie teclea. El
+  comentario del compose deja escrito qué compra —que el volumen por separado no
+  sirva de nada— y qué no: `docker inspect` la muestra, igual que el token del
+  túnel.
+
+### Changed
+
+- **La puesta en marcha del respaldo, reescrita tras ejecutarla (2026-08-31).**
+  Estaba escrita de memoria y no sobrevivió al primer contacto. Cuatro defectos,
+  todos del tipo que sale en verde o falla mucho después:
+  - **Mandaba al volumen equivocado:** `criterio_rclone` en vez de
+    `ves-market-watch_rclone_config`. Autorizarías Google en un volumen que el
+    compose no monta, y el fallo aparecería a la hora siguiente.
+  - **Configurar rclone dentro de un contenedor no funciona.** El callback del
+    OAuth escucha en `127.0.0.1:53682`; publicar el puerto con `-p` no vale
+    porque Docker reenvía a la IP del contenedor, no a su loopback. El
+    consentimiento se completa, el redirect se pierde y **el remoto queda
+    guardado con el token vacío, sin error visible**. Ahora la configuración se
+    hace en el host.
+  - **El asistente interactivo es una trampa:** en *«Edit advanced config?»* vive
+    `service_account_file`, y con ese campo puesto rclone ni intenta el OAuth.
+    Los pasos van ahora con `config create` y `clave=valor`, donde esa pregunta
+    no existe.
+  - **Faltaba la pantalla de consentimiento.** Dejar la app en *Testing* parece
+    funcionar y **caduca el refresh token a los 7 días**: el respaldo correría
+    una semana y moriría solo. Hay que publicarla — y no dispara verificación de
+    Google porque `drive.file` no es un scope sensible.
+  - El arranque pasa a `up -d --no-deps respaldo`: sin `--no-deps`, `up` evalúa
+    también `timescaledb`, que es exactamente lo que borró la base el
+    2026-08-23.
+
 ### Fixed
 
 - **Ejecutar el respaldo por primera vez encontró dos cosas (2026-08-24).** El
