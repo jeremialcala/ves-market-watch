@@ -67,6 +67,39 @@ Convención de mantenimiento (inventario por ejecución):
     también `timescaledb`, que es exactamente lo que borró la base el
     2026-08-23.
 
+### Removed
+
+- **Fuera del repositorio un volcado de la base que viajaba de polizón
+  (2026-08-31).** `delta-antes-de-restaurar.dumpdelta.dump` —6,58 MB, formato
+  `PGDMP`— entró sin querer en `d801dd1`, un commit sobre las cabeceras de cuota
+  del gateway, y llegó a `develop` por el PR #10. **El repositorio es público.**
+  - **Qué contenía, abierto con `pg_restore -l` en vez de supuesto:** 154 MB
+    descomprimidos, ~4.000 filas de negocio —`indicators` 3.162,
+    `processed_events` 289, `p2p_snapshots_raw` 284, `indicator_analysis` 284,
+    `official_rates` 35—. Los 154 MB en 284 snapshots se explican porque cada
+    fila es el payload crudo de 200 anuncios.
+  - **No es una fuga de PII, y eso lo sostiene ADR-0011.** Las claves del objeto
+    `advertiser` en los payloads son `merchant_ref`, `monthFinishRate`,
+    `monthOrderCount`, `positiveRate` y `userType`: el pseudónimo HMAC y
+    agregados de reputación. Ni alias legible, ni identificador crudo, ni
+    contacto — la minimización que la ADR prometía, comprobada contra el dato y
+    no contra el código. Y `MERCHANT_HMAC_KEY` nunca tuvo valor literal en la
+    historia (la única asignación genera una al vuelo con `openssl rand`), así
+    que los pseudónimos no son reversibles.
+  - **Lo expuesto es dato de mercado público** —anuncios de Binance P2P y tasas
+    del BCV— clasificado *Interno* en `data-classification.md`. Incumplimiento
+    de política, impacto real bajo.
+  - **Se retira con `git rm --cached`, sin reescribir la historia.** La
+    alternativa era `git filter-repo` y force-push sobre `develop`: cambiaría
+    todos los hashes posteriores, desincronizaría las ramas vivas que salen de
+    ahí y aun así dejaría el blob en la caché de GitHub hasta pedir su purga.
+    Con el impacto medido y no supuesto, ese coste no se justifica. **Queda
+    escrito que el blob sigue en la historia** — esto saca el archivo de la
+    punta y `*.dump` en `.gitignore` evita la reincidencia, que es lo que de
+    verdad fallaba: no había regla que lo parara.
+  - El archivo **no se borra del disco**: sigue en la raíz, ya ignorado.
+    Borrarlo es decisión de quien sepa si aún hace falta.
+
 ### Fixed
 
 - **Ejecutar el respaldo por primera vez encontró dos cosas (2026-08-24).** El
