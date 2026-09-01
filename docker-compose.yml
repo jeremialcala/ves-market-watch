@@ -259,6 +259,19 @@ services:
       # servicio no se levante, y rompería `up` a quien no use el respaldo.
       RCLONE_REMOTE: ${RCLONE_REMOTE:-}
       RCLONE_CONFIG: /config/rclone/rclone.conf
+      # El `rclone.conf` del volumen está cifrado con contraseña de rclone, y el
+      # cron corre desatendido: sin esto, cada ejecución se quedaría esperando
+      # una contraseña que nadie va a teclear.
+      #
+      # Que quede escrito lo que esto compra y lo que no: `docker inspect`
+      # muestra la variable, igual que el token del túnel, así que no protege
+      # frente a quien ya tiene la máquina. Lo que sí cierra es que el volumen
+      # por separado —una copia suelta, un mount mal puesto— no sirva de nada:
+      # el token de Drive va cifrado dentro del archivo.
+      #
+      # Sin `:?` por la misma razón que `RCLONE_REMOTE`: el compose interpola el
+      # archivo entero aunque el servicio no se levante.
+      RCLONE_CONFIG_PASS: ${RCLONE_CONFIG_PASS:-}
     volumes:
       # La autorización de Google vive aquí: se hace una vez con `rclone config`
       # y persiste. Contiene credenciales, así que es un volumen con nombre y no
