@@ -152,7 +152,8 @@ build es cualquier retroceso desde donde está hoy cada uno.
   2026-08-07** (6/6 contra el tenant y el gateway reales); quedan llevarlo al
   pipeline
   y la deuda del control de T8 —lockfiles, digests y un CVE aceptado por escrito
-  (CVE-2026-59870 en `js-yaml`, dependencia de desarrollo, revisión 2026-09-06)—;
+  (CVE-2026-59870 en `js-yaml`, **retirado el 2026-09-06**: el parche llegó a la
+  línea 4.x y bastó un `npm update`)—;
   detalle en
   `docs/04-testing/plan-de-pruebas.md` §10 y §12.
 - Gate 0 (requisitos): aprobado — `.ai-dlc/gates/gate-0-requirements.md`
