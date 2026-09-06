@@ -19,6 +19,37 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **«Lo que dice el histórico»: bloque rector de la vista (2026-09-06).** Primer
+  bloque, encima de todo gráfico: dice qué dice la ventana que se está mirando
+  antes de que nadie tenga que interpretar un trazo.
+  - **El veredicto se calcula, no se cablea.** Sale de `lib/lecturaHistorico`
+    sobre los puntos que hay delante: cambia el rango, el indicador o el bucket
+    y cambia el titular. Un titular fijo habría renderizado igual de bien y
+    pasado cualquier prueba que solo mirase que hay un `h2`, así que el test
+    comprueba que el mismo componente **diga cosas distintas ante ventanas
+    distintas**.
+  - Tres anclas: percentil de hoy, distancia a la mediana y días desde el último
+    cruce de umbral. **El ancla del cruce tiene tres estados y los tres dicen
+    cosas distintas:** sin regla no hay umbral que cruzar; con regla y sin
+    cruces la serie lleva toda la ventana del mismo lado —que es información, no
+    ausencia—; y con cruce, cuántos días hace. Colapsarlos en un guion habría
+    perdido el del medio.
+  - **Los cortes de zona son los mismos 10/90 que dibuja la banda del gráfico de
+    abajo**: el titular y la imagen tienen que decir lo mismo, o el panel
+    contradice a lo que hay justo debajo.
+  - Aritmética exacta sobre los strings del contrato: la distancia a la mediana
+    es la cifra que el panel presenta y pasar por `number` la redondearía.
+  - **Una serie plana da percentil 50, no 0.** Contar solo los estrictamente
+    menores habría hecho que el panel dijera «mínimo de la ventana» sobre una
+    serie que no se ha movido.
+  - Describe el presente y no lo anticipa (ADR-0021): la prosa nombra el término
+    técnico y su consecuencia en la misma frase, y dice explícitamente que un
+    percentil **no anuncia nada**.
+  - Hermano sage del panel de sesión (`SessionReading`, coral): misma
+    arquitectura, porque quien conoce uno sabe leer el otro. ES y EN.
+
+### Added
+
 - **La serie evaluada del histórico gana su capa de referencia (2026-09-06).**
   Un trazo dice cómo se ha movido algo; no dice **si eso es mucho**, que es lo
   que se pregunta quien lo mira. Debajo del trazo van ahora, en este orden:
