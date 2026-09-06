@@ -80,6 +80,11 @@ services:
       TOP_K: "200"
       FETCH_INTERVAL_SECONDS: "60"
       REQUEST_BUDGET_PER_MIN: "40"
+      # Paginas del top-K en vuelo a la vez (ADR-0026, enmienda a ADR-0005).
+      # NO sube las peticiones por minuto: siguen siendo 20 por ciclo contra
+      # las 40 del presupuesto. Sube el pico instantaneo, que es el vector de
+      # T7 — por eso 4 y no 10. Si Binance empieza a devolver 429, esto BAJA.
+      PAGINAS_EN_PARALELO: "4"
     depends_on:
       rabbitmq:
         condition: service_healthy

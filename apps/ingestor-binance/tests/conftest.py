@@ -8,6 +8,7 @@ para simular el endpoint P2P (integración y e2e sin tocar Binance).
 from __future__ import annotations
 
 import asyncio
+import inspect
 import json
 import os
 import re
@@ -138,7 +139,15 @@ async def servidor_http():
                     else b""
                 )
                 peticion = json.loads(cuerpo) if cuerpo else {}
-                status, respuesta = manejador(peticion)
+                # El manejador puede ser `async`: hace falta para probar la
+                # paginación en paralelo (ADR-0026), donde un test necesita
+                # retener peticiones en vuelo para medir el pico de
+                # concurrencia y otro necesita responderlas fuera de orden.
+                # Los manejadores síncronos de siempre siguen valiendo.
+                resultado = manejador(peticion)
+                if inspect.isawaitable(resultado):
+                    resultado = await resultado
+                status, respuesta = resultado
                 if not isinstance(respuesta, bytes):
                     respuesta = json.dumps(respuesta).encode("utf-8")
                 writer.write(

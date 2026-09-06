@@ -168,14 +168,15 @@ mezclaba criterios de ambos y se repartieron por criterio.
 | **0** | 01-requirements | reqs de seguridad + escenarios de abuso + threat assessment + datos clasificados | ✅ aprobado HITL 2026-07-11 |
 | **1** | 02-design | threat model + C4 + ADRs + contratos de API | ✅ aprobado HITL 2026-07-11 |
 | **2** | 03-implementation | SAST limpio + deps verificadas + 80 % cobertura | ✅ criterios cubiertos — **pendiente de firma HITL** |
-| **3** | 04-testing | tests pasando + DAST limpio + perf dentro de SLOs | ⚠️ 2 de 3; bloquea el SLO de ingesta |
+| **3** | 04-testing | tests pasando + DAST limpio + perf dentro de SLOs | ✅ los 3 cubiertos — **pendiente de firma HITL** |
 | **4** | 05-deployment | pipeline limpio + IaC escaneado + runbook de rollback | no iniciado |
 | **5** | 06-monitoring | SLOs monitorizados + proceso de incidentes | no iniciado |
 
-Fichas en `.ai-dlc/gates/`. Lo que bloquea el Gate 3 **no es código**: el SLO de
-ingesta (`consulta→evento ≤ 5 s`) se mide en **7,16 s** y su causa es ADR-0005
-(«polling P2P educado»). Relajar el SLO, subir `ROWS_PER_PAGE` o paralelizar
-páginas son tres decisiones de producto distintas.
+Fichas en `.ai-dlc/gates/`. El SLO de ingesta —que bloqueaba el Gate 3 con
+7,16 s contra un techo de 5 s— **se resolvió el 2026-09-06 con ADR-0026**,
+paginando en lotes concurrentes: **1,40 s** medidos, sin un solo 429. Antes de
+firmar el gate conviene confirmar ese p95 sobre una corrida larga y comprobar que
+la tasa de 429 no ha subido: la muestra que lo respalda son 15 minutos.
 - Inventario de cambios por ejecución: ver `CHANGELOG.md`
 - Contexto curado para agentes y humanos: ver `knowledge/index.md` (OKF v0.1 — punto de
   entrada recomendado para retomar el proyecto)

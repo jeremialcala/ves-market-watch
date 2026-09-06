@@ -432,7 +432,7 @@ es medida, y el propio plan usa esa distinción como criterio en otros sitios.
 |---|---|---|---|
 | REST consultas actuales ≤ **300 ms** (p95) | `api-streaming.md` | **44 ms** (n=300) | ✅ |
 | REST histórico ≤ **2 s** | `api-streaming.md` | **757 ms** (n=90) | ✅ |
-| Ingesta consulta→evento ≤ **5 s** (p95) | `ingesta-binance-p2p.md` | **7,16 s** (n=4.342) | ❌ |
+| Ingesta consulta→evento ≤ **5 s** (p95) | `ingesta-binance-p2p.md` | ~~7,16 s~~ → **1,40 s** (ADR-0026) | ✅ |
 | Ciclos completados ≥ **99 %** | `ingesta-binance-p2p.md` | **99,72 %** (n=2.174) | ✅ |
 | Push WSS ≤ **1 s** desde publicación interna | `api-streaming.md` | **11 ms** (n=42) | ✅ |
 
@@ -495,7 +495,34 @@ conexión con `4401 token expirado`: la expiración se comprueba sobre la conexi
 escrita en ninguna suite y que aquí se observó desde fuera. El medidor reconecta
 con token nuevo, y esa reconexión queda contada en el informe.
 
-**Ingesta — el SLO que no se cumple.** Medido sobre 4.342 capturas reales en
+**Ingesta — resuelto el 2026-09-06 por ADR-0026.** Las 10 páginas del top-K
+pasan a pedirse en **lotes concurrentes de 4** en vez de en fila. Medido contra
+el servicio real tras desplegarlo:
+
+| | secuencial (n=4.342, 41 h) | lotes de 4 (n=28, 15 min) |
+|---|---:|---:|
+| p95 consulta→evento | **7,16 s** | **1,40 s** |
+| capturas por encima de 5 s | 34,6 % | **0 %** |
+| ciclo completo, media | 8,47 s | 2,23 s |
+
+**Y sin fricción con la fuente:** 300 respuestas, **todas 200**. Cero 429, cero
+reintentos agotados, cero capturas parciales, y los 200 anuncios íntegros por
+lado.
+
+**La muestra nueva es corta y conviene decirlo:** 28 capturas en 15 minutos
+contra las 4.342 en 41 h de la medición original. La mejora es inequívoca —el
+peor caso observado, 1,41 s, está a un tercio del umbral— pero **el p95 definitivo
+pide una corrida larga**, y sobre todo hay que volver a mirar la tasa de 429 y
+las aperturas del breaker pasados unos días: el riesgo que asume ADR-0026 no se
+manifiesta en quince minutos.
+
+Lo que sigue en pie del análisis anterior, porque explica por qué esto hacía
+falta: el SLO y ADR-0005 se escribieron sin mirarse, y como estaban configurados
+eran incompatibles. La enmienda no relaja el polling educado —**las peticiones
+por minuto son las mismas**, 20 por ciclo contra 40 de presupuesto—; lo único que
+sube es el pico instantáneo, y por eso el lote es 4 y no 10.
+
+**Cómo se midió el incumplimiento original.** Sobre 4.342 capturas reales en
 41 h de log (2026-09-05 01:47 → 2026-09-06 19:06). El log registra el ciclo
 completo, que son los dos lados secuenciales, así que cada lado se deriva:
 `SELL = t(SELL OK) − t(BUY OK)` y `BUY = total − SELL`. Que el intervalo medido

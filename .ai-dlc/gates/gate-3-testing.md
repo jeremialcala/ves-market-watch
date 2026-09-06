@@ -15,7 +15,7 @@
 |---|---|---|
 | **Tests pasando** | ✅ | 1.263 tests en los seis proyectos, suite completa (`integration` y `e2e` incluidas) en cada push y PR. **Cero `skip`/`xfail` incondicionales** en el monorepo. E2E autenticado en vivo contra el tenant y el gateway reales, en el pipeline desde el 2026-08-20 |
 | **DAST limpio** | ✅ | ZAP guiado por el OpenAPI en `seguridad.yml` (2026-09-06), en dos pasadas. **0 Alto, 0 Medio, 2 Bajo** aceptados con motivo en `scripts/triar_dast.py`. 116 reglas activas en PASS contra respuestas 200 reales |
-| **Rendimiento dentro de los SLOs** | ⚠️ | **4 de 5 cumplen; 1 no.** Medidos el 2026-09-06, no estimados |
+| **Rendimiento dentro de los SLOs** | ✅ | **Los 5 cumplen.** Medidos el 2026-09-06, no estimados; el de ingesta tras ADR-0026 |
 
 ## Los cinco SLO, medidos
 
@@ -25,31 +25,37 @@
 | REST histórico ≤ 2 s | `api-streaming.md` | **757 ms** (n=90) | ✅ |
 | Push WSS ≤ 1 s desde publicación interna | `api-streaming.md` | **11 ms** (n=42) | ✅ |
 | Ciclos de ingesta completados ≥ 99 % | `ingesta-binance-p2p.md` | **99,72 %** (n=2.174) | ✅ |
-| **Ingesta consulta→evento ≤ 5 s (p95)** | `ingesta-binance-p2p.md` | **7,16 s** (n=4.342) | ❌ |
+| Ingesta consulta→evento ≤ 5 s (p95) | `ingesta-binance-p2p.md` | ~~7,16 s~~ → **1,40 s** (ADR-0026) | ✅ |
 
 Reproducibles con `scripts/medir_slo_rest.py`, `medir_slo_wss.py` y
 `medir_slo_ingesta.py`. Hasta el 2026-09-06 estaban **declarados y nunca
 contrastados**: el plan decía «herramienta sugerida: `locust`/`k6`» y ahí se
 quedó.
 
-## El bloqueo: un SLO contra una ADR
+## El bloqueo, y cómo se resolvió
 
-El de ingesta no es un defecto que se arregle escribiendo código. **El 34,6 % de
-las capturas supera los 5 s**, y la causa son las 10 peticiones HTTP secuenciales
-por lado (`ROWS_PER_PAGE=20`, top-200): la latencia de Binance multiplicada por
-diez.
+El SLO de ingesta se medía en **7,16 s** contra un techo de 5 s, con el **34,6 %**
+de las capturas por encima. No era un defecto que se arreglara escribiendo
+código: la causa eran las 10 peticiones HTTP secuenciales por lado, y eso **es**
+ADR-0005 («polling P2P educado») haciendo lo que decidió hacer. El SLO y la ADR
+se habían escrito sin mirarse.
 
-Eso **choca con ADR-0005** («polling P2P educado»). El SLO se escribió antes que
-la decisión de paginar con cortesía y hoy son incompatibles. Las salidas son
-tres y ninguna es técnica:
+Se resolvió el 2026-09-06 con **ADR-0026**, que enmienda a ADR-0005: las páginas
+pasan a pedirse en **lotes concurrentes de 4**. Medido tras desplegarlo,
+**p95 de 1,40 s y 0 % de capturas por encima del umbral**, con 300 respuestas
+todas 200 y ningún 429.
 
-1. **Relajar el SLO** a lo que la cortesía permite, con enmienda al PRD.
-2. **Subir `ROWS_PER_PAGE`**, menos peticiones por lado — revisar contra los
-   límites de Binance y la intención de ADR-0005.
-3. **Paralelizar páginas**, que es justo lo que la ADR quiso evitar.
+**Lo admisible del cambio es que las peticiones por minuto no suben** —20 por
+ciclo contra 40 de presupuesto, cada una consumiendo su unidad igual que antes—.
+Lo que sube es el pico instantáneo, que es el vector de T7, y por eso el lote es
+4 y no 10.
 
-**Es una decisión de producto con una ADR de por medio, y no se cierra ajustando
-el número que peor quede.** Mientras no se tome, este criterio queda en ⚠️.
+**Queda una vigilancia abierta, y este gate no debería firmarse sin ella:** la
+muestra que respalda el cumplimiento son 28 capturas en 15 minutos, contra las
+4.342 en 41 h del incumplimiento. La mejora es inequívoca, pero **la tasa de 429
+y las aperturas del breaker hay que volver a mirarlas pasados unos días**: el
+riesgo que ADR-0026 asume no se manifiesta en quince minutos, y su reversión está
+escrita (bajar `PAGINAS_EN_PARALELO`).
 
 ## Pendientes que NO bloquean
 
@@ -71,11 +77,22 @@ el número que peor quede.** Mientras no se tome, este criterio queda en ⚠️.
   alta el 2026-08-23.
 - ~~DAST~~ — 2026-09-06. Era el hueco real del gate.
 
-**Veredicto:** dos de los tres criterios canónicos están cumplidos y verificados.
-El tercero está **medido**, que es un salto respecto a estar declarado, y arroja
-un incumplimiento cuya resolución es una decisión de producto pendiente.
+**Veredicto:** los **tres criterios canónicos están cumplidos y verificados**.
+Los cinco SLO están medidos —no declarados— y los cinco se cumplen; el último
+pasó a cumplirse con ADR-0026 el mismo día en que se midió el incumplimiento.
 
-**NO aprobado todavía.** Requiere la decisión sobre el SLO de ingesta y la
-aprobación HITL.
+**Pendiente de aprobación HITL**, con una reserva que conviene resolver antes de
+firmar: confirmar el p95 de ingesta sobre una corrida larga y comprobar que la
+tasa de 429 no ha subido tras ADR-0026.
+
+> **Esa reserva ya tiene fecha y ejecutor.** `scripts/verificar_slo_ingesta.py`
+> contesta las dos preguntas y sale 0 solo si ambas van bien. Queda programado
+> para el **2026-09-07 a las 09:00 VET** —unas 15 h de operación paralela, ~900
+> ciclos— en una tarea de Windows (`Criterio-VerificarSLO-Ingesta`), que deja el
+> informe en `informes/`. **No se hizo como rutina en la nube a propósito**: esas
+> corren en infraestructura de Anthropic y no alcanzan el Docker del despliegue,
+> así que habrían certificado nada.
+>
+> Se borra con `Unregister-ScheduledTask -TaskName Criterio-VerificarSLO-Ingesta`.
 
 **Aprobado por:** `<pendiente>` · **Fecha:** `<pendiente>`
