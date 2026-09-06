@@ -33,7 +33,7 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
-from statistics import mean, median
+from statistics import median
 
 
 def _cargar_env() -> None:
