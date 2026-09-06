@@ -22,7 +22,7 @@ ves-market-watch/            # el repositorio conserva el nombre viejo (ADR-0024
 │   ├── 01-requirements/      # PRDs por funcionalidad (Gate 0)
 │   ├── 02-design/            # Arquitectura, threat model, contratos API (Gate 1)
 │   ├── 03-implementation/    # Historial del repo (generado por script, no editar a mano)
-│   ├── 04-testing/           # Plan de pruebas y criterios del Gate 2
+│   ├── 04-testing/           # Plan de pruebas y criterios del Gate 3
 │   └── architecture/         # Diagramas C4 (Mermaid)
 └── apps/
     ├── ingestor-binance/     # ✔ Ingesta P2P Binance (USDT/VES) → p2p.snapshot
@@ -104,7 +104,7 @@ Tres workflows en `.github/workflows/`:
   (`integration` y `e2e` incluidas) contra TimescaleDB y RabbitMQ levantados como
   `services:` del trabajo. Umbral de cobertura por servicio y reporte como
   artefacto, también cuando falla. En cada push y cada PR.
-- **`seguridad.yml`** — los gates de Gate 2 **rompiendo el build**, no avisando:
+- **`seguridad.yml`** — los gates de seguridad **rompiendo el build**, no avisando:
   `gitleaks` sobre la historia completa (T6), `pip-audit` por servicio y
   `npm audit --audit-level=high` (T8), y CodeQL con umbral de severidad sobre el
   SARIF (T9). En cada push y cada PR, más una pasada semanal: una dependencia no
@@ -143,7 +143,7 @@ build es cualquier retroceso desde donde está hoy cada uno.
   El login quedó operativo el 2026-08-01 con dominio propio de Auth0 y desarrollo
   por túneles de Cloudflare (ADR-0020); el tenant lleva aprovisionado desde el
   2026-07-27.
-- **Gate 2 (pruebas) en curso.** Cobertura **≥ 80 % en los seis** con las dos
+- **Gate 3 (pruebas) en curso.** Cobertura **≥ 80 % en los seis** con las dos
   métricas —combinada y ramas solas— (medido 2026-08-06). Combinada sobre `src/`:
   `ingestor-bcv` 99,36 · `ingestor-binance` 99,27 · `ingestor-historico`
   97,22 · `web-spa` 94,89 · `api-gateway` 92,65 · `indicator-engine` 85,88; la más
@@ -156,9 +156,26 @@ build es cualquier retroceso desde donde está hoy cada uno.
   línea 4.x y bastó un `npm update`)—;
   detalle en
   `docs/04-testing/plan-de-pruebas.md` §10 y §12.
-- Gate 0 (requisitos): aprobado — `.ai-dlc/gates/gate-0-requirements.md`
-- Gate 1 (diseño): aprobado, sin pendientes desde la ratificación del DREAD de T15
-  (2026-08-04) — `.ai-dlc/gates/gate-1-design.md`
+### Gates AI-DLC
+
+**Ojo con la numeración: cambió el 2026-09-06.** El proyecto llamaba «Gate 2» al
+de la fase 04-testing, y en AI-DLC esa fase cierra el **Gate 3**; el Gate 2 es el
+de la fase 03-implementation. No fue un renombrado: la lista que se venía usando
+mezclaba criterios de ambos y se repartieron por criterio.
+
+| Gate | Fase | Criterios canónicos | Estado |
+|---|---|---|---|
+| **0** | 01-requirements | reqs de seguridad + escenarios de abuso + threat assessment + datos clasificados | ✅ aprobado HITL 2026-07-11 |
+| **1** | 02-design | threat model + C4 + ADRs + contratos de API | ✅ aprobado HITL 2026-07-11 |
+| **2** | 03-implementation | SAST limpio + deps verificadas + 80 % cobertura | ✅ criterios cubiertos — **pendiente de firma HITL** |
+| **3** | 04-testing | tests pasando + DAST limpio + perf dentro de SLOs | ⚠️ 2 de 3; bloquea el SLO de ingesta |
+| **4** | 05-deployment | pipeline limpio + IaC escaneado + runbook de rollback | no iniciado |
+| **5** | 06-monitoring | SLOs monitorizados + proceso de incidentes | no iniciado |
+
+Fichas en `.ai-dlc/gates/`. Lo que bloquea el Gate 3 **no es código**: el SLO de
+ingesta (`consulta→evento ≤ 5 s`) se mide en **7,16 s** y su causa es ADR-0005
+(«polling P2P educado»). Relajar el SLO, subir `ROWS_PER_PAGE` o paralelizar
+páginas son tres decisiones de producto distintas.
 - Inventario de cambios por ejecución: ver `CHANGELOG.md`
 - Contexto curado para agentes y humanos: ver `knowledge/index.md` (OKF v0.1 — punto de
   entrada recomendado para retomar el proyecto)
