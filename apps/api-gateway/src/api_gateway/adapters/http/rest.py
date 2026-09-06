@@ -26,6 +26,19 @@ _MONEDA = Query(default="USD", pattern=r"^[A-Z]{3}$")
 # pierna oficial (ADR-0014).
 _MONEDA_P2P = Query(default="VES", pattern=r"^[A-Z]{3}$")
 
+# Nombres de indicador y tipos de señal: identificadores internos, no texto
+# libre. Los 25 indicadores y los 2 tipos que existen encajan todos aquí.
+#
+# El patrón no es cosmético. Sin él estos dos parámetros llegaban tal cual a
+# PostgreSQL, y un byte NUL —`?type=%00`, la sonda clásica de inyección— hacía
+# reventar la consulta: **500 en texto plano**, fuera del contrato problem+json
+# y contra el control de «errores uniformes» (V10/A10). `currency` y `side` no
+# se veían afectados porque ya validaban con `pattern` y `Literal`; la asimetría
+# era el defecto. Lo encontró el DAST del 2026-09-06 en `/signals`, y al
+# reproducirlo apareció también en `indicator` de `/indicators/history`, que el
+# escáner no llegó a marcar.
+_NOMBRE_INTERNO = r"^[a-z0-9_]+$"
+
 
 def _protegido(permiso: str):
     async def dependencia(request: Request, response: Response) -> Usuario:
@@ -121,7 +134,9 @@ async def historial_indicadores(
     desde: datetime = Query(alias="from"),
     hasta: datetime = Query(alias="to"),
     interval: Literal["5m", "15m", "1h", "1d"] = Query(default="1h"),
-    indicator: str | None = Query(default=None, min_length=1, max_length=80),
+    indicator: str | None = Query(
+        default=None, min_length=1, max_length=80, pattern=_NOMBRE_INTERNO
+    ),
     currency: str | None = Query(default=None, pattern=r"^[A-Z]{3}$"),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=100, ge=1, le=500),
@@ -177,7 +192,9 @@ async def senales(
     _usuario: Annotated[Usuario, _protegido("read:signals")],
     desde: datetime = Query(alias="from"),
     hasta: datetime = Query(alias="to"),
-    type_: str | None = Query(default=None, alias="type"),
+    type_: str | None = Query(
+        default=None, alias="type", min_length=1, max_length=80, pattern=_NOMBRE_INTERNO
+    ),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=100, ge=1, le=500),
 ) -> dict:

@@ -17,6 +17,38 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Fixed
+
+- **Un byte NUL en la query tumbaba el gateway con un 500 (2026-09-06).** Lo
+  encontró el DAST en su primera corrida en CI, que es exactamente para lo que
+  se puso:
+
+      GET /api/v1/signals?…&type=%00  ->  500 Internal Server Error
+
+  `type` llegaba tal cual a PostgreSQL —que no admite NUL en texto—, la consulta
+  reventaba y salía un **500 en texto plano**, fuera del contrato `problem+json`
+  y contra el control de «errores uniformes sin detalles internos» (V10/A10).
+  - **Al reproducirlo apareció un segundo endpoint que el escáner no marcó:**
+    `indicator` en `/indicators/history`, con el mismo fallo. El DAST señaló uno
+    y el otro salió de ir a mirar.
+  - **La asimetría era el defecto.** `currency` y `side` nunca estuvieron
+    afectados porque ya validaban con `pattern` y `Literal`; `type` no tenía
+    **ninguna** restricción e `indicator` solo largo mínimo y máximo. Son cuatro
+    parámetros de la misma naturaleza —identificadores internos, no texto
+    libre— y solo dos estaban tratados como tal.
+  - Ahora los cuatro validan: `^[a-z0-9_]+$` cubre los 25 indicadores y los 2
+    tipos de señal que existen. Los NUL salen **400 `problem+json`** y los
+    valores legítimos siguen devolviendo 200, comprobado contra el gateway real.
+  - **No era explotable como inyección** —el repositorio usa consultas
+    parametrizadas—, pero un 500 que se provoca con cuatro caracteres es
+    negación de servicio barata (T4) y rompía el contrato de errores.
+  - **Cierra de paso el marcador `security` en `api-gateway`**, que el plan de
+    pruebas llevaba pendiente: 17 tests en `tests/security/` con las cargas que
+    un escáner manda de serie. Comprobado que discriminan —16 fallan si se quita
+    el patrón—, e incluido el caso contrario: que un rechazo demasiado ancho no
+    se lleve por delante los nombres legítimos, porque eso arreglaría el 500
+    rompiendo el producto y los otros tests no lo notarían.
+
 ### Added
 
 - **DAST con ZAP: el hueco real que le quedaba al gate (2026-09-06).** El

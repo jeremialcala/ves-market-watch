@@ -590,7 +590,7 @@ público.
 | ~~**DAST**: no había nada dinámico~~ **hecho 2026-09-06** | `seguridad.yml` suma el job `dast` con ZAP guiado por el OpenAPI, en dos pasadas (§11). Era el hueco real del gate: SAST, SCA y secretos son controles de Gate 2 y ninguno toca una instancia corriendo |
 | Deuda de T8: **lockfiles + imágenes por digest** | Cambio de repositorio, no de pipeline: los cinco servicios declaran rangos y las imágenes van por tag (incluida `timescaledb:latest-pg16`) |
 | Deuda de T8: **CVE-2026-59870 (`js-yaml`) aceptado** | Vector no alcanzable (dependencia de desarrollo, entrada propia sin `!!omap`); el arreglo disponible rompe el generador de tipos. Se retira cuando `openapi-typescript` suba a redocly 2.x — revisar 2026-09-06 |
-| Marcador `security` en `api-gateway` | Donde viven T9 y T11; los otros dos servicios ya lo tienen |
+| ~~Marcador `security` en `api-gateway`~~ **hecho 2026-09-06** | 17 tests en `tests/security/` con las cargas que un escáner manda de serie. Nacieron de un defecto real: el DAST encontró que `?type=%00` devolvía un **500 en texto plano**, y al reproducirlo salió el mismo fallo en `indicator`. Comprobado que discriminan: 16 fallan si se quita el patrón |
 | Recalibración **HITL** de umbrales (ruleset y régimen) | Decisión humana con datos de producción |
 
 ## 11. Automatización y CI
