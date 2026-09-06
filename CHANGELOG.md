@@ -19,6 +19,47 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Los SLOs de latencia, medidos por primera vez (2026-09-06).** Estaban
+  declarados en los PRD desde el principio y **nunca se habían contrastado**: el
+  plan de pruebas decía «herramienta sugerida: `locust`/`k6`» y ahí se quedó.
+  Sugerida no es medida. De cinco SLOs declarados, **tres se cumplen, uno se
+  incumple y uno sigue sin medir**.
+  - **REST, ambos cumplidos con holgura.** Consultas actuales **44 ms** p95
+    contra un techo de 300 (n=300); histórico **757 ms** contra 2 s (n=90).
+    420 peticiones contra el gateway real con token M2M del tenant, **todas 200
+    y ningún 429**. El que más se acerca es `/indicators/history`, que consume él
+    solo el 39 % del presupuesto.
+  - **Ingesta: `consulta→evento ≤ 5 s` (p95) INCUMPLE — medido 7,16 s.** Sobre
+    4.342 capturas reales en 41 h. **El 34,6 % supera los 5 s.** La causa son las
+    **10 peticiones HTTP secuenciales por lado** (`ROWS_PER_PAGE=20`, top-200):
+    la latencia de Binance multiplicada por diez, y ahí vive la cola.
+  - **Choca con ADR-0005** («polling P2P educado»): el SLO se escribió antes que
+    la decisión de paginar con cortesía y hoy son incompatibles. Es una decisión
+    de producto con una ADR de por medio, **no un defecto**, y no se cierra
+    ajustando el número que peor quede.
+  - **Ciclos completados ≥ 99 %: cumple**, 99,72 % (2.168/2.174).
+  - **Push WSS ≤ 1 s: sigue sin medir.** Es el quinto SLO y exige un cliente
+    suscrito correlacionando con el `as_of` publicado. Queda anotado como hueco,
+    no como cumplido.
+  - **Un hallazgo que no se ve en la latencia final.** La consulta de
+    `/indicators/current` tarda ~80 ms medida con `psql`, pero el `EXPLAIN
+    ANALYZE` la parte en **3,75 ms de ejecución y 78,39 ms de planificación**
+    sobre los 41 chunks de `indicators`: el 95 % es el planificador. No sale en
+    el p95 del endpoint porque `asyncpg` cachea las sentencias preparadas, así
+    que se paga una vez por conexión. **Pero crece con el número de chunks** y la
+    tabla va por 1,4 M filas a ~1.100/hora. Hoy es irrelevante por el margen que
+    hay; conviene vigilarlo.
+  - `scripts/medir_slo_rest.py` y `scripts/medir_slo_ingesta.py` dejan la
+    medición **reproducible**. El de REST se acompasa por debajo del techo de
+    cuota —un 429 mediría el limitador, no la latencia—, elige parámetros que
+    devuelvan datos de verdad —una respuesta vacía se sirve antes y hundiría el
+    percentil— y **sin credenciales anuncia que el resultado es parcial** en vez
+    de dar un verde vacío.
+  - **Lo que las cifras NO cubren, escrito donde se leen:** miden el gateway en
+    `localhost:8800`. Nginx y el túnel quedan fuera, y el camino del navegador es
+    más largo. Y son latencia en régimen normal: la degradación bajo carga (T4)
+    sigue sin probarse.
+
 - **El respaldo está corriendo de verdad contra Drive (2026-08-31).** Hasta hoy
   el esquema existía, estaba probado y **no se había levantado nunca**: el
   contenedor del perfil `respaldo` ni siquiera existía, y la pata de Google
