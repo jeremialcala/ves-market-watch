@@ -17,6 +17,34 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Security
+
+- **Retirada la excepción del CVE-2026-59870 (`js-yaml`) — el CVE está cerrado
+  (2026-09-06).** Era la fecha de revisión anotada, y la excepción se retira por
+  **una vía que su propia condición no contemplaba**.
+  - **El aviso decía que no se retroportaría a la línea 4.x, y se retroportó.**
+    Existe `js-yaml@4.3.1` y el rango vulnerable del aviso bajó a
+    `4.0.0 - 4.3.0`. `@redocly/openapi-core@1.34.19` lo fija, y satisface el
+    `^1.34.6` que pide `openapi-typescript@7.13.0`.
+  - **Bastó `npm update` de una transitiva:** sin override, sin `js-yaml` 5 —que
+    rompía el generador al retirar `types.merge`— y sin esperar a redocly 2.x,
+    que sigue sin llegar. El diff del lockfile son 7 líneas: dos versiones.
+    `npm audit`: **0 vulnerabilidades**.
+  - **La lección es sobre la condición de retirada, no sobre el CVE.** Estaba
+    escrita como una sola ruta —«que `openapi-typescript` suba a redocly 2.x»— y
+    la realidad tomó otra. Comprobar solo la condición literal habría renovado la
+    excepción un mes más **con el arreglo ya publicado**. Lo que salvó la
+    revisión fue mirar el árbol de dependencias, no el texto: una condición de
+    retirada describe una salida probable, no la única.
+  - **El auditor hizo exactamente lo suyo:** falló porque la excepción había
+    dejado de aplicar, obligando a borrarla en vez de dejarla cubriendo en
+    silencio lo que viniera después. Es la primera vez que ese mecanismo se
+    ejercita de verdad.
+  - Verificado al retirarla: `npm run generate:api` da el mismo `types.gen.ts`
+    —la diferencia de 1.304 bytes era exactamente el número de líneas, o sea
+    CRLF→LF del checkout en Windows, y `git diff` sale vacío—, y
+    `check:api-types`, `typecheck` y `build` en verde.
+
 ### Fixed
 
 - **Un byte NUL en la query tumbaba el gateway con un 500 (2026-09-06).** Lo

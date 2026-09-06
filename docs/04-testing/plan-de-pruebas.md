@@ -572,10 +572,31 @@ público.
    en verde con la herramienta rota es peor que uno en rojo.
    `openapi-typescript@7.13.0` ya es la última y fija redocly en 1.34.x.
 
-   **Se retira** cuando `openapi-typescript` publique una versión con
-   `@redocly/openapi-core@2.x`; el propio gate lo exigirá al dejar de aplicar la
-   excepción. Revisión anotada para el **2026-09-06**. Al actualizar, comprobar que
-   `npm run generate:api` sigue dando el mismo `types.gen.ts` byte a byte.
+   ~~**Se retira** cuando `openapi-typescript` publique una versión con
+   `@redocly/openapi-core@2.x`~~ — **retirada el 2026-09-06, en la revisión
+   anotada, y por una vía que la condición escrita no contemplaba.**
+
+   **El aviso decía que no se retroportaría a 4.x, y se retroportó.** Existe
+   `js-yaml@4.3.1` y el rango vulnerable del aviso bajó a `4.0.0 - 4.3.0`;
+   `@redocly/openapi-core@1.34.19` lo fija, y satisface el `^1.34.6` que pide
+   `openapi-typescript@7.13.0`. O sea: **un `npm update` de una transitiva**, sin
+   override, sin js-yaml 5 y sin esperar a redocly 2.x — que a día de hoy sigue
+   sin llegar, porque `openapi-typescript@7.13.0` continúa siendo la última
+   publicada y aún depende de la línea 1.34.
+
+   **La lección es sobre la condición, no sobre el CVE.** Estaba escrita como una
+   sola ruta —«que openapi-typescript suba a redocly 2.x»— y la realidad tomó
+   otra. Quien solo hubiera comprobado la condición literal habría renovado la
+   excepción un mes más con el arreglo ya disponible. Lo que salvó la revisión fue
+   mirar el árbol, no el texto. **Una condición de retirada describe una salida
+   probable, no la única.**
+
+   Comprobado al retirarla: `npm audit` en **0 vulnerabilidades**; `npm run
+   generate:api` da el mismo `types.gen.ts` —la diferencia de 1.304 bytes era
+   exactamente el número de líneas, o sea CRLF→LF del checkout en Windows, y `git
+   diff` sale vacío—; `check:api-types`, `typecheck` y `build` en verde. Y el
+   auditor hizo lo suyo: **falló porque la excepción ya no aplicaba**, que es para
+   lo que se escribió.
 6. Sin tests marcados `xfail`/`skip` salvo los de infraestructura documentados.
    **Cumplido**: cero `xfail` y cero `skip` incondicionales en el monorepo; los
    únicos saltos son los de infraestructura ausente, y desde el 2026-08-04 **solo
@@ -589,7 +610,7 @@ público.
 | ~~Llevar el e2e en vivo **al pipeline**~~ **hecho 2026-08-20** | `e2e-vivo.yml` levanta el gateway con compose en el propio runner (§11). ~~Queda un paso **HITL**: dar de alta `AUTH0_M2M_CLIENT_ID` y `AUTH0_M2M_CLIENT_SECRET`~~ — **hecho el 2026-08-23**, ambos secretos están en *Settings → Secrets → Actions* |
 | ~~**DAST**: no había nada dinámico~~ **hecho 2026-09-06** | `seguridad.yml` suma el job `dast` con ZAP guiado por el OpenAPI, en dos pasadas (§11). Era el hueco real del gate: SAST, SCA y secretos son controles de Gate 2 y ninguno toca una instancia corriendo |
 | Deuda de T8: **lockfiles + imágenes por digest** | Cambio de repositorio, no de pipeline: los cinco servicios declaran rangos y las imágenes van por tag (incluida `timescaledb:latest-pg16`) |
-| Deuda de T8: **CVE-2026-59870 (`js-yaml`) aceptado** | Vector no alcanzable (dependencia de desarrollo, entrada propia sin `!!omap`); el arreglo disponible rompe el generador de tipos. Se retira cuando `openapi-typescript` suba a redocly 2.x — revisar 2026-09-06 |
+| ~~Deuda de T8: **CVE-2026-59870 (`js-yaml`) aceptado**~~ **retirado 2026-09-06** | El parche SÍ se retroportó a la línea 4 —`js-yaml@4.3.1`, con el rango vulnerable ya en `4.0.0 - 4.3.0`— y `@redocly/openapi-core@1.34.19` lo fija. Bastó `npm update`: sin override, sin js-yaml 5 y sin esperar a redocly 2.x. `npm audit` en 0 |
 | ~~Marcador `security` en `api-gateway`~~ **hecho 2026-09-06** | 17 tests en `tests/security/` con las cargas que un escáner manda de serie. Nacieron de un defecto real: el DAST encontró que `?type=%00` devolvía un **500 en texto plano**, y al reproducirlo salió el mismo fallo en `indicator`. Comprobado que discriminan: 16 fallan si se quita el patrón |
 | Recalibración **HITL** de umbrales (ruleset y régimen) | Decisión humana con datos de producción |
 
