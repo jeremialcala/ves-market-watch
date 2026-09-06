@@ -104,6 +104,15 @@ def obtener_token() -> str:
 
 def escanear(modo: str, salida: Path) -> int:
     salida.mkdir(parents=True, exist_ok=True)
+    # ZAP corre como uid 1000 dentro del contenedor y el directorio lo crea el
+    # usuario del host —uid 1001 en el runner de Actions—, así que sin esto los
+    # informes fallan con «Permission denied» y ZAP los da por escritos. En
+    # Docker Desktop para Windows no pasa, por la traducción del sistema de
+    # ficheros: el fallo solo aparece en Linux, o sea solo en CI.
+    try:
+        salida.chmod(0o777)
+    except OSError:
+        pass  # Windows no lo necesita y puede rechazarlo
     shutil.copy(RAIZ / "apps/api-gateway/docs/openapi.yaml", salida / "openapi.yaml")
 
     prefijo = "con-auth" if modo == "con-auth" else "sin-auth"

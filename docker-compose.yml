@@ -134,6 +134,13 @@ services:
       # para Auth0 y mata la pantalla de consentimiento). Parametrizado para no
       # tener que editar el compose por entorno.
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:8080,https://criterio-dev.higerotech.com}
+      # Cuota por token. El default es el de producción y sube SOLO en el job de
+      # DAST: con 120/min, ZAP se estrella contra su propio 429 y deja parte de
+      # la superficie sin escanear (24 peticiones en la corrida del 2026-09-06).
+      # Sin esta línea, poner la variable en el workflow no hacía nada —el
+      # contenedor no la veía— y el comentario del job prometía algo que no
+      # ocurría.
+      RATE_LIMIT_PER_MIN: ${RATE_LIMIT_PER_MIN:-120}
     ports:
       # 8800 en el host: el 8000 suele estar ocupado por otro proyecto local.
       - "8800:8000" # REST /api/v1 + WSS /ws/v1 (health público: /api/v1/health)

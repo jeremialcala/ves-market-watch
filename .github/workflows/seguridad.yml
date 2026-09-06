@@ -206,6 +206,11 @@ jobs:
       # 2026-09-06, 24 de las peticiones de ZAP volvieron 429 y esa parte de la
       # superficie se quedó sin escanear. Que el limitador funcione lo prueba el
       # test de T4 en la suite `security`, no este job.
+      #
+      # Llega al contenedor porque el compose lo interpola —`RATE_LIMIT_PER_MIN:
+      # ${RATE_LIMIT_PER_MIN:-120}`—. La primera versión de este job ponía la
+      # variable aquí sin esa línea en el compose: el gateway no la veía y el
+      # comentario prometía algo que no ocurría.
       RATE_LIMIT_PER_MIN: "20000"
 
     steps:
