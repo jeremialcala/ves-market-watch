@@ -17,6 +17,30 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **Medido el quinto SLO, el del push por WSS (2026-09-06): CUMPLE con dos
+  órdenes de magnitud de margen.** Era el que quedaba sin medir de los cinco
+  declarados en los PRD.
+  - **`indicators`: p95 de 11 ms contra un techo de 1 s** (n=42). Agregado de los
+    cinco tópicos: p95 58 ms sobre 126 eventos en 22 minutos, **0 por encima del
+    umbral**. El más pesado es `analysis` (71 ms p95), coherente con sus ~8 kB.
+  - La latencia se mide como `t(recepción del frame) − occurred_at del sobre`, y
+    `occurred_at` lo pone el productor justo al publicar, así que el intervalo
+    cubre la cadena entera: serialización, RabbitMQ, el consumidor del gateway,
+    el fan-out y la red. Los dos relojes son el mismo, así que no hay deriva —
+    **contra un despliegue con el motor en otro host la medición dejaría de ser
+    válida**, y queda dicho donde se lee.
+  - **Un control de T11 verificado sin buscarlo.** A los 15 minutos el gateway
+    cerró la conexión con `4401 token expirado`: la expiración se comprueba sobre
+    la conexión **ya establecida**, no solo en el handshake. No estaba escrito en
+    ninguna suite y aquí se observó desde fuera.
+  - **Y un defecto propio que conviene no borrar.** La primera corrida pidió 25
+    minutos, el token vive 15, y el script **se cayó con la excepción y perdió
+    las muestras ya recogidas**. Medir veinte minutos para no poder decir nada es
+    peor que medir cinco y decirlo. Ahora reconecta con token nuevo, cuenta las
+    reconexiones en el informe, y reporta lo medido pase lo que pase.
+
 ### Security
 
 - **Retirada la excepción del CVE-2026-59870 (`js-yaml`) — el CVE está cerrado

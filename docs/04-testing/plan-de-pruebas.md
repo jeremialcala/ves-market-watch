@@ -423,7 +423,7 @@ es medida, y el propio plan usa esa distinción como criterio en otros sitios.
 | REST histórico ≤ **2 s** | `api-streaming.md` | **757 ms** (n=90) | ✅ |
 | Ingesta consulta→evento ≤ **5 s** (p95) | `ingesta-binance-p2p.md` | **7,16 s** (n=4.342) | ❌ |
 | Ciclos completados ≥ **99 %** | `ingesta-binance-p2p.md` | **99,72 %** (n=2.174) | ✅ |
-| Push WSS ≤ **1 s** desde publicación interna | `api-streaming.md` | — | **sin medir** |
+| Push WSS ≤ **1 s** desde publicación interna | `api-streaming.md` | **11 ms** (n=42) | ✅ |
 
 **REST** — `scripts/medir_slo_rest.py` contra el gateway real con token M2M del
 tenant: 420 peticiones, **todas 200 y ningún 429**, acompasadas a 100/min bajo
@@ -455,6 +455,34 @@ el número de chunks**, y `indicators` va por 41 y subiendo (1,4 M filas,
 ~1.100/hora). La primera petición tras cada reinicio del gateway lo paga entero,
 y el margen de hoy —44 ms sobre 300— es el que lo hace irrelevante. Vigilar
 cuando la tabla crezca o si se reduce el intervalo de chunk.
+
+**WSS** — `scripts/medir_slo_wss.py`, 126 eventos en 22 minutos con un cliente
+suscrito a los cinco tópicos. La latencia se mide como `t(recepción del frame) −
+occurred_at del sobre`, y `occurred_at` lo pone el productor justo al publicar
+(`indicator_engine/adapters/amqp/publisher.py`), así que el intervalo cubre la
+cadena entera: serialización, RabbitMQ, el consumidor del gateway, el fan-out a
+suscriptores y la red.
+
+| tópico | n | p50 | p95 | max |
+|---|---:|---:|---:|---:|
+| `indicators` | 42 | 8 ms | **11 ms** | 16 ms |
+| `p2p.snapshot` | 42 | 28 ms | 40 ms | 47 ms |
+| `analysis` | 42 | 46 ms | 71 ms | 103 ms |
+| **agregado** | **126** | 28 ms | **58 ms** | 103 ms |
+
+El SLO nombra al indicador, y ese va a **11 ms de p95 contra un techo de 1 s**:
+dos órdenes de magnitud de margen. El más pesado es `analysis`, coherente con
+sus ~8 kB de payload.
+
+**Los dos relojes son el mismo** —productor y medidor sobre el kernel de esta
+máquina—, así que no hay deriva que corregir. Contra un despliegue con el motor
+en otro host, esta medición dejaría de ser válida sin relojes sincronizados.
+
+**Un control de T11 verificado sin querer.** A los 15 minutos el gateway cerró la
+conexión con `4401 token expirado`: la expiración se comprueba sobre la conexión
+**ya establecida**, no solo en el handshake. Es una aserción que no estaba
+escrita en ninguna suite y que aquí se observó desde fuera. El medidor reconecta
+con token nuevo, y esa reconexión queda contada en el informe.
 
 **Ingesta — el SLO que no se cumple.** Medido sobre 4.342 capturas reales en
 41 h de log (2026-09-05 01:47 → 2026-09-06 19:06). El log registra el ciclo
