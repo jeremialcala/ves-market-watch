@@ -85,4 +85,14 @@ pasó a cumplirse con ADR-0026 el mismo día en que se midió el incumplimiento.
 firmar: confirmar el p95 de ingesta sobre una corrida larga y comprobar que la
 tasa de 429 no ha subido tras ADR-0026.
 
+> **Esa reserva ya tiene fecha y ejecutor.** `scripts/verificar_slo_ingesta.py`
+> contesta las dos preguntas y sale 0 solo si ambas van bien. Queda programado
+> para el **2026-09-07 a las 09:00 VET** —unas 15 h de operación paralela, ~900
+> ciclos— en una tarea de Windows (`Criterio-VerificarSLO-Ingesta`), que deja el
+> informe en `informes/`. **No se hizo como rutina en la nube a propósito**: esas
+> corren en infraestructura de Anthropic y no alcanzan el Docker del despliegue,
+> así que habrían certificado nada.
+>
+> Se borra con `Unregister-ScheduledTask -TaskName Criterio-VerificarSLO-Ingesta`.
+
 **Aprobado por:** `<pendiente>` · **Fecha:** `<pendiente>`
