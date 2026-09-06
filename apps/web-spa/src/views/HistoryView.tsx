@@ -26,6 +26,7 @@ import {
   type Intervalo,
 } from "../api/endpoints";
 import { ApiError } from "../api/problem";
+import { LecturaHistorico } from "../components/LecturaHistorico";
 import { NoDataState } from "../components/NoDataState";
 import { SerieEvaluada } from "../components/SerieEvaluada";
 import { useI18n } from "../i18n/contexto";
@@ -292,6 +293,17 @@ export function HistoryView() {
           )}
         </section>
         {error !== null ? <p className="vmw-sin-datos">{error}</p> : null}
+
+        {/* Primer bloque de la vista: qué dice la ventana que se está mirando,
+            antes de que nadie tenga que interpretar un trazo. */}
+        <LecturaHistorico
+          puntos={serie.map((p) => ({ t: p.t, valor: p.valorStr }))}
+          condicion={condicionDe(analisis, indicador)}
+          indicador={indicador}
+          dias={dias}
+          bucket={intervalo}
+          idioma={idioma}
+        />
 
         <section
           className="vmw-tarjeta vmw-seccion"
