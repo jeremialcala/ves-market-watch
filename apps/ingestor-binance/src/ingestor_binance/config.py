@@ -24,6 +24,7 @@ class Settings:
     top_k: int
     rows_per_page: int
     max_retries: int
+    paginas_en_paralelo: int
     request_budget_per_min: int
     breaker_threshold: int
     breaker_cooldown_seconds: int
@@ -59,6 +60,13 @@ class Settings:
             top_k=int(env.get("TOP_K", "100")),
             rows_per_page=int(env.get("ROWS_PER_PAGE", "20")),
             max_retries=int(env.get("MAX_RETRIES", "3")),
+            # Paginas del top-K en vuelo a la vez (ADR-0026, enmienda a
+            # ADR-0005). No cambia las peticiones por minuto —siguen siendo
+            # top_k/rows por lado y ciclo, cada una consumiendo su unidad del
+            # presupuesto—, solo el pico instantaneo. 4 y no 10 para que la
+            # rafaga siga siendo contenida: es el equilibrio entre el SLO y
+            # T7 (baneo).
+            paginas_en_paralelo=int(env.get("PAGINAS_EN_PARALELO", "4")),
             request_budget_per_min=int(env.get("REQUEST_BUDGET_PER_MIN", "20")),
             breaker_threshold=int(env.get("BREAKER_THRESHOLD", "5")),
             breaker_cooldown_seconds=int(env.get("BREAKER_COOLDOWN_SECONDS", "300")),

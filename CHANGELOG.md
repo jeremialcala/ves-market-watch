@@ -17,6 +17,40 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Changed
+
+- **El SLO de ingesta pasa a cumplirse: 7,16 s → 1,40 s (ADR-0026, 2026-09-06).**
+  Las 10 páginas del top-K se piden en **lotes concurrentes de 4** en vez de en
+  fila. Era el único SLO incumplido de los cinco.
+  - Medido contra el servicio real tras desplegarlo: **p95 de 1,40 s**, **0 %**
+    de capturas por encima de 5 s (antes, 34,6 %), ciclo completo de 8,47 s de
+    media a 2,23 s.
+  - **Sin fricción con la fuente:** 300 respuestas, **todas 200**. Cero 429, cero
+    reintentos agotados, cero capturas parciales, 200 anuncios íntegros por lado.
+  - **Enmienda ADR-0005, no la deroga.** Lo que hace admisible el cambio es que
+    **las peticiones por minuto son idénticas**: 10 por lado y ciclo, 20 contra
+    un presupuesto de 40/min, cada una consumiendo su unidad de la ventana
+    deslizante igual que antes. Paralelizar no es pedir más, es pedir lo mismo
+    más junto. User-Agent, backoff, breaker y tope de bytes intactos, y **sin
+    rotación de IP ni evasión de límites**.
+  - **Lo que sí sube es el pico instantáneo**, que es el vector de T7 (baneo). Es
+    la razón de que el lote sea 4 y no 10: con 4 el SLO se cumple de sobra y la
+    ráfaga sigue siendo modesta. **Diez habría sido optimizar el número en vez de
+    decidir.** Si Binance empieza a devolver 429, la respuesta escrita en la ADR
+    es bajar `PAGINAS_EN_PARALELO`, nunca subirlo ni rotar IP.
+  - **Los tests fijan lo que hay que conservar, no la ganancia:** el presupuesto
+    se consume igual (una unidad por página), **el orden por página se
+    mantiene** —la lista viene ordenada por precio y el VWAP depende de ello; un
+    cambio a `as_completed` lo rompería en silencio—, la salida temprana sigue
+    cortando, y los errores de schema y de tope de bytes se propagan en vez de
+    quedar tragados por `gather(return_exceptions=True)`. Uno comprueba que el
+    pico de concurrencia es **exactamente 4**: ni 1 ni 8.
+  - **La muestra nueva es corta y queda dicho:** 28 capturas en 15 minutos contra
+    las 4.342 en 41 h del incumplimiento. La mejora es inequívoca —el peor caso
+    observado está a un tercio del umbral— pero el p95 definitivo pide una
+    corrida larga, y **la tasa de 429 hay que volver a mirarla en unos días**: el
+    riesgo que asume esta ADR no se manifiesta en quince minutos.
+
 ### Added
 
 - **Medido el quinto SLO, el del push por WSS (2026-09-06): CUMPLE con dos
