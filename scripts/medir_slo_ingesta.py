@@ -50,26 +50,27 @@ fallos = 0
 ciclos = 0
 t_buy = t_sell = None
 
-for linea in open(sys.argv[1], encoding="utf-8", errors="replace"):
-    t = ts(linea)
-    if t is None:
-        continue
-    if "ciclo BUY OK" in linea:
-        t_buy = t
-    elif "ciclo SELL OK" in linea:
-        t_sell = t
-    elif "saltado por" in linea or "fallido" in linea:
-        fallos += 1
-    elif "latencia de ciclo completo" in linea:
-        ciclos += 1
-        tot = float(re.search(r"([\d.]+) s", linea).group(1))
-        total.append(tot)
-        if t_buy and t_sell and t_sell > t_buy:
-            s = (t_sell - t_buy).total_seconds()
-            if 0 < s < tot:            # descarta ciclos con lados incompletos
-                sell.append(s)
-                buy.append(tot - s)
-        t_buy = t_sell = None
+with open(sys.argv[1], encoding="utf-8", errors="replace") as f:
+    for linea in f:
+        t = ts(linea)
+        if t is None:
+            continue
+        if "ciclo BUY OK" in linea:
+            t_buy = t
+        elif "ciclo SELL OK" in linea:
+            t_sell = t
+        elif "saltado por" in linea or "fallido" in linea:
+            fallos += 1
+        elif "latencia de ciclo completo" in linea:
+            ciclos += 1
+            tot = float(re.search(r"([\d.]+) s", linea).group(1))
+            total.append(tot)
+            if t_buy and t_sell and t_sell > t_buy:
+                s = (t_sell - t_buy).total_seconds()
+                if 0 < s < tot:            # descarta ciclos con lados incompletos
+                    sell.append(s)
+                    buy.append(tot - s)
+            t_buy = t_sell = None
 
 SLO = 5.0
 print(f"muestra: {ciclos} ciclos | {len(sell)} con ambos lados medibles")
