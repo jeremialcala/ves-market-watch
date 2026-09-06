@@ -411,9 +411,84 @@ cierre de la columna «Verificación fase 04-testing».
 
 ## 9. Pruebas no funcionales
 
-- **Rendimiento / carga:** `api-gateway` bajo exceso de cuota (T4) y `indicator-engine` con backlog
-  de eventos (latencia de recálculo aceptable). Herramienta sugerida: `locust`/`k6` contra el
-  gateway; para el bus, generador de eventos sintéticos.
+### SLOs de latencia — medidos el 2026-09-06
+
+Hasta hoy los SLOs estaban **declarados en los PRD y nunca contrastados**: esta
+sección decía «herramienta sugerida: `locust`/`k6`» y ahí se quedó. Sugerida no
+es medida, y el propio plan usa esa distinción como criterio en otros sitios.
+
+| SLO | Origen | Medido | Veredicto |
+|---|---|---|---|
+| REST consultas actuales ≤ **300 ms** (p95) | `api-streaming.md` | **44 ms** (n=300) | ✅ |
+| REST histórico ≤ **2 s** | `api-streaming.md` | **757 ms** (n=90) | ✅ |
+| Ingesta consulta→evento ≤ **5 s** (p95) | `ingesta-binance-p2p.md` | **7,16 s** (n=4.342) | ❌ |
+| Ciclos completados ≥ **99 %** | `ingesta-binance-p2p.md` | **99,72 %** (n=2.174) | ✅ |
+| Push WSS ≤ **1 s** desde publicación interna | `api-streaming.md` | — | **sin medir** |
+
+**REST** — `scripts/medir_slo_rest.py` contra el gateway real con token M2M del
+tenant: 420 peticiones, **todas 200 y ningún 429**, acompasadas a 100/min bajo
+el techo de cuota de 120. Detalle por endpoint:
+
+| Endpoint | n | p50 | p95 | max |
+|---|---:|---:|---:|---:|
+| `/analysis/current` | 60 | 6 ms | 28 ms | 87 ms |
+| `/rates/p2p/current` | 60 | 9 ms | 29 ms | 118 ms |
+| `/market/depth` | 60 | 16 ms | 37 ms | 54 ms |
+| `/rates/official/current` | 60 | 16 ms | 38 ms | 52 ms |
+| `/indicators/current` | 60 | 25 ms | **72 ms** | 160 ms |
+| `/rates/official/history` | 30 | 62 ms | 99 ms | 150 ms |
+| `/signals` | 30 | 31 ms | 51 ms | 59 ms |
+| `/indicators/history` | 30 | 709 ms | **785 ms** | 814 ms |
+
+Los dos SLOs REST se cumplen con holgura, pero conviene anotar dónde está el
+techo: `/indicators/history` consume el **39 % del presupuesto** de 2 s él solo,
+y es el único que se acerca.
+
+**Un hallazgo que no se ve en la latencia final.** Medida por `psql`, la
+consulta de `/indicators/current` tarda ~80 ms y parecía comerse un tercio del
+presupuesto. El `EXPLAIN ANALYZE` la parte en dos: **3,75 ms de ejecución y
+78,39 ms de planificación**, sobre los 41 chunks de `indicators`. El 95 % del
+coste es el planificador, no la consulta. No aparece en el p95 del endpoint
+porque `asyncpg` prepara y cachea las sentencias (`statement_cache_size` por
+defecto, 100), así que se paga una vez por conexión y luego no. **Pero crece con
+el número de chunks**, y `indicators` va por 41 y subiendo (1,4 M filas,
+~1.100/hora). La primera petición tras cada reinicio del gateway lo paga entero,
+y el margen de hoy —44 ms sobre 300— es el que lo hace irrelevante. Vigilar
+cuando la tabla crezca o si se reduce el intervalo de chunk.
+
+**Ingesta — el SLO que no se cumple.** Medido sobre 4.342 capturas reales en
+41 h de log (2026-09-05 01:47 → 2026-09-06 19:06). El log registra el ciclo
+completo, que son los dos lados secuenciales, así que cada lado se deriva:
+`SELL = t(SELL OK) − t(BUY OK)` y `BUY = total − SELL`. Que el intervalo medido
+es el del PRD está comprobado contra el código: `CapturarSnapshot.ejecutar()` va
+de `fetch_ads()` a `publish_p2p_snapshot()`, o sea consulta→evento.
+
+| serie | n | p50 | p95 | p99 | max |
+|---|---:|---:|---:|---:|---:|
+| BUY | 2.171 | 3,31 s | 7,41 s | 7,86 s | 51,77 s |
+| SELL | 2.171 | 2,98 s | 5,89 s | 6,32 s | 56,46 s |
+| **agregado** | **4.342** | 3,15 s | **7,16 s** | — | — |
+
+**El 34,6 % de las capturas supera los 5 s.** La causa está a la vista: **10
+peticiones HTTP secuenciales por lado** (`ROWS_PER_PAGE=20`, top-200), así que la
+latencia es la de Binance multiplicada por diez y ahí vive la cola.
+
+**Esto choca con ADR-0005** («polling P2P educado»). El SLO se escribió antes que
+la decisión de paginar con cortesía y, como están configurados hoy, son
+incompatibles: o se relaja el SLO, o sube `ROWS_PER_PAGE`, o se paralelizan
+páginas —que es justo lo que la ADR quiso evitar—. **Es una decisión de producto
+con una ADR de por medio, no un defecto**, y no debe cerrarse arreglando el
+número que peor quede.
+
+**Lo que estas cifras NO cubren:** miden el gateway en `localhost:8800`. Nginx y
+el túnel de Cloudflare quedan fuera, y el camino del navegador es más largo. Para
+el SLO de la plataforma servida hay que repetir la medición contra el hostname
+público.
+
+- **Rendimiento / carga:** pendiente el escenario de **saturación** —`api-gateway`
+  bajo exceso de cuota (T4) e `indicator-engine` con backlog de eventos—. Lo
+  medido arriba es latencia en régimen normal, que no dice nada de cómo se
+  degrada bajo carga: son dos preguntas distintas y solo una está respondida.
 - **Resiliencia:** caída y recuperación de RabbitMQ y TimescaleDB (reintentos, sin pérdida de
   eventos gracias al sobre con `event_id`); reanudación tras 429 de Binance; BCV caído → `stale`.
 - **Idempotencia y orden:** eventos duplicados y reordenados no corrompen indicadores (T5/T10).
