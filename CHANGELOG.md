@@ -19,6 +19,33 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **«Episodios comparables» tras los gráficos del histórico (2026-09-06).** Tres
+  tarjetas con señales **reales** del histórico: qué condiciones tenía la regla
+  entonces, cuáles hoy, y qué hizo la brecha después.
+  - **La similitud se calcula, no se elige a mano.** Distancia entre
+    `evidence.inputs` de cada señal y los valores vigentes de
+    `rule_proximity`, **normalizada por el umbral de cada condición**: cada una
+    vive en su escala —un momentum en puntos y un ratio adimensional no se
+    promedian— y el umbral es la escala que el propio ruleset considera
+    significativa. El test cambia el estado de hoy y comprueba que **cambia la
+    tarjeta que va primera**.
+  - **«Qué pasó después» es historia observada, no acierto.** Sale de `outcome`,
+    que el gateway ya calculaba: la variación de la brecha entre la señal y el
+    final de su ventana. Se presenta la variación y nada más — sin veredicto y
+    sin un «N de M» que se leería como tasa de acierto, que es no-objetivo del
+    PRD y la línea que ya fijaba `SignalsFeed`.
+  - **Si la ventana no se ha cumplido, la tarjeta lo dice.** `outcome` viaja
+    `null` y «todavía no ocurrió» no es lo mismo que «no pasó nada».
+  - **Un episodio cuya regla ya no está en el ruleset se descarta**, en vez de
+    compararse contra condiciones que no son las suyas: si la versión cambió, la
+    comparación diría algo que no es.
+  - Sin episodios comparables **la sección no se pinta**: una rejilla vacía con
+    su título prometería algo que no hay.
+  - El color describe, no juzga: la brecha ensanchándose va en coral porque el
+    coral marca lo que acerca un disparo, no «lo malo». ES y EN.
+
+### Added
+
 - **«Lo que dice el histórico»: bloque rector de la vista (2026-09-06).** Primer
   bloque, encima de todo gráfico: dice qué dice la ventana que se está mirando
   antes de que nadie tenga que interpretar un trazo.

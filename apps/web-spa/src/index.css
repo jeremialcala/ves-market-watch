@@ -2775,3 +2775,144 @@ body {
   font-size: 12.5px;
   color: var(--text-dim);
 }
+
+/* -- «Episodios comparables» ---------------------------------------------- */
+
+.vmw-episodios {
+  display: grid;
+  gap: 18px;
+}
+
+.vmw-episodios__cabecera {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.vmw-episodios__titulo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(20px, 2.4vw, 24px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--white);
+}
+
+.vmw-episodios__bajada {
+  font-size: 13.5px;
+  color: var(--text-dim);
+}
+
+.vmw-episodios__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+/* El borde lo pone el componente con el color semántico del resultado. */
+.vmw-episodio {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  background: var(--dark-3);
+  border-radius: 22px;
+  padding: 22px 24px;
+  border: 1px solid var(--border);
+}
+
+.vmw-episodio__fila1 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vmw-episodio__fecha {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--white);
+}
+
+.vmw-episodio__pastilla {
+  margin-left: auto;
+  border-radius: 100px;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--overlay-soft);
+  border: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.vmw-episodio__regla {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.vmw-episodio__cabtabla,
+.vmw-episodio__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+}
+
+.vmw-episodio__cabtabla {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+.vmw-episodio__fila {
+  padding-top: 8px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.vmw-episodio__cond {
+  font-size: 13px;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.vmw-episodio__entonces,
+.vmw-episodio__hoy {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-episodio__entonces {
+  color: var(--white);
+}
+
+.vmw-episodio__despues {
+  display: grid;
+  gap: 5px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.vmw-episodio__eyebrow {
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+.vmw-episodio__prosa {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.vmw-episodio__resultado {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
