@@ -202,17 +202,24 @@ describe("HistoryView", () => {
   it("carga ambas series, filtra por indicador y reporta el progreso", async () => {
     conHandlers();
     render(<HistoryView />);
+    // Un solo `linechart`: la tasa oficial sigue en Recharts, mientras que la
+    // serie evaluada pasó a SVG propio para poder llevar su capa de referencia.
     await waitFor(() => {
-      expect(screen.getAllByTestId("linechart")).toHaveLength(2);
+      expect(screen.getAllByTestId("linechart")).toHaveLength(1);
     });
-    const [tasas, serie] = screen.getAllByTestId("linechart");
+    const [tasas] = screen.getAllByTestId("linechart");
     expect(JSON.parse(tasas.dataset.puntos ?? "[]")).toHaveLength(1);
-    // del histórico solo quedan las filas del indicador seleccionado
-    const puntosSerie = JSON.parse(serie.dataset.puntos ?? "[]") as {
-      valorStr: string;
-    }[];
-    expect(puntosSerie).toHaveLength(1);
-    expect(puntosSerie[0].valorStr).toBe("103.83000000");
+
+    // Del histórico solo quedan las filas del indicador seleccionado. Se
+    // comprueba sobre lo RENDERIZADO —el valor de hoy en la leyenda— y no sobre
+    // las props del gráfico: si el trazo no llega a pintarse, esto lo nota.
+    const serie = document.querySelector(".vmw-serieval");
+    expect(serie).toBeTruthy();
+    // La serie va SIEMPRE, y encima de todo: es el ultimo hijo del SVG.
+    const capas = [...(serie?.children ?? [])];
+    expect(capas.at(-1)?.getAttribute("stroke")).toBe("var(--series-buy)");
+    // Y su valor llega a la leyenda como «hoy».
+    expect(screen.getAllByText("103,83").length).toBeGreaterThan(0);
     // el indicador de progreso se limpia al terminar la carga (por diseño)
     expect(screen.queryByRole("status")).toBeNull();
   });
@@ -252,7 +259,7 @@ describe("HistoryView", () => {
     const usuario = userEvent.setup();
     render(<HistoryView />);
     await waitFor(() =>
-      expect(screen.getAllByTestId("linechart")).toHaveLength(2),
+      expect(screen.getAllByTestId("linechart")).toHaveLength(1),
     );
     let rangos: number[] = [];
     servidor.use(

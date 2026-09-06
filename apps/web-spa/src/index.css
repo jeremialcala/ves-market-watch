@@ -2591,3 +2591,98 @@ body {
 .vmw-proc {
   margin-top: 16px;
 }
+
+/* -- Serie evaluada del histórico y su capa de referencia ------------------ */
+
+.vmw-serieval__marco {
+  position: relative;
+  padding-left: 66px;
+}
+
+/* Mismo reparto que `.vmw-spark__eje`: el eje vive FUERA del SVG porque el
+   gráfico se estira con `preserveAspectRatio="none"` y deformaría el texto. */
+.vmw-serieval__eje {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 60px;
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-serieval__eje > span {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+.vmw-serieval {
+  width: 100%;
+  height: 280px;
+  display: block;
+}
+
+.vmw-serieval__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  align-items: center;
+  margin: 14px 0 0;
+  padding: 12px 0 0 66px;
+  list-style: none;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  /* Hairline y no `1px`: en pantallas densas un píxel CSS son dos físicos y el
+     filete se ve como una regla. */
+  border-top: 1px solid var(--border);
+}
+
+.vmw-serieval__leyenda > li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.vmw-serieval__leyenda strong {
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* La muestra de la banda SÍ lleva borde, aunque la banda del gráfico no: a
+   20×11 px un relleno del 5 % es invisible y la leyenda no explicaría nada. */
+.vmw-serieval__muestra {
+  width: 20px;
+  height: 11px;
+  border-radius: 3px;
+  background: var(--overlay-soft);
+  border: 1px solid var(--border);
+  flex: none;
+}
+
+.vmw-serieval__guion {
+  width: 20px;
+  height: 0;
+  border-top-width: 1.3px;
+  border-top-style: dashed;
+  flex: none;
+}
+
+.vmw-serieval__guion--mediana {
+  border-top-color: var(--sage);
+  opacity: 0.85;
+}
+
+.vmw-serieval__guion--hoy {
+  /* Token, no `#fff`: en tema claro vale `#15181b`. Ver el canario en
+     `tests/unit/tema-tokens.test.ts`. */
+  border-top-color: var(--white);
+  border-top-width: 1px;
+  opacity: 0.5;
+}
+
+.vmw-serieval__guion--umbral {
+  border-top-color: var(--coral);
+  opacity: 0.8;
+}

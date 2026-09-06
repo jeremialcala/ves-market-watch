@@ -516,6 +516,11 @@ export const ES = {
   "historico.cancelar": "Cancelar",
   "historico.progreso": "{paginas} páginas · {items} filas",
   "historico.sinSerie": "Sin datos en el rango pedido.",
+  "historico.leyendaBanda": "80 % central de la ventana",
+  "historico.leyendaMediana": "mediana",
+  "historico.leyendaHoy": "hoy",
+  "historico.leyendaUmbralPorEncima": "umbral: por encima de {umbral}",
+  "historico.leyendaUmbralPorDebajo": "umbral: por debajo de {umbral}",
   "historico.rangoLabel": "{dias} días",
 
   // -- intradía --------------------------------------------------------------
@@ -1207,6 +1212,11 @@ export const EN: Record<Clave, string> = {
   "historico.cancelar": "Cancel",
   "historico.progreso": "{paginas} pages · {items} rows",
   "historico.sinSerie": "No data in the requested range.",
+  "historico.leyendaBanda": "central 80% of the window",
+  "historico.leyendaMediana": "median",
+  "historico.leyendaHoy": "today",
+  "historico.leyendaUmbralPorEncima": "threshold: above {umbral}",
+  "historico.leyendaUmbralPorDebajo": "threshold: below {umbral}",
   "historico.rangoLabel": "{dias} days",
 
   // -- Buy vs. sell (Intraday) ------------------------------------------------
