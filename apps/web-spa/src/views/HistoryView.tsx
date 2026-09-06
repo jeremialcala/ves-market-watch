@@ -27,9 +27,12 @@ import {
 } from "../api/endpoints";
 import { ApiError } from "../api/problem";
 import { NoDataState } from "../components/NoDataState";
+import { SerieEvaluada } from "../components/SerieEvaluada";
 import { useI18n } from "../i18n/contexto";
 import type { Idioma } from "../i18n/idioma";
 import { formatDecimal, toChartNumber } from "../lib/decimal";
+import { condicionDe } from "../lib/reglas";
+import { useMarket } from "../state/marketStore";
 import { MONEDAS_BCV } from "../state/resync";
 
 interface Punto {
@@ -134,6 +137,9 @@ function Grafico({
 
 export function HistoryView() {
   const { t, idioma } = useI18n();
+  // Solo para el umbral de la capa de referencia: el SPA no evalua nada,
+  // la condicion viene calculada del motor (RF-6, ADR-0019).
+  const { analisis } = useMarket();
   const [dias, setDias] = useState<number>(30);
   const [moneda, setMoneda] = useState("USD");
   const [indicador, setIndicador] = useState("p2p_brecha_pct_buy");
@@ -316,11 +322,15 @@ export function HistoryView() {
               {t("historico.serieTitulo", { indicador, bucket: intervalo })}
             </h3>
           </div>
-          <Grafico
-            puntos={serie}
-            titulo={indicador}
+          <SerieEvaluada
+            puntos={serie.map((p) => ({ t: p.t, valor: p.valorStr }))}
+            condicion={condicionDe(analisis, indicador)}
             idioma={idioma}
             vacio={t("historico.sinSerie")}
+            etiqueta={t("historico.serieTitulo", {
+              indicador,
+              bucket: intervalo,
+            })}
           />
         </section>
       </div>

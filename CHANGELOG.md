@@ -17,6 +17,39 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **La serie evaluada del histórico gana su capa de referencia (2026-09-06).**
+  Un trazo dice cómo se ha movido algo; no dice **si eso es mucho**, que es lo
+  que se pregunta quien lo mira. Debajo del trazo van ahora, en este orden:
+  banda del 80 % central de la ventana, gridlines, mediana, umbral de la regla y
+  valor de hoy. **La serie queda encima de todo, porque es el dato.**
+  - El umbral sale de `condicionDe()` —el mismo ayudante que usa el resto de la
+    vista—, así que la tarjeta nombra **la misma regla que el titular destaca**,
+    y aparece **solo si el indicador participa en alguna**: una línea coral sin
+    regla detrás sería un dato inventado.
+  - Sustituye el `LineChart` de Recharts de esa tarjeta por SVG propio, que es
+    lo que permite fijar el orden de pintado. La tasa oficial sigue en Recharts.
+  - **La escala incluye las capas de referencia**, no solo la serie. Con la
+    escala del trazo a secas, un umbral fuera del rango recorrido se dibujaría
+    fuera del `viewBox`: invisible, y el hueco se leería como «no hay umbral» en
+    vez de como «el umbral está lejos».
+  - **«Hoy» sale del último punto de la serie, no de `vigentes`.** Ese índice va
+    solo por nombre de indicador y la familia `official_rate*` colisiona entre
+    las cinco monedas del BCV; aquí se elige moneda, así que leer de ahí podía
+    pintar una línea de VES sobre un gráfico de USD.
+  - Leyenda en ES y EN con los valores de mediana, hoy y umbral.
+
+### Fixed
+
+- **`percentilDisc` toma fracción, no porcentaje, y lo llamé con 10/50/90.** No
+  falla: satura el índice y devuelve **el máximo en las tres**, así que la banda
+  salía plana y la mediana mentía coincidiendo exactamente con «hoy». Silencioso
+  y creíble — lo cazó el test de la leyenda al pedir la mediana de 10..18 y
+  recibir 18.
+  - **El test de la banda pasaba sobre el código roto**, porque solo exigía
+    altura `> 0` y la degenerada se clampaba a 1 px. Reforzado a `> 50`.
+
 ### Changed
 
 - **El SLO de ingesta pasa a cumplirse: 7,16 s → 1,40 s (ADR-0026, 2026-09-06).**
