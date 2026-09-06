@@ -586,7 +586,8 @@ público.
 
 | Pendiente | Por qué sigue abierto |
 |---|---|
-| ~~Llevar el e2e en vivo **al pipeline**~~ **hecho 2026-08-20** | `e2e-vivo.yml` levanta el gateway con compose en el propio runner (§11). Queda un paso **HITL**: dar de alta `AUTH0_M2M_CLIENT_ID` y `AUTH0_M2M_CLIENT_SECRET` en *Settings → Secrets → Actions*. Sin ellos, los PR siguen verdes con los rechazos y el camino feliz **falla** en push y en el nocturno, que es lo que se quiere: la ausencia se ve, no se calla |
+| ~~Llevar el e2e en vivo **al pipeline**~~ **hecho 2026-08-20** | `e2e-vivo.yml` levanta el gateway con compose en el propio runner (§11). ~~Queda un paso **HITL**: dar de alta `AUTH0_M2M_CLIENT_ID` y `AUTH0_M2M_CLIENT_SECRET`~~ — **hecho el 2026-08-23**, ambos secretos están en *Settings → Secrets → Actions* |
+| ~~**DAST**: no había nada dinámico~~ **hecho 2026-09-06** | `seguridad.yml` suma el job `dast` con ZAP guiado por el OpenAPI, en dos pasadas (§11). Era el hueco real del gate: SAST, SCA y secretos son controles de Gate 2 y ninguno toca una instancia corriendo |
 | Deuda de T8: **lockfiles + imágenes por digest** | Cambio de repositorio, no de pipeline: los cinco servicios declaran rangos y las imágenes van por tag (incluida `timescaledb:latest-pg16`) |
 | Deuda de T8: **CVE-2026-59870 (`js-yaml`) aceptado** | Vector no alcanzable (dependencia de desarrollo, entrada propia sin `!!omap`); el arreglo disponible rompe el generador de tipos. Se retira cuando `openapi-typescript` suba a redocly 2.x — revisar 2026-09-06 |
 | Marcador `security` en `api-gateway` | Donde viven T9 y T11; los otros dos servicios ya lo tienen |
@@ -606,6 +607,39 @@ público, así que los minutos son gratis).
   estricto que el typecheck: ya dejó pasar una vez un campo ausente del contrato).
   Sin filtros por ruta: 1 263 tests son baratos y un filtro mal puesto da verdes
   vacíos.
+- **`dast.yml` no existe: el DAST vive en `seguridad.yml` (2026-09-06).** Es un
+  control de seguridad y va con los otros tres, aunque sea el único que necesita
+  el gateway **corriendo** y por eso levanta su propio stack con compose.
+
+  **Dos pasadas, porque prueban cosas distintas.** La de **sin token** ejerce el
+  borde de autenticación: con el contrato en la mano, ZAP pide los 8 endpoints y
+  todos deben dar 401. Es T11 y T15 desde fuera del proceso, no con el
+  `TestClient` in-process. La de **con token M2M** ejerce los handlers —inyección
+  por parámetros, abuso de rango, el fuzzing de paginación que este plan llevaba
+  pendiente—. Correr solo la primera daría mucho verde sobre una superficie que
+  nunca se toca.
+
+  **`RATE_LIMIT_PER_MIN: 20000` en el job, y no es aflojar el control.** En la
+  corrida local del 2026-09-06, **24 peticiones de ZAP volvieron 429** y esa parte
+  de la superficie se quedó sin escanear: con la cuota de producción el escaneo
+  se mide a sí mismo. Que el limitador funciona lo prueba el test de T4 en la
+  suite `security`, no este job. *(Dicho sea de paso: ver a ZAP chocar contra el
+  429 es la primera evidencia de T4 frente a una herramienta de ataque real.)*
+
+  **El veredicto lo da `triar_dast.py`, no ZAP.** ZAP corre con `-I` y nunca falla
+  por avisos; el script rompe el build con Medio o Alto, y también con cualquier
+  **Bajo sin declarar** —hay que aceptarlo con su motivo escrito, como las
+  excepciones de `.gitleaks.toml`—. Comprobado que muerde: sale 1 con un hallazgo
+  Alto, 1 con un Bajo nuevo, 1 si no hay informes y 0 con los informes reales.
+
+  **Y hay una guarda contra el verde vacío.** Un scan «autenticado» al que le
+  rebotan los 401 sale en verde: ZAP no sabe que esperábamos entrar. Pasó dos
+  veces montando esto —el `-z` del replacer se ignora en silencio, con y sin el
+  prefijo `-config`— y las dos veces el informe decía 116 PASS, 0 FAIL sobre una
+  superficie intacta. Lo delataban 24 respuestas 401 enterradas entre las alertas
+  informativas. Ahora la cabecera se inyecta por `--hook`, que confirma el alta
+  por la API, y `dast.py` aborta si el informe trae un solo 401.
+
 - **`e2e-vivo.yml` — el gateway y el tenant de verdad (2026-08-20):** un solo
   trabajo que levanta `api-gateway` con `docker compose up --wait` en el runner
   —arrastrando timescaledb, que nace con el esquema por los montajes de initdb, y
