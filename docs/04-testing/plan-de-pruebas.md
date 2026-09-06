@@ -1,7 +1,7 @@
 # Plan de Pruebas — Criterio
 
 - **Fase AI-DLC:** 04-testing
-- **Estado:** draft — para revisión y aprobación (Gate 2)
+- **Estado:** draft — para revisión y aprobación (Gate 3)
 - **Alcance:** plataforma completa (5 servicios + `web-spa` + RabbitMQ + TimescaleDB + contratos del bus y de API)
 - **Fecha:** 2026-07-31
 - **Decisores:** Jeremi Alcalá
@@ -10,12 +10,23 @@
   (incl. `threat-model.md` columna «Verificación fase 04-testing»), contratos en `schemas/`
   y `docs/02-design/api-contracts.md`, ADRs en `docs/00-project/adr/`.
 
+> **Renumeración de gates (2026-09-06).** Este documento decía «Gate 2» y era un
+> error de numeración: en AI-DLC la fase 04-testing cierra el **Gate 3**
+> (`tests pasando + DAST limpio + perf dentro de SLOs`), y el **Gate 2** es el de
+> la fase 03-implementation (`SAST limpio + deps verificadas + 80 % cobertura`).
+>
+> **No fue un renombrado:** la lista que este plan llamaba «Gate 2» mezclaba
+> criterios de ambos. La cobertura del 80 % y los controles SAST/SCA/secretos se
+> quedan donde estaban —son Gate 2 y aquí se citan como tal—; lo que se mueve al
+> Gate 3 es la pirámide de pruebas, el DAST y los SLOs. Ver
+> `.ai-dlc/gates/gate-2-implementation.md` y `gate-3-testing.md`.
+
 ## 1. Objetivo
 
 Verificar que la plataforma mide correctamente la brecha entre la tasa oficial **VES/USD (BCV)**
 y el mercado P2P **VES/USDT (Binance)**, que los contratos entre servicios se respetan, y que
 los controles de seguridad priorizados en el threat model (T1–T15) se comportan según diseño.
-El plan sirve como criterio de cierre del **Gate 2** y como guía viva para completar lo pendiente
+El plan sirve como criterio de cierre del **Gate 3** y como guía viva para completar lo pendiente
 (los 5 servicios ya tienen código y suite; el e2e autenticado en vivo con token real
 **quedó cumplido el 2026-08-07** —ver «E2E autenticado en vivo»— y quedan la suite
 `security` transversal y llevarlo al pipeline CI).
@@ -550,13 +561,13 @@ público.
 - **Observabilidad:** logs estructurados por ciclo verificables (RF-6 de ingesta-binance); export
   de métricas queda para fase 05-deployment.
 
-## 10. Criterios de entrada y salida (Gate 2)
+## 10. Criterios de entrada y salida (Gate 3)
 
 **Entrada:**
 - Código de la funcionalidad implementado y revisado.
 - `docker-compose.yml` levanta y las suites `integration`/`e2e` corren en verde localmente.
 
-**Salida (cierre de Gate 2):**
+**Salida (cierre de Gate 3):**
 1. Cobertura de ramas **≥ 80 %** por servicio con código. **CUMPLIDO en los seis
    (2026-08-04).** Llegó a estar sin cumplir en tres: la medición del 2026-08-03
    se hizo con `--cov` a secas, que mete los propios ficheros de test en el
@@ -658,7 +669,7 @@ público.
    un fallo de conexión** los provoca — antes cualquier error del andamiaje se
    disfrazaba de «no hay TimescaleDB» y dejaba la suite en verde sin ejecutar.
 
-**Lo que le falta a Gate 2 para cerrarse**, en orden de dependencia:
+**Lo que le falta a Gate 3 para cerrarse**, en orden de dependencia:
 
 | Pendiente | Por qué sigue abierto |
 |---|---|
@@ -765,7 +776,7 @@ público, así que los minutos son gratis).
   despliegue. Y los `schedule` de GitHub solo disparan desde la rama por defecto,
   así que el nocturno no empieza hasta que esto llegue a `main`.
 
-- **`seguridad.yml` — los gates de Gate 2, rompiendo el build:**
+- **`seguridad.yml` — los gates de seguridad, rompiendo el build:**
   - **T6:** `gitleaks` sobre la **historia completa** (`fetch-depth: 0`) — en un
     repo público, un secreto borrado al commit siguiente sigue ahí. Con
     `--redact`, para que el hallazgo no sea una segunda fuga en unos logs

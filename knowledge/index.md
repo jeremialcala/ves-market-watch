@@ -74,7 +74,7 @@ la fuente de verdad (los documentos AI-DLC y el código).
   cubrir no era código de negocio sino entrypoints, bucles programados y
   configuración — todo lo que **parece cableado y no lo es**.
 - Siguiente paso natural: decidir la topología de despliegue real (los túneles
-  son de desarrollo) y cerrar lo que le queda a Gate 2 (e2e autenticado en vivo y
+  son de desarrollo) y cerrar lo que le queda a Gate 3 (e2e autenticado en vivo y
   la deuda de T8: lockfiles e imágenes por digest).
 - Historia de cambios: [log.md](log.md) y `../CHANGELOG.md`.
 

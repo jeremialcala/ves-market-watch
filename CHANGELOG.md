@@ -51,6 +51,36 @@ Convención de mantenimiento (inventario por ejecución):
     corrida larga, y **la tasa de 429 hay que volver a mirarla en unos días**: el
     riesgo que asume esta ADR no se manifiesta en quince minutos.
 
+- **Los gates renumerados a la numeración canónica de AI-DLC (2026-09-06).** El
+  proyecto llamaba «Gate 2» al de la fase 04-testing. En AI-DLC esa fase cierra
+  el **Gate 3** (`tests pasando + DAST limpio + perf dentro de SLOs`) y el
+  **Gate 2** es el de la fase 03-implementation (`SAST limpio + deps verificadas
+  + 80 % cobertura`).
+  - **No fue un renombrado, y ahí estaba el enredo de fondo:** la lista que el
+    plan de pruebas llamaba «Gate 2» **mezclaba criterios de los dos gates**. La
+    cobertura del 80 % y los controles SAST/SCA/secretos se quedan donde
+    estaban —son Gate 2 y se siguen citando así en los README de tests, las ADR
+    y las fichas OKF—; lo que se mueve al Gate 3 es la pirámide de pruebas, el
+    DAST y los SLOs. Se repartió referencia por referencia, con un barrido final
+    que comprueba que cada mención sobreviviente corresponde a su fase.
+  - **Nacen las dos fichas que faltaban.** `gate-2-implementation.md` no existía
+    aunque sus criterios llevaban cumplidos desde el 2026-08-04 —el gate de la
+    fase 03 nunca tuvo documento porque su número estaba ocupado—, y
+    `gate-3-testing.md` recoge el estado real de la fase 04. Ambas quedan
+    **pendientes de firma HITL**: Gate 0 y Gate 1 llevan nombre y fecha, y esa
+    fila no se rellena sola.
+  - **El README gana una tabla de los seis gates** con fase, criterios canónicos
+    y estado, más el aviso de que la numeración cambió — quien recuerde la vieja
+    necesita saberlo.
+  - **Lo que bloquea el Gate 3 queda escrito como lo que es:** no código, sino la
+    decisión sobre el SLO de ingesta (7,16 s contra 5 s) que abre su choque con
+    ADR-0005. Las tres salidas —relajar el SLO, subir `ROWS_PER_PAGE`,
+    paralelizar páginas— están enumeradas en la ficha para que se decida sobre
+    ellas y no sobre el número.
+  - No se tocan `knowledge/log.md` ni `repo-history.md`: son registros
+    cronológicos y reescribir lo que se dijo entonces sería falsear la historia,
+    no corregirla.
+
 ### Added
 
 - **Medido el quinto SLO, el del push por WSS (2026-09-06): CUMPLE con dos

@@ -1,9 +1,9 @@
-# Gates de seguridad de Gate 2: T6 (fuga de secretos), T8 (compromiso de
+# Gates de seguridad: T6 (fuga de secretos), T8 (compromiso de
 # dependencia) y T9 (SQL injection y demás, vía SAST).
 #
 # Van como PASOS QUE ROMPEN EL BUILD, no como avisos. GitHub ofrece gratis en
 # repos públicos secret scanning, Dependabot y CodeQL, pero esos avisan sin
-# detener nada, y Gate 2 pide un gate: algo que impida seguir. Las funciones
+# detener nada, y un gate pide justo eso: algo que impida seguir. Las funciones
 # nativas se dejan encendidas como red de seguridad; lo que decide es esto.
 name: Seguridad
 
@@ -152,7 +152,7 @@ jobs:
           upload: always
 
       # CodeQL por sí solo NO rompe el build: deja una alerta y sigue. Eso vale
-      # como aviso, no como gate — y Gate 2 pide un gate. Este paso es el umbral
+      # como aviso, no como gate. Este paso es el umbral
       # de severidad: `error` en SARIF son los hallazgos de seguridad graves;
       # `warning` y `note` (la mitad de `security-and-quality` es calidad) se
       # quedan en la pestaña Security sin detener a nadie.
