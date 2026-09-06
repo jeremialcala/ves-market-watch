@@ -7,6 +7,41 @@ timestamp: 2026-08-03T12:00:00Z
 
 # Log
 
+## 2026-09-06 — Cinco SLO declarados, cero medidos, y un gate mal numerado
+- **«Herramienta sugerida: locust/k6» estuvo en el plan de pruebas desde julio.**
+  Sugerida no es medida. Al medirlos, cuatro cumplían con holgura y **uno se
+  incumplía en un 43 %** (ingesta: 7,16 s contra 5 s). *Un SLO que nadie ha
+  contrastado no es un objetivo, es una intención.*
+- **El SLO incumplido no tiene arreglo técnico**: choca con ADR-0005 («polling
+  P2P educado»), que se escribió después. *Cuando una medida contradice una
+  decisión registrada, el defecto no está en el código sino en que nadie releyó
+  la una a la luz de la otra.*
+- **El DAST encontró en su primera corrida un 500 que un año de tests unitarios
+  no vio**: `?type=%00`. No porque los tests fueran malos, sino porque **nadie
+  les había mandado esa sonda**. *Las suites prueban lo que se te ocurre; un
+  escáner prueba lo que se le ocurre a otro.*
+- **Y al reproducirlo apareció un segundo endpoint que el escáner no marcó.** El
+  hallazgo no era el caso, era la **asimetría**: cuatro parámetros de la misma
+  naturaleza y solo dos validados. *Un hallazgo puntual casi siempre es la punta
+  de una clase; buscar la clase cuesta diez minutos y evita el siguiente.*
+- **El escaneo «autenticado» salió dos veces en verde sin autenticarse.** ZAP
+  ignora en silencio una regla de replacer mal pasada, y el informe decía 116
+  PASS sobre una superficie intacta. Solo lo delataban 24 respuestas 401
+  enterradas entre alertas informativas. *Una herramienta que no puede fallar
+  ruidosamente exige una guarda propia: ahora el script aborta si el informe trae
+  un solo 401.*
+- **La condición de retirada del CVE describía una sola ruta y la realidad tomó
+  otra.** Decía «cuando openapi-typescript suba a redocly 2.x»; lo que pasó fue
+  que el parche se retroportó a js-yaml 4.x. Comprobar la condición literal
+  habría renovado la excepción un mes más **con el arreglo ya publicado**. *Una
+  condición de retirada describe la salida probable, no la única: en la fecha de
+  revisión se mira el árbol, no el texto.*
+- **El gate llevaba mal numerado desde el principio.** Lo que el repo llamaba
+  «Gate 2» era el de la fase 04, que en AI-DLC es el **Gate 3**; y la lista
+  mezclaba criterios de ambos, así que renumerar fue repartir y no renombrar. *Un
+  error de etiqueta que nadie corrige acaba mezclando el contenido de las dos
+  cajas.*
+
 ## 2026-08-24 — Correr el respaldo una vez encontró lo que leerlo diez no
 - **Se mergeó sin haberse ejecutado nunca**, y a la primera corrida salieron dos
   cosas: la ventana del incremental se encogía si el trabajo no arrancaba en
