@@ -17,7 +17,74 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Fixed
+
+- **Un byte NUL en la query tumbaba el gateway con un 500 (2026-09-06).** Lo
+  encontró el DAST en su primera corrida en CI, que es exactamente para lo que
+  se puso:
+
+      GET /api/v1/signals?…&type=%00  ->  500 Internal Server Error
+
+  `type` llegaba tal cual a PostgreSQL —que no admite NUL en texto—, la consulta
+  reventaba y salía un **500 en texto plano**, fuera del contrato `problem+json`
+  y contra el control de «errores uniformes sin detalles internos» (V10/A10).
+  - **Al reproducirlo apareció un segundo endpoint que el escáner no marcó:**
+    `indicator` en `/indicators/history`, con el mismo fallo. El DAST señaló uno
+    y el otro salió de ir a mirar.
+  - **La asimetría era el defecto.** `currency` y `side` nunca estuvieron
+    afectados porque ya validaban con `pattern` y `Literal`; `type` no tenía
+    **ninguna** restricción e `indicator` solo largo mínimo y máximo. Son cuatro
+    parámetros de la misma naturaleza —identificadores internos, no texto
+    libre— y solo dos estaban tratados como tal.
+  - Ahora los cuatro validan: `^[a-z0-9_]+$` cubre los 25 indicadores y los 2
+    tipos de señal que existen. Los NUL salen **400 `problem+json`** y los
+    valores legítimos siguen devolviendo 200, comprobado contra el gateway real.
+  - **No era explotable como inyección** —el repositorio usa consultas
+    parametrizadas—, pero un 500 que se provoca con cuatro caracteres es
+    negación de servicio barata (T4) y rompía el contrato de errores.
+  - **Cierra de paso el marcador `security` en `api-gateway`**, que el plan de
+    pruebas llevaba pendiente: 17 tests en `tests/security/` con las cargas que
+    un escáner manda de serie. Comprobado que discriminan —16 fallan si se quita
+    el patrón—, e incluido el caso contrario: que un rechazo demasiado ancho no
+    se lleve por delante los nombres legítimos, porque eso arreglaría el 500
+    rompiendo el producto y los otros tests no lo notarían.
+
 ### Added
+
+- **DAST con ZAP: el hueco real que le quedaba al gate (2026-09-06).** El
+  pipeline tenía SAST (CodeQL), SCA (`pip-audit`/`npm audit`) y secretos
+  (`gitleaks`) — **los tres estáticos y los tres de Gate 2**. No había nada que
+  tocara una instancia corriendo. `seguridad.yml` suma el job `dast`, que levanta
+  el gateway con compose y lo escanea guiado por el OpenAPI.
+  - **Resultado sobre el gateway real: 0 Alto, 0 Medio, 2 Bajo.** 116 reglas
+    activas en PASS —inyección SQL, path traversal, inyección de órdenes, SSTI,
+    XXE, deserialización— contra respuestas 200 de verdad.
+  - **Los 2 Bajo son cabeceras ausentes en el gateway**, y quedan aceptados con
+    su motivo escrito en `triar_dast.py`: `X-Content-Type-Options` (todas las
+    respuestas son `application/json`; el SPA sí la pone en nginx) y
+    `Cross-Origin-Resource-Policy` (ponerla exige decidir el valor, porque
+    `same-origin` rompería el front, que vive en otro hostname). **Es una
+    asimetría real**: el SPA está endurecido con nosniff, Referrer-Policy y CSP
+    con `frame-ancestors 'none'`, y el API no pone ninguna. La decisión es de
+    producto y no se toma desde el triaje.
+  - **El borde de autenticación aguanta:** 8/8 endpoints en 401 sin token, y
+    `health` público. Medido desde fuera del proceso, no con el `TestClient`.
+  - **ZAP chocó 24 veces contra el 429.** Es la primera evidencia de T4 frente a
+    una herramienta de ataque real — y a la vez el motivo de que el job suba
+    `RATE_LIMIT_PER_MIN` a 20 000: con la cuota de producción, el escaneo se mide
+    a sí mismo y esa superficie se queda sin ver.
+  - **Una guarda contra el verde vacío, escrita porque hizo falta.** Montando
+    esto, la pasada «autenticada» salió **dos veces** con 116 PASS y 0 FAIL sobre
+    una superficie que nunca se tocó: el `-z` del replacer de ZAP se ignora en
+    silencio, con y sin el prefijo `-config`. Lo único que lo delataba eran 24
+    respuestas 401 enterradas entre alertas informativas. Ahora la cabecera entra
+    por `--hook`, que confirma el alta por la API, y `dast.py` **aborta si el
+    informe trae un solo 401**. Un scan autenticado que se come el rechazo no
+    puede volver a pasar por bueno.
+  - **El veredicto lo da `triar_dast.py`,** no el código de salida de ZAP: rompe
+    con Medio o Alto, y también con cualquier Bajo **sin declarar** —aceptarlo
+    exige escribir el motivo, como en `.gitleaks.toml`—. Comprobado que muerde:
+    sale 1 con un Alto, 1 con un Bajo nuevo, 1 sin informes y 0 con los reales.
 
 - **Los SLOs de latencia, medidos por primera vez (2026-09-06).** Estaban
   declarados en los PRD desde el principio y **nunca se habían contrastado**: el

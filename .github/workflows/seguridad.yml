@@ -187,3 +187,70 @@ jobs:
           print(f"{len(graves)} hallazgos de severidad error")
           sys.exit(1 if graves else 0)
           PY
+
+  dast:
+    name: T4/T9/T11 · DAST (ZAP)
+    runs-on: ubuntu-latest
+    # Los otros tres controles de este archivo son ESTÁTICOS: leen código o
+    # dependencias. Este es el único que necesita el gateway CORRIENDO, y por eso
+    # tarda más y se levanta su propio stack, igual que `e2e-vivo.yml`.
+    #
+    # Cierra el hueco que quedaba de Gate 3: había SAST, SCA y secretos —los tres
+    # de Gate 2— y NADA dinámico.
+    env:
+      # Ver la nota de `e2e-vivo.yml`: el compose interpola el archivo entero
+      # aunque solo se pida un servicio.
+      MERCHANT_HMAC_KEY: no-se-usa-en-este-job
+      # 20 000/min en vez de los 120 de producción, y NO es aflojar el control:
+      # es que sin esto el escaneo se mide a sí mismo. En la corrida local del
+      # 2026-09-06, 24 de las peticiones de ZAP volvieron 429 y esa parte de la
+      # superficie se quedó sin escanear. Que el limitador funcione lo prueba el
+      # test de T4 en la suite `security`, no este job.
+      #
+      # Llega al contenedor porque el compose lo interpola —`RATE_LIMIT_PER_MIN:
+      # ${RATE_LIMIT_PER_MIN:-120}`—. La primera versión de este job ponía la
+      # variable aquí sin esa línea en el compose: el gateway no la veía y el
+      # comentario prometía algo que no ocurría.
+      RATE_LIMIT_PER_MIN: "20000"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Levantar el gateway real con su DB y su bus
+        run: docker compose up -d --build --wait --wait-timeout 300 api-gateway
+
+      - name: Borde de autenticación (sin token)
+        # Los 8 endpoints deben responder 401 con el contrato en la mano. Es T11
+        # y T15 ejercidos desde fuera del proceso, no con el TestClient
+        # in-process de la suite unitaria.
+        run: python scripts/dast.py --sin-auth --salida informes-dast
+
+      - name: Handlers reales (con token M2M)
+        # En un PR de fork esto NO tiene secretos y el script aborta con un
+        # mensaje claro, que es lo que se quiere: mejor rojo explícito que un
+        # verde escaneando el 401. El `continue-on-error` solo cubre ese caso.
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
+        env:
+          AUTH0_M2M_CLIENT_ID: ${{ secrets.AUTH0_M2M_CLIENT_ID }}
+          AUTH0_M2M_CLIENT_SECRET: ${{ secrets.AUTH0_M2M_CLIENT_SECRET }}
+        run: python scripts/dast.py --con-auth --salida informes-dast
+
+      - name: Umbral de riesgo
+        # Rompe el build con Medio o Alto. Los dos Bajo conocidos
+        # —X-Content-Type-Options y Cross-Origin-Resource-Policy ausentes en el
+        # gateway— quedan declarados en `triar_dast.py`, uno a uno y con motivo,
+        # como se hace con las excepciones de `.gitleaks.toml`.
+        if: always()
+        run: python scripts/triar_dast.py informes-dast
+
+      - name: Guardar los informes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informes-dast
+          path: informes-dast/*.html
+          retention-days: 30
+
+      - name: Logs del gateway si algo falló
+        if: failure()
+        run: docker compose logs --no-color --tail 200
