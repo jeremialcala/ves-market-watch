@@ -19,6 +19,17 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **Cifras del SPA al día tras el componente único de serie (2026-09-07).** El
+  barrido de coherencia de esta misma sesión se midió sobre `develop` **antes**
+  de que entrara el refactor, así que sus números nacieron caducos en la parte
+  del front. Remedidos sobre la corrida 34076936596: **1 456 tests** —792 Python
+  + **664** del SPA—, y el SPA en **92,87 %** combinada y **89,26 %** de ramas.
+  - **El refactor recuperó parte de la caída** que dejó el trabajo de Histórico:
+    la combinada del SPA venía de 94,89 %, tocó 92,78 % y vuelve a 92,87 %; las
+    ramas, de 88,86 % a 89,26 %. Un solo gráfico probado a fondo cubre lo que
+    antes eran dos a medias, y eso se ve en el número.
+  - Actualizados README, plan de pruebas §10 y §12, y las fichas de Gate 2 y 3.
+
 - **Un solo componente de serie temporal para todo Criterio (2026-09-06).**
   `SerieTemporal` es ya **el** gráfico de líneas del producto: la serie evaluada
   y la tasa oficial son la misma implementación con flags distintos, y la

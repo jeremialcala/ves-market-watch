@@ -13,7 +13,7 @@
 
 | Criterio | Estado | Evidencia |
 |---|---|---|
-| **Tests pasando** | ✅ | 1.441 tests en los seis proyectos, suite completa (`integration` y `e2e` incluidas) en cada push y PR. **Cero `skip`/`xfail` incondicionales** en el monorepo. E2E autenticado en vivo contra el tenant y el gateway reales, en el pipeline desde el 2026-08-20 |
+| **Tests pasando** | ✅ | 1.456 tests en los seis proyectos, suite completa (`integration` y `e2e` incluidas) en cada push y PR. **Cero `skip`/`xfail` incondicionales** en el monorepo. E2E autenticado en vivo contra el tenant y el gateway reales, en el pipeline desde el 2026-08-20 |
 | **DAST limpio** | ✅ | ZAP guiado por el OpenAPI en `seguridad.yml` (2026-09-06), en dos pasadas. **0 Alto, 0 Medio, 2 Bajo** aceptados con motivo en `scripts/triar_dast.py`. 116 reglas activas en PASS contra respuestas 200 reales |
 | **Rendimiento dentro de los SLOs** | ✅ | **Los 5 cumplen.** Medidos el 2026-09-06, no estimados; el de ingesta tras ADR-0026 |
 

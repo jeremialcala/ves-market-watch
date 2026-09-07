@@ -25,7 +25,7 @@
 | `ingestor-binance` | 99,30 % | 97,30 % | ✔ |
 | `ingestor-historico` | 97,22 % | 93,43 % | ✔ |
 | `api-gateway` | 92,86 % | 84,38 % | ✔ |
-| `web-spa` | 92,78 % | 88,86 % | ✔ |
+| `web-spa` | 92,87 % | 89,26 % | ✔ |
 | `indicator-engine` | 85,89 % | **82,71 %** | ✔ |
 
 Las columnas no medían lo mismo y por eso se separan: en los cinco servicios
