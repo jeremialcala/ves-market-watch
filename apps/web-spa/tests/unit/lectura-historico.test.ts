@@ -113,6 +113,45 @@ describe("leerHistorico", () => {
   });
 });
 
+describe("estadísticas de la ventana", () => {
+  it("mínimo y máximo traen el instante en que ocurrieron", () => {
+    const l = leerHistorico(serie("14", "10", "18", "12"), null)!;
+    expect(l.estadisticas.minimo.valor).toBe("10");
+    expect(l.estadisticas.minimo.t).toBe(1 * DIA);
+    expect(l.estadisticas.maximo.valor).toBe("18");
+    expect(l.estadisticas.maximo.t).toBe(2 * DIA);
+  });
+
+  it("la mediana también dice cuándo se dio ese valor", () => {
+    const l = leerHistorico(serie("10", "12", "14", "16", "18"), null)!;
+    expect(l.estadisticas.mediana.valor).toBe("14");
+    expect(l.estadisticas.mediana.t).toBe(2 * DIA);
+  });
+
+  it("la desviación NO trae fecha: no ocurre en un punto", () => {
+    // Poner ahí una fecha cualquiera seria inventarse un hecho.
+    const l = leerHistorico(serie("10", "12", "14"), null)!;
+    expect(l.estadisticas.desviacion.t).toBeNull();
+  });
+
+  it("la desviación mide la dispersión de la ventana", () => {
+    // Serie plana: dispersion cero, sin trampas de coma flotante en la salida.
+    expect(leerHistorico(serie("7", "7", "7"), null)!.estadisticas.desviacion.valor)
+      .toBe("0.00");
+    // Poblacional de 10,20,30 = sqrt(200/3) = 8,1649...
+    expect(leerHistorico(serie("10", "20", "30"), null)!.estadisticas.desviacion.valor)
+      .toBe("8.16");
+  });
+
+  it("los extremos se comparan como DECIMALES, no como texto", () => {
+    // "9" > "10" en orden alfabetico; si se comparara como string, el maximo
+    // saldria 9 y el minimo 10.
+    const l = leerHistorico(serie("10", "9", "100"), null)!;
+    expect(l.estadisticas.minimo.valor).toBe("9");
+    expect(l.estadisticas.maximo.valor).toBe("100");
+  });
+});
+
 describe("color semántico", () => {
   it("el coral queda para los extremos, no para «malo»", () => {
     expect(colorZona("centro")).toBe("var(--sage)");

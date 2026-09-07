@@ -17,6 +17,29 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **La tarjeta de la serie evaluada gana cabecera y estadísticas de ventana
+  (2026-09-06).** Arriba, qué serie es y en qué punto está hoy: título legible,
+  clave `snake_case`, valor actual a 32 px y una pastilla con el percentil dentro
+  de la ventana, coloreada por zona. Abajo, cuatro cifras —mínimo, máximo,
+  mediana, desviación— **con la fecha en que ocurrió cada una**.
+  - **Percentil y estadísticas salen de `leerHistorico`**, la misma fuente que
+    el panel rector. Un segundo cálculo aquí habría podido discrepar del titular
+    que hay tres bloques más arriba, diciendo dos cosas distintas de la misma
+    ventana.
+  - **La desviación no lleva fecha, y eso es deliberado:** no ocurre en un
+    punto. Poner ahí una cualquiera sería inventarse un hecho; en su lugar dice
+    sobre cuántos puntos se calculó. Es además la única cifra del módulo que
+    pasa por coma flotante —una raíz cuadrada no tiene decimal exacto— y queda
+    escrito dónde.
+  - **Los extremos se comparan como decimales, no como texto.** Un test lo fija
+    con `9`, `10` y `100`: en orden alfabético el máximo saldría 9.
+  - **Se añade el eje de fechas que la tarjeta no tenía.** Fuera del SVG, como
+    el de valores: con `preserveAspectRatio="none"` el texto de dentro se
+    deformaría.
+  - Coma decimal en ES y punto en EN, con un test que comprueba los dos.
+
 ### Changed
 
 - **Histórico reordenado: la serie evaluada pasa a protagonista y la tasa

@@ -3104,3 +3104,103 @@ body {
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
 }
+
+/* -- Serie evaluada: cabecera, eje de fechas y estadísticas --------------- */
+
+.vmw-serieval__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px 24px;
+  margin-bottom: 18px;
+}
+
+.vmw-serieval__ident {
+  display: grid;
+  gap: 6px;
+}
+
+.vmw-serieval__nombre {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--white);
+  text-transform: capitalize;
+}
+
+.vmw-serieval__clave {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.vmw-serieval__ahora {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.vmw-serieval__valor {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--white);
+  font-variant-numeric: tabular-nums;
+}
+
+/* El color lo pone el componente por semántica de la zona. */
+.vmw-serieval__percentil {
+  border-radius: 100px;
+  padding: 4px 12px;
+  font-size: 12.5px;
+  background: var(--overlay-soft);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.vmw-serieval__fechas {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-left: 66px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-serieval__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.vmw-serieval__stat {
+  display: grid;
+  gap: 3px;
+  align-content: start;
+}
+
+.vmw-serieval__stat-nombre {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.vmw-serieval__stat-valor {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-serieval__stat-detalle {
+  font-size: 12px;
+  color: var(--text-dim);
+}

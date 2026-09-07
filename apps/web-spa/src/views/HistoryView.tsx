@@ -232,6 +232,8 @@ export function HistoryView() {
           <SerieEvaluada
             puntos={serie.map((p) => ({ t: p.t, valor: p.valorStr }))}
             condicion={condicionDe(analisis, indicador)}
+            indicador={indicador}
+            dias={dias}
             idioma={idioma}
             vacio={t("historico.sinSerie")}
             etiqueta={t("historico.serieTitulo", {
