@@ -19,31 +19,36 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
-- **Barrido de coherencia de la documentación (2026-09-07).** El README y las
-  fichas se habían quedado un mes atrás y en dos sitios **se contradecían entre
-  sí**: el texto decía «Gate 3 en curso» tres párrafos antes de que su propia
-  tabla lo diera por cubierto, y el CVE-2026-59870 aparecía a la vez como deuda
-  abierta y como retirado en la misma frase.
-  - **Cifras remedidas contra la pipeline**, no a mano (corrida 34075081536 sobre
-    `develop`): **1 441 tests** —792 Python + 649 del SPA—, no 1 263; combinada
-    `ingestor-bcv` 99,36 · `ingestor-binance` 99,30 · `ingestor-historico` 97,22 ·
-    `api-gateway` 92,86 · `web-spa` 92,78 · `indicator-engine` 85,89.
-  - **La combinada del SPA bajó de 94,89 % a 92,78 %**: el Histórico creció más
-    deprisa que sus pruebas. Sus ramas —que son las que aplican el umbral—
-    subieron a 88,86 %, y las dos siguen holgadas sobre el 80 %, pero queda
-    anotado en el plan: una segunda caída seguida sería tendencia, no desfase.
-  - Se corrige una afirmación **falsa** sobre la CI: los umbrales no son un
-    trinquete «en cada servicio»; el `web-spa` aplica un **80 % de ramas liso**
-    declarado en `vite.config.ts`. El trinquete es de los cinco servicios Python.
-  - Se documenta el trabajo **DAST** en `seguridad.yml`, que llevaba desde el
-    2026-09-06 en el pipeline sin aparecer en el README ni en el índice OKF.
-  - Puestos al día: las fichas de Gate 1 (ADR-0001…**0026**, con adenda fechada),
-    Gate 2 (tabla de cobertura) y Gate 3 (total de tests); el índice OKF, que
-    seguía diciendo «fase 03 en curso» y daba por pendiente el e2e autenticado en
-    vivo, en el pipeline desde el 2026-08-20; y la vista de Histórico, que el
-    README describía como era antes de rehacerla.
-  - `repo-history.md` regenerado con `scripts/gitgraph_branches.py`: iba dos
-    semanas atrasado (125 líneas nuevas).
+- **Un solo componente de serie temporal para todo Criterio (2026-09-06).**
+  `SerieTemporal` es ya **el** gráfico de líneas del producto: la serie evaluada
+  y la tasa oficial son la misma implementación con flags distintos, y la
+  oficial simplemente apaga casi todos.
+  - **Antes eran dos SVG escritos a mano que fueron divergiendo**: uno ganó el
+    eje de valores y el otro no, uno recibió el crosshair y el otro lo copió
+    después. Cada capacidad nueva costaba dos veces y se arreglaba una.
+  - **El estilo no se pasa por props, a propósito.** Gridlines de 1 px, trazo de
+    2,2 px con uniones redondeadas, ticks en columna de 66 px, fechas debajo:
+    todo del sistema. Un gráfico que acepta su propio grosor de línea acaba
+    teniendo tantos estilos como llamantes.
+  - **El revelado usa los tokens, no valores cableados** —`--dur-reveal` y
+    `--ease-out-expo`, que ya valían 0,7 s y `cubic-bezier(.22,1,.36,1)`— y se
+    detiene con `prefers-reduced-motion`.
+  - **Se conserva `Punto = {t, valor}`** en vez de `{t, v}`: es el tipo
+    compartido de `lib/series` y lo usan también `GapPanel`, `MetricCard` y
+    `SideBySide`. Renombrar el campo habría obligado a mapear en cada llamante
+    para no ganar nada.
+  - Se retiran **13 reglas CSS** de los dos gráficos viejos: un refactor que
+    deja el estilo muerto detrás no ha terminado.
+
+### Added
+
+- **Los gráficos se recorren con teclado (2026-09-06).** Al recibir foco señalan
+  el último punto; las flechas mueven, Inicio y Fin saltan a los extremos y
+  Escape suelta. **Hasta ahora el tooltip solo existía con ratón o dedo**, así
+  que la serie era ilegible sin ellos.
+  - Foco visible obligatorio: `outline` de 2 px `var(--teal)` con
+    `outline-offset` de 3 px, en el lienzo y en el punto activo. Con ratón el
+    punto no lo lleva — ahí el cursor ya dice dónde se está.
 
 ### Fixed
 

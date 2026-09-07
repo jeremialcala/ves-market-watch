@@ -2592,31 +2592,6 @@ body {
   margin-top: 16px;
 }
 
-/* -- Serie evaluada del histórico y su capa de referencia ------------------ */
-
-.vmw-serieval__marco {
-  position: relative;
-  padding-left: 66px;
-}
-
-/* Mismo reparto que `.vmw-spark__eje`: el eje vive FUERA del SVG porque el
-   gráfico se estira con `preserveAspectRatio="none"` y deformaría el texto. */
-.vmw-serieval__eje {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 60px;
-  font-size: var(--fs-tiny);
-  color: var(--text-dim);
-  font-variant-numeric: tabular-nums;
-}
-
-.vmw-serieval__eje > span {
-  position: absolute;
-  right: 0;
-  transform: translateY(-50%);
-  white-space: nowrap;
-}
-
 .vmw-serieval {
   width: 100%;
   height: 280px;
@@ -3089,21 +3064,6 @@ body {
   white-space: nowrap;
 }
 
-.vmw-oficial__grafico {
-  width: 100%;
-  height: 140px;
-  display: block;
-}
-
-.vmw-oficial__eje {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 8px;
-  font-size: 12.5px;
-  color: var(--text-dim);
-  font-variant-numeric: tabular-nums;
-}
-
 /* -- Serie evaluada: cabecera, eje de fechas y estadísticas --------------- */
 
 .vmw-serieval__cabecera {
@@ -3161,16 +3121,6 @@ body {
   white-space: nowrap;
 }
 
-.vmw-serieval__fechas {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 8px;
-  padding-left: 66px;
-  font-size: 12.5px;
-  color: var(--text-dim);
-  font-variant-numeric: tabular-nums;
-}
-
 .vmw-serieval__stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -3202,33 +3152,6 @@ body {
 .vmw-serieval__stat-detalle {
   font-size: 12px;
   color: var(--text-dim);
-}
-
-/* Ejes temporales: las marcas se posicionan por porcentaje, no se reparten con
-   `space-between`. El sitio de una fecha es el que le toca en el tiempo. */
-.vmw-serieval__fechas,
-.vmw-oficial__eje {
-  position: relative;
-  display: block;
-  height: 18px;
-}
-
-.vmw-serieval__fechas > span,
-.vmw-oficial__eje > span {
-  position: absolute;
-  transform: translateX(-50%);
-  white-space: nowrap;
-}
-
-/* Los extremos se pegan al borde en vez de salirse de la tarjeta. */
-.vmw-serieval__fechas > span:first-child,
-.vmw-oficial__eje > span:first-child {
-  transform: none;
-}
-
-.vmw-serieval__fechas > span:last-child,
-.vmw-oficial__eje > span:last-child {
-  transform: translateX(-100%);
 }
 
 /* -- Controles de la serie evaluada, dentro de su tarjeta ----------------- */
@@ -3301,32 +3224,6 @@ body {
   padding-bottom: 10px;
   font-size: 13px;
   color: var(--text-dim);
-}
-
-/* -- Crosshair y tooltip de los gráficos ---------------------------------- */
-
-.vmw-serieval__marco,
-.vmw-oficial__marco {
-  position: relative;
-  touch-action: pan-y;
-}
-
-.vmw-cross {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.vmw-cross__punto {
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  border: 2px solid var(--dark-3);
-  pointer-events: none;
 }
 
 /* Mismo tratamiento que la navbar: casi opaco y con desenfoque detrás. Sin
@@ -3446,4 +3343,121 @@ body {
 .vmw-vista--historico > .vmw-contenedor > .vmw-episodios,
 .vmw-vista--historico > .vmw-contenedor > .vmw-reglashist {
   margin-top: 46px;
+}
+
+/* -- Serie temporal: EL gráfico de líneas del sistema --------------------- */
+
+.vmw-serie__marco {
+  position: relative;
+}
+
+/* La columna de valores mide 66 px y el lienzo empieza después. Cuando el eje
+   está apagado, el gráfico ocupa el ancho entero. */
+.vmw-serie__marco--eje {
+  padding-left: 66px;
+}
+
+.vmw-serie__valores {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 60px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-serie__valores > span {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+.vmw-serie__lienzo {
+  position: relative;
+  touch-action: pan-y;
+}
+
+/* Foco visible obligatorio: la serie se recorre con teclado y sin esto no se
+   vería dónde está el cursor. */
+.vmw-serie__lienzo:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.vmw-serie__svg {
+  width: 100%;
+  display: block;
+}
+
+/* Revelado estándar del sistema. Sin sombra, sin degradado de trazo y sin más
+   animación que esta: un gráfico que entra con floritura distrae de lo único
+   que importa, que es la forma de la línea. */
+.vmw-serie__trazo {
+  animation: vmw-serie-revelar var(--dur-reveal) var(--ease-out-expo) both;
+}
+
+@keyframes vmw-serie-revelar {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.vmw-serie__punto {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--dark-3);
+  pointer-events: none;
+}
+
+/* Con teclado, el punto activo lleva su propio foco: el del lienzo dice «estás
+   en el gráfico», y este dice «en qué punto». */
+.vmw-serie__punto--foco {
+  outline: 2px solid var(--teal);
+  outline-offset: 3px;
+}
+
+.vmw-serie__fechas {
+  position: relative;
+  display: block;
+  height: 18px;
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-serie__fechas--eje {
+  padding-left: 66px;
+}
+
+.vmw-serie__fechas > span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.vmw-serie__fechas > span:first-child {
+  transform: none;
+}
+
+.vmw-serie__fechas > span:last-child {
+  transform: translateX(-100%);
+}
+
+/* El ajuste del sistema manda: sin revelado. */
+@media (prefers-reduced-motion: reduce) {
+  .vmw-serie__trazo {
+    animation: none;
+  }
 }

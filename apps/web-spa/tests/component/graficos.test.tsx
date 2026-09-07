@@ -205,10 +205,10 @@ describe("HistoryView", () => {
     // Ya no queda ningún `linechart`: los dos gráficos son SVG propio. La serie
     // evaluada con su capa de referencia, y la oficial como bloque de contexto.
     await waitFor(() => {
-      expect(document.querySelector(".vmw-serieval")).toBeTruthy();
+      expect(document.querySelector(".vmw-serie__svg")).toBeTruthy();
     });
     expect(screen.queryAllByTestId("linechart")).toHaveLength(0);
-    expect(document.querySelector(".vmw-oficial__grafico")).toBeTruthy();
+    expect(document.querySelector(".vmw-serie__svg")).toBeTruthy();
 
     // LA JERARQUÍA: la serie evaluada va ANTES que la oficial en el DOM, y su
     // gráfico mide el doble. Es lo que dice quién manda, y por eso se fija.
@@ -220,17 +220,24 @@ describe("HistoryView", () => {
     expect(bloques[0]).toBe("vmw-lecthist");
     expect(bloques[1]).toBe("vmw-serieval__tarjeta");
     expect(bloques[2]).toBe("vmw-oficial");
+    // Los dos usan YA el mismo componente, asi que comparten clase: hay que
+    // acotar cada uno a su tarjeta. Que el alto siga siendo distinto es lo que
+    // dice quien manda.
     expect(
-      document.querySelector(".vmw-serieval")?.getAttribute("viewBox"),
+      document
+        .querySelector(".vmw-serieval__tarjeta .vmw-serie__svg")
+        ?.getAttribute("viewBox"),
     ).toBe("0 0 1060 280");
     expect(
-      document.querySelector(".vmw-oficial__grafico")?.getAttribute("viewBox"),
+      document
+        .querySelector(".vmw-oficial .vmw-serie__svg")
+        ?.getAttribute("viewBox"),
     ).toBe("0 0 1060 140");
 
     // Del histórico solo quedan las filas del indicador seleccionado. Se
     // comprueba sobre lo RENDERIZADO —el valor de hoy en la leyenda— y no sobre
     // las props del gráfico: si el trazo no llega a pintarse, esto lo nota.
-    const serie = document.querySelector(".vmw-serieval");
+    const serie = document.querySelector(".vmw-serie__svg");
     expect(serie).toBeTruthy();
     // La serie va SIEMPRE, y encima de todo: es el ultimo hijo del SVG.
     const capas = [...(serie?.children ?? [])];
@@ -276,7 +283,7 @@ describe("HistoryView", () => {
     const usuario = userEvent.setup();
     render(<HistoryView />);
     await waitFor(() =>
-      expect(document.querySelector(".vmw-serieval")).toBeTruthy(),
+      expect(document.querySelector(".vmw-serie__svg")).toBeTruthy(),
     );
     let rangos: number[] = [];
     servidor.use(

@@ -55,6 +55,9 @@ export function useCrosshair(
 
   return {
     activo,
+    // Expuesto para la navegacion por teclado del grafico: el crosshair deja
+    // de ser solo cosa del puntero.
+    setActivo,
     manejadores: {
       onPointerMove: (e: React.PointerEvent) => {
         if (e.pointerType === "mouse" || e.pointerType === "pen") {
