@@ -22,6 +22,7 @@
 
 import { useRef, type ReactNode } from "react";
 
+import { TooltipGrafico } from "./TooltipGrafico";
 import { useI18n } from "../i18n/contexto";
 import type { Idioma } from "../i18n/idioma";
 import { formatDecimal, toChartNumber } from "../lib/decimal";
@@ -29,6 +30,9 @@ import type { CondicionDeIndicador } from "../lib/reglas";
 import { marcasTiempo, puntosTemporales } from "../lib/ejeTiempo";
 import { colorZona, leerHistorico } from "../lib/lecturaHistorico";
 import { useAncho } from "../lib/useAncho";
+import { useCrosshair } from "../lib/useCrosshair";
+import { anclajeTooltip, contextoPunto, fraccionDe } from "../lib/tooltipSerie";
+import { unidadDe } from "../lib/seriesEvaluables";
 import { percentilDisc, type Punto } from "../lib/series";
 import { NoDataState } from "./NoDataState";
 
@@ -73,6 +77,8 @@ export function SerieEvaluada({
   const { t } = useI18n();
   const ejeRef = useRef<HTMLDivElement>(null);
   const anchoEje = useAncho(ejeRef, ANCHO);
+  const marcoRef = useRef<HTMLDivElement>(null);
+  const { activo, manejadores } = useCrosshair(marcoRef, puntos);
 
   if (puntos.length === 0) {
     return <NoDataState detalle={vacio} />;
@@ -137,6 +143,13 @@ export function SerieEvaluada({
           { umbral: num(condicion.umbral, idioma) },
         );
 
+  const unidad = unidadDe(indicador);
+  const fx = activo === null ? 0 : fraccionDe(puntos, activo);
+  const fy =
+    activo === null
+      ? 0
+      : aY(toChartNumber(puntos[activo].valor)) / ALTO;
+
   const est = lectura.estadisticas;
   const ESTADISTICAS = [
     { clave: "minimo", dato: est.minimo, color: "var(--coral)" },
@@ -171,7 +184,7 @@ export function SerieEvaluada({
 
       {controles}
 
-      <div className="vmw-serieval__marco">
+      <div className="vmw-serieval__marco" ref={marcoRef} {...manejadores}>
         <div className="vmw-serieval__eje" aria-hidden="true">
           {FRACCIONES.map((fraccion) => (
             <span key={fraccion} style={{ top: `${(fraccion * 100).toFixed(1)}%` }}>
@@ -270,6 +283,49 @@ export function SerieEvaluada({
             vectorEffect="non-scaling-stroke"
           />
         </svg>
+
+      {/* Crosshair + punto + tooltip. La capa NO captura el puntero: si lo
+          hiciera, moverse sobre el propio tooltip cerraría el crosshair. */}
+      {activo !== null && (
+        <>
+          <svg
+            className="vmw-cross"
+            viewBox={`0 0 ${ANCHO} ${ALTO}`}
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <line
+              x1={fx * ANCHO}
+              y1="0"
+              x2={fx * ANCHO}
+              y2={ALTO}
+              stroke="var(--border)"
+              strokeWidth="1"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+          <span
+            className="vmw-cross__punto"
+            style={{
+              left: `${fx * 100}%`,
+              top: `${fy * 100}%`,
+              background: "var(--series-buy)",
+            }}
+            aria-hidden="true"
+          />
+          <TooltipGrafico
+            t={puntos[activo].t}
+            valor={puntos[activo].valor}
+            unidad={unidad}
+            color={"var(--series-buy)"}
+            contexto={contextoPunto(puntos, activo, lectura.mediana)}
+            anclaje={anclajeTooltip(fx * anchoEje, anchoEje)}
+            izquierda={fx * 100}
+            arriba={fy * 100}
+            idioma={idioma}
+          />
+        </>
+      )}
       </div>
 
       {/* Eje de fechas. Fuera del SVG, como el de valores: con

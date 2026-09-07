@@ -21,12 +21,19 @@ export const PRESETS = [7, 30, 90] as const;
 export interface SerieEvaluable {
   indicador: string;
   clave: Clave;
+  /** Unidad que acompaña al valor en el tooltip. Vacía = adimensional. */
+  unidad: string;
+}
+
+/** Unidad de una serie evaluable; vacía si no está en la lista. */
+export function unidadDe(indicador: string): string {
+  return SERIES.find((s) => s.indicador === indicador)?.unidad ?? "";
 }
 
 export const SERIES: readonly SerieEvaluable[] = [
-  { indicador: "p2p_brecha_pct_buy", clave: "opcionSerie.brechaCompra" },
-  { indicador: "p2p_drenaje_oferta_6h_pct", clave: "opcionSerie.drenaje" },
-  { indicador: "p2p_momentum_bid_3h_pct", clave: "opcionSerie.momentum" },
-  { indicador: "p2p_ratio_oferta_demanda", clave: "opcionSerie.ratio" },
-  { indicador: "p2p_spread_pct", clave: "opcionSerie.spread" },
+  { indicador: "p2p_brecha_pct_buy", unidad: "%", clave: "opcionSerie.brechaCompra" },
+  { indicador: "p2p_drenaje_oferta_6h_pct", unidad: "%", clave: "opcionSerie.drenaje" },
+  { indicador: "p2p_momentum_bid_3h_pct", unidad: "%", clave: "opcionSerie.momentum" },
+  { indicador: "p2p_ratio_oferta_demanda", unidad: "", clave: "opcionSerie.ratio" },
+  { indicador: "p2p_spread_pct", unidad: "%", clave: "opcionSerie.spread" },
 ];
