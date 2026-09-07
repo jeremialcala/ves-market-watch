@@ -14,6 +14,7 @@ import aio_pika
 
 from indicator_engine.domain.analisis import Analisis, Escala, LecturaIndicador
 from indicator_engine.domain.lectura import Lectura
+from indicator_engine.domain.riesgos import Riesgos
 from indicator_engine.domain.models import Indicador
 from indicator_engine.domain.reglas import ProximidadRegla, Senal
 
@@ -211,13 +212,37 @@ def _historia_a_dict(lectura: Lectura) -> dict | None:
     }
 
 
+def _riesgos_a_dict(riesgos: Riesgos) -> dict:
+    """`risks`: el nivel de cada riesgo en esta revisión, ya ordenado por gravedad.
+
+    `level: null` es un valor legítimo y NO se filtra: significa que el indicador
+    no estaba vigente. Omitir el riesgo lo haría desaparecer de la vista, y un
+    riesgo que desaparece se lee como un riesgo que no existe.
+    """
+    return {
+        "version": riesgos.version,
+        "items": [
+            {
+                "code": r.codigo,
+                "level": r.nivel,
+                "value": None if r.valor is None else _dec(r.valor),
+                "threshold": None if r.umbral is None else _dec(r.umbral),
+                "source": r.fuente,
+            }
+            for r in riesgos.items
+        ],
+    }
+
+
 def construir_evento_analisis(
-    analisis: Analisis, lectura: Lectura | None = None
+    analisis: Analisis,
+    lectura: Lectura | None = None,
+    riesgos: Riesgos | None = None,
 ) -> dict:
     """Sobre + payload del evento `analysis.updated` (schemas/analysis.v1.json).
 
-    `reading` es aditivo y opcional: sin config de lectura el motor publica el
-    mismo evento sin ese campo, y el panel de medidores no se entera.
+    `reading` y `risks` son aditivos y opcionales: sin su config el motor publica
+    el mismo evento sin ese campo, y el panel de medidores no se entera.
     """
     sintesis = analisis.sintesis
     evento = {
@@ -255,6 +280,8 @@ def construir_evento_analisis(
             evento["payload"]["gap_history"] = historia
         if lectura.piernas is not None:
             evento["payload"]["gap_legs"] = _piernas_a_dict(lectura.piernas)
+    if riesgos is not None:
+        evento["payload"]["risks"] = _riesgos_a_dict(riesgos)
     return evento
 
 

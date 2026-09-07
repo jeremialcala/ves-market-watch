@@ -765,6 +765,100 @@
               "description": "Cuota del MOVIMIENTO total que puso la tasa oficial, en [0, 1]: `|Δoficial| / (|Δoficial| + |Δparalelo|)`. Es la misma cifra con la que el motor decide `responsible`, publicada para que el cliente no la recalcule con otra definición. NO es «cuota del cierre»: con las dos piernas subiendo, la oficial cierra la brecha y el paralelo la abre, así que del cierre la oficial pone el 100 % — redactarlo como cuota del cierre contradice las propias cifras. null si nada se movió o alguna pierna no es medible."
             }
           }
+        },
+        "risks": {
+          "type": "object",
+          "description": "Nivel de cada riesgo de la vista de Analisis en esta revision (`riesgos.v1.yaml`). OPCIONAL y aditivo, igual que `reading`: sin config de riesgos el motor publica el mismo evento sin este campo. Los cortes que convierten un valor en un nivel son config VERSIONADA en repo, no constantes del cliente: un nivel cableado en el componente no puede cambiar cuando cambia el mercado. Lista ORDENADA por gravedad -alto, medio, bajo y al final los no evaluables-; dentro de un mismo nivel se conserva el orden del YAML. Qué NO es: un pronostico. Un riesgo describe el presente del mercado o el estado de la propia plataforma.",
+          "required": [
+            "version",
+            "items"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Version de `riesgos.v*.yaml`. Subirla corta una definicion nueva de los cortes."
+            },
+            "items": {
+              "type": "array",
+              "description": "Todos los riesgos declarados, tambien los que no se pudieron evaluar. Omitir uno lo haria desaparecer de la vista, y un riesgo que desaparece se lee como un riesgo que no existe.",
+              "items": {
+                "type": "object",
+                "required": [
+                  "code",
+                  "level",
+                  "value",
+                  "threshold",
+                  "source"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "enum": [
+                      "libro_concentrado",
+                      "calidad_snapshot",
+                      "oficial_rancia",
+                      "umbrales_sin_recalibrar"
+                    ],
+                    "description": "Codigo neutro de idioma. El cliente tiene un titulo y un texto por codigo, en cada idioma, igual que con `reading.claims`."
+                  },
+                  "level": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "alto",
+                          "medio",
+                          "bajo"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "null = NO evaluable en esta revision porque el indicador no esta vigente. No se sustituye por el ultimo valor conocido ni se degrada a `bajo`: un `bajo` sin dato detras tranquiliza, que es el peor error posible en un panel de riesgos."
+                  },
+                  "value": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Valor que decidio el nivel, en punto fijo exacto. En `umbrales_sin_recalibrar` es la version del ruleset en uso. null en los riesgos binarios y en los no evaluables."
+                  },
+                  "threshold": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Corte a partir del cual el riesgo seria `alto`. Viaja en el payload para que el cliente rotule el umbral real y no una copia suya que puede quedarse atras. null en los riesgos binarios."
+                  },
+                  "source": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Que decidio el nivel: el indicador del peor lado, o el nombre de la bandera. Con dos lados, dice cual de los dos manda."
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }

@@ -32,12 +32,15 @@ from indicator_engine.domain.lectura import (
     cargar_config_lectura,
     construir_lectura,
 )
+from indicator_engine.adapters.amqp.publisher import _riesgos_a_dict
 from indicator_engine.domain.reglas import cargar_ruleset, evaluar_proximidad
+from indicator_engine.domain.riesgos import cargar_config_riesgos, evaluar_riesgos
 
 SCHEMA = Path(__file__).parents[4] / "schemas" / "analysis.v1.json"
 CONFIG = Path(__file__).parents[2] / "config" / "analisis.v1.yaml"
 RULESET = Path(__file__).parents[2] / "config" / "senales.v1.yaml"
 CONFIG_LECTURA = Path(__file__).parents[2] / "config" / "lectura.v1.yaml"
+CONFIG_RIESGOS = Path(__file__).parents[2] / "config" / "riesgos.v1.yaml"
 
 AS_OF = datetime(2026, 7, 31, 20, 54, tzinfo=UTC)
 TRIGGERED_BY = "3b8d5a10-19c7-4e2f-bb64-0c9a71e5d833"
@@ -626,3 +629,102 @@ def test_sin_movimiento_la_cuota_es_null_y_el_schema_lo_acepta():
     evento = _evento(con_lectura=True, vista=VISTA_LECTURA)
     evento["payload"]["gap_legs"]["official_share"] = None
     _validador().validate(evento)
+
+
+# --- `risks`: cortes de nivel de la vista de Análisis ------------------------
+#
+# Aditivo y opcional, igual que `reading`. Lo que se fija aquí es que el schema
+# ACEPTE el caso incómodo —un riesgo sin nivel— y RECHACE el peligroso: un
+# código que nadie sabe redactar.
+
+
+def _riesgos(vista: dict[str, Decimal], *, official_stale: bool = False):
+    config = cargar_config_riesgos(
+        yaml.safe_load(CONFIG_RIESGOS.read_text(encoding="utf-8"))
+    )
+    return evaluar_riesgos(
+        config=config,
+        vista=vista,
+        official_stale=official_stale,
+        ruleset_version=_ruleset().version,
+    )
+
+
+def _evento_con_riesgos(vista: dict[str, Decimal] | None = None, **kwargs) -> dict:
+    vista = vista if vista is not None else {
+        "p2p_brecha_pct_buy": Decimal("13.22"),
+        "p2p_spread_pct": Decimal("0.56"),
+        "p2p_ratio_oferta_demanda": Decimal("0.59"),
+        "p2p_drenaje_oferta_6h_pct": Decimal("29.86"),
+        "p2p_outliers_pct_buy": Decimal("0.50"),
+        "p2p_merchants_pct_buy": Decimal("60.50"),
+        "p2p_merchants_pct_sell": Decimal("71.00"),
+    }
+    evento = _evento(vista=vista, **kwargs)
+    evento["payload"]["risks"] = _riesgos_a_dict(
+        _riesgos(vista, official_stale=kwargs.get("official_stale", False))
+    )
+    return evento
+
+
+def test_el_evento_con_riesgos_cumple_el_schema():
+    _validador().validate(_evento_con_riesgos())
+
+
+def test_sin_riesgos_el_evento_sigue_siendo_valido():
+    """Aditivo de verdad: el gateway puede desplegarse por delante del motor."""
+    evento = _evento()
+    assert "risks" not in evento["payload"]
+    _validador().validate(evento)
+
+
+def test_un_riesgo_SIN_NIVEL_es_valido_y_no_se_degrada_a_bajo():
+    """El caso que más importa del contrato.
+
+    Sin `merchants_pct` en la vista, `libro_concentrado` no es evaluable. El
+    schema tiene que aceptar `level: null` — si obligara a un nivel, la única
+    salida sería inventar un `bajo`, que es tranquilizar sin dato.
+    """
+    evento = _evento_con_riesgos(
+        vista={
+            "p2p_brecha_pct_buy": Decimal("13.22"),
+            "p2p_spread_pct": Decimal("0.56"),
+            "p2p_ratio_oferta_demanda": Decimal("0.59"),
+            "p2p_drenaje_oferta_6h_pct": Decimal("29.86"),
+            "p2p_outliers_pct_buy": Decimal("0.50"),
+        }
+    )
+    libro = next(
+        r for r in evento["payload"]["risks"]["items"] if r["code"] == "libro_concentrado"
+    )
+    assert libro["level"] is None
+    assert libro["value"] is None
+    # …pero el umbral sigue viajando: la tarjeta puede decir a partir de cuánto.
+    assert libro["threshold"] == "80"
+    _validador().validate(evento)
+
+
+def test_el_schema_RECHAZA_un_codigo_de_riesgo_desconocido():
+    """El cliente redacta por código: uno que no conoce saldría como tarjeta muda."""
+    evento = _evento_con_riesgos()
+    evento["payload"]["risks"]["items"][0]["code"] = "riesgo_inventado"
+    with pytest.raises(ValidationError):
+        _validador().validate(evento)
+
+
+def test_el_schema_RECHAZA_un_nivel_fuera_del_vocabulario():
+    evento = _evento_con_riesgos()
+    evento["payload"]["risks"]["items"][0]["level"] = "regular"
+    with pytest.raises(ValidationError):
+        _validador().validate(evento)
+
+
+def test_el_valor_viaja_como_STRING_exacto_nunca_como_float():
+    evento = _evento_con_riesgos()
+    libro = next(
+        r for r in evento["payload"]["risks"]["items"] if r["code"] == "libro_concentrado"
+    )
+    # Manda el peor lado: 71,00 de sell, no 60,50 de buy.
+    assert libro["value"] == "71.00"
+    assert libro["source"] == "p2p_merchants_pct_sell"
+    assert isinstance(libro["value"], str)

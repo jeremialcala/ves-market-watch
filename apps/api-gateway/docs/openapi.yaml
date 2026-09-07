@@ -1266,7 +1266,82 @@ components:
           $ref: '#/components/schemas/GapHistory'
         gap_legs:
           $ref: '#/components/schemas/GapLegs'
+        risks:
+          $ref: '#/components/schemas/AnalysisRisks'
       required: [as_of, currency, calc_version, analysis_version, ruleset_version, confidence, official_stale, triggered_by, indicators, rule_proximity, summary]
+
+    AnalysisRisks:
+      type: object
+      additionalProperties: false
+      description: |
+        Nivel de cada riesgo de la vista de Análisis en esta revisión
+        (`riesgos.v1.yaml` del motor). OPCIONAL y aditivo, igual que `reading`:
+        sin config de riesgos el motor publica el mismo análisis sin este campo.
+
+        Los cortes que convierten un valor en un nivel son **config versionada
+        en repo**, no constantes del cliente: un nivel cableado en el componente
+        no puede cambiar cuando cambia el mercado.
+
+        **Qué NO es**: un pronóstico. Un riesgo describe el presente del mercado
+        o el estado de la propia plataforma.
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          description: Versión de `riesgos.v*.yaml`.
+        items:
+          type: array
+          description: |
+            Todos los riesgos declarados, **también los que no se pudieron
+            evaluar**, ordenados por gravedad (alto, medio, bajo, y al final los
+            no evaluables). Omitir uno lo haría desaparecer de la vista, y un
+            riesgo que desaparece se lee como un riesgo que no existe.
+          items: { $ref: '#/components/schemas/AnalysisRisk' }
+      required: [version, items]
+
+    AnalysisRisk:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum: [libro_concentrado, calidad_snapshot, oficial_rancia, umbrales_sin_recalibrar]
+          description: |
+            Codigo neutro de idioma. El cliente tiene un titulo y un texto por
+            codigo, en cada idioma - igual que con `reading.claims`.
+        level:
+          oneOf:
+            - { type: string, enum: [alto, medio, bajo] }
+            - { type: 'null' }
+          description: |
+            `null` = **no evaluable** en esta revision porque el indicador no
+            esta vigente. No se sustituye por el ultimo valor conocido ni se
+            degrada a `bajo`: un `bajo` sin dato detras tranquiliza, que es el
+            peor error posible en un panel de riesgos.
+        value:
+          oneOf:
+            - { $ref: '#/components/schemas/SignedDecimal' }
+            - { type: 'null' }
+          description: |
+            Valor que decidio el nivel, en punto fijo exacto. En
+            `umbrales_sin_recalibrar` es la version del ruleset en uso. `null` en
+            los riesgos binarios y en los no evaluables.
+        threshold:
+          oneOf:
+            - { $ref: '#/components/schemas/SignedDecimal' }
+            - { type: 'null' }
+          description: |
+            Corte a partir del cual el riesgo seria `alto`. Viaja en el payload
+            para que el cliente rotule el umbral real y no una copia suya que
+            puede quedarse atras.
+        source:
+          oneOf:
+            - { type: string }
+            - { type: 'null' }
+          description: |
+            Que decidio el nivel: el indicador del peor lado, o el nombre de la
+            bandera. Con dos lados, dice cual de los dos manda.
+      required: [code, level, value, threshold, source]
 
     GapLegs:
       type: object
