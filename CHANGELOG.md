@@ -19,6 +19,37 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **«Historial de las reglas», último bloque del histórico (2026-09-06).** Qué ha
+  hecho cada regla del ruleset desde que corre: casos emitidos, cuántos son ya
+  medibles, efecto medio observado y si la muestra da para algo.
+  - **Sin columna de aciertos, y no por olvido.** El contrato de la API lo dice
+    de su propio campo `outcome`: «sin veredicto y **sin contador agregado** (…)
+    un “N de M” se lee como tasa de acierto». Un recuento de aciertos por regla
+    ES ese «N de M». La segunda métrica es **«con resultado»** —casos con la
+    ventana cumplida—: completitud de la muestra, no juicio sobre ninguno. Un
+    test comprueba que la palabra «acierto» no aparece en la tabla.
+  - **Sin comparación contra el backtest de 11–20 jul.** De aquel backtest
+    sobrevivieron sus **umbrales**, que es lo que `senales.v1.yaml` cita como
+    procedencia; sus resultados no están en el repo ni en la base. El subtítulo
+    dice de dónde salen las cifras —las señales realmente emitidas— en vez de
+    citar una fuente que no existe.
+  - **La nota del pie no se oculta nunca**, ni cuando la tabla mejora. El test
+    lo fija con una muestra de 40 casos y efecto consistente, que es el caso en
+    el que sería tentador esconderla: una advertencia condicionada a que los
+    números sean malos es un descargo que aparece solo cuando conviene.
+  - **Una regla que nunca disparó sigue en la tabla, con cero.** Omitirla la
+    haría desaparecer, y «existe y no ha disparado» es justo lo que alguien
+    querría saber. El catálogo sale de `rule_proximity` —el ruleset vigente
+    según el motor—, no de una lista escrita a mano en el SPA.
+  - **La media solo cuenta los casos medibles.** Promediar como cero los que aún
+    no tienen ventana cumplida movería la cifra por una razón que no es del
+    mercado.
+  - La suficiencia se rotula «hipótesis» por debajo de 6 casos e «indicativa»
+    por encima — no «suficiente», que sobreafirmaría sobre una muestra de
+    semanas. ES y EN.
+
+### Added
+
 - **«Episodios comparables» tras los gráficos del histórico (2026-09-06).** Tres
   tarjetas con señales **reales** del histórico: qué condiciones tenía la regla
   entonces, cuáles hoy, y qué hizo la brecha después.
