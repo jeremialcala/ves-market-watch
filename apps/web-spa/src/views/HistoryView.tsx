@@ -26,6 +26,7 @@ import {
   type Intervalo,
 } from "../api/endpoints";
 import { ApiError } from "../api/problem";
+import { EpisodiosComparables } from "../components/EpisodiosComparables";
 import { LecturaHistorico } from "../components/LecturaHistorico";
 import { NoDataState } from "../components/NoDataState";
 import { SerieEvaluada } from "../components/SerieEvaluada";
@@ -140,7 +141,7 @@ export function HistoryView() {
   const { t, idioma } = useI18n();
   // Solo para el umbral de la capa de referencia: el SPA no evalua nada,
   // la condicion viene calculada del motor (RF-6, ADR-0019).
-  const { analisis } = useMarket();
+  const { analisis, senales } = useMarket();
   const [dias, setDias] = useState<number>(30);
   const [moneda, setMoneda] = useState("USD");
   const [indicador, setIndicador] = useState("p2p_brecha_pct_buy");
@@ -345,6 +346,14 @@ export function HistoryView() {
             })}
           />
         </section>
+
+        {/* Después de los gráficos: primero se ve la serie, luego con qué se
+            parece. Al revés obligaría a comparar contra algo no visto. */}
+        <EpisodiosComparables
+          senales={senales}
+          analisis={analisis}
+          idioma={idioma}
+        />
       </div>
     </main>
   );
