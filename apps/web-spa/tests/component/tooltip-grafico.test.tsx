@@ -36,7 +36,7 @@ function pintar(idioma: "es" | "en" = "es") {
     />,
     { idioma },
   );
-  const marco = document.querySelector(".vmw-serieval__marco")!;
+  const marco = document.querySelector(".vmw-serie__lienzo")!;
   // jsdom no mide: el rect sale en ceros y la fracción quedaría en 0. Se fija
   // un ancho para poder señalar un punto concreto.
   marco.getBoundingClientRect = () =>
@@ -53,8 +53,10 @@ describe("tooltip del gráfico", () => {
   it("con el ratón encima aparece crosshair, punto y tooltip", () => {
     const marco = pintar();
     fireEvent.pointerMove(marco, { clientX: 1000, pointerType: "mouse" });
-    expect(document.querySelector(".vmw-cross")).toBeTruthy();
-    expect(document.querySelector(".vmw-cross__punto")).toBeTruthy();
+    // El crosshair ya no es una capa aparte: es una linea DENTRO del SVG de la
+    // serie, que es lo que permite que se dibuje a su misma escala.
+    expect(document.querySelectorAll(".vmw-serie__svg line").length).toBeGreaterThan(4);
+    expect(document.querySelector(".vmw-serie__punto")).toBeTruthy();
     expect(document.querySelector(".vmw-tip")).toBeTruthy();
   });
 

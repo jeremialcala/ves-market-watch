@@ -40,7 +40,7 @@ function pintar(
 describe("tasa oficial · estados", () => {
   it("sin datos sustituye el gráfico por el bloque que explica", () => {
     pintar([], serie(5));
-    expect(document.querySelector(".vmw-oficial__grafico")).toBeNull();
+    expect(document.querySelector(".vmw-serie__svg")).toBeNull();
     const vacio = document.querySelector<HTMLElement>(".vmw-vacio")!;
     expect(screen.getByText(ES["historico.vacioOficial"])).toBeTruthy();
     // Alto del gráfico que sustituye, no 280: este bloque es el de contexto.
