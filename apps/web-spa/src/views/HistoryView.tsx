@@ -19,6 +19,7 @@ import {
 import { ApiError } from "../api/problem";
 import { EpisodiosComparables } from "../components/EpisodiosComparables";
 import { HistorialReglas } from "../components/HistorialReglas";
+import { ControlesSerie } from "../components/ControlesSerie";
 import { LecturaHistorico } from "../components/LecturaHistorico";
 import { TasaOficialContexto } from "../components/TasaOficialContexto";
 import { SerieEvaluada } from "../components/SerieEvaluada";
@@ -35,20 +36,6 @@ interface Punto {
   valorStr: string;
 }
 
-const INDICADORES_CANONICOS = [
-  "official_rate",
-  "p2p_mediana_buy",
-  "p2p_mediana_sell",
-  "p2p_brecha_pct_buy",
-  "p2p_spread_pct",
-  "p2p_ratio_oferta_demanda",
-  "p2p_momentum_bid_3h_pct",
-  "p2p_drenaje_oferta_6h_pct",
-  "p2p_liquidez_buy",
-  "p2p_liquidez_sell",
-];
-
-const PRESETS = [7, 30, 90] as const;
 export function HistoryView() {
   const { t, idioma } = useI18n();
   // Solo para el umbral de la capa de referencia: el SPA no evalua nada,
@@ -134,30 +121,10 @@ export function HistoryView() {
   return (
     <main className="vmw-vista">
       <div className="vmw-contenedor">
+        {/* Barra GLOBAL: solo la moneda, que afecta a toda la vista —también
+            al bloque de la tasa oficial—. Rango, serie y bucket viven dentro de
+            la tarjeta que gobiernan. */}
         <section className="vmw-controles" aria-label={t("historico.controles")}>
-          {PRESETS.map((preset) => (
-            <button
-              key={preset}
-              type="button"
-              className="vmw-chip"
-              aria-pressed={dias === preset}
-              onClick={() => {
-                setDias(preset);
-                // 5m solo para rangos cortos: en 90 días serían ~26k buckets.
-                if (preset > 7 && intervalo === "5m") {
-                  setIntervalo("1h");
-                }
-              }}
-            >
-              {t(
-                preset === 7
-                  ? "historico.rango7"
-                  : preset === 30
-                    ? "historico.rango30"
-                    : "historico.rango90",
-              )}
-            </button>
-          ))}
           <select
             className="vmw-select"
             aria-label={t("historico.moneda")}
@@ -168,30 +135,8 @@ export function HistoryView() {
               <option key={codigo}>{codigo}</option>
             ))}
           </select>
-          <select
-            className="vmw-select"
-            aria-label={t("historico.indicador")}
-            value={indicador}
-            onChange={(evento) => setIndicador(evento.target.value)}
-          >
-            {INDICADORES_CANONICOS.map((nombre) => (
-              <option key={nombre}>{nombre}</option>
-            ))}
-          </select>
-          <select
-            className="vmw-select"
-            aria-label={t("historico.bucket")}
-            value={intervalo}
-            onChange={(evento) => setIntervalo(evento.target.value as Intervalo)}
-          >
-            <option value="5m" disabled={dias > 7}>
-              {t("historico.bucket5m")}
-            </option>
-            <option value="1h">{t("historico.bucket1h")}</option>
-            <option value="1d">{t("historico.bucket1d")}</option>
-          </select>
           <span className="vmw-nav__relleno" />
-          {progreso !== null ? (
+          {progreso !== null && (
             <span
               role="status"
               style={{
@@ -201,8 +146,6 @@ export function HistoryView() {
             >
               {progreso}
             </span>
-          ) : (
-            <span className="vmw-seccion__bajada">{t("historico.limite")}</span>
           )}
         </section>
         {error !== null ? <p className="vmw-sin-datos">{error}</p> : null}
@@ -224,11 +167,9 @@ export function HistoryView() {
           className="vmw-serieval__tarjeta"
           aria-label={t("historico.serieTitulo", { indicador, bucket: intervalo })}
         >
-          <div className="vmw-seccion__cabecera">
-            <h3 className="vmw-seccion__titulo" style={{ fontSize: "20px" }}>
-              {t("historico.serieTitulo", { indicador, bucket: intervalo })}
-            </h3>
-          </div>
+          {/* Sin `h3` aquí: la cabecera de la propia tarjeta ya da el nombre
+              legible, la clave y el valor de hoy. Dos títulos seguidos diciendo
+              lo mismo era ruido. */}
           <SerieEvaluada
             puntos={serie.map((p) => ({ t: p.t, valor: p.valorStr }))}
             condicion={condicionDe(analisis, indicador)}
@@ -240,6 +181,16 @@ export function HistoryView() {
               indicador,
               bucket: intervalo,
             })}
+            controles={
+              <ControlesSerie
+                dias={dias}
+                setDias={setDias}
+                indicador={indicador}
+                setIndicador={setIndicador}
+                intervalo={intervalo}
+                setIntervalo={setIntervalo}
+              />
+            }
           />
         </section>
 

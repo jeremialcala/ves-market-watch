@@ -3231,3 +3231,75 @@ body {
 .vmw-oficial__eje > span:last-child {
   transform: translateX(-100%);
 }
+
+/* -- Controles de la serie evaluada, dentro de su tarjeta ----------------- */
+
+.vmw-ctrl {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 20px;
+  margin-top: 18px;
+  padding: 12px 16px;
+  border-radius: 22px;
+  background: var(--dark-2);
+  border: 1px solid var(--border);
+}
+
+.vmw-ctrl__grupo {
+  display: grid;
+  gap: 6px;
+}
+
+.vmw-ctrl__etiqueta {
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+
+.vmw-ctrl__pastillas {
+  display: flex;
+  gap: 8px;
+}
+
+.vmw-ctrl__pastilla {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 100px;
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.vmw-ctrl__pastilla[aria-pressed="true"] {
+  background: var(--teal-tint);
+  border-color: var(--teal-line);
+  color: var(--teal);
+}
+
+.vmw-ctrl__select {
+  min-height: 40px;
+  padding: 9px 14px;
+  border-radius: 100px;
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Empujada a la derecha y alineada con la base de los controles: es una nota
+   de procedencia, no un control más. */
+.vmw-ctrl__procedencia {
+  flex: 1;
+  text-align: right;
+  align-self: flex-end;
+  padding-bottom: 10px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
