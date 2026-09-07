@@ -19,6 +19,29 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **«Riesgos que vigilar» deja de ser redacción (2026-09-07).** `AnalysisView`
+  lee el bloque `risks` del análisis y el sello `demo · sin fuente` **se cae de
+  ese bloque**: la vista pasa de dos sellos a uno.
+  - **Pasó lo que el PRD anticipaba**: «Libro concentrado» dejaba de decir
+    `alto`. El nivel, la cifra y el corte son ahora los servidos, así que la
+    tarjeta rotula el umbral real en vez de una copia suya que puede quedarse
+    atrás.
+  - **Apareció un quinto estado que la redacción no tenía: `sin medir`.** Un
+    riesgo cuyo indicador no está vigente llega con `level: null` y se pinta en
+    gris, diciendo con todas las letras que **no es un «bajo»**. Un panel de
+    riesgos que tranquiliza porque le falta el dato es peor que uno que calla.
+  - **El orden no se recalcula en el cliente**: llega por gravedad desde el
+    motor. Y un código que el diccionario todavía no cubra **se pinta con su
+    código crudo en vez de desaparecer** — el motor puede desplegarse por
+    delante del cliente, y esconder un riesgo es el peor fallo posible aquí.
+  - Dos textos que **asumían un nivel** se reescribieron para no hacerlo: el del
+    snapshot daba por hecho que había pocos outliers, y el del libro hablaba solo
+    del lado buy cuando el nivel sale del peor de los dos. El de los umbrales
+    afirmaba «una regla con una sola aparición histórica», que además era falso:
+    `techo_inminente` no ha emitido ninguna.
+  - Sin `risks` en el payload —motor sin config, o desplegado por detrás— el
+    bloque **lo dice** en vez de dibujar tarjetas vacías.
+
 - **Cifras del SPA al día tras el componente único de serie (2026-09-07).** El
   barrido de coherencia de esta misma sesión se midió sobre `develop` **antes**
   de que entrara el refactor, así que sus números nacieron caducos en la parte

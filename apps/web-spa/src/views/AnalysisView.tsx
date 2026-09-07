@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 
 import { DemoBadge } from "../components/DemoBadge";
+import { PanelRiesgos } from "../components/PanelRiesgos";
 import { NoDataState } from "../components/NoDataState";
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
@@ -43,49 +44,6 @@ const ESCENARIOS: readonly Escenario[] = [
     rango: "9,0 – 12,0 %",
     texto: "analisis.escConvergenciaTexto",
     disparador: "analisis.escConvergenciaDisparador",
-    color: "var(--sage)",
-    borde: "var(--sage-line)",
-  },
-];
-
-/** DEMO: los riesgos son redacción, no cálculo. */
-const RIESGOS: readonly {
-  nivel: Clave;
-  titulo: Clave;
-  texto: Clave;
-  umbral: Clave;
-  color: string;
-  borde: string;
-}[] = [
-  {
-    nivel: "analisis.nivelAlto",
-    titulo: "analisis.riesgoLibro",
-    texto: "analisis.riesgoLibroTexto",
-    umbral: "analisis.riesgoLibroUmbral",
-    color: "var(--coral)",
-    borde: "var(--coral-line)",
-  },
-  {
-    nivel: "analisis.nivelMedio",
-    titulo: "analisis.riesgoRancidez",
-    texto: "analisis.riesgoRancidezTexto",
-    umbral: "analisis.riesgoRancidezUmbral",
-    color: "var(--teal)",
-    borde: "var(--teal-line)",
-  },
-  {
-    nivel: "analisis.nivelMedio",
-    titulo: "analisis.riesgoUmbrales",
-    texto: "analisis.riesgoUmbralesTexto",
-    umbral: "analisis.riesgoUmbralesUmbral",
-    color: "var(--teal)",
-    borde: "var(--teal-line)",
-  },
-  {
-    nivel: "analisis.nivelBajo",
-    titulo: "analisis.riesgoSnapshot",
-    texto: "analisis.riesgoSnapshotTexto",
-    umbral: "analisis.riesgoSnapshotUmbral",
     color: "var(--sage)",
     borde: "var(--sage-line)",
   },
@@ -177,7 +135,7 @@ function PresionLiquidez() {
  */
 export function AnalysisView() {
   const { t, idioma } = useI18n();
-  const { indicadores, vigentes } = useMarket();
+  const { indicadores } = useMarket();
 
   return (
     <main className="vmw-vista">
@@ -288,58 +246,8 @@ export function AnalysisView() {
             <h3 className="vmw-seccion__titulo">
               {t("analisis.riesgosTitulo")}
             </h3>
-            <DemoBadge />
-            {vigentes["p2p_merchants_pct_buy"] !== undefined ? (
-              <span className="vmw-seccion__bajada">
-                {t("micro.merchants")}:{" "}
-                {formatPct(
-                  vigentes["p2p_merchants_pct_buy"].value,
-                  2,
-                  idioma,
-                )}
-              </span>
-            ) : null}
           </div>
-          <div className="vmw-grid" style={{ "--min": "380px" } as CSSProperties}>
-            {RIESGOS.map((riesgo) => (
-              <div
-                className="vmw-tarjeta vmw-tarjeta--panel"
-                key={riesgo.titulo}
-                style={{ borderColor: riesgo.borde, padding: "24px 26px" }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    alignItems: "baseline",
-                    gap: "10px",
-                  }}
-                >
-                  <span className="vmw-eyebrow" style={{ color: riesgo.color }}>
-                    {t(riesgo.nivel)}
-                  </span>
-                  <span
-                    className="vmw-cifra"
-                    style={{ fontSize: "18px", letterSpacing: "-0.02em" }}
-                  >
-                    {t(riesgo.titulo)}
-                  </span>
-                </div>
-                <p className="vmw-nota" style={{ marginTop: "12px" }}>
-                  {t(riesgo.texto)}
-                </p>
-                <div
-                  style={{
-                    marginTop: "12px",
-                    fontSize: "var(--fs-meta)",
-                    color: "var(--text)",
-                  }}
-                >
-                  {t(riesgo.umbral)}
-                </div>
-              </div>
-            ))}
-          </div>
+          <PanelRiesgos />
         </section>
       </div>
     </main>

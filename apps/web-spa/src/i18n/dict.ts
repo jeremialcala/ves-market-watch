@@ -762,21 +762,30 @@ export const ES = {
   "analisis.nivelBajo": "bajo",
   "analisis.riesgoLibro": "Libro concentrado",
   "analisis.riesgoLibroTexto":
-    "Con una proporción alta de merchants en el lado buy, que un puñado de mesas se retire vacía la banda en minutos.",
-  "analisis.riesgoLibroUmbral": "Alerta si merchants_pct > 80 %",
+    "Cuanta más parte del libro ponen mesas profesionales, más fácil es que un puñado de ellas se retire y vacíe la banda en minutos. Se mira el lado peor de los dos.",
+  "analisis.riesgoLibroUmbral": "{valor} % en {lado} · alto desde {umbral} %",
   "analisis.riesgoRancidez": "Rancidez de la oficial",
   "analisis.riesgoRancidezTexto":
     "La brecha se calcula contra la tasa del BCV, que rige por fecha-valor: el viernes por la tarde se publica la del lunes. Si esa fecha ya pasó se sirve official_stale y las señales se degradan.",
-  "analisis.riesgoRancidezUmbral":
-    "El titular marca «oficial stale» cuando pasa",
+  "analisis.riesgoRancidezSi": "La fecha-valor del BCV ya pasó: la brecha se midió contra una tasa vencida",
+  "analisis.riesgoRancidezNo": "El BCV publicó la tasa vigente para hoy",
   "analisis.riesgoUmbrales": "Umbrales sin recalibrar",
   "analisis.riesgoUmbralesTexto":
-    "El ruleset v1 sale de un backtest corto. Tres reglas, una con una sola aparición histórica.",
-  "analisis.riesgoUmbralesUmbral": "Pendiente recalibración HITL",
+    "Los umbrales del ruleset salen de un backtest corto cuyos resultados no están en el repositorio: nadie los ha vuelto a contrastar con lo que el mercado hizo después.",
+  "analisis.riesgoUmbralesUmbral": "Ruleset v{valor} · recalibrado hasta v{umbral}",
   "analisis.riesgoSnapshot": "Calidad del snapshot",
   "analisis.riesgoSnapshotTexto":
-    "Con pocos outliers el filtro MAD/IQR no está trabajando duro: las señales no se suprimen por ruido.",
-  "analisis.riesgoSnapshotUmbral": "Confianza: normal",
+    "Si el filtro MAD/IQR tiene que descartar demasiadas ofertas, el precio de referencia se calcula sobre un libro adelgazado y las señales dependientes del precio se suprimen.",
+  "analisis.riesgoSnapshotUmbral": "{valor} % de outliers · alto desde {umbral} %",
+  "analisis.nivelSinMedir": "sin medir",
+  "analisis.riesgoSinMedir":
+    "Su indicador no está vigente en esta revisión, así que no se ha podido medir. No es un «bajo».",
+  "analisis.riesgosSinDato":
+    "El gateway todavía no ha servido un análisis con niveles de riesgo.",
+  "analisis.riesgosProcedencia":
+    "Niveles calculados con los cortes de `riesgos.v{version}.yaml`, versionados en el repositorio.",
+  "analisis.ladoBuy": "compra",
+  "analisis.ladoSell": "venta",
   "historico.controles": "Controles del histórico",
   "historico.error": "No se pudo cargar el histórico.",
   "historico.bucket5m": "5 min (rangos ≤ 7 días)",
@@ -1515,21 +1524,30 @@ export const EN: Record<Clave, string> = {
   "analisis.nivelBajo": "low",
   "analisis.riesgoLibro": "Concentrated book",
   "analisis.riesgoLibroTexto":
-    "With a high share of merchants on the buy side, a handful of desks withdrawing empties the band in minutes.",
-  "analisis.riesgoLibroUmbral": "Alert if merchants_pct > 80 %",
+    "The more of the book that professional desks put up, the easier it is for a handful of them to withdraw and empty the band in minutes. The worse of the two sides is used.",
+  "analisis.riesgoLibroUmbral": "{valor} % on {lado} · high from {umbral} %",
   "analisis.riesgoRancidez": "Official rate staleness",
   "analisis.riesgoRancidezTexto":
     "The gap is computed against the BCV rate, which applies by value date: on Friday afternoon Monday's rate is published. Once that date has passed it is served as official_stale and the signals degrade.",
-  "analisis.riesgoRancidezUmbral":
-    "The headline flags official stale when it happens",
+  "analisis.riesgoRancidezSi": "The BCV value date has passed: the gap was measured against an expired rate",
+  "analisis.riesgoRancidezNo": "The BCV published the rate in force for today",
   "analisis.riesgoUmbrales": "Uncalibrated thresholds",
   "analisis.riesgoUmbralesTexto":
-    "The v1 ruleset comes from a short backtest. Three rules, one of them with a single historical appearance.",
-  "analisis.riesgoUmbralesUmbral": "Pending HITL recalibration",
+    "The ruleset thresholds come from a short backtest whose results are not in the repository: nobody has checked them again against what the market did afterwards.",
+  "analisis.riesgoUmbralesUmbral": "Ruleset v{valor} · recalibrated up to v{umbral}",
   "analisis.riesgoSnapshot": "Snapshot quality",
   "analisis.riesgoSnapshotTexto":
-    "With few outliers the MAD/IQR filter is not working hard: signals are not suppressed by noise.",
-  "analisis.riesgoSnapshotUmbral": "Confidence: normal",
+    "If the MAD/IQR filter has to discard too many offers, the reference price is computed over a thinned book and price-dependent signals are suppressed.",
+  "analisis.riesgoSnapshotUmbral": "{valor} % outliers · high from {umbral} %",
+  "analisis.nivelSinMedir": "not measured",
+  "analisis.riesgoSinMedir":
+    "Its indicator is not current in this revision, so it could not be measured. This is not a «low».",
+  "analisis.riesgosSinDato":
+    "The gateway has not served an analysis with risk levels yet.",
+  "analisis.riesgosProcedencia":
+    "Levels computed with the cuts in `riesgos.v{version}.yaml`, versioned in the repository.",
+  "analisis.ladoBuy": "buy",
+  "analisis.ladoSell": "sell",
   "historico.controles": "History controls",
   "historico.error": "Could not load the history.",
   "historico.bucket5m": "5 min (ranges <= 7 days)",

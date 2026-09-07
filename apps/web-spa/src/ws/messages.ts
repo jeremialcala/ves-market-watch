@@ -220,6 +220,31 @@ export interface PayloadAnalisis {
      *  abre, así que del cierre la oficial pone el 100 %. */
     official_share: string | null;
   };
+  /**
+   * Nivel de cada riesgo de la vista de Análisis (`riesgos.v1.yaml` del motor).
+   * OPCIONAL y aditivo, igual que `reading`.
+   *
+   * `level: null` significa **no evaluable** porque el indicador no está
+   * vigente — NO se degrada a `bajo`. Y se publican todos los riesgos
+   * declarados, también los no evaluables: uno que desaparece de la lista se
+   * lee como un riesgo que no existe.
+   */
+  risks?: {
+    version: number;
+    /** ORDENADA por gravedad: alto, medio, bajo, y al final los sin nivel. */
+    items: {
+      code:
+        | "libro_concentrado"
+        | "calidad_snapshot"
+        | "oficial_rancia"
+        | "umbrales_sin_recalibrar";
+      level: "alto" | "medio" | "bajo" | null;
+      value: string | null;
+      /** Corte a partir del cual sería `alto`; `null` en los binarios. */
+      threshold: string | null;
+      source: string | null;
+    }[];
+  };
 }
 
 // Cierres del contrato.

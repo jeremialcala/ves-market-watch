@@ -142,9 +142,13 @@ que rompe el build es cualquier retroceso desde donde está hoy cada uno. El
   nginx en el compose (`http://localhost:8080`). Desde el 2026-07-31 viste el
   **sistema de diseño Higerotech** con tema claro/oscuro e interfaz ES/EN
   (ADR-0018); los bloques que la plataforma no calcula van marcados
-  `demo · sin fuente` — quedan **dos** (escenarios con probabilidades y riesgos
-  redactados) tras retirar los medidores (ADR-0019) y la lectura del mercado
-  (ADR-0021), y esos dos no son deuda: hacerlos reales exigiría pronosticar.
+  `demo · sin fuente` — queda **uno**, los escenarios con probabilidades, tras
+  retirar los medidores (ADR-0019), la lectura del mercado (ADR-0021) y los
+  **riesgos** (2026-09-07, con cortes en config versionada del motor). Ese que
+  queda no es deuda pendiente sino un bloque **inconstruible como está
+  especificado**: el régimen sobre el que pretende condicionar dura menos de una
+  hora contra un horizonte de 72 h, y esperar más meses no lo arregla — el
+  análisis está en `docs/01-requirements/analisis-comprensivo.md`.
   El login quedó operativo el 2026-08-01 con dominio propio de Auth0 y desarrollo
   por túneles de Cloudflare (ADR-0020); el tenant lleva aprovisionado desde el
   2026-07-27.
