@@ -43,6 +43,7 @@ from indicator_engine.domain.models import (
     nombre_por_lado,
 )
 from indicator_engine.domain.reglas import Ruleset, evaluar_proximidad
+from indicator_engine.domain.riesgos import ConfigRiesgos, evaluar_riesgos
 
 logger = logging.getLogger("indicator_engine")
 
@@ -65,6 +66,9 @@ class AnalizarRevision:
         # Comparativa de la brecha contra su historia (RF-7). None ⇒ la lectura
         # se publica sin ella; el resto del análisis no depende de esto.
         config_comparativas: ConfigComparativas | None = None,
+        # Cortes de nivel de los riesgos. None ⇒ se publica el análisis igual,
+        # sin `risks`. Mismo criterio aditivo que `reading`.
+        config_riesgos: ConfigRiesgos | None = None,
     ) -> None:
         self._config = config
         self._ruleset = ruleset
@@ -73,10 +77,11 @@ class AnalizarRevision:
         self._publisher = publisher
         self._config_lectura = config_lectura
         self._config_comparativas = config_comparativas
+        self._config_riesgos = config_riesgos
 
     def nombres_requeridos(self) -> set[str]:
-        """Indicadores que la vista vigente debe traer: los seis del panel más
-        los que referencia el ruleset.
+        """Indicadores que la vista vigente debe traer: los seis del panel, los
+        que referencia el ruleset y los que leen los riesgos.
 
         Es un superconjunto de lo que necesitan las señales, y eso es inocuo:
         `evaluar_reglas` solo lee los nombres que sus condiciones referencian
@@ -87,7 +92,15 @@ class AnalizarRevision:
             for regla in self._ruleset.reglas
             for cond in regla.condiciones
         }
-        return set(self._config.nombres) | del_ruleset
+        de_riesgos = (
+            self._config_riesgos.nombres_indicadores
+            if self._config_riesgos is not None
+            else set()
+        )
+        # `merchants_pct` no es uno de los seis medidores del panel: sin esta
+        # unión no llegaría a la vista y `libro_concentrado` saldría siempre sin
+        # evaluar.
+        return set(self._config.nombres) | del_ruleset | de_riesgos
 
     async def ejecutar(
         self,
@@ -134,7 +147,17 @@ class AnalizarRevision:
             confianza_baja=confianza_baja,
             official_stale=official_stale,
         )
-        evento = construir_evento_analisis(analisis, lectura)
+        riesgos = (
+            evaluar_riesgos(
+                config=self._config_riesgos,
+                vista=vista,
+                official_stale=official_stale,
+                ruleset_version=self._ruleset.version,
+            )
+            if self._config_riesgos is not None
+            else None
+        )
+        evento = construir_evento_analisis(analisis, lectura, riesgos)
 
         await self._repository.guardar_analisis(analisis, evento["payload"])
         await self._publisher.publish_analysis_updated(evento)

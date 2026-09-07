@@ -684,6 +684,62 @@ export interface components {
             reading?: components["schemas"]["MarketReading"];
             gap_history?: components["schemas"]["GapHistory"];
             gap_legs?: components["schemas"]["GapLegs"];
+            risks?: components["schemas"]["AnalysisRisks"];
+        };
+        /**
+         * @description Nivel de cada riesgo de la vista de Análisis en esta revisión
+         *     (`riesgos.v1.yaml` del motor). OPCIONAL y aditivo, igual que `reading`:
+         *     sin config de riesgos el motor publica el mismo análisis sin este campo.
+         *
+         *     Los cortes que convierten un valor en un nivel son **config versionada
+         *     en repo**, no constantes del cliente: un nivel cableado en el componente
+         *     no puede cambiar cuando cambia el mercado.
+         *
+         *     **Qué NO es**: un pronóstico. Un riesgo describe el presente del mercado
+         *     o el estado de la propia plataforma.
+         */
+        AnalysisRisks: {
+            /** @description Versión de `riesgos.v*.yaml`. */
+            version: number;
+            /**
+             * @description Todos los riesgos declarados, **también los que no se pudieron
+             *     evaluar**, ordenados por gravedad (alto, medio, bajo, y al final los
+             *     no evaluables). Omitir uno lo haría desaparecer de la vista, y un
+             *     riesgo que desaparece se lee como un riesgo que no existe.
+             */
+            items: components["schemas"]["AnalysisRisk"][];
+        };
+        AnalysisRisk: {
+            /**
+             * @description Codigo neutro de idioma. El cliente tiene un titulo y un texto por
+             *     codigo, en cada idioma - igual que con `reading.claims`.
+             * @enum {string}
+             */
+            code: "libro_concentrado" | "calidad_snapshot" | "oficial_rancia" | "umbrales_sin_recalibrar";
+            /**
+             * @description `null` = **no evaluable** en esta revision porque el indicador no
+             *     esta vigente. No se sustituye por el ultimo valor conocido ni se
+             *     degrada a `bajo`: un `bajo` sin dato detras tranquiliza, que es el
+             *     peor error posible en un panel de riesgos.
+             */
+            level: ("alto" | "medio" | "bajo") | null;
+            /**
+             * @description Valor que decidio el nivel, en punto fijo exacto. En
+             *     `umbrales_sin_recalibrar` es la version del ruleset en uso. `null` en
+             *     los riesgos binarios y en los no evaluables.
+             */
+            value: components["schemas"]["SignedDecimal"] | null;
+            /**
+             * @description Corte a partir del cual el riesgo seria `alto`. Viaja en el payload
+             *     para que el cliente rotule el umbral real y no una copia suya que
+             *     puede quedarse atras.
+             */
+            threshold: components["schemas"]["SignedDecimal"] | null;
+            /**
+             * @description Que decidio el nivel: el indicador del peor lado, o el nombre de la
+             *     bandera. Con dos lados, dice cual de los dos manda.
+             */
+            source: string | null;
         };
         /**
          * @description Las dos piernas que explican el movimiento de la brecha sobre la ventana

@@ -151,9 +151,11 @@ de cada 100 tramos de 72 h se movieron menos de 1 pp.
 
 Ordenado por lo que desbloquea:
 
-1. **Cortes de nivel para los riesgos**, declarados y versionados en config del
-   motor, no como constantes del componente. *Sin esto no se puede retirar el
-   sello de «Riesgos».*
+1. ~~**Cortes de nivel para los riesgos**, declarados y versionados en config
+   del motor, no como constantes del componente.~~ **Hecho el 2026-09-07**:
+   `apps/indicator-engine/config/riesgos.v1.yaml` (v1) y el bloque `risks` de
+   `analysis.updated`, con cada corte justificado por su distribución medida.
+   Queda **conectar la vista**: el SPA todavía pinta los niveles a mano.
 2. **`GET /api/v1/analysis/history`.** El régimen y la confianza históricos están
    en `indicator_analysis` (hypertable, 88 896 filas), pero el gateway solo sirve
    `/analysis/current`. **Ningún bloque que mire el pasado del análisis es

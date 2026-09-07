@@ -53,6 +53,34 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Los niveles de riesgo salen de config versionada, no del componente
+  (2026-09-07).** Nuevo `riesgos.v1.yaml` en el motor y bloque `risks` en
+  `analysis.updated` —aditivo y opcional, igual que `reading`—: por cada riesgo
+  su nivel (`alto`/`medio`/`bajo`), el valor que lo decidió, el corte a partir
+  del cual sería alto y qué lo decidió.
+  - **Cada corte va con su medición, no a ojo.** `libro_concentrado` alto en 80
+    (p95 del peor lado sobre 55.924 minutos de 90 d; dispara el 8,14 % del
+    tiempo) y medio en 72, entre la mediana 67 y el p90 79. El 80 es el que la
+    tarjeta ya declaraba y **se conserva a propósito**: mover el umbral para que
+    el nivel cuadre con la redacción sería arreglar el termómetro, no la fiebre.
+  - **`calidad_snapshot` reutiliza el corte de la confianza (30 %)** en vez de
+    estrenar una segunda definición de «snapshot malo», y hay un test que ata
+    las dos. Su nivel `alto` **nunca ha llegado a darse**: el máximo histórico de
+    outliers es 25,51 %.
+  - **Un riesgo sin su indicador sale con `level: null` y NO se degrada a
+    `bajo`.** Es la regla que más importa del bloque: un panel que tranquiliza
+    porque le falta el dato es peor que uno que calla. Por lo mismo se publican
+    todos los riesgos declarados, también los no evaluables — uno que desaparece
+    de la lista se lee como un riesgo que no existe.
+  - **Manda el peor de los dos lados.** El libro está concentrado si lo está
+    cualquiera, y quedarse con `buy` escondía la mitad del riesgo.
+  - `umbrales_sin_recalibrar` es un hecho de proceso, no una medición: vive en
+    config (`calibrado_hasta_version: 0`) y baja solo cuando alguien recalibre y
+    suba el número.
+  - Contrato en `schemas/analysis.v1.json` y en el OpenAPI del gateway, con los
+    tipos del SPA regenerados. La vista **todavía no lo consume**: los niveles
+    que se ven siguen siendo los escritos a mano.
+
 - **Determinación de datos del «Análisis comprensivo» (2026-09-07).** Nuevo
   `docs/01-requirements/analisis-comprensivo.md`: qué haría falta para retirar
   los dos sellos `demo · sin fuente` que quedan en el producto. Conclusión: los

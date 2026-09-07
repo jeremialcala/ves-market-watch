@@ -33,6 +33,7 @@ from indicator_engine.domain.comparativas import (
     cargar_config_comparativas,
 )
 from indicator_engine.domain.lectura import ConfigLectura, cargar_config_lectura
+from indicator_engine.domain.riesgos import ConfigRiesgos, cargar_config_riesgos
 from indicator_engine.domain.reglas import Ruleset, cargar_ruleset
 
 logger = logging.getLogger("indicator_engine")
@@ -121,6 +122,25 @@ def _cargar_config_lectura(path_str: str) -> ConfigLectura | None:
     return config
 
 
+def _cargar_config_riesgos(path_str: str) -> ConfigRiesgos | None:
+    """Carga los cortes de nivel de los riesgos. Sin archivo, el analisis se
+    publica igual pero sin `risks` — el resto de la vista no depende de esto.
+    Una config mal formada aborta el arranque: un panel de riesgos que dice
+    `bajo` sin dato detras tranquiliza, que es el peor error posible aqui."""
+    path = Path(path_str)
+    if not path.exists():
+        logger.warning("sin config de riesgos en %s; se publica sin `risks`", path)
+        return None
+    config = cargar_config_riesgos(yaml.safe_load(path.read_text(encoding="utf-8")))
+    logger.info(
+        "config de riesgos v%d cargada (%d riesgo(s): %s)",
+        config.version,
+        len(config.riesgos),
+        ", ".join(r.codigo for r in config.riesgos),
+    )
+    return config
+
+
 async def run(settings: Settings, drain: bool) -> None:
     repository = await TimescaleIndicatorRepository.connect(settings.database_url)
     publisher = AmqpEventPublisher(settings.amqp_url, settings.amqp_exchange)
@@ -128,6 +148,7 @@ async def run(settings: Settings, drain: bool) -> None:
     config_analisis = _cargar_config_analisis(settings.analysis_config_path)
     config_lectura = _cargar_config_lectura(settings.reading_config_path)
     config_comparativas = _cargar_config_comparativas(settings.reading_config_path)
+    config_riesgos = _cargar_config_riesgos(settings.risks_config_path)
 
     analisis: AnalizarRevision | None = None
     if config_analisis is not None and ruleset is not None:
@@ -143,6 +164,7 @@ async def run(settings: Settings, drain: bool) -> None:
             publisher=publisher,
             config_lectura=config_lectura,
             config_comparativas=config_comparativas,
+            config_riesgos=config_riesgos,
         )
     elif config_analisis is not None:
         # El análisis mide proximidad a las reglas y publica `ruleset_version`:

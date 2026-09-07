@@ -18,7 +18,7 @@ por `GET /api/v1/analysis/current` desde la tabla
 
 Payload: `{as_of, currency, calc_version, analysis_version, ruleset_version,
 confidence, official_stale, triggered_by, indicators[], rule_proximity[],
-summary, reading?, gap_history?}` (contrato `schemas/analysis.v1.json`). El `occurred_at` del sobre es
+summary, reading?, gap_history?, risks?}` (contrato `schemas/analysis.v1.json`). El `occurred_at` del sobre es
 la hora de emisión; `as_of` es el instante del dato de mercado de la revisión.
 
 **Qué es**: por cada medidor con valor vigente, en qué **banda** cae dentro de
@@ -93,6 +93,39 @@ tramo real. Mismo mecanismo que `scale.samples`/`min_samples`.
 `mean` va **ponderada por hora**, no por muestra: la serie derivada
 ([indicators](../tables/indicators.md), `calc_version 0`) tiene una fila cada 10 min
 y la del motor una cada ~30 s. `max`/`min` sí son por muestra.
+
+## `risks` — el nivel de cada riesgo (desde 2026-09-07)
+
+Tercer bloque **aditivo y opcional**, con la misma regla que `reading`: sin
+`riesgos.v1.yaml` el motor publica el mismo evento sin él.
+
+`{version, items: [{code, level, value, threshold, source}]}`.
+
+| Campo | Valores | Nota |
+|---|---|---|
+| `code` | `libro_concentrado` · `calidad_snapshot` · `oficial_rancia` · `umbrales_sin_recalibrar` | Neutro de idioma: el cliente tiene título y texto por código, como con `claims` |
+| `level` | `alto` · `medio` · `bajo` · `null` | **`null` = no evaluable**, porque el indicador no está vigente |
+| `value` | string decimal · `null` | Lo que decidió el nivel. En `umbrales_sin_recalibrar`, la versión del ruleset en uso |
+| `threshold` | string decimal · `null` | Corte a partir del cual sería `alto`. Viaja para que el cliente rotule el umbral real y no una copia suya |
+| `source` | string · `null` | Qué decidió el nivel: el indicador del **peor lado**, o el nombre de la bandera |
+
+**`level: null` no se degrada a `bajo`.** Es la regla más importante de este
+bloque: un panel de riesgos que dice «bajo» porque le falta el indicador
+tranquiliza sobre algo que nadie ha mirado. Por la misma razón **se publican
+todos los riesgos declarados, también los no evaluables**: uno que desaparece de
+la lista se lee como un riesgo que no existe.
+
+**La lista va ORDENADA por gravedad** —alto, medio, bajo, y al final los sin
+nivel—; dentro de un mismo nivel se conserva el orden del YAML.
+
+**Los cortes son config versionada en repo**, no constantes del cliente. Un nivel
+cableado en el componente no puede cambiar cuando cambia el mercado, y eso es
+exactamente lo que pasaba: la tarjeta «Libro concentrado» se pintaba en `alto`
+con el valor real en 60,50 % contra su propio umbral declarado de 80 %
+(`docs/01-requirements/analisis-comprensivo.md`).
+
+**Qué NO es**: un pronóstico. Un riesgo describe el presente del mercado o el
+estado de la propia plataforma. Ninguno dice qué va a pasar ni qué hacer.
 
 Definición de la lectura y sus reglas: [lectura de
 indicadores](../metrics/lectura-de-indicadores.md) (por medidor) y [lectura de
