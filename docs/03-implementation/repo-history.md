@@ -1,7 +1,7 @@
 # Historial de implementación — Criterio
 
 * **Estado:** review (documentación viva — regenerada por script, no editar a mano)
-* **Fecha:** 2026-08-23
+* **Fecha:** 2026-09-06
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
 * **Versión:** 0.4.0
@@ -241,6 +241,72 @@ gitGraph
     commit id: "0bb8be7"
     commit id: "8ef0624" type: HIGHLIGHT
     commit id: "ae49831"
+    commit id: "39a3076"
+    commit id: "3b68d49"
+    commit id: "abd3c2a" type: HIGHLIGHT
+    commit id: "819557c"
+    commit id: "cf66855"
+    commit id: "fc93042"
+    commit id: "e215e3b"
+    commit id: "c4b7b33" type: HIGHLIGHT
+    commit id: "f19a490" type: HIGHLIGHT
+    commit id: "9d639e3" type: HIGHLIGHT
+    commit id: "60c7264"
+    commit id: "f87805c"
+    commit id: "854667a" type: HIGHLIGHT
+    commit id: "62f012d"
+    commit id: "6546c4a" type: HIGHLIGHT
+    commit id: "d801dd1"
+    commit id: "70af379"
+    commit id: "244d69a" type: HIGHLIGHT
+    commit id: "2de91a4"
+    commit id: "795709b"
+    commit id: "d0f9a92"
+    commit id: "5a7d915" type: HIGHLIGHT
+    commit id: "bccfe93"
+    commit id: "91c5a2b"
+    commit id: "a86d418" type: HIGHLIGHT
+    commit id: "0e279f7"
+    commit id: "f4ab6a5"
+    commit id: "0105c59"
+    commit id: "b45b108" type: HIGHLIGHT
+    commit id: "3b49dde"
+    commit id: "6151be5"
+    commit id: "1d9ef92"
+    commit id: "1a9301c" type: HIGHLIGHT
+    commit id: "4cf9ef3"
+    commit id: "7afd0ac" type: HIGHLIGHT
+    commit id: "8abe2d9"
+    commit id: "d6e97f0" type: HIGHLIGHT
+    commit id: "ed10702"
+    commit id: "4394deb"
+    commit id: "5bab09d" type: HIGHLIGHT
+    commit id: "a1c18ca" type: HIGHLIGHT
+    commit id: "008825a"
+    commit id: "79eed5b" type: HIGHLIGHT
+    commit id: "810006e"
+    commit id: "4b7a016" type: HIGHLIGHT
+    commit id: "3924b55"
+    commit id: "b19d826" type: HIGHLIGHT
+    commit id: "f7fd145"
+    commit id: "ef9bc26" type: HIGHLIGHT
+    commit id: "fb6de9a"
+    commit id: "1861191" type: HIGHLIGHT
+    commit id: "ed223ae"
+    commit id: "be0a296" type: HIGHLIGHT
+    commit id: "179252d"
+    commit id: "933b9cb" type: HIGHLIGHT
+    commit id: "94a9738"
+    commit id: "934dacc" type: HIGHLIGHT
+    commit id: "be98c39"
+    commit id: "37928b8" type: HIGHLIGHT
+    commit id: "d1c6839"
+    commit id: "b3ceefd"
+    commit id: "c739524" type: HIGHLIGHT
+    commit id: "01362d6"
+    commit id: "5f8509c" type: HIGHLIGHT
+    commit id: "d9a0bcc"
+    commit id: "2dfe2f6" type: HIGHLIGHT
 ```
 
 ### Estado actual de las ramas
@@ -248,7 +314,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `ae49831` | 2026-08-07 | 207 |
+| `develop` | `2dfe2f6` | 2026-09-06 | 273 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -264,6 +330,63 @@ gitGraph
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `5c4d0fa` | commit | — | Jeremi Alcala | 2026-09-06 | refactor(graficos): un solo componente de serie temporal para todo Criterio |
+| `2dfe2f6` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #29 from jeremialcala/feat-ritmo-historico |
+| `d9a0bcc` | commit | — | Jeremi Alcala | 2026-09-06 | fix(historico): el hueco de 22 px no se aplicaba, y normalizar el ritmo |
+| `5f8509c` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #28 from jeremialcala/feat-estados-historico |
+| `01362d6` | commit | — | Jeremi Alcala | 2026-09-06 | feat(historico): estados de ventana insuficiente y sin datos |
+| `c739524` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #27 from jeremialcala/feat-tooltip-graficos |
+| `b3ceefd` | commit | — | Jeremi J. Alcalá M. | 2026-09-06 | Potential fix for pull request finding 'CodeQL / Unused variable, import, function or class' |
+| `d1c6839` | commit | — | Jeremi Alcala | 2026-09-06 | feat(historico): crosshair, punto y tooltip en los dos graficos |
+| `37928b8` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #26 from jeremialcala/feat-controles-en-tarjeta |
+| `be98c39` | commit | — | Jeremi Alcala | 2026-09-06 | refactor(historico): los controles, dentro de la tarjeta que gobiernan |
+| `934dacc` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #25 from jeremialcala/feat-eje-temporal |
+| `94a9738` | commit | — | Jeremi Alcala | 2026-09-06 | feat(historico): eje X temporal en los dos graficos, no categorico |
+| `933b9cb` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #24 from jeremialcala/feat-cabecera-serie-evaluada |
+| `179252d` | commit | — | Jeremi Alcala | 2026-09-06 | feat(historico): cabecera y estadisticas de ventana en la serie evaluada |
+| `be0a296` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #23 from jeremialcala/feat-jerarquia-historico |
+| `ed223ae` | commit | — | Jeremi Alcala | 2026-09-06 | refactor(historico): la serie evaluada manda, la tasa oficial pasa a contexto |
+| `1861191` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #22 from jeremialcala/feat-historial-reglas |
+| `fb6de9a` | commit | — | Jeremi Alcala | 2026-09-06 | feat(historico): seccion «Historial de las reglas» como ultimo bloque |
+| `ef9bc26` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #21 from jeremialcala/feat-episodios-comparables |
+| `f7fd145` | commit | — | Jeremi Alcala | 2026-09-06 | feat(historico): seccion «Episodios comparables» tras los graficos |
+| `b19d826` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #20 from jeremialcala/feat-lectura-historico |
+| `3924b55` | commit | — | Jeremi Alcala | 2026-09-06 | feat(historico): panel «Lo que dice el historico» como bloque rector |
+| `4b7a016` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #19 from jeremialcala/feat-capa-referencia-historico |
+| `810006e` | commit | — | Jeremi Alcala | 2026-09-06 | feat(historico): capa de referencia bajo la serie evaluada |
+| `79eed5b` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #18 from jeremialcala/feat-paginacion-paralela |
+| `008825a` | commit | — | Jeremi Alcala | 2026-09-06 | test(slo): verificador de cierre del SLO de ingesta, programado para manana |
+| `a1c18ca` | merge | — | Jeremi Alcala | 2026-09-06 | merge: develop (renumeracion de gates) en la rama de paginacion paralela |
+| `ed10702` | commit | — | Jeremi Alcala | 2026-09-06 | feat(ingesta): paginar en lotes concurrentes para cumplir el SLO (ADR-0026) |
+| `5bab09d` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #17 from jeremialcala/docs-renumerar-gates |
+| `4394deb` | commit | — | Jeremi Alcala | 2026-09-06 | docs(gates): renumerar a la numeracion canonica de AI-DLC |
+| `d6e97f0` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #16 from jeremialcala/test-medir-slo-wss |
+| `8abe2d9` | commit | — | Jeremi Alcala | 2026-09-06 | test(slo): medir el push del WSS, el quinto y ultimo SLO sin medir |
+| `7afd0ac` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #15 from jeremialcala/chore-retirar-cve-js-yaml |
+| `4cf9ef3` | commit | — | Jeremi Alcala | 2026-09-06 | security(deps): retirar la excepcion del CVE-2026-59870, que ya esta cerrado |
+| `1a9301c` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #14 from jeremialcala/feat-dast-zap |
+| `1d9ef92` | commit | — | Jeremi Alcala | 2026-09-06 | fix(gateway): un byte NUL en la query devolvia 500, no 400 |
+| `6151be5` | commit | — | Jeremi Alcala | 2026-09-06 | fix(dast): dos fallos que solo aparecian en CI |
+| `3b49dde` | commit | — | Jeremi Alcala | 2026-09-06 | feat(dast): escaneo dinamico con ZAP, que era el hueco real del gate |
+| `b45b108` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #13 from jeremialcala/test-medir-los-slo |
+| `0105c59` | commit | — | Jeremi J. Alcalá M. | 2026-09-06 | Potential fix for pull request finding 'CodeQL / Unused import' |
+| `f4ab6a5` | commit | — | Jeremi J. Alcalá M. | 2026-09-06 | Potential fix for pull request finding 'CodeQL / File is not always closed' |
+| `0e279f7` | commit | — | Jeremi Alcala | 2026-09-06 | test(slo): medir los SLO de latencia, que llevaban declarados sin contrastar |
+| `a86d418` | merge | — | Jeremi J. Alcalá M. | 2026-08-31 | Merge pull request #12 from jeremialcala/chore-sacar-dump-del-repo |
+| `91c5a2b` | commit | — | Jeremi Alcala | 2026-08-31 | chore(repo): sacar de la punta el volcado que viajaba de polizon |
+| `bccfe93` | commit | — | Jeremi Alcala | 2026-08-31 | chore(.gitignore): add *.dump to ignore list |
+| `5a7d915` | merge | — | Jeremi J. Alcalá M. | 2026-08-31 | Merge pull request #11 from jeremialcala/fix-ventana-incremental |
+| `cad4482` | commit | — | Jeremi Alcala | 2026-08-31 | chore(.gitignore): add *.dump to ignore list |
+| `d0f9a92` | commit | — | Jeremi Alcala | 2026-08-31 | chore(respaldo): levantarlo de verdad, y arreglar lo que la puesta en marcha daba por hecho |
+| `795709b` | commit | — | Jeremi Alcala | 2026-08-24 | docs(respaldo): cifras reales tras ejecutarlo, y la que estaba mal |
+| `2de91a4` | commit | — | Jeremi Alcala | 2026-08-24 | fix(respaldo): anclar la ventana del incremental al filo de la hora |
+| `244d69a` | merge | — | Jeremi J. Alcalá M. | 2026-08-24 | Merge pull request #10 from jeremialcala/fix-cabeceras-cuota-en-errores |
+| `70af379` | commit | — | Jeremi Alcala | 2026-08-23 | chore(spa): regenerar los tipos del OpenAPI |
+| `6546c4a` | merge | — | Jeremi J. Alcalá M. | 2026-08-23 | Merge pull request #9 from jeremialcala/feat-respaldo-y-volumen |
+| `d801dd1` | commit | — | Jeremi Alcala | 2026-08-23 | fix(gateway): la cuota viaja también en los errores que la consumen |
+| `62f012d` | commit | — | Jeremi Alcala | 2026-08-23 | feat(respaldo): volumen con nombre y respaldo a Drive |
+| `854667a` | merge | — | Jeremi J. Alcalá M. | 2026-08-23 | Merge pull request #8 from jeremialcala/chore-tunel-en-compose |
+| `f87805c` | commit | — | Jeremi Alcala | 2026-08-23 | docs(repo-history): regenerar |
 | `60c7264` | commit | — | Jeremi Alcala | 2026-08-23 | chore(dev): el conector del túnel entra en el compose |
 | `9d639e3` | merge | — | Jeremi J. Alcalá M. | 2026-08-23 | Merge pull request #6 from jeremialcala/ci-e2e-vivo |
 | `f19a490` | merge | — | Jeremi J. Alcalá M. | 2026-08-23 | Merge branch 'develop' into ci-e2e-vivo |
