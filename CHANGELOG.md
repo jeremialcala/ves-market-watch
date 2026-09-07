@@ -17,6 +17,30 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **Crosshair, punto y tooltip en los dos gráficos del histórico
+  (2026-09-06).** No se «conservaron»: **no existían**. Se perdieron al
+  sustituir Recharts por SVG propio, y esta es la primera vez que los gráficos
+  vuelven a ser interrogables.
+  - **El contenido son tres líneas, no el volcado del dato.** Cuándo (fecha y
+    hora), cuánto (dos decimales con la unidad detrás — `736,93 %`, nunca
+    `USD/VES : 736,9339`) y **si eso es mucho**: percentil en la ventana y
+    distancia a la mediana con signo. Un número solo no responde a la pregunta
+    con la que alguien pasa el ratón por encima.
+  - **El punto se busca por TIEMPO, no por índice.** Con el eje ya temporal,
+    dividir por el número de puntos señalaría un día distinto del que está bajo
+    el cursor en cuanto hay un hueco de fin de semana.
+  - **Se voltea cerca del borde, no se recorta**: un tooltip cortado esconde
+    justo la cifra que se ha ido a mirar. El umbral son 140 px reales.
+  - **Táctil y ratón no se tratan igual, a propósito.** Con puntero fino sigue
+    al cursor y se cierra al salir; en táctil se abre con un toque y se cierra
+    **tocando fuera** — no existe «salir» al tocar, y tratarlo como un ratón
+    dejaría el tooltip pegado hasta que alguien roce otra cosa.
+  - La superficie repite el tratamiento de la navbar y **no captura el
+    puntero**: si lo hiciera, moverse sobre el propio tooltip cerraría el
+    crosshair que lo abrió.
+
 ### Changed
 
 - **Los controles de rango, serie y bucket se mudan dentro de la tarjeta que

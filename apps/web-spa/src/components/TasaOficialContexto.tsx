@@ -17,12 +17,17 @@
 
 import { useRef } from "react";
 
+import { TooltipGrafico } from "./TooltipGrafico";
 import { useI18n } from "../i18n/contexto";
 import type { Idioma } from "../i18n/idioma";
 import { formatDecimal } from "../lib/decimal";
 import { parteDelPrecio } from "../lib/pierna";
 import { marcasTiempo, puntosTemporales } from "../lib/ejeTiempo";
 import { useAncho } from "../lib/useAncho";
+import { useCrosshair } from "../lib/useCrosshair";
+import { anclajeTooltip, contextoPunto, fraccionDe } from "../lib/tooltipSerie";
+import { percentilDisc } from "../lib/series";
+import { toChartNumber } from "../lib/decimal";
 import type { Punto } from "../lib/series";
 import { NoDataState } from "./NoDataState";
 
@@ -51,6 +56,8 @@ export function TasaOficialContexto({
   const { t } = useI18n();
   const ejeRef = useRef<HTMLDivElement>(null);
   const anchoEje = useAncho(ejeRef, ANCHO);
+  const marcoRef = useRef<HTMLDivElement>(null);
+  const { activo, manejadores } = useCrosshair(marcoRef, puntos);
   const locale = LOCALE[idioma];
 
   const parte = parteDelPrecio(brechaPct);
@@ -62,6 +69,18 @@ export function TasaOficialContexto({
     );
 
   const linea = puntosTemporales(puntos, ANCHO, ALTO, PAD);
+
+  // Misma aritmética de Y que `puntosTemporales`, para que el punto caiga
+  // EXACTAMENTE sobre el trazo y no un píxel al lado.
+  const valores = puntos.map((p) => toChartNumber(p.valor));
+  const minimo = valores.length === 0 ? 0 : Math.min(...valores);
+  const recorrido = (valores.length === 0 ? 0 : Math.max(...valores)) - minimo || 1;
+  const fx = activo === null ? 0 : fraccionDe(puntos, activo);
+  const fy =
+    activo === null
+      ? 0
+      : (ALTO - PAD - ((valores[activo] - minimo) / recorrido) * (ALTO - PAD * 2)) /
+        ALTO;
 
   return (
     <section className="vmw-oficial" aria-label={t("historico.tasaTitulo", { moneda })}>
@@ -91,6 +110,7 @@ export function TasaOficialContexto({
         <NoDataState detalle={vacio} />
       ) : (
         <>
+          <div className="vmw-oficial__marco" ref={marcoRef} {...manejadores}>
           <svg
             viewBox={`0 0 ${ANCHO} ${ALTO}`}
             preserveAspectRatio="none"
@@ -115,6 +135,52 @@ export function TasaOficialContexto({
               vectorEffect="non-scaling-stroke"
             />
           </svg>
+
+          {activo !== null && (
+            <>
+              <svg
+                className="vmw-cross"
+                viewBox={`0 0 ${ANCHO} ${ALTO}`}
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                <line
+                  x1={fx * ANCHO}
+                  y1="0"
+                  x2={fx * ANCHO}
+                  y2={ALTO}
+                  stroke="var(--border)"
+                  strokeWidth="1"
+                  vectorEffect="non-scaling-stroke"
+                />
+              </svg>
+              <span
+                className="vmw-cross__punto"
+                style={{
+                  left: `${fx * 100}%`,
+                  top: `${fy * 100}%`,
+                  background: "var(--teal)",
+                }}
+                aria-hidden="true"
+              />
+              <TooltipGrafico
+                t={puntos[activo].t}
+                valor={puntos[activo].valor}
+                unidad="VES"
+                color="var(--teal)"
+                contexto={contextoPunto(
+                  puntos,
+                  activo,
+                  percentilDisc(puntos, 0.5) ?? puntos[activo].valor,
+                )}
+                anclaje={anclajeTooltip(fx * anchoEje, anchoEje)}
+                izquierda={fx * 100}
+                arriba={fy * 100}
+                idioma={idioma}
+              />
+            </>
+          )}
+          </div>
 
           {/* Solo el eje de fechas. Fuera del SVG: `preserveAspectRatio="none"`
               deformaría cualquier texto de dentro. */}
