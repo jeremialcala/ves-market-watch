@@ -1,0 +1,66 @@
+# Publica la imagen de api-gateway en GHCR para el despliegue continuo en
+# hgtech001 (receptor: github.com/higerotech/despliegue-continuo).
+#
+# El NOMBRE de este workflow es contrato: el receptor solo despliega cuando
+# termina con exito un workflow_run llamado exactamente `build-api-gateway`
+# sobre `main`. Renombrarlo detiene los despliegues en silencio.
+#
+# El tag `type=sha` produce `sha-<7 hex>`, que es lo que el receptor espera en
+# su `tag_template`. Cambiar ese formato haria fallar cada despliegue con
+# `manifest unknown`.
+name: build-api-gateway
+
+on:
+  push:
+    branches: [main]
+    # El Dockerfile usa la raiz como contexto pero solo copia estas dos rutas,
+    # asi que un cambio en otro servicio no necesita reconstruir ni redesplegar.
+    paths:
+      - "apps/api-gateway/**"
+      - "schemas/**"
+      - ".github/workflows/build-api-gateway.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: build-api-gateway-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository }}/api-gateway
+          tags: |
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/api-gateway/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+# El despliegue NO se dispara desde aqui. Al completarse este workflow, GitHub
+# emite workflow_run hacia el webhook de hgtech001, que valida la firma, empareja
+# contra su inventario y despliega el tag sha-xxxxxxx.
