@@ -587,7 +587,6 @@ export const ES = {
   "historico.leyendaHoy": "hoy",
   "historico.leyendaUmbralPorEncima": "umbral: por encima de {umbral}",
   "historico.leyendaUmbralPorDebajo": "umbral: por debajo de {umbral}",
-  "historico.rangoLabel": "{dias} días",
 
   // -- intradía --------------------------------------------------------------
   // -- Compra vs. venta (Intradía) --------------------------------------------
@@ -1349,7 +1348,6 @@ export const EN: Record<Clave, string> = {
   "historico.leyendaHoy": "today",
   "historico.leyendaUmbralPorEncima": "threshold: above {umbral}",
   "historico.leyendaUmbralPorDebajo": "threshold: below {umbral}",
-  "historico.rangoLabel": "{dias} days",
 
   // -- Buy vs. sell (Intraday) ------------------------------------------------
   "vs.titulo": "Buy vs. sell, metric by metric",

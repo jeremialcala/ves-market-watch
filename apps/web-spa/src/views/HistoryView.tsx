@@ -119,7 +119,7 @@ export function HistoryView() {
   }, [dias, moneda, indicador, intervalo, t]);
 
   return (
-    <main className="vmw-vista">
+    <main className="vmw-vista vmw-vista--historico">
       <div className="vmw-contenedor">
         {/* Barra GLOBAL: solo la moneda, que afecta a toda la vista —también
             al bloque de la tasa oficial—. Rango, serie y bucket viven dentro de

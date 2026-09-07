@@ -17,6 +17,33 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Fixed
+
+- **Los 22 px entre la serie evaluada y la tasa oficial no se aplicaban
+  (2026-09-06).** Se escribieron en `.vmw-oficial` —especificidad 0,1,0—
+  mientras la regla base del contenedor, `.vmw-vista > .vmw-contenedor > * + *`
+  con 0,2,0, imponía 24. **La medida que puse en el PR de jerarquía nunca
+  existió en pantalla**, y nada lo dijo: una regresión de espaciado no rompe
+  ningún test ni ninguna compilación.
+  - Ahora el ritmo vive en un modificador `--historico`, como ya hacía Intradía,
+    y **hay un test que lo fija leyendo la hoja** — incluida la comprobación de
+    que la clase del bloque ya no lleva un `margin-top` huérfano.
+
+### Changed
+
+- **Ritmo de Histórico normalizado (2026-09-06).** El espaciado dice ahora qué
+  clase de bloque es cada cosa: 24 px de la lectura a la tarjeta de serie, 22
+  entre la serie y la tasa oficial —van juntas, protagonista y contexto—, y 46
+  antes de episodios y del historial de reglas, que son **secciones** y cambian
+  de tema.
+  - Las cabeceras de sección igualan su gap a `8px 14px`.
+  - **Se retira `historico.rangoLabel` («30 días»)**, que había quedado muerta
+    en el diccionario: el título de la tasa oficial dejó de mostrar el rango al
+    reestructurar ese bloque, y el rango ya lo fija el control.
+  - El contenedor y el aire de la vista **ya cumplían** lo pedido —`--maxw:
+    1180px`, `--container-pad: 24px`, `clamp(24px, 4vw, 44px) 0 96px`—; el test
+    nuevo los deja fijados para que no se muevan de refilón.
+
 ### Added
 
 - **Dos estados explícitos para el histórico (2026-09-06).** Ni gráficos vacíos
