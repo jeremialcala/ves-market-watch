@@ -27,6 +27,7 @@ import {
 } from "../api/endpoints";
 import { ApiError } from "../api/problem";
 import { EpisodiosComparables } from "../components/EpisodiosComparables";
+import { HistorialReglas } from "../components/HistorialReglas";
 import { LecturaHistorico } from "../components/LecturaHistorico";
 import { NoDataState } from "../components/NoDataState";
 import { SerieEvaluada } from "../components/SerieEvaluada";
@@ -350,6 +351,13 @@ export function HistoryView() {
         {/* Después de los gráficos: primero se ve la serie, luego con qué se
             parece. Al revés obligaría a comparar contra algo no visto. */}
         <EpisodiosComparables
+          senales={senales}
+          analisis={analisis}
+          idioma={idioma}
+        />
+
+        {/* Último bloque: del caso concreto al comportamiento agregado. */}
+        <HistorialReglas
           senales={senales}
           analisis={analisis}
           idioma={idioma}
