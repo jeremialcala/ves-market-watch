@@ -3204,3 +3204,30 @@ body {
   font-size: 12px;
   color: var(--text-dim);
 }
+
+/* Ejes temporales: las marcas se posicionan por porcentaje, no se reparten con
+   `space-between`. El sitio de una fecha es el que le toca en el tiempo. */
+.vmw-serieval__fechas,
+.vmw-oficial__eje {
+  position: relative;
+  display: block;
+  height: 18px;
+}
+
+.vmw-serieval__fechas > span,
+.vmw-oficial__eje > span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* Los extremos se pegan al borde en vez de salirse de la tarjeta. */
+.vmw-serieval__fechas > span:first-child,
+.vmw-oficial__eje > span:first-child {
+  transform: none;
+}
+
+.vmw-serieval__fechas > span:last-child,
+.vmw-oficial__eje > span:last-child {
+  transform: translateX(-100%);
+}

@@ -15,11 +15,15 @@
  * vigente, la frase se queda sin el dato en vez de inventárselo.
  */
 
+import { useRef } from "react";
+
 import { useI18n } from "../i18n/contexto";
 import type { Idioma } from "../i18n/idioma";
 import { formatDecimal } from "../lib/decimal";
 import { parteDelPrecio } from "../lib/pierna";
-import { puntosPolilinea, type Punto } from "../lib/series";
+import { marcasTiempo, puntosTemporales } from "../lib/ejeTiempo";
+import { useAncho } from "../lib/useAncho";
+import type { Punto } from "../lib/series";
 import { NoDataState } from "./NoDataState";
 
 const ANCHO = 1060;
@@ -31,17 +35,22 @@ export function TasaOficialContexto({
   puntos,
   moneda,
   brechaPct,
+  dias,
   idioma,
   vacio,
 }: {
   puntos: readonly Punto[];
   moneda: string;
+  /** Rango pedido, para elegir el paso de las marcas del eje. */
+  dias: number;
   /** Brecha porcentual vigente; `null` si no hay ninguna. */
   brechaPct: string | null;
   idioma: Idioma;
   vacio: string;
 }) {
   const { t } = useI18n();
+  const ejeRef = useRef<HTMLDivElement>(null);
+  const anchoEje = useAncho(ejeRef, ANCHO);
   const locale = LOCALE[idioma];
 
   const parte = parteDelPrecio(brechaPct);
@@ -52,7 +61,7 @@ export function TasaOficialContexto({
       new Date(ms),
     );
 
-  const linea = puntosPolilinea(puntos, ANCHO, ALTO, PAD);
+  const linea = puntosTemporales(puntos, ANCHO, ALTO, PAD);
 
   return (
     <section className="vmw-oficial" aria-label={t("historico.tasaTitulo", { moneda })}>
@@ -109,12 +118,21 @@ export function TasaOficialContexto({
 
           {/* Solo el eje de fechas. Fuera del SVG: `preserveAspectRatio="none"`
               deformaría cualquier texto de dentro. */}
-          <div className="vmw-oficial__eje" aria-hidden="true">
-            <span>{fecha(puntos[0].t)}</span>
-            {puntos.length > 2 && (
-              <span>{fecha(puntos[Math.floor(puntos.length / 2)].t)}</span>
-            )}
-            <span>{fecha(puntos[puntos.length - 1].t)}</span>
+          <div className="vmw-oficial__eje" ref={ejeRef} aria-hidden="true">
+            {marcasTiempo(
+              puntos[0].t,
+              puntos[puntos.length - 1].t,
+              dias,
+              idioma,
+              anchoEje,
+            ).map((marca) => (
+              <span
+                key={marca.t}
+                style={{ left: `${(marca.fraccion * 100).toFixed(2)}%` }}
+              >
+                {marca.etiqueta}
+              </span>
+            ))}
           </div>
         </>
       )}

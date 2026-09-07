@@ -20,12 +20,16 @@
  * deformado con él. Las etiquetas del eje y la leyenda son HTML.
  */
 
+import { useRef } from "react";
+
 import { useI18n } from "../i18n/contexto";
 import type { Idioma } from "../i18n/idioma";
 import { formatDecimal, toChartNumber } from "../lib/decimal";
 import type { CondicionDeIndicador } from "../lib/reglas";
+import { marcasTiempo, puntosTemporales } from "../lib/ejeTiempo";
 import { colorZona, leerHistorico } from "../lib/lecturaHistorico";
-import { percentilDisc, puntosPolilinea, type Punto } from "../lib/series";
+import { useAncho } from "../lib/useAncho";
+import { percentilDisc, type Punto } from "../lib/series";
 import { NoDataState } from "./NoDataState";
 
 const ANCHO = 1060;
@@ -64,6 +68,8 @@ export function SerieEvaluada({
   etiqueta: string;
 }) {
   const { t } = useI18n();
+  const ejeRef = useRef<HTMLDivElement>(null);
+  const anchoEje = useAncho(ejeRef, ANCHO);
 
   if (puntos.length === 0) {
     return <NoDataState detalle={vacio} />;
@@ -250,7 +256,7 @@ export function SerieEvaluada({
 
           {/* 6. La serie, encima de todo: es el dato. */}
           <polyline
-            points={puntosPolilinea(puntos, ANCHO, ALTO, PAD, escala)}
+            points={puntosTemporales(puntos, ANCHO, ALTO, PAD, escala)}
             fill="none"
             stroke="var(--series-buy)"
             strokeWidth="2.2"
@@ -263,12 +269,17 @@ export function SerieEvaluada({
 
       {/* Eje de fechas. Fuera del SVG, como el de valores: con
           `preserveAspectRatio="none"` el texto de dentro se deformaría. */}
-      <div className="vmw-serieval__fechas" aria-hidden="true">
-        <span>{fecha(lectura.desde)}</span>
-        {puntos.length > 2 && (
-          <span>{fecha(puntos[Math.floor(puntos.length / 2)].t)}</span>
+      <div className="vmw-serieval__fechas" ref={ejeRef} aria-hidden="true">
+        {marcasTiempo(lectura.desde, lectura.hasta, dias, idioma, anchoEje).map(
+          (marca) => (
+            <span
+              key={marca.t}
+              style={{ left: `${(marca.fraccion * 100).toFixed(2)}%` }}
+            >
+              {marca.etiqueta}
+            </span>
+          ),
         )}
-        <span>{fecha(lectura.hasta)}</span>
       </div>
 
       <ul className="vmw-serieval__leyenda">
