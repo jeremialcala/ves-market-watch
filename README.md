@@ -9,7 +9,7 @@ indicadores financieros expuestos vía API REST y WebSocket (WSS).
 ```
 ves-market-watch/            # el repositorio conserva el nombre viejo (ADR-0024)
 ├── .ai-dlc/                  # Metodología: gates y plantillas
-│   ├── gates/                # Checklists de gates (0 y 1 creados; siguientes al cerrar cada fase)
+│   ├── gates/                # Checklists de gates (0 a 3 creados; siguientes al cerrar cada fase)
 │   └── templates/            # prd, adr, threat-model
 ├── .github/workflows/        # CI: `ci.yml` (matriz de los 6 proyectos), `seguridad.yml` y `e2e-vivo.yml`
 ├── .gitleaks.toml            # Excepciones del escaneo de secretos, una a una y con motivo
@@ -106,9 +106,12 @@ Tres workflows en `.github/workflows/`:
   artefacto, también cuando falla. En cada push y cada PR.
 - **`seguridad.yml`** — los gates de seguridad **rompiendo el build**, no avisando:
   `gitleaks` sobre la historia completa (T6), `pip-audit` por servicio y
-  `npm audit --audit-level=high` (T8), y CodeQL con umbral de severidad sobre el
-  SARIF (T9). En cada push y cada PR, más una pasada semanal: una dependencia no
-  cambia, pero lo que se sabe de ella sí.
+  `npm audit --audit-level=high` (T8), CodeQL con umbral de severidad sobre el
+  SARIF (T9) y **DAST con ZAP contra el gateway real** (T4/T9/T11) en dos pasadas
+  —el borde de autenticación sin token y los handlers de verdad con un token
+  M2M—, con triaje que rompe el build ante cualquier Medium/High y ante cualquier
+  Low no declarada. En cada push y cada PR, más una pasada semanal: una
+  dependencia no cambia, pero lo que se sabe de ella sí.
 - **`e2e-vivo.yml`** — el gateway de verdad, levantado con compose en el propio
   runner. Los **rechazos** (401 del REST, cierre 4401 del WSS) prueban código y
   van en cada PR; el **camino feliz** con el client M2M prueba la configuración
@@ -117,9 +120,11 @@ Tres workflows en `.github/workflows/`:
   `AUTH0_M2M_CLIENT_ID` y `AUTH0_M2M_CLIENT_SECRET` como secretos de Actions.
   Nginx y el túnel quedan fuera: eso sigue siendo la corrida manual.
 
-Los umbrales de cobertura son un **trinquete** en el valor actual de cada
-servicio, no el 80 % plano: el criterio de Gate 2 es el 80 %, pero lo que rompe el
-build es cualquier retroceso desde donde está hoy cada uno.
+Los umbrales de cobertura de los **cinco servicios Python** son un **trinquete**
+en su valor actual, no el 80 % plano: el criterio de Gate 2 es el 80 %, pero lo
+que rompe el build es cualquier retroceso desde donde está hoy cada uno. El
+`web-spa` es la excepción y aplica el **80 % de ramas liso**, declarado en
+`vite.config.ts`.
 
 ## Estado
 
@@ -143,19 +148,28 @@ build es cualquier retroceso desde donde está hoy cada uno.
   El login quedó operativo el 2026-08-01 con dominio propio de Auth0 y desarrollo
   por túneles de Cloudflare (ADR-0020); el tenant lleva aprovisionado desde el
   2026-07-27.
-- **Gate 3 (pruebas) en curso.** Cobertura **≥ 80 % en los seis** con las dos
-  métricas —combinada y ramas solas— (medido 2026-08-06). Combinada sobre `src/`:
-  `ingestor-bcv` 99,36 · `ingestor-binance` 99,27 · `ingestor-historico`
-  97,22 · `web-spa` 94,89 · `api-gateway` 92,65 · `indicator-engine` 85,88; la más
-  baja en ramas solas es 82,71 (`indicator-engine`). 1 263
-  tests en total. El **e2e autenticado en vivo con token real quedó cumplido el
-  2026-08-07** (6/6 contra el tenant y el gateway reales); quedan llevarlo al
-  pipeline
-  y la deuda del control de T8 —lockfiles, digests y un CVE aceptado por escrito
-  (CVE-2026-59870 en `js-yaml`, **retirado el 2026-09-06**: el parche llegó a la
-  línea 4.x y bastó un `npm update`)—;
-  detalle en
-  `docs/04-testing/plan-de-pruebas.md` §10 y §12.
+  La vista de **Histórico** se rehízo entre el 2026-09-05 y el 2026-09-06: capa de
+  referencia sobre la serie (banda intercuartil, mediana y umbral de la regla),
+  panel de lectura que dice dónde cae el dato de hoy dentro de su ventana,
+  episodios comparables, historial de reglas **sin contador de aciertos** —un
+  «N de M» se lee como tasa de acierto y esto no pronostica—, eje X **temporal**
+  (los fines de semana sin fecha-valor del BCV ocupan sitio en vez de borrarse),
+  tooltip de tres líneas —cuándo, cuánto y si eso es mucho— y dos estados
+  explícitos para la ventana insuficiente y la serie vacía.
+- **Gate 3 (pruebas): los tres criterios cubiertos, pendiente de firma HITL.**
+  Cobertura **≥ 80 % en los seis** con las dos métricas —combinada y ramas solas—,
+  medida por la propia pipeline el **2026-09-07**. Combinada sobre `src/`:
+  `ingestor-bcv` 99,36 · `ingestor-binance` 99,30 · `ingestor-historico` 97,22 ·
+  `api-gateway` 92,86 · `web-spa` 92,78 · `indicator-engine` 85,89; la más baja en
+  ramas solas sigue siendo 82,71 (`indicator-engine`). **1 441 tests** en total:
+  792 de los cinco servicios Python y 649 del SPA. El **e2e autenticado en vivo
+  con token real** se cumplió el 2026-08-07 (6/6 contra el tenant y el gateway
+  reales) y **corre en el pipeline desde el 2026-08-20**. Lo que queda abierto es
+  la deuda del control de T8: sin lockfiles en los cinco servicios Python y sin
+  imágenes por digest. El CVE-2026-59870 de `js-yaml` **dejó de ser una excepción
+  aceptada el 2026-09-06**, cuando el parche llegó a la línea 4.x y bastó un
+  `npm update`. Detalle en `docs/04-testing/plan-de-pruebas.md` §10 y §12.
+
 ### Gates AI-DLC
 
 **Ojo con la numeración: cambió el 2026-09-06.** El proyecto llamaba «Gate 2» al
@@ -176,7 +190,15 @@ Fichas en `.ai-dlc/gates/`. El SLO de ingesta —que bloqueaba el Gate 3 con
 7,16 s contra un techo de 5 s— **se resolvió el 2026-09-06 con ADR-0026**,
 paginando en lotes concurrentes: **1,40 s** medidos, sin un solo 429. Antes de
 firmar el gate conviene confirmar ese p95 sobre una corrida larga y comprobar que
-la tasa de 429 no ha subido: la muestra que lo respalda son 15 minutos.
-- Inventario de cambios por ejecución: ver `CHANGELOG.md`
-- Contexto curado para agentes y humanos: ver `knowledge/index.md` (OKF v0.1 — punto de
-  entrada recomendado para retomar el proyecto)
+la tasa de 429 no ha subido: la muestra que lo respalda son 15 minutos. Esa
+comprobación **está programada** —`scripts/verificar_slo_ingesta.py`, que solo
+sale con 0 si el p95 aguanta y los 429 no han subido— y deja su informe en
+`informes/`.
+
+## Dónde seguir
+
+- Inventario de cambios por ejecución: `CHANGELOG.md`.
+- Contexto curado para agentes y humanos: `knowledge/index.md` (OKF v0.1 — punto
+  de entrada recomendado para retomar el proyecto).
+- Plan de pruebas, SLOs y criterios de gate: `docs/04-testing/plan-de-pruebas.md`.
+- Fichas de gate con su estado y su firma: `.ai-dlc/gates/`.

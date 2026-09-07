@@ -13,20 +13,20 @@
 |---|---|---|
 | **SAST limpio** | ✅ | CodeQL en `seguridad.yml` sobre `python` y `javascript-typescript`, con **umbral de severidad sobre el SARIF que rompe el build** (2026-08-04) — no como aviso. En verde en cada PR desde entonces |
 | **Dependencias verificadas** | ⚠️ | `pip-audit` por servicio y `npm audit --audit-level=high` en cada push y PR, más pasada semanal. Excepciones **una a una y con motivo** en `scripts/npm-audit-excepciones.json`, y el auditor **falla si una deja de aplicar** (ejercitado de verdad el 2026-09-06 al cerrarse el CVE-2026-59870). Abierto: la deuda de T8 — sin lockfiles en los 5 servicios Python y sin imágenes por digest |
-| **Cobertura ≥ 80 %** | ✅ | Los **seis** proyectos, con las dos métricas (2026-08-04). La más baja en ramas puras es 82,71 % (`indicator-engine`). El pipeline impone además un **trinquete** por servicio en su valor actual: el criterio es el 80 %, pero lo que rompe el build es cualquier retroceso |
+| **Cobertura ≥ 80 %** | ✅ | Los **seis** proyectos, con las dos métricas (remedidas 2026-09-07). La más baja en ramas puras es 82,71 % (`indicator-engine`). El pipeline impone además un **trinquete** por servicio en su valor actual: el criterio es el 80 %, pero lo que rompe el build es cualquier retroceso |
 | Código revisado (IA + humano) | ✅ | Todo el trabajo entra por PR con los tres workflows en verde; revisión humana en el merge |
 | Historial del repo como documentación viva | ✅ | `docs/03-implementation/repo-history.md`, derivado de `git log` por `scripts/gitgraph_branches.py` |
 
-## Cobertura por proyecto (2026-08-04, cifras de la propia pipeline)
+## Cobertura por proyecto (2026-09-07, cifras de la propia pipeline)
 
 | Servicio | Combinada (`src/`) | Ramas solas | ≥ 80 % |
 |---|---|---|---|
 | `ingestor-bcv` | 99,36 % | 96,94 % | ✔ |
-| `ingestor-binance` | 99,27 % | 96,77 % | ✔ |
+| `ingestor-binance` | 99,30 % | 97,30 % | ✔ |
 | `ingestor-historico` | 97,22 % | 93,43 % | ✔ |
-| `web-spa` | 94,89 % | 88,13 % | ✔ |
-| `api-gateway` | 92,65 % | 84,38 % | ✔ |
-| `indicator-engine` | 85,88 % | **82,71 %** | ✔ |
+| `api-gateway` | 92,86 % | 84,38 % | ✔ |
+| `web-spa` | 92,78 % | 88,86 % | ✔ |
+| `indicator-engine` | 85,89 % | **82,71 %** | ✔ |
 
 Las columnas no medían lo mismo y por eso se separan: en los cinco servicios
 Python la cifra que se venía citando es la **combinada** de `coverage`

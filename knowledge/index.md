@@ -15,7 +15,10 @@ la fuente de verdad (los documentos AI-DLC y el código).
 
 ## Estado del proyecto (resumen vivo)
 
-- Fase AI-DLC: Gates 0 y 1 **aprobados HITL** (2026-07-11); fase 03 en curso.
+- Fase AI-DLC: Gates 0 y 1 **aprobados HITL** (2026-07-11); Gates **2 y 3** con
+  sus criterios canónicos cubiertos y **pendientes de firma HITL**. Ojo con la
+  numeración: se llevó a la canónica el 2026-09-06 (03-implementation cierra el
+  Gate 2; 04-testing, el Gate 3).
 - **Los 5 servicios implementados y verificados en vivo** (2026-07-26):
   [ingestor-bcv](services/ingestor-bcv.md) (multi-moneda, HITL),
   [ingestor-binance](services/ingestor-binance.md) (polling P2P educado),
@@ -67,15 +70,21 @@ la fuente de verdad (los documentos AI-DLC y el código).
   `.github/workflows/` con la suite completa de los seis proyectos —integration y
   e2e incluidas, contra Timescale y RabbitMQ reales— y los tres gates de seguridad
   **rompiendo el build** en vez de avisando (T6 gitleaks, T8 SCA, T9 CodeQL con
-  umbral sobre el SARIF).
-- **Cobertura de ramas ≥ 80 % en los seis servicios** (2026-08-04), el criterio de
+  umbral sobre el SARIF, y **DAST con ZAP** contra el gateway real —T4/T9/T11—
+  desde el 2026-09-06, que encontró y cerró un 500 con byte NUL en query).
+- **Cobertura de ramas ≥ 80 % en los seis servicios** (remedida 2026-09-07; la
+  más baja sigue siendo 82,71 % en `indicator-engine`), el criterio de
   salida 1 de Gate 2. Llegó a estar sin cumplir en tres: se había medido con
   `--cov` a secas, que mete los ficheros de test en el denominador. Lo que faltaba
   cubrir no era código de negocio sino entrypoints, bucles programados y
   configuración — todo lo que **parece cableado y no lo es**.
+- **Los cinco SLO declarados están medidos y los cinco se cumplen** (2026-09-06).
+  El de ingesta era el que bloqueaba: 7,16 s contra un techo de 5 s, resuelto con
+  ADR-0026 —paginación en lotes concurrentes, sin subir las peticiones por
+  minuto— hasta **1,40 s** y cero 429.
 - Siguiente paso natural: decidir la topología de despliegue real (los túneles
-  son de desarrollo) y cerrar lo que le queda a Gate 3 (e2e autenticado en vivo y
-  la deuda de T8: lockfiles e imágenes por digest).
+  son de desarrollo) y firmar los Gates 2 y 3. La deuda que sigue abierta es la de
+  T8: lockfiles en los cinco servicios Python e imágenes por digest.
 - Historia de cambios: [log.md](log.md) y `../CHANGELOG.md`.
 
 ## Mapa del bundle
@@ -91,7 +100,7 @@ la fuente de verdad (los documentos AI-DLC y el código).
 
 - Requisitos: `../docs/01-requirements/` (6 PRDs con escenarios de abuso y ASVS).
 - Diseño: `../docs/02-design/` (arquitectura, threat model STRIDE/DREAD, contratos API).
-- Decisiones: `../docs/00-project/adr/` (ADR-0001…0024; una decisión = una ADR).
+- Decisiones: `../docs/00-project/adr/` (ADR-0001…0026; una decisión = una ADR).
 - Gates: `../.ai-dlc/gates/`.
 
 ## Convenciones del bundle

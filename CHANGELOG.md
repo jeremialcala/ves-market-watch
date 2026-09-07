@@ -17,6 +17,34 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Changed
+
+- **Barrido de coherencia de la documentación (2026-09-07).** El README y las
+  fichas se habían quedado un mes atrás y en dos sitios **se contradecían entre
+  sí**: el texto decía «Gate 3 en curso» tres párrafos antes de que su propia
+  tabla lo diera por cubierto, y el CVE-2026-59870 aparecía a la vez como deuda
+  abierta y como retirado en la misma frase.
+  - **Cifras remedidas contra la pipeline**, no a mano (corrida 34075081536 sobre
+    `develop`): **1 441 tests** —792 Python + 649 del SPA—, no 1 263; combinada
+    `ingestor-bcv` 99,36 · `ingestor-binance` 99,30 · `ingestor-historico` 97,22 ·
+    `api-gateway` 92,86 · `web-spa` 92,78 · `indicator-engine` 85,89.
+  - **La combinada del SPA bajó de 94,89 % a 92,78 %**: el Histórico creció más
+    deprisa que sus pruebas. Sus ramas —que son las que aplican el umbral—
+    subieron a 88,86 %, y las dos siguen holgadas sobre el 80 %, pero queda
+    anotado en el plan: una segunda caída seguida sería tendencia, no desfase.
+  - Se corrige una afirmación **falsa** sobre la CI: los umbrales no son un
+    trinquete «en cada servicio»; el `web-spa` aplica un **80 % de ramas liso**
+    declarado en `vite.config.ts`. El trinquete es de los cinco servicios Python.
+  - Se documenta el trabajo **DAST** en `seguridad.yml`, que llevaba desde el
+    2026-09-06 en el pipeline sin aparecer en el README ni en el índice OKF.
+  - Puestos al día: las fichas de Gate 1 (ADR-0001…**0026**, con adenda fechada),
+    Gate 2 (tabla de cobertura) y Gate 3 (total de tests); el índice OKF, que
+    seguía diciendo «fase 03 en curso» y daba por pendiente el e2e autenticado en
+    vivo, en el pipeline desde el 2026-08-20; y la vista de Histórico, que el
+    README describía como era antes de rehacerla.
+  - `repo-history.md` regenerado con `scripts/gitgraph_branches.py`: iba dos
+    semanas atrasado (125 líneas nuevas).
+
 ### Fixed
 
 - **Los 22 px entre la serie evaluada y la tasa oficial no se aplicaban
