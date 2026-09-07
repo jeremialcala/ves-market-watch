@@ -32,7 +32,6 @@ function pintar(idioma: "es" | "en" = "es") {
       indicador="p2p_brecha_pct_buy"
       dias={30}
       idioma={idioma}
-      vacio="sin datos"
       etiqueta="serie"
     />,
     { idioma },
