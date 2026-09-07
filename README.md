@@ -155,14 +155,16 @@ que rompe el build es cualquier retroceso desde donde está hoy cada uno. El
   «N de M» se lee como tasa de acierto y esto no pronostica—, eje X **temporal**
   (los fines de semana sin fecha-valor del BCV ocupan sitio en vez de borrarse),
   tooltip de tres líneas —cuándo, cuánto y si eso es mucho— y dos estados
-  explícitos para la ventana insuficiente y la serie vacía.
+  explícitos para la ventana insuficiente y la serie vacía. Los dos gráficos son
+  ya **un único componente** (`SerieTemporal`) con flags distintos, recorrible
+  con teclado.
 - **Gate 3 (pruebas): los tres criterios cubiertos, pendiente de firma HITL.**
   Cobertura **≥ 80 % en los seis** con las dos métricas —combinada y ramas solas—,
   medida por la propia pipeline el **2026-09-07**. Combinada sobre `src/`:
   `ingestor-bcv` 99,36 · `ingestor-binance` 99,30 · `ingestor-historico` 97,22 ·
-  `api-gateway` 92,86 · `web-spa` 92,78 · `indicator-engine` 85,89; la más baja en
-  ramas solas sigue siendo 82,71 (`indicator-engine`). **1 441 tests** en total:
-  792 de los cinco servicios Python y 649 del SPA. El **e2e autenticado en vivo
+  `api-gateway` 92,86 · `web-spa` 92,87 · `indicator-engine` 85,89; la más baja en
+  ramas solas sigue siendo 82,71 (`indicator-engine`). **1 456 tests** en total:
+  792 de los cinco servicios Python y 664 del SPA. El **e2e autenticado en vivo
   con token real** se cumplió el 2026-08-07 (6/6 contra el tenant y el gateway
   reales) y **corre en el pipeline desde el 2026-08-20**. Lo que queda abierto es
   la deuda del control de T8: sin lockfiles en los cinco servicios Python y sin
