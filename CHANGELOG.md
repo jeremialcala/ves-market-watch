@@ -19,6 +19,33 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Dos estados explícitos para el histórico (2026-09-06).** Ni gráficos vacíos
+  sin explicación ni spinners eternos: los dos esconden lo mismo —si el problema
+  es que no hay dato, que no ha cargado, o que se pidió algo que no existe—.
+  - **Ventana insuficiente.** Cuando la serie cubre menos días que el rango
+    pedido, el gráfico se mantiene con lo disponible y **sobre la leyenda**
+    aparece una pastilla con las tres cifras: pedidos, disponibles y **la base
+    real del percentil**. El percentil siempre se calculó sobre lo que hay —eso
+    es correcto—, pero leerlo como «de 30 días» cuando son 18 es falso, y esa
+    diferencia no puede quedar en silencio. Va **antes** que la leyenda a
+    propósito: se lee antes que las cifras que matiza, no después de haberlas
+    creído.
+  - **Un día de tolerancia, y ni uno más.** Una ventana de 30 días servida por
+    buckets empieza en el primero disponible y rara vez cubre las 720 horas
+    exactas; más allá de eso la diferencia es real. Los días disponibles se
+    redondean **hacia abajo**: no se inflan.
+  - **Sin datos.** El área del gráfico se sustituye por un bloque centrado —del
+    **mismo alto que el gráfico**, para que la tarjeta no se encoja y la vista
+    no salte— que dice **qué falta y desde cuándo**.
+  - **Desfase entre las dos series.** Se anota bajo el eje de la tasa oficial
+    cuando terminan en días distintos, que es el caso normal aquí: el BCV no
+    publica el fin de semana. Comparar sus extremos a ojo induce a error, así
+    que el aviso existe — como nota, no como alarma.
+  - Se porta el glifo `nodes` al set de iconos, que solo trae los que la UI
+    necesita.
+
+### Added
+
 - **Crosshair, punto y tooltip en los dos gráficos del histórico
   (2026-09-06).** No se «conservaron»: **no existían**. Se perdieron al
   sustituir Recharts por SVG propio, y esta es la primera vez que los gráficos

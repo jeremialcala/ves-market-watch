@@ -22,6 +22,7 @@
 
 import { useRef, type ReactNode } from "react";
 
+import { SinDatosGrafico } from "./SinDatosGrafico";
 import { TooltipGrafico } from "./TooltipGrafico";
 import { useI18n } from "../i18n/contexto";
 import type { Idioma } from "../i18n/idioma";
@@ -33,8 +34,8 @@ import { useAncho } from "../lib/useAncho";
 import { useCrosshair } from "../lib/useCrosshair";
 import { anclajeTooltip, contextoPunto, fraccionDe } from "../lib/tooltipSerie";
 import { unidadDe } from "../lib/seriesEvaluables";
+import { ventanaInsuficiente } from "../lib/cobertura";
 import { percentilDisc, type Punto } from "../lib/series";
-import { NoDataState } from "./NoDataState";
 
 const ANCHO = 1060;
 const ALTO = 280;
@@ -62,14 +63,12 @@ export function SerieEvaluada({
   indicador,
   dias,
   idioma,
-  vacio,
   etiqueta,
   controles,
 }: DatosSerieEvaluada & {
   indicador: string;
   dias: number;
   idioma: Idioma;
-  vacio: string;
   etiqueta: string;
   /** Barra de control de la tarjeta; va pegada bajo la cabecera. */
   controles?: ReactNode;
@@ -81,7 +80,16 @@ export function SerieEvaluada({
   const { activo, manejadores } = useCrosshair(marcoRef, puntos);
 
   if (puntos.length === 0) {
-    return <NoDataState detalle={vacio} />;
+    // Bloque del mismo alto que el gráfico, para que la tarjeta no se encoja y
+    // la vista no dé un salto al cambiar de serie.
+    return (
+      <SinDatosGrafico
+        titulo={t("historico.vacioTitulo")}
+        serie={indicador.replaceAll("_", " ")}
+        desde={Date.now() - dias * 86_400_000}
+        idioma={idioma}
+      />
+    );
   }
 
   // `percentilDisc` toma FRACCION, no porcentaje. Pasarle 10/50/90 no falla:
@@ -144,6 +152,7 @@ export function SerieEvaluada({
         );
 
   const unidad = unidadDe(indicador);
+  const corta = ventanaInsuficiente(puntos, dias);
   const fx = activo === null ? 0 : fraccionDe(puntos, activo);
   const fy =
     activo === null
@@ -342,6 +351,19 @@ export function SerieEvaluada({
           ),
         )}
       </div>
+
+      {/* Sobre la leyenda, no debajo: la advertencia tiene que leerse ANTES
+          que las cifras que matiza. */}
+      {corta !== null && (
+        <div className="vmw-serieval__corta">
+          <span className="vmw-corta">
+            {t("historico.ventanaCorta", {
+              pedidos: String(corta.pedidos),
+              disponibles: String(corta.disponibles),
+            })}
+          </span>
+        </div>
+      )}
 
       <ul className="vmw-serieval__leyenda">
         <li>

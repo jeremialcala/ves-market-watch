@@ -17,6 +17,7 @@
 
 import { useRef } from "react";
 
+import { SinDatosGrafico } from "./SinDatosGrafico";
 import { TooltipGrafico } from "./TooltipGrafico";
 import { useI18n } from "../i18n/contexto";
 import type { Idioma } from "../i18n/idioma";
@@ -27,9 +28,9 @@ import { useAncho } from "../lib/useAncho";
 import { useCrosshair } from "../lib/useCrosshair";
 import { anclajeTooltip, contextoPunto, fraccionDe } from "../lib/tooltipSerie";
 import { percentilDisc } from "../lib/series";
+import { desfaseEntre } from "../lib/cobertura";
 import { toChartNumber } from "../lib/decimal";
 import type { Punto } from "../lib/series";
-import { NoDataState } from "./NoDataState";
 
 const ANCHO = 1060;
 const ALTO = 140;
@@ -42,7 +43,7 @@ export function TasaOficialContexto({
   brechaPct,
   dias,
   idioma,
-  vacio,
+  evaluada,
 }: {
   puntos: readonly Punto[];
   moneda: string;
@@ -51,7 +52,8 @@ export function TasaOficialContexto({
   /** Brecha porcentual vigente; `null` si no hay ninguna. */
   brechaPct: string | null;
   idioma: Idioma;
-  vacio: string;
+  /** La otra serie de la vista, para anotar el desfase entre ambas. */
+  evaluada: readonly Punto[];
 }) {
   const { t } = useI18n();
   const ejeRef = useRef<HTMLDivElement>(null);
@@ -68,6 +70,7 @@ export function TasaOficialContexto({
       new Date(ms),
     );
 
+  const desfase = desfaseEntre(puntos, evaluada);
   const linea = puntosTemporales(puntos, ANCHO, ALTO, PAD);
 
   // Misma aritmética de Y que `puntosTemporales`, para que el punto caiga
@@ -107,7 +110,13 @@ export function TasaOficialContexto({
       </div>
 
       {puntos.length === 0 ? (
-        <NoDataState detalle={vacio} />
+        <SinDatosGrafico
+          titulo={t("historico.vacioOficial")}
+          serie={`${moneda}/VES`}
+          desde={Date.now() - dias * 86_400_000}
+          alto={140}
+          idioma={idioma}
+        />
       ) : (
         <>
           <div className="vmw-oficial__marco" ref={marcoRef} {...manejadores}>
@@ -200,6 +209,25 @@ export function TasaOficialContexto({
               </span>
             ))}
           </div>
+
+          {/* Las dos series se leen juntas: si terminan en días distintos,
+              comparar sus extremos a ojo induce a error. El caso normal aquí es
+              el fin de semana sin publicación del BCV, así que el aviso es una
+              nota y no una alarma. */}
+          {desfase !== null && (
+            <p className="vmw-oficial__desfase">
+              {t(
+                desfase.oficialAtrasada
+                  ? "historico.desfaseOficial"
+                  : "historico.desfaseSerie",
+                {
+                  atrasada: fecha(desfase.atrasada),
+                  adelantada: fecha(desfase.adelantada),
+                  dias: String(desfase.dias),
+                },
+              )}
+            </p>
+          )}
         </>
       )}
     </section>

@@ -176,7 +176,6 @@ export function HistoryView() {
             indicador={indicador}
             dias={dias}
             idioma={idioma}
-            vacio={t("historico.sinSerie")}
             etiqueta={t("historico.serieTitulo", {
               indicador,
               bucket: intervalo,
@@ -202,8 +201,8 @@ export function HistoryView() {
           moneda={moneda}
           dias={dias}
           brechaPct={vigentes["p2p_brecha_pct_sell"]?.value ?? null}
+          evaluada={serie.map((p) => ({ t: p.t, valor: p.valorStr }))}
           idioma={idioma}
-          vacio={t("historico.sinSerie")}
         />
 
         {/* Después de los gráficos: primero se ve la serie, luego con qué se

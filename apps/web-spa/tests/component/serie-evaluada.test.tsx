@@ -16,6 +16,7 @@ import { cleanup, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { SerieEvaluada } from "../../src/components/SerieEvaluada";
+import { ES } from "../../src/i18n/dict";
 import type { CondicionDeIndicador } from "../../src/lib/reglas";
 import { renderConProveedores as render } from "../render";
 
@@ -43,15 +44,15 @@ const CONDICION: CondicionDeIndicador = {
 function pintar(
   props: Partial<Parameters<typeof SerieEvaluada>[0]> = {},
   idioma: "es" | "en" = "es",
+  dias = 30,
 ) {
   return render(
     <SerieEvaluada
       puntos={PUNTOS}
       condicion={null}
       indicador="p2p_brecha_pct_buy"
-      dias={30}
+      dias={dias}
       idioma={idioma}
-      vacio="sin datos"
       etiqueta="serie"
       {...props}
     />,
@@ -211,9 +212,47 @@ describe("SerieEvaluada · capa de referencia", () => {
     expect(enIngles).not.toContain("2,83");
   });
 
-  it("sin puntos no dibuja nada y lo dice", () => {
+  it("sin puntos sustituye el gráfico por un bloque que EXPLICA qué falta", () => {
+    // Ni grafico vacio ni spinner: los dos esconden si el problema es que no
+    // hay dato, que no ha cargado, o que se pidio algo que no existe.
     pintar({ puntos: [] });
     expect(document.querySelector(".vmw-serieval")).toBeNull();
-    expect(screen.getByText("sin datos")).toBeTruthy();
+    const vacio = document.querySelector(".vmw-vacio")!;
+    expect(vacio).toBeTruthy();
+    expect(vacio.getAttribute("role")).toBe("status");
+    expect(screen.getByText(ES["historico.vacioTitulo"])).toBeTruthy();
+    // Dice QUE falta y DESDE CUANDO.
+    const linea = vacio.querySelector(".vmw-vacio__linea")!.textContent ?? "";
+    expect(linea).toContain("p2p brecha pct buy");
+    expect(linea).toMatch(/desde el \d+ de \w+/);
+    // Y ocupa el alto del grafico: la tarjeta no se encoge.
+    expect((vacio as HTMLElement).style.minHeight).toBe("280px");
+  });
+
+  it("una ventana más corta que la pedida se ANUNCIA sobre la leyenda", () => {
+    // 5 puntos = 4 dias cubiertos contra 30 pedidos. El percentil es legitimo
+    // —se calcula sobre lo que hay— pero leerlo como «de 30 dias» seria falso.
+    pintar();
+    const pastilla = document.querySelector(".vmw-corta")!;
+    expect(pastilla).toBeTruthy();
+    const texto = pastilla.textContent ?? "";
+    expect(texto).toContain("30 d pedidos");
+    expect(texto).toContain("4 d disponibles");
+    // La base real del calculo, dicha explicitamente.
+    expect(texto).toContain("percentil calculado sobre 4 d");
+
+    // Y va ANTES que la leyenda en el DOM: se lee antes que las cifras que
+    // matiza, no despues de haberlas creido.
+    const leyenda = document.querySelector(".vmw-serieval__leyenda")!;
+    expect(
+      pastilla.compareDocumentPosition(leyenda) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("con la ventana completa NO hay pastilla", () => {
+    // 5 puntos diarios cubren 4 dias: pidiendo 4, la ventana llega.
+    pintar({}, "es", 4);
+    expect(document.querySelector(".vmw-corta")).toBeNull();
   });
 });
