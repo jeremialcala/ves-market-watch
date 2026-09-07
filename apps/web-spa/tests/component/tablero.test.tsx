@@ -423,7 +423,7 @@ describe("GapHeatmap", () => {
 // `tests/component/descomposicion.test.tsx`.
 
 describe("AnalysisView", () => {
-  it("sella escenarios y riesgos, y calcula la presión de liquidez real", () => {
+  it("ya solo sella los escenarios, y calcula la presión de liquidez real", () => {
     marketStore.resync({
       indicadores: {
         ...FIXTURE_INDICADORES,
@@ -432,8 +432,9 @@ describe("AnalysisView", () => {
     });
     render(<AnalysisView />);
 
-    // Dos sellos: el de la cabecera (escenarios) y el de riesgos.
-    expect(screen.getAllByText("demo · sin fuente")).toHaveLength(2);
+    // UN solo sello: el de la cabecera, por los escenarios. Los riesgos dejaron
+    // de ser redacción el 2026-09-07 y ya no lo llevan.
+    expect(screen.getAllByText("demo · sin fuente")).toHaveLength(1);
     expect(screen.getByText("asks 1.201.837 USDT")).toBeTruthy();
     expect(screen.getByText("bids 2.025.806 USDT")).toBeTruthy();
   });

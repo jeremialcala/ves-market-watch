@@ -255,6 +255,42 @@ export const FIXTURE_ANALISIS = {
       },
     ],
   },
+  risks: {
+    version: 1,
+    // ORDENADA por gravedad, como la sirve el motor. `libro_concentrado` va con
+    // `level: null` a propósito: es el caso que el cliente NO puede degradar a
+    // `bajo`, y aquí queda fijado también en compilación.
+    items: [
+      {
+        code: "umbrales_sin_recalibrar",
+        level: "medio",
+        value: "1",
+        threshold: "0",
+        source: null,
+      },
+      {
+        code: "oficial_rancia",
+        level: "bajo",
+        value: null,
+        threshold: null,
+        source: "official_stale",
+      },
+      {
+        code: "calidad_snapshot",
+        level: "bajo",
+        value: "0.00",
+        threshold: "30",
+        source: "p2p_outliers_pct_buy",
+      },
+      {
+        code: "libro_concentrado",
+        level: null,
+        value: null,
+        threshold: "80",
+        source: null,
+      },
+    ],
+  },
 } satisfies Schemas["IndicatorAnalysis"] satisfies PayloadAnalisis;
 
 /**

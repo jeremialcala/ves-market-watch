@@ -21,7 +21,7 @@ Tres bloques, no dos:
 | Bloque | Estado | Fuente |
 |---|---|---|
 | **Presión de liquidez** | ✅ real | `p2p_liquidez_{buy,sell}` vía `/indicators/current` |
-| **Riesgos que vigilar** | 🔶 demo | redacción fija en `AnalysisView.tsx` |
+| **Riesgos que vigilar** | ✅ real *(2026-09-07)* | `risks` de `/analysis/current`, cortes en `riesgos.v1.yaml` |
 | **Escenarios** | 🔶 demo | constantes en `AnalysisView.tsx` |
 
 Los dos bloques sellados no son el mismo problema y **no deben tratarse juntos**:
@@ -155,7 +155,8 @@ Ordenado por lo que desbloquea:
    del motor, no como constantes del componente.~~ **Hecho el 2026-09-07**:
    `apps/indicator-engine/config/riesgos.v1.yaml` (v1) y el bloque `risks` de
    `analysis.updated`, con cada corte justificado por su distribución medida.
-   Queda **conectar la vista**: el SPA todavía pinta los niveles a mano.
+   **Conectada la vista el mismo día**: `PanelRiesgos` lee `risks` y el bloque
+   perdió su sello `demo · sin fuente`.
 2. **`GET /api/v1/analysis/history`.** El régimen y la confianza históricos están
    en `indicator_analysis` (hypertable, 88 896 filas), pero el gateway solo sirve
    `/analysis/current`. **Ningún bloque que mire el pasado del análisis es
@@ -172,9 +173,10 @@ Ordenado por lo que desbloquea:
 
 Separar los dos sellos en dos trabajos distintos:
 
-- **«Riesgos que vigilar» → hacerlo real ahora.** El dato está entero; falta la
-  tabla de cortes y el ensamblaje. Es además el que más engaña hoy, porque pinta
-  en `alto` un riesgo que sus propios números desmienten.
+- ~~**«Riesgos que vigilar» → hacerlo real ahora.**~~ **Hecho el 2026-09-07.**
+  Al conectarlo pasó lo previsto: «Libro concentrado» dejó de decir `alto`. Y
+  apareció un quinto estado que la redacción no tenía — **`sin medir`**, para el
+  riesgo cuyo indicador no está vigente, que no se degrada a `bajo`.
 - **«Escenarios» → no hacerlo como está.** Sustituirlo por lo que la brecha
   **hizo** en su historia, sin probabilidades ni horizonte, o retirar el bloque.
   Mantener la redacción actual es la peor de las tres opciones: el sello explica
