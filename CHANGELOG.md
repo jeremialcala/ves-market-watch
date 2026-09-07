@@ -17,6 +17,31 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Changed
+
+- **El eje X de los dos gráficos del histórico pasa de categórico a temporal
+  (2026-09-06).** La posición de cada punto es proporcional a su timestamp, no a
+  su índice en el array.
+  - **Los fines de semana vuelven a existir.** El BCV no publica fecha-valor
+    sábado ni domingo; con el eje por índice, el viernes y el lunes salían
+    pegados **como si hubiera publicado**. Ahora ahí queda un tramo horizontal,
+    que es la lectura correcta: el hueco es el dato. Un test lo fija —el salto
+    viernes→lunes mide el triple que el de un día.
+  - **Las etiquetas se generan por intervalo de calendario, nunca por punto**:
+    día para 7 d, cada 3 para 30 d, semanal para 90 d, ancladas al inicio del
+    día VET. Rotular puntos habría heredado la irregularidad de la serie —
+    etiquetas apiñadas donde hay datos y ninguna donde no los hay.
+  - **La regla de los 44 px se aplica en píxeles reales**, medidos con
+    `ResizeObserver`: el gráfico se estira, así que 44 unidades del `viewBox`
+    solo son 44 px si la tarjeta mide exactamente 1060. Cuando dos etiquetas se
+    juntan **se elimina la intermedia**, nunca se rota ni se encoge.
+  - **La primera y la última son intocables**, y eso obligó a corregir un fallo
+    propio: deduplicar de izquierda a derecha se comía la última cuando
+    compartía día con una marca del calendario, y el eje dejaba de terminar en
+    el último dato. Ahora el duplicado que cae es el del calendario, y si la
+    última queda pegada a la anterior, la que se elimina es **la anterior**.
+  - Formato `d/m` en ES y `m/d` en EN, sobre el día VET y no el del navegador.
+
 ### Added
 
 - **La tarjeta de la serie evaluada gana cabecera y estadísticas de ventana

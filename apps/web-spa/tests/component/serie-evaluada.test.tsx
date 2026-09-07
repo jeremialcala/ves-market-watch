@@ -21,13 +21,15 @@ import { renderConProveedores as render } from "../render";
 
 afterEach(cleanup);
 
-const PUNTOS = [
-  { t: 1, valor: "10" },
-  { t: 2, valor: "12" },
-  { t: 3, valor: "14" },
-  { t: 4, valor: "16" },
-  { t: 5, valor: "18" },
-];
+// Un punto por dia. Antes iban separados por MILISEGUNDOS, que no es una
+// ventana de histórico de nada: con el eje temporal, una ventana de 4 ms tiene
+// una sola fecha que rotular y el test de las marcas fallaba con razón.
+const DIA = 86_400_000;
+const BASE = Date.parse("2026-09-01T04:00:00Z"); // 2026-09-01T00:00 VET
+const PUNTOS = ["10", "12", "14", "16", "18"].map((valor, i) => ({
+  t: BASE + i * DIA,
+  valor,
+}));
 
 const CONDICION: CondicionDeIndicador = {
   regla: "arranque_alcista@v1",
@@ -178,9 +180,21 @@ describe("SerieEvaluada · capa de referencia", () => {
 
   it("hay eje de fechas bajo el gráfico", () => {
     pintar();
-    const fechas = document.querySelector(".vmw-serieval__fechas");
-    expect(fechas).toBeTruthy();
-    expect(fechas!.children.length).toBeGreaterThanOrEqual(2);
+    const fechas = document.querySelector(".vmw-serieval__fechas")!;
+    const etiquetas = [...fechas.children].map((n) => n.textContent);
+    // Ventana de 4 días con `dias=30`: paso de 3 días, extremos incluidos.
+    expect(etiquetas.length).toBeGreaterThanOrEqual(2);
+    expect(etiquetas[0]).toBe("1/9");
+    expect(etiquetas.at(-1)).toBe("5/9");
+    // Ninguna cadena repetida.
+    expect(new Set(etiquetas).size).toBe(etiquetas.length);
+    // Y cada una en su sitio temporal, no repartidas a partes iguales.
+    const izquierdas = [...fechas.children].map(
+      (n) => (n as HTMLElement).style.left,
+    );
+    // Por valor, no por serializacion: el navegador normaliza «0.00%» a «0%».
+    expect(parseFloat(izquierdas[0]!)).toBe(0);
+    expect(parseFloat(izquierdas.at(-1)!)).toBe(100);
   });
 
   it("las cifras usan coma en ES y punto en EN", () => {

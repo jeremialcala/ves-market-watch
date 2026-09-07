@@ -249,6 +249,7 @@ export function HistoryView() {
         <TasaOficialContexto
           puntos={tasas.map((p) => ({ t: p.t, valor: p.valorStr }))}
           moneda={moneda}
+          dias={dias}
           brechaPct={vigentes["p2p_brecha_pct_sell"]?.value ?? null}
           idioma={idioma}
           vacio={t("historico.sinSerie")}
