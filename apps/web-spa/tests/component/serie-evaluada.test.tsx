@@ -46,6 +46,8 @@ function pintar(
     <SerieEvaluada
       puntos={PUNTOS}
       condicion={null}
+      indicador="p2p_brecha_pct_buy"
+      dias={30}
       idioma={idioma}
       vacio="sin datos"
       etiqueta="serie"
@@ -123,12 +125,16 @@ describe("SerieEvaluada · capa de referencia", () => {
 
   it("la leyenda nombra las cuatro referencias, con sus valores", () => {
     pintar({ condicion: CONDICION });
-    expect(screen.getByText(/80 % central de la ventana/)).toBeTruthy();
-    expect(screen.getByText("mediana")).toBeTruthy();
-    expect(screen.getByText("14")).toBeTruthy(); // mediana: NO puede ser 18
-    expect(screen.getByText("hoy")).toBeTruthy();
-    expect(screen.getByText("18")).toBeTruthy(); // último punto
-    expect(screen.getByText(/umbral: por encima de 25/)).toBeTruthy();
+    // Acotado a la LEYENDA: la mediana aparece tambien en la rejilla de
+    // estadisticas, y un `getByText` global fallaria por duplicado.
+    const leyenda = document.querySelector(".vmw-serieval__leyenda")!;
+    const texto = leyenda.textContent ?? "";
+    expect(texto).toContain("80 % central de la ventana");
+    expect(texto).toContain("mediana");
+    expect(texto).toContain("14"); // mediana: NO puede ser 18
+    expect(texto).toContain("hoy");
+    expect(texto).toContain("18"); // último punto
+    expect(texto).toContain("umbral: por encima de 25");
   });
 
   it("en inglés la leyenda también traduce", () => {
@@ -136,6 +142,59 @@ describe("SerieEvaluada · capa de referencia", () => {
     // El idioma del texto lo pone el proveedor; aquí basta con que las claves
     // existan y no salga el identificador crudo.
     expect(document.body.textContent).not.toContain("historico.leyenda");
+  });
+
+  it("la cabecera identifica la serie y dice en qué punto está hoy", () => {
+    pintar();
+    expect(screen.getByText("p2p brecha pct buy")).toBeTruthy(); // legible
+    expect(screen.getByText("p2p_brecha_pct_buy")).toBeTruthy(); // la clave
+    expect(
+      document.querySelector(".vmw-serieval__valor")?.textContent,
+    ).toBe("18"); // el ultimo punto
+    // La pastilla del percentil, coloreada por zona: hoy es el maximo.
+    const pastilla = document.querySelector<HTMLElement>(
+      ".vmw-serieval__percentil",
+    )!;
+    expect(pastilla.textContent).toBe("percentil 90 de 30 d");
+    expect(pastilla.style.color).toBe("var(--coral)");
+  });
+
+  it("las cuatro estadísticas traen valor y cuándo ocurrió", () => {
+    pintar();
+    const stats = [...document.querySelectorAll(".vmw-serieval__stat")];
+    expect(stats).toHaveLength(4);
+    const valores = stats.map(
+      (n) => n.querySelector(".vmw-serieval__stat-valor")?.textContent,
+    );
+    expect(valores).toEqual(["10", "18", "14", "2,83"]); // min, max, mediana, desv
+
+    // La desviacion NO lleva fecha: no ocurre en un punto.
+    const detalles = stats.map(
+      (n) => n.querySelector(".vmw-serieval__stat-detalle")?.textContent ?? "",
+    );
+    expect(detalles[3]).toBe("sobre 5 puntos");
+    expect(detalles[0]).not.toBe(detalles[3]);
+  });
+
+  it("hay eje de fechas bajo el gráfico", () => {
+    pintar();
+    const fechas = document.querySelector(".vmw-serieval__fechas");
+    expect(fechas).toBeTruthy();
+    expect(fechas!.children.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("las cifras usan coma en ES y punto en EN", () => {
+    pintar();
+    expect(
+      document.querySelector(".vmw-serieval__stats")?.textContent,
+    ).toContain("2,83");
+    cleanup();
+
+    pintar({}, "en");
+    const enIngles =
+      document.querySelector(".vmw-serieval__stats")?.textContent ?? "";
+    expect(enIngles).toContain("2.83");
+    expect(enIngles).not.toContain("2,83");
   });
 
   it("sin puntos no dibuja nada y lo dice", () => {

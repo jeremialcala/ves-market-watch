@@ -24,6 +24,7 @@ import { useI18n } from "../i18n/contexto";
 import type { Idioma } from "../i18n/idioma";
 import { formatDecimal, toChartNumber } from "../lib/decimal";
 import type { CondicionDeIndicador } from "../lib/reglas";
+import { colorZona, leerHistorico } from "../lib/lecturaHistorico";
 import { percentilDisc, puntosPolilinea, type Punto } from "../lib/series";
 import { NoDataState } from "./NoDataState";
 
@@ -41,6 +42,8 @@ export interface DatosSerieEvaluada {
   condicion: CondicionDeIndicador | null;
 }
 
+const LOCALE: Record<Idioma, string> = { es: "es-VE", en: "en-US" };
+
 function num(valor: string, idioma: Idioma): string {
   return formatDecimal(valor, { maxDecimales: 4, idioma });
 }
@@ -48,10 +51,14 @@ function num(valor: string, idioma: Idioma): string {
 export function SerieEvaluada({
   puntos,
   condicion,
+  indicador,
+  dias,
   idioma,
   vacio,
   etiqueta,
 }: DatosSerieEvaluada & {
+  indicador: string;
+  dias: number;
   idioma: Idioma;
   vacio: string;
   etiqueta: string;
@@ -65,6 +72,15 @@ export function SerieEvaluada({
   // `percentilDisc` toma FRACCION, no porcentaje. Pasarle 10/50/90 no falla:
   // satura el indice y devuelve el maximo en las tres, con lo que la banda sale
   // plana y la mediana miente coincidiendo con «hoy». Silencioso y creible.
+  // Misma fuente que el panel rector: percentil y estadísticas salen de
+  // `leerHistorico`, no de un segundo cálculo que podría discrepar del titular.
+  const lectura = leerHistorico(puntos, condicion)!;
+  const fecha = (ms: number) =>
+    new Intl.DateTimeFormat(LOCALE[idioma], {
+      day: "numeric",
+      month: "short",
+    }).format(new Date(ms));
+
   const p10 = percentilDisc(puntos, 0.1);
   const p90 = percentilDisc(puntos, 0.9);
   const mediana = percentilDisc(puntos, 0.5);
@@ -112,8 +128,38 @@ export function SerieEvaluada({
           { umbral: num(condicion.umbral, idioma) },
         );
 
+  const est = lectura.estadisticas;
+  const ESTADISTICAS = [
+    { clave: "minimo", dato: est.minimo, color: "var(--coral)" },
+    { clave: "maximo", dato: est.maximo, color: "var(--coral)" },
+    { clave: "mediana", dato: est.mediana, color: "var(--sage)" },
+    { clave: "desviacion", dato: est.desviacion, color: "var(--text-muted)" },
+  ] as const;
+
   return (
     <div>
+      {/* Cabecera: qué serie es y en qué punto está hoy, antes del trazo. */}
+      <div className="vmw-serieval__cabecera">
+        <div className="vmw-serieval__ident">
+          <span className="vmw-serieval__nombre">
+            {indicador.replaceAll("_", " ")}
+          </span>
+          <span className="vmw-serieval__clave">{indicador}</span>
+        </div>
+        <div className="vmw-serieval__ahora">
+          <span className="vmw-serieval__valor">{num(hoy, idioma)}</span>
+          <span
+            className="vmw-serieval__percentil"
+            style={{ color: colorZona(lectura.zona) }}
+          >
+            {t("historico.percentilVentana", {
+              percentil: String(lectura.percentil),
+              dias: String(dias),
+            })}
+          </span>
+        </div>
+      </div>
+
       <div className="vmw-serieval__marco">
         <div className="vmw-serieval__eje" aria-hidden="true">
           {FRACCIONES.map((fraccion) => (
@@ -215,6 +261,16 @@ export function SerieEvaluada({
         </svg>
       </div>
 
+      {/* Eje de fechas. Fuera del SVG, como el de valores: con
+          `preserveAspectRatio="none"` el texto de dentro se deformaría. */}
+      <div className="vmw-serieval__fechas" aria-hidden="true">
+        <span>{fecha(lectura.desde)}</span>
+        {puntos.length > 2 && (
+          <span>{fecha(puntos[Math.floor(puntos.length / 2)].t)}</span>
+        )}
+        <span>{fecha(lectura.hasta)}</span>
+      </div>
+
       <ul className="vmw-serieval__leyenda">
         <li>
           <span className="vmw-serieval__muestra" aria-hidden="true" />
@@ -248,6 +304,26 @@ export function SerieEvaluada({
           </li>
         )}
       </ul>
+
+      {/* Las cuatro cifras que resumen la ventana, con cuándo ocurrió cada una.
+          La desviación no lleva fecha: no ocurre en un punto. */}
+      <div className="vmw-serieval__stats">
+        {ESTADISTICAS.map(({ clave, dato, color }) => (
+          <div className="vmw-serieval__stat" key={clave}>
+            <span className="vmw-serieval__stat-nombre">
+              {t(`historico.stat.${clave}`)}
+            </span>
+            <span className="vmw-serieval__stat-valor" style={{ color }}>
+              {num(dato.valor, idioma)}
+            </span>
+            <span className="vmw-serieval__stat-detalle">
+              {dato.t === null
+                ? t("historico.statSobre", { puntos: String(lectura.puntos) })
+                : fecha(dato.t)}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

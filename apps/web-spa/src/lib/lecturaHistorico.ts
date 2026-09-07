@@ -24,6 +24,31 @@ const DIA_MS = 86_400_000;
 /** Dónde cae hoy respecto de lo recorrido por la ventana. */
 export type Zona = "alta" | "baja" | "centro";
 
+/** Una estadística de la ventana, con cuándo ocurrió si eso significa algo. */
+export interface Estadistica {
+  /** Valor exacto del contrato. */
+  valor: string;
+  /**
+   * Instante en que se dio. `null` en la dispersión, que no ocurre en un punto
+   * — poner ahí una fecha cualquiera sería inventarse un hecho.
+   */
+  t: number | null;
+}
+
+export interface EstadisticasVentana {
+  minimo: Estadistica;
+  maximo: Estadistica;
+  mediana: Estadistica;
+  /**
+   * Desviación típica poblacional de la ventana.
+   *
+   * Es la ÚNICA cifra de este módulo que pasa por coma flotante: una raíz
+   * cuadrada no tiene forma decimal exacta. Se calcula sobre los mismos valores
+   * y se presenta con dos decimales, que es lo que una dispersión necesita.
+   */
+  desviacion: Estadistica;
+}
+
 export interface Lectura {
   /** Valor del último punto: el «hoy» del que habla el panel. */
   hoy: string;
@@ -49,6 +74,7 @@ export interface Lectura {
   /** Extremos temporales de la ventana. */
   desde: number;
   hasta: number;
+  estadisticas: EstadisticasVentana;
 }
 
 /**
@@ -114,9 +140,25 @@ export function leerHistorico(
     }
   }
 
+  const conValor = (v: string): number | null =>
+    puntos.find((p) => compararDecimales(p.valor, v) === 0)?.t ?? null;
+
+  const numeros = valores.map(toChartNumber);
+  const media = numeros.reduce((a, b) => a + b, 0) / numeros.length;
+  const varianza =
+    numeros.reduce((acc, n) => acc + (n - media) ** 2, 0) / numeros.length;
+  const minimo = valores.reduce((a, b) => (compararDecimales(b, a) < 0 ? b : a));
+  const maximo = valores.reduce((a, b) => (compararDecimales(b, a) > 0 ? b : a));
+
   return {
     hoy,
     mediana,
+    estadisticas: {
+      minimo: { valor: minimo, t: conValor(minimo) },
+      maximo: { valor: maximo, t: conValor(maximo) },
+      mediana: { valor: mediana, t: conValor(mediana) },
+      desviacion: { valor: Math.sqrt(varianza).toFixed(2), t: null },
+    },
     percentil,
     zona,
     distancia: restarDecimales(hoy, mediana),
