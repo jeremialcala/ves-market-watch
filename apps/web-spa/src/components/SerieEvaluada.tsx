@@ -20,7 +20,7 @@
  * deformado con él. Las etiquetas del eje y la leyenda son HTML.
  */
 
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 
 import { useI18n } from "../i18n/contexto";
 import type { Idioma } from "../i18n/idioma";
@@ -60,12 +60,15 @@ export function SerieEvaluada({
   idioma,
   vacio,
   etiqueta,
+  controles,
 }: DatosSerieEvaluada & {
   indicador: string;
   dias: number;
   idioma: Idioma;
   vacio: string;
   etiqueta: string;
+  /** Barra de control de la tarjeta; va pegada bajo la cabecera. */
+  controles?: ReactNode;
 }) {
   const { t } = useI18n();
   const ejeRef = useRef<HTMLDivElement>(null);
@@ -165,6 +168,8 @@ export function SerieEvaluada({
           </span>
         </div>
       </div>
+
+      {controles}
 
       <div className="vmw-serieval__marco">
         <div className="vmw-serieval__eje" aria-hidden="true">

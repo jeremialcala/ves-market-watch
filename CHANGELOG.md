@@ -19,6 +19,29 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **Los controles de rango, serie y bucket se mudan dentro de la tarjeta que
+  gobiernan (2026-09-06).** Cambian lo que esa tarjeta dibuja y nada más, así
+  que su sitio es junto al gráfico y no en una barra global.
+  - **La moneda se queda fuera, a propósito.** Afecta a la vista entera —también
+    al bloque de la tasa oficial—, y meterla aquí habría sugerido que solo toca
+    a este gráfico.
+  - **El desplegable pasa a nombres legibles.** Decía
+    `p2p_drenaje_oferta_6h_pct`: elegir entre cinco cadenas en `snake_case`
+    obliga a traducir mentalmente antes de decidir. La clave sigue a la vista en
+    la cabecera de la tarjeta, que es donde sirve —para saber qué se mira, no
+    para elegirlo—, y el `value` de cada opción sigue siendo la canónica.
+  - **La lista pasa de 10 series a 5: las del ruleset más la brecha.** Fuera
+    quedan la tasa oficial, que ya tiene su propio bloque de contexto, y las
+    medianas y liquideces, que no gobiernan ninguna regla — verlas aquí
+    sugeriría que la capa de referencia les va a dibujar un umbral, y no hay
+    ninguno.
+  - **Se retira el `h3` que duplicaba la cabecera de la tarjeta.** El componente
+    ya da nombre legible, clave y valor de hoy; dos títulos seguidos diciendo lo
+    mismo era ruido.
+  - La procedencia del dato baja con los controles y se redacta como frase.
+
+### Changed
+
 - **El eje X de los dos gráficos del histórico pasa de categórico a temporal
   (2026-09-06).** La posición de cada punto es proporcional a su timestamp, no a
   su índice en el array.
