@@ -53,6 +53,26 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Determinación de datos del «Análisis comprensivo» (2026-09-07).** Nuevo
+  `docs/01-requirements/analisis-comprensivo.md`: qué haría falta para retirar
+  los dos sellos `demo · sin fuente` que quedan en el producto. Conclusión: los
+  dos bloques **no son la misma deuda** y tratarlos junto es lo que los ha
+  mantenido parados.
+  - **«Riesgos que vigilar» tiene el dato entero.** Los cuatro riesgos ya citan
+    condiciones medibles y las cuatro fuentes existen. Falta la tabla de cortes
+    versionada que convierte el valor en nivel. Al conectarlo **desmentirá su
+    propia redacción**: pinta «Libro concentrado» en alto con merchants al
+    60,50 % contra su umbral declarado de 80 %, y dice que una regla tiene una
+    sola aparición cuando `techo_inminente` no ha emitido **ninguna** en 42 días.
+  - **«Escenarios» no se puede construir como está**, y no por falta de meses:
+    el `regime` sobre el que pretende condicionar dura **de 13 min a 1 h**
+    (1 123 episodios en 38 días, ~30 cambios al día) contra un horizonte de 72 h.
+    Esperar no lo arregla; haría falta un estado definido para durar.
+  - Hueco de API identificado: **no existe `GET /analysis/history`**, así que los
+    88 896 registros de régimen de `indicator_analysis` son inalcanzables desde
+    el cliente; y el techo de 90 días del contrato deja fuera los 9 meses de
+    brecha de venta que sí están en la base.
+
 - **Los gráficos se recorren con teclado (2026-09-06).** Al recibir foco señalan
   el último punto; las flechas mueven, Inicio y Fin saltan a los extremos y
   Escape suelta. **Hasta ahora el tooltip solo existía con ratón o dedo**, así
