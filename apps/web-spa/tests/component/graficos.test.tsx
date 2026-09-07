@@ -202,13 +202,30 @@ describe("HistoryView", () => {
   it("carga ambas series, filtra por indicador y reporta el progreso", async () => {
     conHandlers();
     render(<HistoryView />);
-    // Un solo `linechart`: la tasa oficial sigue en Recharts, mientras que la
-    // serie evaluada pasó a SVG propio para poder llevar su capa de referencia.
+    // Ya no queda ningún `linechart`: los dos gráficos son SVG propio. La serie
+    // evaluada con su capa de referencia, y la oficial como bloque de contexto.
     await waitFor(() => {
-      expect(screen.getAllByTestId("linechart")).toHaveLength(1);
+      expect(document.querySelector(".vmw-serieval")).toBeTruthy();
     });
-    const [tasas] = screen.getAllByTestId("linechart");
-    expect(JSON.parse(tasas.dataset.puntos ?? "[]")).toHaveLength(1);
+    expect(screen.queryAllByTestId("linechart")).toHaveLength(0);
+    expect(document.querySelector(".vmw-oficial__grafico")).toBeTruthy();
+
+    // LA JERARQUÍA: la serie evaluada va ANTES que la oficial en el DOM, y su
+    // gráfico mide el doble. Es lo que dice quién manda, y por eso se fija.
+    const bloques = [
+      ...document.querySelectorAll(
+        ".vmw-lecthist, .vmw-serieval__tarjeta, .vmw-oficial, .vmw-episodios, .vmw-reglashist",
+      ),
+    ].map((n) => n.className.split(" ")[0]);
+    expect(bloques[0]).toBe("vmw-lecthist");
+    expect(bloques[1]).toBe("vmw-serieval__tarjeta");
+    expect(bloques[2]).toBe("vmw-oficial");
+    expect(
+      document.querySelector(".vmw-serieval")?.getAttribute("viewBox"),
+    ).toBe("0 0 1060 280");
+    expect(
+      document.querySelector(".vmw-oficial__grafico")?.getAttribute("viewBox"),
+    ).toBe("0 0 1060 140");
 
     // Del histórico solo quedan las filas del indicador seleccionado. Se
     // comprueba sobre lo RENDERIZADO —el valor de hoy en la leyenda— y no sobre
@@ -259,7 +276,7 @@ describe("HistoryView", () => {
     const usuario = userEvent.setup();
     render(<HistoryView />);
     await waitFor(() =>
-      expect(screen.getAllByTestId("linechart")).toHaveLength(1),
+      expect(document.querySelector(".vmw-serieval")).toBeTruthy(),
     );
     let rangos: number[] = [];
     servidor.use(

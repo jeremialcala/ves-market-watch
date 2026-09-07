@@ -9,15 +9,6 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 
 import {
   historialIndicadores,
@@ -29,11 +20,10 @@ import { ApiError } from "../api/problem";
 import { EpisodiosComparables } from "../components/EpisodiosComparables";
 import { HistorialReglas } from "../components/HistorialReglas";
 import { LecturaHistorico } from "../components/LecturaHistorico";
-import { NoDataState } from "../components/NoDataState";
+import { TasaOficialContexto } from "../components/TasaOficialContexto";
 import { SerieEvaluada } from "../components/SerieEvaluada";
 import { useI18n } from "../i18n/contexto";
-import type { Idioma } from "../i18n/idioma";
-import { formatDecimal, toChartNumber } from "../lib/decimal";
+import { toChartNumber } from "../lib/decimal";
 import { condicionDe } from "../lib/reglas";
 import { useMarket } from "../state/marketStore";
 import { MONEDAS_BCV } from "../state/resync";
@@ -59,90 +49,11 @@ const INDICADORES_CANONICOS = [
 ];
 
 const PRESETS = [7, 30, 90] as const;
-const LOCALE: Record<Idioma, string> = { es: "es-VE", en: "en-US" };
-
-function Grafico({
-  puntos,
-  titulo,
-  idioma,
-  vacio,
-}: {
-  puntos: Punto[];
-  titulo: string;
-  idioma: Idioma;
-  vacio: string;
-}) {
-  if (puntos.length === 0) {
-    return <NoDataState detalle={vacio} />;
-  }
-  const locale = LOCALE[idioma];
-  return (
-    <ResponsiveContainer width="100%" height={260}>
-      <LineChart data={puntos} margin={{ left: 12, right: 12, top: 8 }}>
-        <CartesianGrid stroke="var(--grid-chart)" vertical={false} />
-        <XAxis
-          dataKey="t"
-          type="number"
-          domain={["dataMin", "dataMax"]}
-          scale="time"
-          tickFormatter={(t: number) =>
-            new Intl.DateTimeFormat(locale, {
-              day: "2-digit",
-              month: "2-digit",
-            }).format(new Date(t))
-          }
-          tick={{ fill: "var(--text-dim)", fontSize: 11 }}
-          stroke="var(--border)"
-        />
-        <YAxis
-          tick={{ fill: "var(--text-dim)", fontSize: 11 }}
-          stroke="var(--border)"
-          width={78}
-          domain={["auto", "auto"]}
-          tickFormatter={(valor: number) =>
-            Intl.NumberFormat(locale, { notation: "compact" }).format(valor)
-          }
-        />
-        <Tooltip
-          contentStyle={{
-            background: "var(--surface-card)",
-            border: "1px solid var(--border)",
-            borderRadius: 14,
-            color: "var(--text)",
-          }}
-          labelFormatter={(t) =>
-            new Intl.DateTimeFormat(locale, {
-              dateStyle: "medium",
-              timeStyle: "short",
-            }).format(new Date(t as number))
-          }
-          formatter={(_valor, _nombre, item) => [
-            formatDecimal((item.payload as Punto).valorStr, {
-              maxDecimales: 4,
-              idioma,
-            }),
-            titulo,
-          ]}
-        />
-        <Line
-          type="monotone"
-          dataKey="valor"
-          stroke="var(--series-buy)"
-          strokeWidth={2.4}
-          dot={false}
-          activeDot={{ r: 4 }}
-          isAnimationActive={false}
-        />
-      </LineChart>
-    </ResponsiveContainer>
-  );
-}
-
 export function HistoryView() {
   const { t, idioma } = useI18n();
   // Solo para el umbral de la capa de referencia: el SPA no evalua nada,
   // la condicion viene calculada del motor (RF-6, ADR-0019).
-  const { analisis, senales } = useMarket();
+  const { analisis, senales, vigentes } = useMarket();
   const [dias, setDias] = useState<number>(30);
   const [moneda, setMoneda] = useState("USD");
   const [indicador, setIndicador] = useState("p2p_brecha_pct_buy");
@@ -307,28 +218,10 @@ export function HistoryView() {
           idioma={idioma}
         />
 
+        {/* LA PROTAGONISTA. Va antes que la oficial y con el gráfico entero:
+            la jerarquía se dice con el tamaño, no con un rótulo. */}
         <section
-          className="vmw-tarjeta vmw-seccion"
-          aria-label={t("historico.tasaTitulo", { moneda })}
-        >
-          <div className="vmw-seccion__cabecera">
-            <h3 className="vmw-seccion__titulo" style={{ fontSize: "20px" }}>
-              {t("historico.tasaTitulo", { moneda })}
-            </h3>
-            <span className="vmw-seccion__bajada">
-              {t("historico.rangoLabel", { dias })}
-            </span>
-          </div>
-          <Grafico
-            puntos={tasas}
-            titulo={`${moneda}/VES`}
-            idioma={idioma}
-            vacio={t("historico.sinSerie")}
-          />
-        </section>
-
-        <section
-          className="vmw-tarjeta vmw-seccion"
+          className="vmw-serieval__tarjeta"
           aria-label={t("historico.serieTitulo", { indicador, bucket: intervalo })}
         >
           <div className="vmw-seccion__cabecera">
@@ -347,6 +240,17 @@ export function HistoryView() {
             })}
           />
         </section>
+
+        {/* La oficial pasa a contexto: la mitad de alto, área rellena, sin eje
+            Y. Sigue estando entera —es la pierna que explica el precio— pero ya
+            no compite por la atención. */}
+        <TasaOficialContexto
+          puntos={tasas.map((p) => ({ t: p.t, valor: p.valorStr }))}
+          moneda={moneda}
+          brechaPct={vigentes["p2p_brecha_pct_sell"]?.value ?? null}
+          idioma={idioma}
+          vacio={t("historico.sinSerie")}
+        />
 
         {/* Después de los gráficos: primero se ve la serie, luego con qué se
             parece. Al revés obligaría a comparar contra algo no visto. */}

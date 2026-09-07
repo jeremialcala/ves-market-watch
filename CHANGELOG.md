@@ -17,6 +17,24 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Changed
+
+- **Histórico reordenado: la serie evaluada pasa a protagonista y la tasa
+  oficial a contexto (2026-09-06).** El orden queda lectura → serie evaluada →
+  tasa oficial → episodios → historial de reglas.
+  - **La jerarquía se dice con el tamaño, no con un rótulo.** La serie evaluada
+    conserva sus 280 px y su capa de referencia entera; la oficial baja a 140 px
+    con área rellena en teal, **sin banda, sin mediana y sin eje Y** — solo el
+    eje de fechas. Un test fija el orden en el DOM y los dos `viewBox`, porque
+    una regresión de maquetación no avisa.
+  - **El «88 %» del subtítulo se calcula, no se cablea.** El enunciado traía esa
+    cifra fija; el día de la implementación eran **85,1 %**, y se mueve con el
+    mercado. Sale de la brecha vigente —`100 / (1 + brecha/100)`— y, sin brecha,
+    la frase se queda sin el dato en vez de inventárselo. Un número cosido a la
+    frase la habría dejado diciendo algo falso con toda naturalidad y sin que
+    ninguna prueba se enterara.
+  - Sale **Recharts** de la vista: los dos gráficos son ya SVG propio.
+
 ### Added
 
 - **«Historial de las reglas», último bloque del histórico (2026-09-06).** Qué ha
