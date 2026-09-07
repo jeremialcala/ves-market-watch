@@ -17,6 +17,39 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Changed
+
+- **Un solo componente de serie temporal para todo Criterio (2026-09-06).**
+  `SerieTemporal` es ya **el** gráfico de líneas del producto: la serie evaluada
+  y la tasa oficial son la misma implementación con flags distintos, y la
+  oficial simplemente apaga casi todos.
+  - **Antes eran dos SVG escritos a mano que fueron divergiendo**: uno ganó el
+    eje de valores y el otro no, uno recibió el crosshair y el otro lo copió
+    después. Cada capacidad nueva costaba dos veces y se arreglaba una.
+  - **El estilo no se pasa por props, a propósito.** Gridlines de 1 px, trazo de
+    2,2 px con uniones redondeadas, ticks en columna de 66 px, fechas debajo:
+    todo del sistema. Un gráfico que acepta su propio grosor de línea acaba
+    teniendo tantos estilos como llamantes.
+  - **El revelado usa los tokens, no valores cableados** —`--dur-reveal` y
+    `--ease-out-expo`, que ya valían 0,7 s y `cubic-bezier(.22,1,.36,1)`— y se
+    detiene con `prefers-reduced-motion`.
+  - **Se conserva `Punto = {t, valor}`** en vez de `{t, v}`: es el tipo
+    compartido de `lib/series` y lo usan también `GapPanel`, `MetricCard` y
+    `SideBySide`. Renombrar el campo habría obligado a mapear en cada llamante
+    para no ganar nada.
+  - Se retiran **13 reglas CSS** de los dos gráficos viejos: un refactor que
+    deja el estilo muerto detrás no ha terminado.
+
+### Added
+
+- **Los gráficos se recorren con teclado (2026-09-06).** Al recibir foco señalan
+  el último punto; las flechas mueven, Inicio y Fin saltan a los extremos y
+  Escape suelta. **Hasta ahora el tooltip solo existía con ratón o dedo**, así
+  que la serie era ilegible sin ellos.
+  - Foco visible obligatorio: `outline` de 2 px `var(--teal)` con
+    `outline-offset` de 3 px, en el lienzo y en el punto activo. Con ratón el
+    punto no lo lleva — ahí el cursor ya dice dónde se está.
+
 ### Fixed
 
 - **Los 22 px entre la serie evaluada y la tasa oficial no se aplicaban

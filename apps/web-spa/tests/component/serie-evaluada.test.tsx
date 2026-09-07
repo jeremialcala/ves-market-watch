@@ -60,7 +60,7 @@ function pintar(
   );
 }
 
-const svg = () => document.querySelector(".vmw-serieval") as SVGElement;
+const svg = () => document.querySelector(".vmw-serie__svg") as SVGElement;
 const capas = () => [...svg().children];
 
 describe("SerieEvaluada · capa de referencia", () => {
@@ -181,7 +181,7 @@ describe("SerieEvaluada · capa de referencia", () => {
 
   it("hay eje de fechas bajo el gráfico", () => {
     pintar();
-    const fechas = document.querySelector(".vmw-serieval__fechas")!;
+    const fechas = document.querySelector(".vmw-serie__fechas")!;
     const etiquetas = [...fechas.children].map((n) => n.textContent);
     // Ventana de 4 días con `dias=30`: paso de 3 días, extremos incluidos.
     expect(etiquetas.length).toBeGreaterThanOrEqual(2);
@@ -216,7 +216,7 @@ describe("SerieEvaluada · capa de referencia", () => {
     // Ni grafico vacio ni spinner: los dos esconden si el problema es que no
     // hay dato, que no ha cargado, o que se pidio algo que no existe.
     pintar({ puntos: [] });
-    expect(document.querySelector(".vmw-serieval")).toBeNull();
+    expect(document.querySelector(".vmw-serie__svg")).toBeNull();
     const vacio = document.querySelector(".vmw-vacio")!;
     expect(vacio).toBeTruthy();
     expect(vacio.getAttribute("role")).toBe("status");

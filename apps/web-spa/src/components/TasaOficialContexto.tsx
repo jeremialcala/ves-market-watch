@@ -15,26 +15,15 @@
  * vigente, la frase se queda sin el dato en vez de inventárselo.
  */
 
-import { useRef } from "react";
-
+import { SerieTemporal } from "./SerieTemporal";
 import { SinDatosGrafico } from "./SinDatosGrafico";
-import { TooltipGrafico } from "./TooltipGrafico";
 import { useI18n } from "../i18n/contexto";
 import type { Idioma } from "../i18n/idioma";
 import { formatDecimal } from "../lib/decimal";
 import { parteDelPrecio } from "../lib/pierna";
-import { marcasTiempo, puntosTemporales } from "../lib/ejeTiempo";
-import { useAncho } from "../lib/useAncho";
-import { useCrosshair } from "../lib/useCrosshair";
-import { anclajeTooltip, contextoPunto, fraccionDe } from "../lib/tooltipSerie";
-import { percentilDisc } from "../lib/series";
 import { desfaseEntre } from "../lib/cobertura";
-import { toChartNumber } from "../lib/decimal";
 import type { Punto } from "../lib/series";
 
-const ANCHO = 1060;
-const ALTO = 140;
-const PAD = 10;
 const LOCALE: Record<Idioma, string> = { es: "es-VE", en: "en-US" };
 
 export function TasaOficialContexto({
@@ -56,10 +45,6 @@ export function TasaOficialContexto({
   evaluada: readonly Punto[];
 }) {
   const { t } = useI18n();
-  const ejeRef = useRef<HTMLDivElement>(null);
-  const anchoEje = useAncho(ejeRef, ANCHO);
-  const marcoRef = useRef<HTMLDivElement>(null);
-  const { activo, manejadores } = useCrosshair(marcoRef, puntos);
   const locale = LOCALE[idioma];
 
   const parte = parteDelPrecio(brechaPct);
@@ -71,19 +56,6 @@ export function TasaOficialContexto({
     );
 
   const desfase = desfaseEntre(puntos, evaluada);
-  const linea = puntosTemporales(puntos, ANCHO, ALTO, PAD);
-
-  // Misma aritmética de Y que `puntosTemporales`, para que el punto caiga
-  // EXACTAMENTE sobre el trazo y no un píxel al lado.
-  const valores = puntos.map((p) => toChartNumber(p.valor));
-  const minimo = valores.length === 0 ? 0 : Math.min(...valores);
-  const recorrido = (valores.length === 0 ? 0 : Math.max(...valores)) - minimo || 1;
-  const fx = activo === null ? 0 : fraccionDe(puntos, activo);
-  const fy =
-    activo === null
-      ? 0
-      : (ALTO - PAD - ((valores[activo] - minimo) / recorrido) * (ALTO - PAD * 2)) /
-        ALTO;
 
   return (
     <section className="vmw-oficial" aria-label={t("historico.tasaTitulo", { moneda })}>
@@ -119,96 +91,22 @@ export function TasaOficialContexto({
         />
       ) : (
         <>
-          <div className="vmw-oficial__marco" ref={marcoRef} {...manejadores}>
-          <svg
-            viewBox={`0 0 ${ANCHO} ${ALTO}`}
-            preserveAspectRatio="none"
-            className="vmw-oficial__grafico"
-            role="img"
-            aria-label={t("historico.tasaTitulo", { moneda })}
-          >
-            {/* Área rellena: es lo que separa visualmente el contexto del
-                protagonista, que va en línea limpia sobre su capa. */}
-            <polygon
-              points={`0,${ALTO} ${linea} ${ANCHO},${ALTO}`}
-              fill="var(--teal-tint)"
-              stroke="none"
-            />
-            <polyline
-              points={linea}
-              fill="none"
-              stroke="var(--teal)"
-              strokeWidth="2.2"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              vectorEffect="non-scaling-stroke"
-            />
-          </svg>
-
-          {activo !== null && (
-            <>
-              <svg
-                className="vmw-cross"
-                viewBox={`0 0 ${ANCHO} ${ALTO}`}
-                preserveAspectRatio="none"
-                aria-hidden="true"
-              >
-                <line
-                  x1={fx * ANCHO}
-                  y1="0"
-                  x2={fx * ANCHO}
-                  y2={ALTO}
-                  stroke="var(--border)"
-                  strokeWidth="1"
-                  vectorEffect="non-scaling-stroke"
-                />
-              </svg>
-              <span
-                className="vmw-cross__punto"
-                style={{
-                  left: `${fx * 100}%`,
-                  top: `${fy * 100}%`,
-                  background: "var(--teal)",
-                }}
-                aria-hidden="true"
-              />
-              <TooltipGrafico
-                t={puntos[activo].t}
-                valor={puntos[activo].valor}
-                unidad="VES"
-                color="var(--teal)"
-                contexto={contextoPunto(
-                  puntos,
-                  activo,
-                  percentilDisc(puntos, 0.5) ?? puntos[activo].valor,
-                )}
-                anclaje={anclajeTooltip(fx * anchoEje, anchoEje)}
-                izquierda={fx * 100}
-                arriba={fy * 100}
-                idioma={idioma}
-              />
-            </>
-          )}
-          </div>
-
-          {/* Solo el eje de fechas. Fuera del SVG: `preserveAspectRatio="none"`
-              deformaría cualquier texto de dentro. */}
-          <div className="vmw-oficial__eje" ref={ejeRef} aria-hidden="true">
-            {marcasTiempo(
-              puntos[0].t,
-              puntos[puntos.length - 1].t,
-              dias,
-              idioma,
-              anchoEje,
-            ).map((marca) => (
-              <span
-                key={marca.t}
-                style={{ left: `${(marca.fraccion * 100).toFixed(2)}%` }}
-              >
-                {marca.etiqueta}
-              </span>
-            ))}
-          </div>
+          {/* El MISMO componente que la serie evaluada, con casi todo
+              apagado: sin banda, sin mediana, sin umbral, sin marca de hoy y
+              sin eje de valores. Solo área y trazo. Que la diferencia sean
+              flags y no otra implementación es el objetivo del refactor. */}
+          <SerieTemporal
+            puntos={puntos}
+            color="var(--teal)"
+            alto={140}
+            formato={(v) => formatDecimal(v, { maxDecimales: 2, idioma })}
+            unidad="VES"
+            dias={dias}
+            idioma={idioma}
+            etiqueta={t("historico.tasaTitulo", { moneda })}
+            area
+            tooltip
+          />
 
           {/* Las dos series se leen juntas: si terminan en días distintos,
               comparar sus extremos a ojo induce a error. El caso normal aquí es
