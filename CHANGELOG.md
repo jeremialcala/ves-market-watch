@@ -17,6 +17,28 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Changed
+
+- **La vista de Análisis se disuelve (2026-09-07).** La barra baja a **tres**
+  pestañas. Es una disolución, no un borrado: **nada medido se pierde**.
+  - **Presión de liquidez → junto a `DepthChart`.** Misma pregunta con distinto
+    grano: cuánto volumen sostiene cada lado, y cómo se reparte por bandas de
+    0,5 %. Resumen y detalle, en ese orden.
+  - **Riesgos → cierran el dashboard.** No es un dato más: es lo que podría
+    dejar en falso todo lo de arriba, y por eso va al final en vez de competir
+    con la lectura.
+  - **Por qué la pestaña dejaba de justificarse**: tras retirar los escenarios
+    le quedaban un dato del libro y cuatro autodiagnósticos de la plataforma.
+    Ninguno es análisis del mercado, y el nombre —«Análisis comprensivo»—
+    prometía lo que ya no contenía.
+  - **RF-8 queda absorbido en RF-2, no retirado.** Es alcance aprobado en Gate 0
+    (firma HITL del 2026-07-11): se enmienda con fecha y se dice a dónde va cada
+    pieza, en vez de hacerlo desaparecer de la lista.
+  - Dos tests nuevos fijan la estructura: la barra tiene **tres** pestañas y
+    ninguna «Análisis», y el dashboard **monta los dos bloques** con los riesgos
+    de últimos. Sin ellos, perder uno sería silencioso: `volumes` y `risks` no
+    tienen otro consumidor en el producto.
+
 ### Removed
 
 - **Los escenarios con probabilidades se retiran de la vista de Análisis

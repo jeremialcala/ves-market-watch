@@ -7,7 +7,6 @@ import { Footer } from "./components/shell/Footer";
 import { NavBar } from "./components/shell/NavBar";
 import { StatusStrip } from "./components/shell/StatusStrip";
 import { marketStore } from "./state/marketStore";
-import { AnalysisView } from "./views/AnalysisView";
 import { DashboardView } from "./views/DashboardView";
 import { HistoryView } from "./views/HistoryView";
 import { IntradayView } from "./views/IntradayView";
@@ -38,7 +37,6 @@ function Tablero() {
         />
       </header>
       {vista === "dashboard" ? <DashboardView /> : null}
-      {vista === "analisis" ? <AnalysisView /> : null}
       {vista === "intradia" ? <IntradayView /> : null}
       {vista === "historico" ? <HistoryView /> : null}
       <Footer />

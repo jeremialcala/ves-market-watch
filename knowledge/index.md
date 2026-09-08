@@ -50,6 +50,10 @@ la fuente de verdad (los documentos AI-DLC y el código).
   exacta `Δbrecha = Δparalelo − Δoficial`. Describe el presente en lenguaje llano;
   no aconseja ni pronostica, y hay tests que lo defienden. El SPA baja de 3 sellos
   demo a 2.
+- **La vista de Análisis se disolvió** (2026-09-07): la barra baja a tres
+  pestañas —Dashboard, Intradía, Histórico—. No se retiró su contenido sino la
+  pestaña: la presión de liquidez se monta junto a la profundidad y los riesgos
+  cierran el dashboard. RF-8 queda **absorbido en RF-2**, no retirado.
 - **No queda ningún sello demo** (2026-09-07): los **riesgos** pasaron a dato
   servido —cortes en `riesgos.v1.yaml`, bloque `risks` del mismo evento— y los
   **escenarios se retiraron**. Los dos casos no son el mismo: los riesgos ya

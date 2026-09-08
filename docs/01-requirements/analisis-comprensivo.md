@@ -1,6 +1,6 @@
 # PRD — Análisis comprensivo (vista `AnalysisView`)
 
-- **Estado:** draft — determinación de datos, sin implementación
+- **Estado:** cerrado — determinación aplicada; la vista se disolvió el 2026-09-07
 - **Fecha:** 2026-09-07
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 01-requirements
@@ -13,6 +13,13 @@ La vista de Análisis es la única del producto que sigue llevando el sello
 haría falta para retirar cada sello, qué hay ya en la plataforma y qué no.
 
 Las cifras se midieron contra la base de desarrollo el **2026-09-07**.
+
+> **Desenlace (2026-09-07).** Los tres bloques siguieron caminos distintos y
+> conviene no confundirlos: los **riesgos** pasaron a dato servido, los
+> **escenarios** se retiraron por inconstruibles, y la **presión de liquidez**
+> se mudó junto a la profundidad del dashboard. Con dos bloques que no eran
+> análisis del mercado, la pestaña dejó de justificarse y **la vista se
+> disolvió**: RF-8 queda absorbido en RF-2, no retirado. Nada medido se perdió.
 
 ## Qué hay hoy en la vista
 

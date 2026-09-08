@@ -152,6 +152,10 @@ que rompe el build es cualquier retroceso desde donde está hoy cada uno. El
   El login quedó operativo el 2026-08-01 con dominio propio de Auth0 y desarrollo
   por túneles de Cloudflare (ADR-0020); el tenant lleva aprovisionado desde el
   2026-07-27.
+  La barra tiene **tres** pestañas desde el 2026-09-07: Análisis se disolvió
+  —su presión de liquidez y sus riesgos se montan ahora en el dashboard, donde
+  ya tenían hermanos— porque lo que le quedaba tras retirar los escenarios no
+  era análisis del mercado y no justificaba un nivel propio de navegación.
   La vista de **Histórico** se rehízo entre el 2026-09-05 y el 2026-09-06: capa de
   referencia sobre la serie (banda intercuartil, mediana y umbral de la regla),
   panel de lectura que dice dónde cae el dato de hoy dentro de su ventana,

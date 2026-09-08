@@ -11,7 +11,9 @@ import {
   MarketRegimeCard,
 } from "../components/MarketRegimeCard";
 import { OfficialRatePanel } from "../components/OfficialRatePanel";
+import { PanelRiesgos } from "../components/PanelRiesgos";
 import { P2PReferencePanel } from "../components/P2PReferencePanel";
+import { PresionLiquidez } from "../components/PresionLiquidez";
 import { RuleDistance } from "../components/RuleDistance";
 import { SignalsFeed } from "../components/SignalsFeed";
 
@@ -23,6 +25,22 @@ import { SignalsFeed } from "../components/SignalsFeed";
  * ancho), **con qué número** (la brecha), **qué está a punto de pasar** (la
  * distancia al disparo) y solo entonces el detalle. La microestructura ya no
  * está aquí — vive en Intradía, con el resto de indicadores del día.
+ *
+ * ### Los dos bloques que llegaron al disolver Análisis (2026-09-07)
+ *
+ * La vista de Análisis se quedó en dos bloques al retirar los escenarios, y
+ * ninguno de los dos era análisis del mercado: uno es dato del libro y el otro
+ * son autodiagnósticos de la plataforma. Cada uno vino a donde ya tenía
+ * hermanos.
+ *
+ * - **Presión de liquidez** va pegada a `DepthChart`: la misma pregunta con
+ *   distinto grano —cuánto hay a cada lado, y cómo se reparte por bandas—.
+ *   Resumen y detalle, en ese orden.
+ * - **Riesgos que vigilar** cierra la vista. No es un dato más: es la lista de
+ *   lo que podría dejar en falso todo lo anterior, y por eso va al final y no
+ *   compitiendo con la lectura. Dos de sus cuatro condiciones ya asomaban aquí
+ *   —`oficial_rancia` y `confianza_baja` como afirmaciones del régimen—, pero
+ *   sin nivel ni umbral, que es lo que convierte un número en lectura.
  */
 export function DashboardView() {
   return (
@@ -60,7 +78,13 @@ export function DashboardView() {
         </section>
         <OfficialRatePanel />
         <SignalsFeed />
+
+        {/* El libro: cuánto sostiene cada lado y cómo se reparte. */}
+        <PresionLiquidez />
         <DepthChart />
+
+        {/* Lo último, a propósito: lo que podría dejar en falso lo de arriba. */}
+        <PanelRiesgos />
       </div>
     </main>
   );

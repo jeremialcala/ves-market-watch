@@ -27,7 +27,8 @@ import {
 } from "../../src/components/MarketRegimeCard";
 import { config } from "../../src/config";
 import { marketStore } from "../../src/state/marketStore";
-import { AnalysisView } from "../../src/views/AnalysisView";
+import { PresionLiquidez } from "../../src/components/PresionLiquidez";
+import { DashboardView } from "../../src/views/DashboardView";
 import {
   FIXTURE_ANALISIS,
   FIXTURE_INDICADORES,
@@ -422,41 +423,72 @@ describe("GapHeatmap", () => {
 // La descomposición de la brecha tiene su propia suite:
 // `tests/component/descomposicion.test.tsx`.
 
-describe("AnalysisView", () => {
-  it("NO queda un solo sello demo: todo lo que pinta es dato servido", () => {
+describe("PresionLiquidez", () => {
+  /*
+   * Vivía en la vista de Análisis, disuelta el 2026-09-07. Se prueba aquí como
+   * componente porque es lo que ahora monta el Dashboard, junto a la
+   * profundidad: es el ÚNICO consumidor de `volumes` del producto, así que si
+   * deja de pintar, ese indicador desaparece sin que nada más lo delate.
+   */
+  it("calcula la presión de liquidez con el dato servido", () => {
     marketStore.resync({
       indicadores: {
         ...FIXTURE_INDICADORES,
         volumes: { buy: "1201837", sell: "2025806" },
       },
     });
-    render(<AnalysisView />);
+    render(<PresionLiquidez />);
 
-    // Era la última vista con sello del producto. Los riesgos pasaron a dato
-    // servido el 2026-09-07 y los escenarios se retiraron el mismo día: no eran
-    // deuda pendiente sino un bloque inconstruible como estaba especificado.
-    expect(screen.queryByText("demo · sin fuente")).toBeNull();
     expect(screen.getByText("asks 1.201.837 USDT")).toBeTruthy();
     expect(screen.getByText("bids 2.025.806 USDT")).toBeTruthy();
-  });
-
-  it("y no queda rastro de los escenarios ni de sus probabilidades", () => {
-    marketStore.resync({ indicadores: FIXTURE_INDICADORES });
-    render(<AnalysisView />);
-
-    expect(screen.queryByText(/brecha a 72 h/i)).toBeNull();
-    expect(screen.queryByText("Corrida alcista")).toBeNull();
-    expect(screen.queryByText("Convergencia forzada")).toBeNull();
-    // La bajada tampoco puede seguir prometiendo escenarios de ejemplo.
-    expect(screen.getByText(/no lo que hará/i)).toBeTruthy();
+    // No queda un solo sello en el producto: era el último y se fue con los
+    // escenarios el 2026-09-07.
+    expect(screen.queryByText("demo · sin fuente")).toBeNull();
   });
 
   it("sin liquidez servida lo dice en vez de dibujar una barra vacía", () => {
     marketStore.resync({
       indicadores: { ...FIXTURE_INDICADORES, volumes: null },
     });
-    render(<AnalysisView />);
+    render(<PresionLiquidez />);
     expect(screen.getByText(/sin liquidez servida/i)).toBeTruthy();
+  });
+
+  it("trae su propia cabecera, como hace DepthChart a su lado", () => {
+    marketStore.resync({ indicadores: FIXTURE_INDICADORES });
+    render(<PresionLiquidez />);
+    expect(screen.getByRole("heading", { name: /presión de liquidez/i })).toBeTruthy();
+  });
+});
+
+describe("El Dashboard hereda lo que traía Análisis", () => {
+  /*
+   * La vista se disolvió, no se borró: si alguno de los dos bloques deja de
+   * montarse aquí, el producto pierde el dato en silencio — `volumes` y `risks`
+   * no tienen otro consumidor.
+   */
+  it("monta la presión de liquidez y los riesgos", () => {
+    marketStore.resync({ analisis: FIXTURE_ANALISIS, indicadores: FIXTURE_INDICADORES });
+    render(<DashboardView />);
+
+    expect(screen.getByRole("heading", { name: /presión de liquidez/i })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /riesgos que vigilar/i })).toBeTruthy();
+  });
+
+  it("los riesgos cierran la vista, detrás de la profundidad", () => {
+    // No es capricho de orden: son lo que podría dejar en falso todo lo de
+    // arriba, así que no compiten con la lectura.
+    marketStore.resync({ analisis: FIXTURE_ANALISIS, indicadores: FIXTURE_INDICADORES });
+    render(<DashboardView />);
+
+    const titulos = [...document.querySelectorAll(".vmw-seccion__titulo")].map(
+      (n) => n.textContent,
+    );
+    const liquidez = titulos.findIndex((t) => /presión de liquidez/i.test(t ?? ""));
+    const riesgos = titulos.findIndex((t) => /riesgos que vigilar/i.test(t ?? ""));
+    expect(liquidez).toBeGreaterThanOrEqual(0);
+    expect(riesgos).toBe(titulos.length - 1);
+    expect(riesgos).toBeGreaterThan(liquidez);
   });
 });
 
