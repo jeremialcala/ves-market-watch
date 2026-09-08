@@ -13,7 +13,7 @@
 
 | Criterio | Estado | Evidencia |
 |---|---|---|
-| **Tests pasando** | ✅ | 1.456 tests en los seis proyectos, suite completa (`integration` y `e2e` incluidas) en cada push y PR. **Cero `skip`/`xfail` incondicionales** en el monorepo. E2E autenticado en vivo contra el tenant y el gateway reales, en el pipeline desde el 2026-08-20 |
+| **Tests pasando** | ✅ | 1.529 tests en los seis proyectos, suite completa (`integration` y `e2e` incluidas) en cada push y PR. **Cero `skip`/`xfail` incondicionales** en el monorepo. E2E autenticado en vivo contra el tenant y el gateway reales, en el pipeline desde el 2026-08-20 |
 | **DAST limpio** | ✅ | ZAP guiado por el OpenAPI en `seguridad.yml` (2026-09-06), en dos pasadas. **0 Alto, 0 Medio, 2 Bajo** aceptados con motivo en `scripts/triar_dast.py`. 116 reglas activas en PASS contra respuestas 200 reales |
 | **Rendimiento dentro de los SLOs** | ✅ | **Los 5 cumplen.** Medidos el 2026-09-06, no estimados; el de ingesta tras ADR-0026 |
 
@@ -61,7 +61,7 @@ escrita (bajar `PAGINAS_EN_PARALELO`).
 
 | Pendiente | Nota |
 |---|---|
-| Deuda de T8: lockfiles + imágenes por digest | Pertenece al **Gate 2**, y allí está anotada. Se repite aquí porque degrada la reproducibilidad de todo lo que este gate mide |
+| ~~Deuda de T8: lockfiles + imágenes por digest~~ | **Cerrada el 2026-09-08** (Gate 2). Lo que este gate mide es ya reproducible: los tests corren sobre el árbol del lock |
 | Recalibración HITL de umbrales del ruleset | Requiere datos de producción |
 | Rampa teal del mapa de calor por el validador de dataviz | Medida a mano, no validada; el script del skill no está en la máquina donde se hizo el cambio |
 | Escenario de **saturación** (T4) bajo carga | Lo medido es latencia en régimen normal. Cómo se degrada bajo carga es otra pregunta y sigue sin respuesta |
@@ -81,18 +81,40 @@ escrita (bajar `PAGINAS_EN_PARALELO`).
 Los cinco SLO están medidos —no declarados— y los cinco se cumplen; el último
 pasó a cumplirse con ADR-0026 el mismo día en que se midió el incumplimiento.
 
-**Pendiente de aprobación HITL**, con una reserva que conviene resolver antes de
-firmar: confirmar el p95 de ingesta sobre una corrida larga y comprobar que la
-tasa de 429 no ha subido tras ADR-0026.
+## La reserva, y cómo se resolvió (2026-09-08)
 
-> **Esa reserva ya tiene fecha y ejecutor.** `scripts/verificar_slo_ingesta.py`
-> contesta las dos preguntas y sale 0 solo si ambas van bien. Queda programado
-> para el **2026-09-07 a las 09:00 VET** —unas 15 h de operación paralela, ~900
-> ciclos— en una tarea de Windows (`Criterio-VerificarSLO-Ingesta`), que deja el
-> informe en `informes/`. **No se hizo como rutina en la nube a propósito**: esas
-> corren en infraestructura de Anthropic y no alcanzan el Docker del despliegue,
-> así que habrían certificado nada.
->
-> Se borra con `Unregister-ScheduledTask -TaskName Criterio-VerificarSLO-Ingesta`.
+Antes de firmar quedaba una: confirmar el p95 de ingesta sobre una corrida larga
+y comprobar que la tasa de 429 no había subido tras ADR-0026.
+`scripts/verificar_slo_ingesta.py` corrió el **2026-09-07 a las 09:00 VET** sobre
+**14,9 h y 861 ciclos** (informe en `informes/slo-ingesta-2026-09-07.md`) y
+**salió con código 1**: cumplía la primera pregunta y marcaba la segunda.
 
-**Aprobado por:** `<pendiente>` · **Fecha:** `<pendiente>`
+**El p95 aguanta**: 1,44 s contra un techo de 5 s, con **0 %** de capturas por
+encima. Contestado sobre una corrida larga, que era el punto.
+
+**La fricción se revisó y se acepta**, con estas cifras:
+
+| | |
+|---|---|
+| 429 observados | 22 sobre 17.220 peticiones = **0,13 %** |
+| Absorbidos | breaker 0 · reintentos agotados 0 · capturas parciales 0 |
+| Ciclos completados | **100,00 %** — el SLO pide ≥ 99 % |
+
+Dos razones para aceptar, no una:
+
+1. **La línea base no probaba lo que se le atribuía.** El «sin un solo 429» de
+   ADR-0026 salía de una muestra de **15 minutos**; a la tasa observada ahora, lo
+   esperable en esa ventana eran **0,4** respuestas. Ver cero nunca demostró que
+   fueran cero, así que no hay regresión demostrada — hay una medición más larga.
+2. **El SLO declarado mejoró.** «Ciclos completados ≥ 99 %» está en **100,00 %**,
+   por encima del **99,72 %** medido antes de la ADR.
+
+No se aplica la reversión de ADR-0026 —bajar `PAGINAS_EN_PARALELO`— porque no hay
+degradación que revertir. **Lo que sí queda es vigilar**: si la tasa de 429 sube
+o aparecen capturas parciales o menciones del breaker, esa reversión es el primer
+movimiento y sigue escrita en la ADR.
+
+> La tarea de Windows ya cumplió su encargo. Se borra con
+> `Unregister-ScheduledTask -TaskName Criterio-VerificarSLO-Ingesta`.
+
+**Aprobado por:** Jeremi Alcalá · **Fecha:** 2026-09-08

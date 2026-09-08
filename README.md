@@ -166,17 +166,21 @@ que rompe el build es cualquier retroceso desde donde está hoy cada uno. El
   explícitos para la ventana insuficiente y la serie vacía. Los dos gráficos son
   ya **un único componente** (`SerieTemporal`) con flags distintos, recorrible
   con teclado.
-- **Gate 3 (pruebas): los tres criterios cubiertos, pendiente de firma HITL.**
+- **Gates 2 y 3 APROBADOS HITL el 2026-09-08.** Con ellos cierran las fases
+  03-implementation y 04-testing.
   Cobertura **≥ 80 % en los seis** con las dos métricas —combinada y ramas solas—,
   medida por la propia pipeline el **2026-09-07**. Combinada sobre `src/`:
   `ingestor-bcv` 99,36 · `ingestor-binance` 99,30 · `ingestor-historico` 97,22 ·
   `api-gateway` 92,86 · `web-spa` 92,87 · `indicator-engine` 85,89; la más baja en
-  ramas solas sigue siendo 82,71 (`indicator-engine`). **1 456 tests** en total:
-  792 de los cinco servicios Python y 664 del SPA. El **e2e autenticado en vivo
+  ramas solas sigue siendo 82,71 (`indicator-engine`). **1 529 tests** en total:
+  847 de los cinco servicios Python y 682 del SPA. El **e2e autenticado en vivo
   con token real** se cumplió el 2026-08-07 (6/6 contra el tenant y el gateway
-  reales) y **corre en el pipeline desde el 2026-08-20**. Lo que queda abierto es
-  la deuda del control de T8: sin lockfiles en los cinco servicios Python y sin
-  imágenes por digest. El CVE-2026-59870 de `js-yaml` **dejó de ser una excepción
+  reales) y **corre en el pipeline desde el 2026-08-20**. La **deuda de T8 se
+  cerró el 2026-09-08**, y era la última reserva del Gate 2:
+  `requirements.lock` con hashes en los cinco servicios Python —de los que
+  instalan CI, las imágenes y el propio `pip-audit`, así que lo auditado es lo
+  que se despliega— y todas las imágenes fijadas por digest
+  (`scripts/regenerar-locks.sh` los regenera). El CVE-2026-59870 de `js-yaml` **dejó de ser una excepción
   aceptada el 2026-09-06**, cuando el parche llegó a la línea 4.x y bastó un
   `npm update`. Detalle en `docs/04-testing/plan-de-pruebas.md` §10 y §12.
 
@@ -191,8 +195,8 @@ mezclaba criterios de ambos y se repartieron por criterio.
 |---|---|---|---|
 | **0** | 01-requirements | reqs de seguridad + escenarios de abuso + threat assessment + datos clasificados | ✅ aprobado HITL 2026-07-11 |
 | **1** | 02-design | threat model + C4 + ADRs + contratos de API | ✅ aprobado HITL 2026-07-11 |
-| **2** | 03-implementation | SAST limpio + deps verificadas + 80 % cobertura | ✅ criterios cubiertos — **pendiente de firma HITL** |
-| **3** | 04-testing | tests pasando + DAST limpio + perf dentro de SLOs | ✅ los 3 cubiertos — **pendiente de firma HITL** |
+| **2** | 03-implementation | SAST limpio + deps verificadas + 80 % cobertura | ✅ aprobado HITL 2026-09-08 |
+| **3** | 04-testing | tests pasando + DAST limpio + perf dentro de SLOs | ✅ aprobado HITL 2026-09-08 |
 | **4** | 05-deployment | pipeline limpio + IaC escaneado + runbook de rollback | no iniciado |
 | **5** | 06-monitoring | SLOs monitorizados + proceso de incidentes | no iniciado |
 

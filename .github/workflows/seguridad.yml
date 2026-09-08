@@ -85,7 +85,12 @@ jobs:
             python -m venv "/tmp/venv-${servicio}"
             venv="/tmp/venv-${servicio}/bin"
             "${venv}/pip" install --upgrade --quiet pip pip-audit
-            "${venv}/pip" install --quiet -e "apps/${servicio}[dev]"
+            # Desde el LOCK y con hashes: auditar lo que se resolvió en ESTA
+            # ejecución no dice nada sobre lo que se despliega. Ahora el árbol
+            # auditado es exactamente el que instalan CI y las imágenes (T8).
+            "${venv}/pip" install --quiet --require-hashes \
+                -r "apps/${servicio}/requirements.lock"
+            "${venv}/pip" install --quiet --no-deps -e "apps/${servicio}"
             # Se audita el árbol CONGELADO, no el entorno. `--skip-editable` y
             # `--strict` se contradicen: saltar el paquete del servicio —que no
             # está en PyPI y no se puede auditar— produce justo la condición que

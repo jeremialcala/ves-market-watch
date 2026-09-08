@@ -13,7 +13,7 @@ name: ves-market-watch
 
 services:
   rabbitmq:
-    image: rabbitmq:4-management
+    image: rabbitmq:4-management@sha256:17e61a9b064066c87368f33cf80b0b05749cbacebf204ed0b674a4a7bcd05c38
     # Sin esto, un reinicio del daemon de Docker deja la infra caída mientras
     # los servicios (que sí reinician) quedan en crash-loop (visto 2026-07-23).
     restart: unless-stopped
@@ -27,7 +27,17 @@ services:
       retries: 12
 
   timescaledb:
-    image: timescale/timescaledb:latest-pg16
+    # Fijada por DIGEST (T8). `latest-pg16` es un tag MÓVIL: sin digest, un
+    # `compose up` cualquier día trae otra imagen.
+    #
+    # Ojo con cuál se fija, que aquí hay dato y no solo build. Este digest es el
+    # que la instalación venía usando y está probado contra este directorio de
+    # datos. Fijar el digest MÁS NUEVO del tag —lo primero que uno hace— dejó la
+    # base en `FATAL: incorrect checksum in control file` y el contenedor en
+    # bucle de reinicio (comprobado el 2026-09-08). En una imagen con estado, el
+    # digest bueno es el que ya funciona, no el último publicado; actualizarlo es
+    # una migración, no un pin.
+    image: timescale/timescaledb:latest-pg16@sha256:ba149561ad4ddff5940d6eb0a0df60aefd1355cee1a450928f271267038fc888
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: postgres
@@ -193,7 +203,7 @@ services:
     profiles: [tunel]
     # Fijada a la versión que ya corría: el `latest` de un conector se actualiza
     # solo y aquí no interesa descubrir una versión nueva un lunes.
-    image: cloudflare/cloudflared:2026.6.0
+    image: cloudflare/cloudflared:2026.6.0@sha256:55d8bb268e90b09d3bf05a9bb5d3bc6ddad1b0b69739e4f15daaa7e6676238b6
     command: tunnel --no-autoupdate run
     environment:
       # El token AUTORIZA a servir el túnel: es un secreto, vive en el .env de la
