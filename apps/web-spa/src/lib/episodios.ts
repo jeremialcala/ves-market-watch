@@ -20,7 +20,7 @@
  * No es una tasa de acierto ni una predicción. `outcome` es **historia
  * observada** —lo que hizo la brecha después— y así se presenta, sin veredicto
  * y sin agregar un «N de M» que se leería como acierto (no-objetivo del PRD, y
- * la misma línea que ya fija `SignalsFeed`).
+ * la misma línea que fija `historialReglas.ts`).
  */
 
 import type { Analisis, Senal } from "../api/endpoints";
