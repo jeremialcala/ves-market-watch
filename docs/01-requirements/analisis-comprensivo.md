@@ -22,7 +22,7 @@ Tres bloques, no dos:
 |---|---|---|
 | **Presión de liquidez** | ✅ real | `p2p_liquidez_{buy,sell}` vía `/indicators/current` |
 | **Riesgos que vigilar** | ✅ real *(2026-09-07)* | `risks` de `/analysis/current`, cortes en `riesgos.v1.yaml` |
-| **Escenarios** | 🔶 demo | constantes en `AnalysisView.tsx` |
+| ~~**Escenarios**~~ | ⛔ retirado *(2026-09-07)* | inconstruible: ver abajo |
 
 Los dos bloques sellados no son el mismo problema y **no deben tratarse juntos**:
 uno es ensamblaje sobre dato que ya existe; el otro no se puede hacer como está
@@ -177,10 +177,15 @@ Separar los dos sellos en dos trabajos distintos:
   Al conectarlo pasó lo previsto: «Libro concentrado» dejó de decir `alto`. Y
   apareció un quinto estado que la redacción no tenía — **`sin medir`**, para el
   riesgo cuyo indicador no está vigente, que no se degrada a `bajo`.
-- **«Escenarios» → no hacerlo como está.** Sustituirlo por lo que la brecha
-  **hizo** en su historia, sin probabilidades ni horizonte, o retirar el bloque.
-  Mantener la redacción actual es la peor de las tres opciones: el sello explica
-  que el número es de ejemplo, pero no que sea **inconstruible**.
+- ~~**«Escenarios» → no hacerlo como está.**~~ **Retirado el 2026-09-07.** De
+  las dos salidas que este documento planteaba —sustituirlo por lo que la brecha
+  hizo en su historia, o quitarlo— se eligió quitarlo. Mantenerlo con sello era
+  la peor: el sello explicaba que el número era de ejemplo, pero no que fuera
+  **inconstruible**, y esa diferencia es justo la que importa.
+
+  Si algún día se quiere el bloque descriptivo, el material sigue aquí: la
+  distribución incondicional a 72 h de la tabla de arriba, sin probabilidades ni
+  condicionamiento. Necesitaría además levantar el techo de 90 días (punto 3).
 
 ## Trazabilidad
 

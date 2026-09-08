@@ -50,6 +50,13 @@ la fuente de verdad (los documentos AI-DLC y el código).
   exacta `Δbrecha = Δparalelo − Δoficial`. Describe el presente en lenguaje llano;
   no aconseja ni pronostica, y hay tests que lo defienden. El SPA baja de 3 sellos
   demo a 2.
+- **No queda ningún sello demo** (2026-09-07): los **riesgos** pasaron a dato
+  servido —cortes en `riesgos.v1.yaml`, bloque `risks` del mismo evento— y los
+  **escenarios se retiraron**. Los dos casos no son el mismo: los riesgos ya
+  eran medibles y solo faltaba declarar los cortes; los escenarios **no se
+  pueden construir**, porque el régimen sobre el que condicionaban dura menos de
+  una hora contra un horizonte de 72 h. Determinación completa en
+  `../docs/01-requirements/analisis-comprensivo.md`.
 - **Login sin fricción, verificado en vivo** (2026-08-01, ADR-0020): dominio
   propio `auth.higerotech.com` + desarrollo por túneles de Cloudflare. Entrar es
   un redirect silencioso sin clics y la sesión sobrevive al F5, con los tokens
