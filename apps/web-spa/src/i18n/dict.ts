@@ -464,21 +464,7 @@ export const ES = {
   "oficial.vigente": "vigente {fecha}",
 
   // -- señales ---------------------------------------------------------------
-  "senales.titulo": "Cronología de señales",
-  "senales.bajada": "ruleset v1 · agrupadas por regla · pulsa para abrir la evidencia",
-  "senales.disparos": "{n} disparos",
-  "senales.disparoUno": "1 disparo",
-  "senales.ultima": "última: {cuando}",
   // Historia observada, NO acierto: se dice qué hizo la brecha y ya.
-  "senales.resultado": "Después: la brecha se movió {delta} puntos en {horas} h.",
-  "senales.sinDatos":
-    "Sin señales en las últimas horas — el mercado no ha disparado ninguna regla.",
-  "senales.evidencia": "Evidencia · insumos al as_of",
-  "senales.regla": "regla",
-  "senales.abrir": "Ver evidencia de la señal",
-  "senales.cerrar": "Cerrar evidencia",
-  "senales.disparadaPor": "disparada por el evento {id}",
-  "senales.calcVersion": "calc v{version}",
 
   // -- profundidad -----------------------------------------------------------
   "profundidad.titulo": "Profundidad P2P",
@@ -1218,20 +1204,6 @@ export const EN: Record<Clave, string> = {
   "oficial.stale": "stale",
   "oficial.vigente": "value date {fecha}",
 
-  "senales.titulo": "Signal timeline",
-  "senales.bajada": "ruleset v1 · grouped by rule · click to open the evidence",
-  "senales.disparos": "{n} firings",
-  "senales.disparoUno": "1 firing",
-  "senales.ultima": "last: {cuando}",
-  "senales.resultado": "After: the gap moved {delta} points in {horas} h.",
-  "senales.sinDatos":
-    "No signals in the last hours — the market has not fired any rule.",
-  "senales.evidencia": "Evidence · inputs at as_of",
-  "senales.regla": "rule",
-  "senales.abrir": "See the signal evidence",
-  "senales.cerrar": "Close evidence",
-  "senales.disparadaPor": "triggered by event {id}",
-  "senales.calcVersion": "calc v{version}",
 
   "profundidad.titulo": "P2P depth",
   "profundidad.bajada": "cumulative volume per 0.5 % band",

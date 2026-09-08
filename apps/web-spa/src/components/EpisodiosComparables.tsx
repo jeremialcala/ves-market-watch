@@ -11,8 +11,8 @@
  * Sale de `outcome`, que el gateway calcula como la variación de la brecha
  * entre la señal y el final de su ventana. Se presenta la variación y nada
  * más: sin veredicto, sin «acertó/falló» y sin un «N de M» agregado, que se
- * leería como tasa de acierto — no-objetivo del PRD, y la línea que ya fija
- * `SignalsFeed`.
+ * leería como tasa de acierto — no-objetivo del PRD, y la línea que también
+ * fija `historialReglas.ts`.
  *
  * Mientras la ventana no se ha cumplido, `outcome` viaja `null` y la tarjeta lo
  * dice: **todavía no ocurrió** no es lo mismo que no haber pasado nada.

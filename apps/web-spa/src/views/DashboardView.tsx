@@ -15,7 +15,6 @@ import { PanelRiesgos } from "../components/PanelRiesgos";
 import { P2PReferencePanel } from "../components/P2PReferencePanel";
 import { PresionLiquidez } from "../components/PresionLiquidez";
 import { RuleDistance } from "../components/RuleDistance";
-import { SignalsFeed } from "../components/SignalsFeed";
 
 /**
  * Vista en vivo: alimentada por el marketStore (push WSS + resync REST) y, para
@@ -77,7 +76,6 @@ export function DashboardView() {
           <DataProvenance />
         </section>
         <OfficialRatePanel />
-        <SignalsFeed />
 
         {/* El libro: cuánto sostiene cada lado y cómo se reparte. */}
         <PresionLiquidez />

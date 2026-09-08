@@ -17,6 +17,27 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Removed
+
+- **La «Cronología de señales» sale del dashboard (2026-09-08).** Era la tercera
+  superficie del producto sobre lo mismo y la que menos añadía: el **historial
+  de reglas** del Histórico sale de las mismas señales, agregadas por regla y
+  con su suficiencia declarada, y los **episodios comparables** muestran qué
+  hizo la brecha después de cada una.
+  - **La cronología de la sesión del Intradía NO era el duplicado**, pese a lo
+    que sugiere el nombre: no lee señales, deriva sus eventos de la serie y del
+    análisis. El solape real era con el historial de reglas.
+  - **Lo que se pierde, dicho sin rodeos**: la evidencia por señal —los `inputs`
+    concretos que dispararon— deja de verse en el producto. Sigue en el evento,
+    en la tabla y en `GET /api/v1/signals`, así que **el control de T10 no
+    cambia**: su evidencia es la del motor y su verificación es la auditoría
+    end-to-end, no esta pantalla. La trazabilidad pasa a ser accesible por API y
+    no por interfaz, y RF-2 lo dice con fecha.
+  - Se retiran las 13 claves de i18n de `senales.*` en los dos idiomas —una de
+    ellas, `senales.regla`, ya estaba muerta antes de este cambio— y se corrigen
+    tres comentarios que citaban el componente borrado como referencia de
+    criterio.
+
 ### Changed
 
 - **El rango de los históricos se acota por FILAS, no por días (2026-09-08).**

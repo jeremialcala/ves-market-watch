@@ -62,6 +62,26 @@ login y el estado de salud son visibles sin sesión.
   6 h, liquidez, merchants %, outliers %); profundidad por bandas; feed de
   señales con su evidencia (`rule` + `inputs`, trazabilidad T10) accesible.
 
+  **Enmienda 2026-09-08: se retira la «Cronología de señales» del dashboard.**
+  Era la tercera superficie del producto sobre lo mismo, y la que menos añadía:
+  el historial de reglas del Histórico sale de las mismas señales —agregadas por
+  regla, con su suficiencia declarada— y los episodios comparables muestran qué
+  hizo la brecha después de cada una. (La cronología de la **sesión** del
+  Intradía no cuenta como duplicado: no lee señales, deriva eventos de la serie
+  y del análisis.)
+
+  **Lo que se pierde, dicho sin rodeos**: la evidencia por señal —los `inputs`
+  concretos que dispararon— deja de verse en el producto. Sigue publicada en el
+  evento, en la tabla `signals` y en `GET /api/v1/signals`, así que **el control
+  de T10 no cambia**: su evidencia es la del motor y su verificación es la
+  auditoría end-to-end, no esta pantalla. Lo que cambia es que la trazabilidad
+  pasa a ser accesible **por API y no por interfaz**.
+
+  Si algún día se quiere de vuelta en pantalla, el sitio natural no es un bloque
+  propio sino una fila desplegable del historial de reglas: ahí el «qué disparó y
+  con qué valores» es el detalle de una fila que ya existe, en vez de una cuarta
+  vista del mismo hecho.
+
   **Ampliación 2026-09-07 (absorbe RF-8)**: además, la **presión de liquidez**
   por lado —junto a la profundidad, que la detalla por bandas— y los **riesgos
   que vigilar**, con su nivel, su valor y el corte que lo decide

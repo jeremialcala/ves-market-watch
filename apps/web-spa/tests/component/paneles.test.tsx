@@ -2,7 +2,6 @@
  * estados con datos, degradados (low/stale/rancio) y vacíos honestos. */
 
 import { cleanup, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { renderConProveedores as render } from "../render";
@@ -12,13 +11,11 @@ import { GapPanel } from "../../src/components/GapPanel";
 import { MicrostructurePanel } from "../../src/components/MicrostructurePanel";
 import { OfficialRatePanel } from "../../src/components/OfficialRatePanel";
 import { P2PReferencePanel } from "../../src/components/P2PReferencePanel";
-import { SignalsFeed } from "../../src/components/SignalsFeed";
 import { marketStore } from "../../src/state/marketStore";
 import {
   FIXTURE_INDICADORES,
   FIXTURE_INDICADORES_NULOS,
   FIXTURE_P2P_LOW,
-  FIXTURE_SENAL,
   FIXTURE_TASA,
 } from "../contract/fixtures.test";
 
@@ -109,104 +106,6 @@ describe("MicrostructurePanel", () => {
     expect(screen.getByText("Ratio oferta/demanda")).toBeTruthy();
     expect(screen.getByText("2,40")).toBeTruthy();
     expect(screen.getByText("-1,20 %")).toBeTruthy();
-  });
-});
-
-describe("SignalsFeed", () => {
-  // El rediseño despliega la evidencia EN LÍNEA (antes era un modal): la
-  // trazabilidad de T10 sigue completa —regla, insumos y evento disparador—
-  // pero sin sacar al usuario de la cronología.
-  it("lista la señal y el clic despliega su evidencia (T10)", async () => {
-    const usuario = userEvent.setup();
-    marketStore.resync({ senales: [FIXTURE_SENAL] });
-    render(<SignalsFeed />);
-
-    const boton = screen.getByRole("button", { name: /correccion/i });
-    expect(boton.getAttribute("aria-expanded")).toBe("false");
-    expect(screen.queryByText("p2p_ratio_oferta_demanda")).toBeNull();
-
-    await usuario.click(boton);
-    expect(boton.getAttribute("aria-expanded")).toBe("true");
-    const evidencia = document.querySelector(".vmw-evidencia");
-    expect(evidencia).toBeTruthy();
-    expect(evidencia?.textContent).toContain("p2p_ratio_oferta_demanda");
-    expect(evidencia?.textContent).toContain("2,4");
-    expect(evidencia?.textContent).toContain(FIXTURE_SENAL.triggered_by);
-    // La regla VERSIONADA vive en el pie del grupo, siempre visible.
-    expect(
-      screen.getByText(/correccion_inminente@v1 · última:/),
-    ).toBeTruthy();
-
-    await usuario.click(boton); // vuelve a plegarse
-    expect(screen.queryByText("p2p_ratio_oferta_demanda")).toBeNull();
-  });
-
-  it("dice qué hizo la brecha DESPUÉS, sin veredicto ni tasa de acierto", async () => {
-    /*
-     * No-objetivo del PRD: no insinuar capacidad predictiva. Se publica la
-     * variación observada y nada más — ni «acertó», ni un «N de M» agregado,
-     * que con n = 1 parecería un 100 %.
-     */
-    const usuario = userEvent.setup();
-    marketStore.resync({
-      senales: [
-        { ...FIXTURE_SENAL, outcome: { hours: 12, gap_delta_pp: "1.80" } },
-      ],
-    });
-    render(<SignalsFeed />);
-
-    await usuario.click(screen.getByRole("button", { name: /correccion/i }));
-    expect(
-      screen.getByText(/la brecha se movió 1,80 puntos en 12 h/),
-    ).toBeTruthy();
-
-    const texto = document.body.textContent ?? "";
-    for (const prohibido of [/acert/i, /acierto/i, /de 1/, /éxito/i]) {
-      expect(texto).not.toMatch(prohibido);
-    }
-  });
-
-  it("sin ventana cumplida no se inventa resultado", async () => {
-    const usuario = userEvent.setup();
-    marketStore.resync({ senales: [{ ...FIXTURE_SENAL, outcome: null }] });
-    render(<SignalsFeed />);
-
-    await usuario.click(screen.getByRole("button", { name: /correccion/i }));
-    expect(screen.queryByText(/Después:/)).toBeNull();
-  });
-
-  it("AGRUPA por regla y cuenta los disparos", async () => {
-    /*
-     * La cronología plana repetía la misma regla una vez por disparo. Agrupada
-     * responde antes la pregunta real: qué avisos existen y cuántas veces han
-     * saltado.
-     */
-    const otro = {
-      ...FIXTURE_SENAL,
-      emitted_at: new Date(Date.parse(FIXTURE_SENAL.emitted_at) - 3_600_000)
-        .toISOString(),
-    };
-    marketStore.resync({ senales: [FIXTURE_SENAL, otro] });
-    render(<SignalsFeed />);
-
-    expect(document.querySelectorAll(".vmw-senal")).toHaveLength(1);
-    expect(screen.getByText("2 disparos")).toBeTruthy();
-  });
-
-  it("NO funde dos versiones de la misma regla", async () => {
-    /*
-     * Dos versiones son disparadores distintos —umbrales distintos—, así que
-     * fundirlas contaría disparos de criterios que no son el mismo.
-     */
-    const v2 = {
-      ...FIXTURE_SENAL,
-      evidence: { ...FIXTURE_SENAL.evidence, rule: "correccion_inminente@v2" },
-    };
-    marketStore.resync({ senales: [FIXTURE_SENAL, v2] });
-    render(<SignalsFeed />);
-
-    expect(document.querySelectorAll(".vmw-senal")).toHaveLength(2);
-    expect(screen.getAllByText("1 disparo")).toHaveLength(2);
   });
 });
 

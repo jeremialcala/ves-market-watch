@@ -391,7 +391,7 @@ function MedidorTarjeta({
 
 /** Nombres de reglas e indicadores: vocabulario del contrato, no se traducen —
  *  solo se leen mejor con los guiones bajos como espacios (mismo criterio que
- *  `SignalsFeed`). */
+ *  `HistorialReglas`). */
 function nombrePropio(valor: string): string {
   return valor.replaceAll("_", " ");
 }
