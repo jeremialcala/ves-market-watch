@@ -72,7 +72,15 @@ services:
       - ./apps/ingestor-binance/db/migrations/001_p2p_snapshots.sql:/docker-entrypoint-initdb.d/903_p2p_snapshots.sql:ro
       - ./apps/ingestor-historico/db/migrations/001_historical_snapshots.sql:/docker-entrypoint-initdb.d/904_historical_snapshots.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ves_market"]
+      # `-h 127.0.0.1` NO es decoración: sin él, `pg_isready` va por el socket
+      # UNIX y da un FALSO POSITIVO durante `initdb`. Con volumen nuevo, el
+      # entrypoint levanta un servidor TEMPORAL que solo escucha en ese socket
+      # para correr los scripts de init, y luego lo apaga y arranca el de
+      # verdad. Compose marca «healthy» contra el temporal, arranca al gateway
+      # y este —que va por TCP— se encuentra `ConnectionRefusedError` y muere
+      # (e2e en vivo, 2026-09-08). Medido en el propio contenedor: a los 2 s el
+      # socket UNIX ya dice OK y TCP todavía no.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d ves_market"]
       interval: 5s
       timeout: 5s
       retries: 12

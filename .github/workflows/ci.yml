@@ -63,8 +63,9 @@ jobs:
             piso: 97
 
     services:
-      # `latest-pg16` es un tag móvil: reproducibilidad pendiente de fijar por
-      # digest junto con las imágenes base (control de T8).
+      # `latest-pg16` es un tag móvil, por eso va fijado por digest (T8, cerrado
+      # el 2026-09-08). Actualizarlo es una migración: hay un directorio de datos
+      # detrás en el despliegue, no solo un build.
       timescaledb:
         image: timescale/timescaledb:latest-pg16@sha256:ba149561ad4ddff5940d6eb0a0df60aefd1355cee1a450928f271267038fc888
         env:
@@ -72,7 +73,7 @@ jobs:
         ports:
           - 5433:5432
         options: >-
-          --health-cmd "pg_isready -U postgres"
+          --health-cmd "pg_isready -h 127.0.0.1 -U postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 12
