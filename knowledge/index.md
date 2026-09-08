@@ -15,10 +15,17 @@ la fuente de verdad (los documentos AI-DLC y el código).
 
 ## Estado del proyecto (resumen vivo)
 
-- Fase AI-DLC: Gates 0 y 1 **aprobados HITL** (2026-07-11); Gates **2 y 3** con
-  sus criterios canónicos cubiertos y **pendientes de firma HITL**. Ojo con la
-  numeración: se llevó a la canónica el 2026-09-06 (03-implementation cierra el
-  Gate 2; 04-testing, el Gate 3).
+- Fase AI-DLC: Gates 0 y 1 **aprobados HITL** (2026-07-11) y Gates **2 y 3**
+  **aprobados HITL el 2026-09-08**, con lo que cierran 03-implementation y
+  04-testing. Ojo con la numeración: se llevó a la canónica el 2026-09-06
+  (03-implementation cierra el Gate 2; 04-testing, el Gate 3). Lo siguiente es
+  la fase 05-deployment y su Gate 4.
+- **La reserva del Gate 3 se resolvió midiendo, no declarando** (2026-09-08): la
+  verificación programada confirmó el p95 de ingesta en 1,44 s sobre 14,9 h, y
+  la fricción que marcó —22 respuestas 429, el 0,13 % de las peticiones— se
+  aceptó por escrito: absorbidas sin pérdida, ciclos al 100,00 % contra el
+  99,72 % previo, y la línea base de «cero 429» era una muestra de 15 minutos
+  donde lo esperable eran 0,4.
 - **Los 5 servicios implementados y verificados en vivo** (2026-07-26):
   [ingestor-bcv](services/ingestor-bcv.md) (multi-moneda, HITL),
   [ingestor-binance](services/ingestor-binance.md) (polling P2P educado),

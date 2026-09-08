@@ -81,18 +81,40 @@ escrita (bajar `PAGINAS_EN_PARALELO`).
 Los cinco SLO están medidos —no declarados— y los cinco se cumplen; el último
 pasó a cumplirse con ADR-0026 el mismo día en que se midió el incumplimiento.
 
-**Pendiente de aprobación HITL**, con una reserva que conviene resolver antes de
-firmar: confirmar el p95 de ingesta sobre una corrida larga y comprobar que la
-tasa de 429 no ha subido tras ADR-0026.
+## La reserva, y cómo se resolvió (2026-09-08)
 
-> **Esa reserva ya tiene fecha y ejecutor.** `scripts/verificar_slo_ingesta.py`
-> contesta las dos preguntas y sale 0 solo si ambas van bien. Queda programado
-> para el **2026-09-07 a las 09:00 VET** —unas 15 h de operación paralela, ~900
-> ciclos— en una tarea de Windows (`Criterio-VerificarSLO-Ingesta`), que deja el
-> informe en `informes/`. **No se hizo como rutina en la nube a propósito**: esas
-> corren en infraestructura de Anthropic y no alcanzan el Docker del despliegue,
-> así que habrían certificado nada.
->
-> Se borra con `Unregister-ScheduledTask -TaskName Criterio-VerificarSLO-Ingesta`.
+Antes de firmar quedaba una: confirmar el p95 de ingesta sobre una corrida larga
+y comprobar que la tasa de 429 no había subido tras ADR-0026.
+`scripts/verificar_slo_ingesta.py` corrió el **2026-09-07 a las 09:00 VET** sobre
+**14,9 h y 861 ciclos** (informe en `informes/slo-ingesta-2026-09-07.md`) y
+**salió con código 1**: cumplía la primera pregunta y marcaba la segunda.
 
-**Aprobado por:** `<pendiente>` · **Fecha:** `<pendiente>`
+**El p95 aguanta**: 1,44 s contra un techo de 5 s, con **0 %** de capturas por
+encima. Contestado sobre una corrida larga, que era el punto.
+
+**La fricción se revisó y se acepta**, con estas cifras:
+
+| | |
+|---|---|
+| 429 observados | 22 sobre 17.220 peticiones = **0,13 %** |
+| Absorbidos | breaker 0 · reintentos agotados 0 · capturas parciales 0 |
+| Ciclos completados | **100,00 %** — el SLO pide ≥ 99 % |
+
+Dos razones para aceptar, no una:
+
+1. **La línea base no probaba lo que se le atribuía.** El «sin un solo 429» de
+   ADR-0026 salía de una muestra de **15 minutos**; a la tasa observada ahora, lo
+   esperable en esa ventana eran **0,4** respuestas. Ver cero nunca demostró que
+   fueran cero, así que no hay regresión demostrada — hay una medición más larga.
+2. **El SLO declarado mejoró.** «Ciclos completados ≥ 99 %» está en **100,00 %**,
+   por encima del **99,72 %** medido antes de la ADR.
+
+No se aplica la reversión de ADR-0026 —bajar `PAGINAS_EN_PARALELO`— porque no hay
+degradación que revertir. **Lo que sí queda es vigilar**: si la tasa de 429 sube
+o aparecen capturas parciales o menciones del breaker, esa reversión es el primer
+movimiento y sigue escrita en la ADR.
+
+> La tarea de Windows ya cumplió su encargo. Se borra con
+> `Unregister-ScheduledTask -TaskName Criterio-VerificarSLO-Ingesta`.
+
+**Aprobado por:** Jeremi Alcalá · **Fecha:** 2026-09-08

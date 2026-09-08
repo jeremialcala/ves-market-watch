@@ -17,6 +17,17 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-08
+
+**Gates 2 y 3 aprobados HITL**, con lo que cierran las fases 03-implementation y
+04-testing. Se corta versión por la convención de este archivo: cerrar un gate
+es el hito que la dispara, y aquí cierran dos.
+
+Lo que trae la versión, en una línea: el análisis pasó a ser dato servido y la
+vista que lo alojaba se disolvió; los cinco SLO están medidos y confirmados sobre
+corrida larga; la cadena de suministro es reproducible; y **no queda un solo
+bloque `demo · sin fuente` en el producto**.
+
 ### Removed
 
 - **La «Cronología de señales» sale del dashboard (2026-09-08).** Era la tercera
@@ -3027,7 +3038,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.2.0...v0.3.0

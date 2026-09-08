@@ -40,6 +40,12 @@ TAG_NOTES = {
         "trazabilidad tag↔ADR restaurada; design.md del ingestor-historico",
         "Patch solo de docs, sin cambios funcionales",
     ),
+    "v0.5.0": (
+        "ADR-0025/0026; riesgos y análisis como dato servido; SLOs medidos; "
+        "T8 cerrada (lockfiles con hashes + imágenes por digest)",
+        "Gates 2 y 3 aprobados HITL (2026-09-08): cierran 03-implementation y "
+        "04-testing. Sin bloques `demo · sin fuente` en el producto",
+    ),
     "v0.4.0": (
         "ADR-0016; api-gateway implementado (REST /api/v1 + WSS /ws/v1, Resource "
         "Server Auth0, 78 tests); AsyncAPI del WSS; OpenAPI ajustada",

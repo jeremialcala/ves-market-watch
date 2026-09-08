@@ -77,7 +77,4 @@ digests fijados y el pipeline sigue produciendo revisiones.
 **Veredicto:** los tres criterios canónicos están cubiertos y **sin reservas**
 desde el 2026-09-08.
 
-**Pendiente de aprobación HITL.** *(Gate 0 y Gate 1 llevan firma y fecha; esta
-fila se rellena al aprobar.)*
-
-**Aprobado por:** `<pendiente>` · **Fecha:** `<pendiente>`
+**Aprobado por:** Jeremi Alcalá · **Fecha:** 2026-09-08
