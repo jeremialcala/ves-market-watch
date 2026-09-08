@@ -16,7 +16,6 @@ export const ES = {
   // -- shell -----------------------------------------------------------------
   "app.titulo": "Criterio",
   "nav.dashboard": "Dashboard",
-  "nav.analisis": "Análisis",
   "nav.intradia": "Intradía",
   "nav.historico": "Histórico",
   "nav.menu": "Menú",
@@ -489,11 +488,6 @@ export const ES = {
   "profundidad.sinDatos": "Sin profundidad servida para este lado.",
 
   // -- análisis --------------------------------------------------------------
-  "analisis.kicker": "Análisis comprensivo",
-  "analisis.titulo":
-    "Qué está haciendo el mercado del VES y qué tendría que romperse para que cambie",
-  "analisis.bajada":
-    "Todo lo de esta vista sale de los indicadores vigentes y del análisis que publica el motor. No hay escenarios ni probabilidades: Criterio describe lo que el mercado está haciendo, no lo que hará.",
   "analisis.liquidezTitulo": "Presión de liquidez",
   "analisis.asks": "asks {valor} USDT",
   "analisis.bids": "bids {valor} USDT",
@@ -834,7 +828,6 @@ export type Clave = keyof typeof ES;
 export const EN: Record<Clave, string> = {
   "app.titulo": "Criterio",
   "nav.dashboard": "Dashboard",
-  "nav.analisis": "Analysis",
   "nav.intradia": "Intraday",
   "nav.historico": "History",
   "nav.menu": "Menu",
@@ -1246,11 +1239,6 @@ export const EN: Record<Clave, string> = {
   "profundidad.venta": "Sell — bids",
   "profundidad.sinDatos": "No depth served for this side.",
 
-  "analisis.kicker": "Comprehensive analysis",
-  "analisis.titulo":
-    "What the VES market is doing, and what would have to break for it to change",
-  "analisis.bajada":
-    "Everything in this view comes from the current indicators and the analysis the engine publishes. There are no scenarios and no probabilities: Criterio describes what the market is doing, not what it will do.",
   "analisis.liquidezTitulo": "Liquidity pressure",
   "analisis.asks": "asks {valor} USDT",
   "analisis.bids": "bids {valor} USDT",

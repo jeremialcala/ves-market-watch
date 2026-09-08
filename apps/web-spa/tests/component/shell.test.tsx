@@ -163,6 +163,18 @@ describe("NavBar (ancha)", () => {
     onSalir: vi.fn(),
   };
 
+  it("son TRES pestañas: Análisis se disolvió, no se escondió", () => {
+    /*
+     * La pestaña se retiró el 2026-09-07, pero su contenido no: la presión de
+     * liquidez y los riesgos se mudaron al Dashboard. Este test fija el número
+     * para que nadie la reponga sin decidirlo, y el del Dashboard fija que lo
+     * que traía sigue montado.
+     */
+    render(<NavBar {...props} />);
+    expect(screen.getAllByRole("tab")).toHaveLength(3);
+    expect(screen.queryByRole("tab", { name: "Análisis" })).toBeNull();
+  });
+
   it("marca la pestaña activa y notifica el cambio", async () => {
     const usuario = userEvent.setup();
     const onVista = vi.fn();
@@ -171,8 +183,8 @@ describe("NavBar (ancha)", () => {
     const dashboard = screen.getByRole("tab", { name: "Dashboard" });
     expect(dashboard.getAttribute("aria-selected")).toBe("true");
 
-    await usuario.click(screen.getByRole("tab", { name: "Análisis" }));
-    expect(onVista).toHaveBeenCalledWith("analisis");
+    await usuario.click(screen.getByRole("tab", { name: "Intradía" }));
+    expect(onVista).toHaveBeenCalledWith("intradia");
   });
 
   it("cambia el idioma de toda la barra", async () => {

@@ -81,9 +81,14 @@ export function PanelRiesgos() {
 
   if (!riesgos) {
     return (
-      <div className="vmw-tarjeta">
-        <NoDataState detalle={t("analisis.riesgosSinDato")} />
-      </div>
+      <section className="vmw-seccion" aria-label={t("analisis.riesgosTitulo")}>
+        <div className="vmw-seccion__cabecera">
+          <h3 className="vmw-seccion__titulo">{t("analisis.riesgosTitulo")}</h3>
+        </div>
+        <div className="vmw-tarjeta">
+          <NoDataState detalle={t("analisis.riesgosSinDato")} />
+        </div>
+      </section>
     );
   }
 
@@ -139,7 +144,10 @@ export function PanelRiesgos() {
   }
 
   return (
-    <>
+    <section className="vmw-seccion" aria-label={t("analisis.riesgosTitulo")}>
+      <div className="vmw-seccion__cabecera">
+        <h3 className="vmw-seccion__titulo">{t("analisis.riesgosTitulo")}</h3>
+      </div>
       <div className="vmw-grid" style={{ "--min": "380px" } as CSSProperties}>
         {riesgos.items.map((riesgo) => {
           const color = COLOR[clave(riesgo.level)];
@@ -199,6 +207,6 @@ export function PanelRiesgos() {
       >
         {t("analisis.riesgosProcedencia", { version: riesgos.version })}
       </p>
-    </>
+    </section>
   );
 }

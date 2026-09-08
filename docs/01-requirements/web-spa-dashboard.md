@@ -61,6 +61,13 @@ login y el estado de salud son visibles sin sesión.
   `spread_pct`; microestructura (ratio oferta/demanda, momentum 3 h, drenaje
   6 h, liquidez, merchants %, outliers %); profundidad por bandas; feed de
   señales con su evidencia (`rule` + `inputs`, trazabilidad T10) accesible.
+
+  **Ampliación 2026-09-07 (absorbe RF-8)**: además, la **presión de liquidez**
+  por lado —junto a la profundidad, que la detalla por bandas— y los **riesgos
+  que vigilar**, con su nivel, su valor y el corte que lo decide
+  (`riesgos.v1.yaml`). Los riesgos cierran la vista a propósito: son lo que
+  podría dejar en falso todo lo anterior, no un dato más que compita con la
+  lectura.
 - **RF-3 — Tiempo real**: suscripción WSS a los 4 tópicos; la UI refleja un push
   en < 1 s desde su recepción; reconexión automática con backoff y **reposición
   del estado por REST** en cada (re)conexión (el push es best-effort,
@@ -274,10 +281,22 @@ login y el estado de salud son visibles sin sesión.
      mismo). Se descartó alargar la permanencia, que era lo obvio: a 120 minutos
      quedan 11/9/10 —peor— **y cada cruce real tardaría dos horas en aparecer**.
 
-- **RF-8 — Vista de análisis** (2026-07-31, ADR-0018): lectura del mercado con
-  escenarios y riesgos. Los números que la plataforma sirve (presión de liquidez,
-  merchants, spread) son reales; la prosa, las probabilidades y los umbrales de
-  ejemplo van **marcados como sin fuente** (ver RF-5 ampliado).
+- ~~**RF-8 — Vista de análisis**~~ (2026-07-31, ADR-0018) — **absorbido en RF-2
+  el 2026-09-07.** No se retira el requisito: se retira la **pestaña**, y su
+  contenido pasa al dashboard.
+
+  Lo que pedía era «lectura del mercado con escenarios y riesgos». De los tres,
+  la lectura del mercado ya la cubre RF-12 desde el 2026-08-01; los **riesgos**
+  pasaron a dato servido con cortes versionados; y los **escenarios** se
+  retiraron por inconstruibles —el régimen sobre el que condicionaban dura menos
+  de una hora contra un horizonte de 72 h—. Lo que quedaba era un dato del libro
+  (presión de liquidez) y cuatro autodiagnósticos de la plataforma: ninguno es
+  análisis del mercado, y ninguno justificaba una pestaña de primer nivel que
+  además prometía en su nombre lo que ya no contenía.
+
+  **Nada medido se pierde**: la presión de liquidez se monta junto a la
+  profundidad —misma pregunta, distinto grano— y los riesgos cierran el
+  dashboard. Determinación completa en `analisis-comprensivo.md`.
 - **RF-9 — Idioma ES/EN**: toda cadena de interfaz se muestra en el idioma
   elegido, que se recuerda entre sesiones. NO se traducen los nombres canónicos
   de indicadores ni de reglas de señal: son vocabulario del contrato. Los
