@@ -19,6 +19,21 @@ pytestmark = pytest.mark.integration
 FIXTURE = FIXTURES / "query_result_muestra.csv"
 
 
+async def test_connect_arma_el_repositorio_igual_que_en_produccion(timescale_listo):
+    """`connect()`/`close()` es lo que usa `_cmd_cargar`, y no lo tocaba nadie.
+
+    Tercera vez que aparece el mismo hueco en este monorepo —ya estaba en
+    `ingestor-bcv` y en `ingestor-binance`— y siempre por la misma causa: el
+    fixture de integración recibe el pool ya construido, así que la forma en que
+    el servicio se conecta de verdad no se ejercita en ningún sitio.
+    """
+    repositorio = await TimescaleRepositorioHistorico.connect(timescale_listo)
+    try:
+        assert await repositorio.leer_puntos(None, None) is not None
+    finally:
+        await repositorio.close()
+
+
 async def test_carga_y_relectura_round_trip(pool):
     repositorio = TimescaleRepositorioHistorico(pool)
     cabeceras, filas = leer_csv(FIXTURE)

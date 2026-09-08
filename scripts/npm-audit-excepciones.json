@@ -1,0 +1,11 @@
+{
+  "_lea_esto_antes_de_anadir": [
+    "Cada entrada es un riesgo ACEPTADO POR ESCRITO, no una molestia silenciada.",
+    "Para anadir una hacen falta las cuatro cosas: por que el vector no es",
+    "alcanzable en ESTE sistema, quien lo acepta, cuando, y que tiene que pasar",
+    "para retirarla. Sin la ultima, la excepcion se queda para siempre.",
+    "El auditor FALLA si una excepcion deja de aplicar: eso obliga a borrarla el",
+    "dia que el arreglo llegue, en vez de dejarla cubriendo lo siguiente."
+  ],
+  "advisories": []
+}

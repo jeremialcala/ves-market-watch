@@ -30,6 +30,7 @@ class ReferenciaP2P:
     mediana: Decimal
     vwap: Decimal
     mejor_precio: Decimal
+    mejor_precio_filtrado: Decimal
     liquidez: Decimal
     merchants_pct: Decimal
     outliers_pct: Decimal
@@ -69,9 +70,28 @@ def calcular_referencia_p2p(anuncios: Sequence[AnuncioP2P]) -> ReferenciaP2P:
     """Precio de referencia de un lado (knowledge/metrics/precio-referencia-p2p.md):
 
     - mediana y VWAP sobre los anuncios NO outlier (robustez frente a T2);
-    - el mejor precio (top of book) se conserva sin filtrar, aparte;
+    - el mejor precio (top of book) se conserva **sin filtrar**: es el precio que
+      alguien está pidiendo de verdad, y ocultarlo sería ocultar que hay un
+      anuncio a 920;
+    - junto a él va el **mejor precio filtrado**: el mejor de los que sobreviven
+      al filtro. La diferencia entre los dos ES el dato interesante — cuando
+      coinciden, el top of book es real; cuando se separan, mide exactamente
+      cuánto miente el escaparate;
     - `confianza_baja` si > 30 % del snapshot es outlier — las señales aguas
       abajo se suprimen, el precio se publica marcado, nunca en silencio.
+
+    **Por qué hacía falta el filtrado.** Medido sobre 318 snapshots por lado
+    (6 h, 2026-08-07): en el lado SELL el primer anuncio estaba marcado como
+    outlier en **103 de 318** —un tercio de las lecturas—, así que «mejor precio»
+    publicaba con esa frecuencia un anuncio que el propio filtro había descartado.
+    En BUY pasó 1 de 318. Filtrar el indicador habría destruido su significado;
+    publicar el par deja las dos verdades a la vista.
+
+    **Ambos dependen del orden de la fuente.** Binance devuelve los anuncios con
+    el mejor primero según el lado —en BUY el más barato, en SELL el más caro—, y
+    se comprobó: el primero fue el mínimo en 318/318 snapshots BUY y el máximo en
+    318/318 SELL. Filtrar preserva el orden, así que `limpios[0]` es el mejor no
+    outlier por el mismo criterio.
     """
     if not anuncios:
         raise ValueError("snapshot sin anuncios")
@@ -90,6 +110,7 @@ def calcular_referencia_p2p(anuncios: Sequence[AnuncioP2P]) -> ReferenciaP2P:
         mediana=statistics.median(a.precio for a in limpios),
         vwap=vwap,
         mejor_precio=anuncios[0].precio,
+        mejor_precio_filtrado=limpios[0].precio,
         liquidez=liquidez,
         merchants_pct=Decimal(sum(1 for a in limpios if a.es_merchant))
         / Decimal(len(limpios))

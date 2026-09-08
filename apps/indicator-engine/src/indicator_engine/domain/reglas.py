@@ -39,6 +39,18 @@ class Condicion:
     def cumple(self, valor: Decimal) -> bool:
         return OPERADORES[self.op](valor, self.umbral)
 
+    def distancia(self, valor: Decimal) -> Decimal:
+        """Cuánto debe moverse `valor` EN LA DIRECCIÓN EXIGIDA para satisfacer
+        la condición: `umbral - valor` con gt/gte, `valor - umbral` con lt/lte.
+
+        <= 0 significa satisfecha. Con `gt`/`lt` estrictos, exactamente 0 es el
+        borde: `cumple` es la autoridad sobre si está satisfecha o no; esto solo
+        mide la separación. Nunca es una predicción de cuándo ocurrirá (RF-6).
+        """
+        if self.op in ("gt", "gte"):
+            return self.umbral - valor
+        return valor - self.umbral
+
 
 @dataclass(frozen=True, slots=True)
 class Regla:
@@ -62,6 +74,65 @@ class SenalDisparada:
     direccion: str
     regla: str  # p. ej. "techo_inminente@v1"
     inputs: dict[str, Decimal]
+
+
+@dataclass(frozen=True, slots=True)
+class CondicionEvaluada:
+    """Una condición del ruleset medida contra la vista actual (RF-6).
+
+    `valor is None` ⇒ el indicador no está vigente: no se rellena jamás con el
+    último conocido rancio, y por eso `distancia` también es None.
+    """
+
+    condicion: Condicion
+    valor: Decimal | None
+    cumple: bool
+    distancia: Decimal | None
+
+
+@dataclass(frozen=True, slots=True)
+class ProximidadRegla:
+    """k de n condiciones de una regla y cuál la bloquea. Aritmética sobre el
+    presente, no un pronóstico: la emisión real vive en `evaluar_reglas`."""
+
+    tipo: str
+    direccion: str
+    regla: str  # p. ej. "techo_inminente@v1"
+    condiciones: tuple[CondicionEvaluada, ...]
+    evaluable: bool
+
+    @property
+    def total(self) -> int:
+        return len(self.condiciones)
+
+    @property
+    def cumplidas(self) -> int:
+        return sum(1 for c in self.condiciones if c.cumple)
+
+    @property
+    def completa(self) -> bool:
+        """Todas las condiciones satisfechas. NO implica que la señal se emitiera:
+        el cooldown (RF-4) pudo suprimirla."""
+        return self.cumplidas == self.total
+
+    @property
+    def bloqueada_por(self) -> str | None:
+        """Indicador de la condición NO cumplida con mayor `distancia`; empate
+        por orden alfabético del nombre canónico. `None` si la regla se cumple
+        entera o no es evaluable."""
+        if not self.evaluable or self.completa:
+            return None
+        pendientes = [
+            c for c in self.condiciones if not c.cumple and c.distancia is not None
+        ]
+        if not pendientes:
+            return None
+        # Desempate determinista y documentado en el schema: mayor distancia y,
+        # a igualdad, el menor nombre canónico. Se ordena por (-distancia, nombre)
+        # en vez de un `max` con clave invertida porque el orden alfabético de
+        # cadenas de distinta longitud no se puede negar elemento a elemento.
+        pendientes.sort(key=lambda c: (-c.distancia, c.condicion.indicador))
+        return pendientes[0].condicion.indicador
 
 
 @dataclass(frozen=True, slots=True)
@@ -163,3 +234,50 @@ def evaluar_reglas(
                 )
             )
     return disparadas
+
+
+def evaluar_proximidad(
+    ruleset: Ruleset, vista: Mapping[str, Decimal], *, evaluable: bool = True
+) -> list[ProximidadRegla]:
+    """Qué tan cerca está cada regla de cumplirse con la vista actual (RF-6).
+
+    Función hermana de `evaluar_reglas`, no sustituta: aquella decide qué se
+    emite, esta solo describe. Misma regla de honestidad — un indicador ausente
+    de la vista deja `valor=None`, `cumple=False` y marca la regla NO evaluable,
+    exactamente el criterio por el que `evaluar_reglas` no dispararía.
+
+    `evaluable=False` (confianza baja) fuerza no evaluable en todas: si las
+    señales están suprimidas, hablar de proximidad engañaría.
+    """
+    proximidades: list[ProximidadRegla] = []
+    for regla in ruleset.reglas:
+        condiciones = tuple(
+            _evaluar_condicion(cond, vista.get(cond.indicador))
+            for cond in regla.condiciones
+        )
+        completa = all(c.valor is not None for c in condiciones)
+        proximidades.append(
+            ProximidadRegla(
+                tipo=regla.tipo,
+                direccion=regla.direccion,
+                regla=f"{regla.tipo}@v{ruleset.version}",
+                condiciones=condiciones,
+                evaluable=evaluable and completa,
+            )
+        )
+    return proximidades
+
+
+def _evaluar_condicion(
+    condicion: Condicion, valor: Decimal | None
+) -> CondicionEvaluada:
+    if valor is None:
+        return CondicionEvaluada(
+            condicion=condicion, valor=None, cumple=False, distancia=None
+        )
+    return CondicionEvaluada(
+        condicion=condicion,
+        valor=valor,
+        cumple=condicion.cumple(valor),
+        distancia=condicion.distancia(valor),
+    )

@@ -12,7 +12,7 @@ y una re-publicación de `indicators.updated` es preferible a perderla.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Callable
 
 from indicator_engine.application.ports import (
@@ -28,6 +28,7 @@ from indicator_engine.domain.models import (
     Indicador,
 )
 from indicator_engine.domain.reglas import Senal
+from indicator_engine.domain.vigencia import oficial_rancia
 
 
 @dataclass(slots=True)
@@ -44,13 +45,11 @@ class ProcesarTasaOficial:
         publisher: EventPublisher,
         repository: IndicatorRepository,
         calc_version: int = 1,
-        umbral_stale: timedelta = timedelta(hours=6),
         reloj: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         self._publisher = publisher
         self._repository = repository
         self._calc_version = calc_version
-        self._umbral_stale = umbral_stale
         self._reloj = reloj
 
     async def ejecutar(self, tasa: TasaOficialRecibida) -> ResultadoProcesamiento:
@@ -71,8 +70,9 @@ class ProcesarTasaOficial:
 
         await self._repository.guardar(indicadores)
 
-        # ADR-0007: la referencia es stale si la captura supera el umbral (6 h).
-        official_stale = self._reloj() - tasa.capturada_en > self._umbral_stale
+        # La vigencia la manda la FECHA-VALOR, no lo vieja que sea la captura
+        # (ADR-0022): el viernes por la tarde el BCV publica la tasa del lunes.
+        official_stale = oficial_rancia(tasa.fecha_valor, self._reloj())
         await self._publisher.publish_indicators_updated(
             indicadores,
             official_stale=official_stale,

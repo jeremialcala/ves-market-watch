@@ -5,8 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Protocol
+from typing import Protocol, Sequence
 
+from indicator_engine.domain.analisis import Analisis, Distribucion
+from indicator_engine.domain.comparativas import Agregado
 from indicator_engine.domain.models import AnuncioP2P, Indicador
 from indicator_engine.domain.reglas import Senal
 
@@ -57,6 +59,16 @@ class IndicatorRepository(Protocol):
         """Persiste el lote de indicadores; reintentos no duplican filas."""
         ...
 
+    async def fecha_valor_oficial(self, moneda: str) -> date | None:
+        """Fecha-valor de la última tasa oficial válida — la VIGENCIA real.
+
+        Es la única lectura que el motor hace fuera de `indicators`, y no se
+        puede evitar: el indicador `official_rate` guarda cuándo CAMBIÓ la tasa,
+        no para qué día rige, y son cosas distintas. El viernes por la tarde el
+        BCV publica la tasa del lunes: el cambio es de hace tres días y la tasa
+        está vigente (`domain/vigencia.py`)."""
+        pass
+
     async def senal_reciente(self, tipo: str, moneda: str, desde: datetime) -> bool:
         """True si ya hay una señal de ese tipo/moneda con `as_of >= desde`
         (dedup por cooldown, RF-4/A08)."""
@@ -64,6 +76,53 @@ class IndicatorRepository(Protocol):
 
     async def guardar_senales(self, senales: list[Senal]) -> None:
         """Persiste las señales emitidas con su evidencia (RF-5, tabla `signals`)."""
+        ...
+
+    async def guardar_analisis(self, analisis: Analisis, payload: dict) -> None:
+        """Persiste el análisis de la revisión (RF-6, tabla `indicator_analysis`).
+
+        `payload` es el `payload` del evento publicado TAL CUAL: se guarda
+        verbatim para que el GET del gateway devuelva exactamente lo que salió al
+        bus (ADR-0019). Reentregas no duplican: la PK (as_of, currency,
+        triggered_by) es determinista.
+        """
+        ...
+
+
+class DistribucionRepository(Protocol):
+    """Puerto separado de `IndicatorRepository` a propósito: la distribución es
+    una consulta agregada y cara, con su propia política de cache y su propio
+    doble en memoria para los tests del análisis."""
+
+    async def distribuciones(
+        self,
+        nombres: Sequence[str],
+        moneda: str,
+        desde: datetime,
+        percentiles: Sequence[Decimal],
+    ) -> dict[str, Distribucion]:
+        """Distribución de cada indicador en la ventana `[desde, ∞)`.
+
+        Un indicador sin filas en la ventana NO aparece en el dict (no se
+        fabrica una distribución vacía). Un fallo devuelve `{}`, que degrada al
+        respaldo del ruleset de forma visible en el payload.
+        """
+        raise NotImplementedError
+
+    async def agregados(
+        self,
+        nombres: Sequence[str],
+        moneda: str,
+        ventanas_dias: Sequence[int],
+        ahora: datetime,
+    ) -> dict[str, dict[int, Agregado]]:
+        """Media, extremos y ALCANCE REAL de cada serie en cada ventana.
+
+        Vive en este puerto y no en `IndicatorRepository` por lo mismo que las
+        distribuciones: es una consulta agregada y cara, con la misma política de
+        cache. Un indicador sin filas no aparece; un fallo devuelve `{}` y la
+        comparativa se omite en vez de publicarse a medias.
+        """
         ...
 
 
@@ -80,6 +139,11 @@ class EventPublisher(Protocol):
 
     async def publish_signal_emitted(self, senal: Senal) -> None:
         """Publica `signals.emitted` (schemas/signal.v1.json)."""
+        ...
+
+    async def publish_analysis_updated(self, evento: dict) -> None:
+        """Publica `analysis.updated` (schemas/analysis.v1.json): el sobre
+        completo, cuyo `payload` es el mismo documento que se persistió."""
         ...
 
 

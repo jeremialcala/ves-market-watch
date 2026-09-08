@@ -31,8 +31,9 @@ curl http://localhost:8800/api/v1/health
 python -m api_gateway
 ```
 
-Config por entorno (defaults del código apuntan al compose de dev y al tenant
-`dev-higerotech.us.auth0.com`): `AUTH0_ISSUER`, `AUTH0_AUDIENCE`, `JWKS_URI`,
+Config por entorno (defaults del código apuntan al compose de dev y al dominio
+propio `auth.higerotech.com` — ADR-0020; el issuer del gateway y el dominio del
+SPA se mueven juntos o son 401 en todo): `AUTH0_ISSUER`, `AUTH0_AUDIENCE`, `JWKS_URI`,
 `DATABASE_URL`, `AMQP_URL`, `HTTP_HOST`/`HTTP_PORT`, `RATE_LIMIT_PER_MIN`,
 `P2P_FRESCURA_MIN`, `WSS_MAX_CONEXIONES`/`WSS_MAX_SUSCRIPCIONES`.
 
@@ -42,7 +43,7 @@ src/api_gateway/
   domain/        # Usuario, paginación/rangos, rate limit, profundidad (puras)
   application/   # puertos, casos de uso de lectura, gestor de suscripciones WSS
   adapters/      # auth/jwks (Auth0), timescale (read-only), amqp (push), http (REST+WSS)
-tests/           # 78 tests: unit / contract / integration / e2e (ver tests/README.md)
+tests/           # 108 tests: unit / contract / integration / e2e (ver tests/README.md)
 docs/            # design.md · openapi.yaml (REST) · asyncapi.yaml (WSS)
 ```
 

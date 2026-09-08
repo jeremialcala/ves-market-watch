@@ -1,0 +1,420 @@
+/**
+ * Descomposición de la brecha (RF-12): historia por lado e interpretación.
+ *
+ * Lo que se vigila aquí, más que el render, es **que la etiqueta no mienta**.
+ * La tarjeta rotulaba «Promedio 30 días» sobre 12 días de historia: el número
+ * era real y la ventana no. `days_covered` es el mecanismo que lo corrige, y
+ * estos tests son los que impiden que se pierda en un refactor.
+ */
+
+import { cleanup, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
+
+import { GapDecomposition } from "../../src/components/GapDecomposition";
+import { marketStore } from "../../src/state/marketStore";
+import { FIXTURE_ANALISIS } from "../contract/fixtures.test";
+import { renderConProveedores as render } from "../render";
+
+afterEach(() => {
+  cleanup();
+  marketStore.reset();
+  window.localStorage.clear();
+});
+
+const PIERNAS = {
+  tasas: {
+    USD: {
+      currency: "USD",
+      rate: "417.03",
+      value_date: "2026-07-30",
+      captured_at: new Date().toISOString(),
+      stale: false,
+    },
+  },
+  p2p: {
+    buy: {
+      side: "buy" as const,
+      best_price: "850.00",
+      median: "850.00",
+      vwap: "834.06",
+      volume: "1000",
+      as_of: new Date().toISOString(),
+      confidence: "normal" as const,
+    },
+  },
+};
+
+function ref(dias: number, cubiertos: number, mean: string, max: string) {
+  return {
+    days_configured: dias,
+    days_covered: cubiertos,
+    samples: 1000,
+    mean,
+    max,
+    min: "10.00",
+  };
+}
+
+/** El caso REAL medido en vivo: compra con 12 días, venta con 242. */
+const LADOS = [
+  {
+    side: "buy" as const,
+    current: "13.45",
+    references: [
+      ref(7, 7, "15.13", "17.73"),
+      ref(30, 12, "16.22", "18.93"),
+      ref(90, 12, "16.22", "18.93"),
+    ],
+  },
+  {
+    side: "sell" as const,
+    current: "12.72",
+    references: [
+      ref(7, 7, "13.93", "16.98"),
+      ref(30, 30, "15.00", "21.13"),
+      ref(90, 90, "20.37", "44.06"),
+    ],
+  },
+];
+
+function conHistoria(sides = LADOS, claims = FIXTURE_ANALISIS.reading.claims) {
+  marketStore.resync({
+    ...PIERNAS,
+    analisis: {
+      ...FIXTURE_ANALISIS,
+      reading: { ...FIXTURE_ANALISIS.reading, claims },
+      gap_history: { sides },
+    },
+  });
+}
+
+describe("Descomposición de la brecha", () => {
+  it("reparte el precio P2P en pierna oficial y brecha", () => {
+    conHistoria();
+    render(<GapDecomposition />);
+
+    // 417,03 / 834,06 = 50 % exacto.
+    expect(
+      document.querySelectorAll<HTMLElement>("[style*='width: 50']").length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("pierna oficial")).toBeTruthy();
+  });
+
+  it("muestra LOS DOS lados, cada uno contra su propia historia", () => {
+    conHistoria();
+    render(<GapDecomposition />);
+
+    expect(screen.getByText("Compra")).toBeTruthy();
+    expect(screen.getByText("Venta")).toBeTruthy();
+    expect(screen.getByText("13,45 %")).toBeTruthy();
+    expect(screen.getByText("12,72 %")).toBeTruthy();
+  });
+
+  it("ROTULA EL TRAMO REAL cuando la serie no llega a la ventana", () => {
+    conHistoria();
+    render(<GapDecomposition />);
+
+    // Compra: 12 días de serie. La etiqueta lo dice en vez de llamarlo «30».
+    expect(screen.getByText("Promedio 12 d (de 30)")).toBeTruthy();
+    expect(screen.getByText("Promedio 12 d (de 90)")).toBeTruthy();
+    expect(screen.getByText("Máximo 12 d (de 90)")).toBeTruthy();
+    // Venta: 242 días. Sus ventanas SÍ son las que dicen.
+    expect(screen.getByText("Promedio 30 días")).toBeTruthy();
+    expect(screen.getByText("Máximo 90 días")).toBeTruthy();
+  });
+
+  it("con la ventana completa NO aparece el rótulo parcial", () => {
+    conHistoria([LADOS[1]]);
+    render(<GapDecomposition />);
+    expect(screen.queryByText(/de 30\)/)).toBeNull();
+    expect(screen.queryByText(/empieza hace/)).toBeNull();
+  });
+
+  it("explica por qué un lado lleva tramos parciales", () => {
+    conHistoria([LADOS[0]]);
+    render(<GapDecomposition />);
+    expect(screen.getByText(/La serie de este lado empieza hace 12 días/)).toBeTruthy();
+  });
+
+  it("la ventana ancha muestra media Y máximo: responden preguntas distintas", () => {
+    conHistoria([LADOS[1]]);
+    render(<GapDecomposition />);
+    expect(screen.getByText("Promedio 90 días")).toBeTruthy();
+    expect(screen.getByText("20,37 %")).toBeTruthy();
+    expect(screen.getByText("Máximo 90 días")).toBeTruthy();
+    expect(screen.getByText("44,06 %")).toBeTruthy();
+  });
+
+  it("COHERENCIA: la cifra que cita la prosa está en la tarjeta", () => {
+    /*
+     * El defecto que motivó este test: la prosa decía «7,70 puntos por debajo de
+     * su promedio de 90 días» y la fila de 90 días mostraba el MÁXIMO (44,06).
+     * La media citada (20,37) no aparecía por ningún lado, así que la afirmación
+     * era incomprobable — y restar 44,06 − 12,67 daba 31,4, no 7,70, con lo que
+     * la tarjeta parecía contradecirse a sí misma.
+     *
+     * La regla que fija este test: si el motor afirma una distancia contra una
+     * referencia, esa referencia tiene que estar a la vista.
+     */
+    conHistoria([LADOS[1]], [
+      {
+        code: "brecha_vs_historia",
+        data: { lado: "sell", referencia: "media", dias: "90", posicion: "por_debajo", delta_pp: "7.65" },
+      },
+    ]);
+    render(<GapDecomposition />);
+
+    const hoy = "12.72";
+    const media90 = LADOS[1].references[2].mean; // 20.37
+    const delta = Number(media90) - Number(hoy);
+    expect(delta).toBeCloseTo(7.65, 1); // la aritmética del claim cuadra…
+
+    // …y las DOS cifras que la sostienen están en pantalla.
+    expect(screen.getByText("12,72 %")).toBeTruthy();
+    expect(screen.getByText("20,37 %")).toBeTruthy();
+    expect(screen.getByText(/7,65 puntos por debajo de su promedio de 90 días/)).toBeTruthy();
+  });
+
+  it("redacta la interpretación desde los claims del motor", () => {
+    conHistoria(LADOS, [
+      {
+        code: "brecha_vs_historia",
+        data: { lado: "buy", referencia: "media", dias: "7", posicion: "por_debajo", delta_pp: "1.68" },
+      },
+      {
+        code: "brecha_vs_historia",
+        data: { lado: "sell", referencia: "media", dias: "90", posicion: "por_debajo", delta_pp: "7.66" },
+      },
+    ]);
+    render(<GapDecomposition />);
+
+    const prosa = screen.getByText(/La brecha de compra/);
+    expect(prosa.textContent).toContain(
+      "La brecha de compra está 1,68 puntos por debajo de su promedio de 7 días.",
+    );
+    expect(prosa.textContent).toContain(
+      "La brecha de venta está 7,66 puntos por debajo de su promedio de 90 días.",
+    );
+  });
+
+  it("no repite aquí los claims que redacta la tarjeta de régimen", () => {
+    conHistoria(LADOS, [
+      { code: "oficial_rancia", data: {} },
+      { code: "brecha", data: { direccion: "comprimiendo", delta_pp: "1.02", horas: "6" } },
+    ]);
+    render(<GapDecomposition />);
+    expect(screen.queryByText(/La distancia entre el precio/)).toBeNull();
+  });
+
+  it("dice cuándo no hay historia suficiente ni para la ventana más corta", () => {
+    conHistoria(LADOS, [
+      { code: "historia_parcial", data: { lado: "buy", ventana: "90", dias: "1" } },
+    ]);
+    render(<GapDecomposition />);
+    expect(
+      screen.getByText(/solo hay 1 días de historia, todavía no bastan/),
+    ).toBeTruthy();
+  });
+
+  it("sin gap_history lo dice en vez de dibujar barras vacías", () => {
+    marketStore.resync({
+      ...PIERNAS,
+      analisis: { ...FIXTURE_ANALISIS, gap_history: undefined },
+    });
+    render(<GapDecomposition />);
+    expect(screen.getByText(/Sin historia todavía para comparar/)).toBeTruthy();
+  });
+
+  it("sin tasa oficial ni VWAP no reparte nada y lo explica", () => {
+    render(<GapDecomposition />);
+    expect(screen.getByText(/hacen falta la tasa oficial/i)).toBeTruthy();
+  });
+
+  it("rotula el tramo real también en inglés", () => {
+    conHistoria();
+    render(<GapDecomposition />, { idioma: "en" });
+    expect(screen.getByText("12-day average (of 30)")).toBeTruthy();
+    expect(screen.getByText("90-day maximum")).toBeTruthy();
+  });
+});
+
+/** Las piernas del contrato (`gap_legs`), no el claim de atribución. */
+function conPiernas(
+  official: string | null,
+  parallel: string | null,
+  responsible: string | null = "oficial",
+  cuota: string | null = "0.78",
+) {
+  marketStore.resync({
+    ...PIERNAS,
+    analisis: {
+      ...FIXTURE_ANALISIS,
+      gap_legs: {
+        hours: 6,
+        official,
+        parallel,
+        responsible,
+        official_share: cuota,
+      },
+      gap_history: { sides: LADOS },
+    },
+  });
+}
+
+describe("Las piernas del movimiento", () => {
+  it("muestra las dos piernas y su neto, en VES y con signo", () => {
+    // Las cifras del prototipo: la oficial sube 26,90 y el paralelo 7,60.
+    conPiernas("26.90", "7.60", "oficial");
+    render(<GapDecomposition />);
+
+    expect(screen.getByText("Oficial 6 h")).toBeTruthy();
+    expect(screen.getByText("P2P 6 h")).toBeTruthy();
+    expect(screen.getByText("Neto brecha")).toBeTruthy();
+    // El «+» se escribe: sin él, «26,90» y «−19,30» no se leen como el mismo eje.
+    expect(screen.getByText("+26,90 VES")).toBeTruthy();
+    expect(screen.getByText("+7,60 VES")).toBeTruthy();
+  });
+
+  it("el NETO es la identidad Δparalelo − Δoficial, no una tercera medición", () => {
+    /*
+     * 7,60 − 26,90 = −19,30. Se resta aquí porque es una IDENTIDAD: pedirla
+     * aparte abriría la puerta a que las tres cifras no cuadren en pantalla.
+     * Y va en VES porque es la única unidad donde la identidad es exacta — en
+     * puntos porcentuales las dos piernas no suman la brecha.
+     */
+    conPiernas("26.90", "7.60", "oficial");
+    render(<GapDecomposition />);
+    expect(screen.getByText("-19,30 VES")).toBeTruthy();
+  });
+
+  it("resta sin pasar por float", () => {
+    // 0,1 − 0,3 da −0.19999999999999998 en float64; el neto tiene que ser exacto.
+    conPiernas("0.3", "0.1", "ambos");
+    render(<GapDecomposition />);
+    expect(screen.getByText("-0,2 VES")).toBeTruthy();
+  });
+
+  it("destaca la pierna que el MOTOR señala como responsable", () => {
+    conPiernas("26.90", "7.60", "oficial");
+    render(<GapDecomposition />);
+
+    const destacadas = [
+      ...document.querySelectorAll("[data-responsable='si']"),
+    ].map((n) => n.textContent);
+    expect(destacadas).toEqual(["+26,90 VES"]);
+  });
+
+  it("con responsable «ambos» destaca las dos piernas, no el neto", () => {
+    conPiernas("26.90", "7.60", "ambos");
+    render(<GapDecomposition />);
+
+    const destacadas = [
+      ...document.querySelectorAll("[data-responsable='si']"),
+    ].map((n) => n.textContent);
+    expect(destacadas).toEqual(["+26,90 VES", "+7,60 VES"]);
+  });
+
+  it("SIN atribución las piernas siguen ahí: es el defecto que ADR-0023 corrige", () => {
+    /*
+     * Antes las tres cifras viajaban dentro del claim `atribucion` y
+     * desaparecían con él: con la brecha estable o la oficial rancia la tarjeta
+     * se quedaba en blanco —160 px de hueco medidos— justo cuando el usuario
+     * quiere comprobar que NO está pasando nada. Las deltas son hechos.
+     */
+    conPiernas("0", "-0.40", null);
+    render(<GapDecomposition />);
+
+    expect(screen.getByText("Neto brecha")).toBeTruthy();
+    // Con la oficial quieta, el neto ES la pierna P2P: −0,40 − 0. Que la cifra
+    // aparezca DOS veces es la identidad cuadrando en pantalla.
+    expect(screen.getAllByText("-0,40 VES")).toHaveLength(2);
+    expect(screen.getByText("0 VES")).toBeTruthy();
+    // Sin responsable no se destaca ninguna: no se afirma lo que no se puede.
+    expect(document.querySelectorAll("[data-responsable='si']")).toHaveLength(0);
+  });
+
+  it("una pierna no medible sale como «—», no rellenada con cero", () => {
+    // `0` significa que NO se movió; `null`, que no se pudo medir. Colapsarlos
+    // haría que un hueco de captura se leyera como una meseta real.
+    conPiernas("0", null, null);
+    render(<GapDecomposition />);
+
+    expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(2); // pierna y neto
+  });
+
+  it("sin ninguna pierna medible lo dice en vez de dejar el hueco", () => {
+    marketStore.resync({
+      ...PIERNAS,
+      analisis: {
+        ...FIXTURE_ANALISIS,
+        gap_legs: undefined,
+        gap_history: { sides: LADOS },
+      },
+    });
+    render(<GapDecomposition />);
+
+    expect(screen.queryByText("Neto brecha")).toBeNull();
+    expect(
+      screen.getByText(/reparte el precio P2P de compra entre su pierna oficial/),
+    ).toBeTruthy();
+  });
+
+  it("declara el LADO del VWAP que reparte", () => {
+    // Con dos lados en la app, «P2P VWAP» a secas dejaba la cifra ambigua.
+    conPiernas("26.90", "7.60", "oficial");
+    render(<GapDecomposition />);
+    expect(screen.getByText(/P2P buy VWAP/)).toBeTruthy();
+  });
+
+  it("el MÁXIMO va en coral, igual que el extremo del mapa de calor", () => {
+    /*
+     * Misma pregunta, mismo color: «¿esto es lo alto que llega?». Si el máximo
+     * fuese teal como las medias, las dos tarjetas dejarían de leerse juntas.
+     */
+    conHistoria();
+    render(<GapDecomposition />);
+
+    const rellenos = [
+      ...document.querySelectorAll<HTMLElement>(".vmw-barra__relleno"),
+    ].map((n) => n.style.background);
+    expect(rellenos.filter((c) => c.includes("--coral"))).toHaveLength(2); // uno por lado
+    expect(rellenos.filter((c) => c.includes("--series-buy"))).toHaveLength(2); // los dos «Hoy»
+  });
+
+  it("en inglés", () => {
+    conPiernas("26.90", "7.60", "oficial");
+    render(<GapDecomposition />, { idioma: "en" });
+    expect(screen.getByText("Official 6 h")).toBeTruthy();
+    expect(screen.getByText("Net gap")).toBeTruthy();
+    expect(screen.getByText("-19.30 VES")).toBeTruthy();
+  });
+});
+
+describe("La cuota del movimiento", () => {
+  it("se dice «del MOVIMIENTO», nunca «del cierre»", () => {
+    /*
+     * Las cifras del prototipo desmienten su propia frase: con Δoficial +26,9 y
+     * Δparalelo +7,6 la brecha se cierra 19,3, pero el paralelo SUBIÓ, o sea que
+     * la abrió. Del cierre, la oficial pone el 100 %; el 78 % es su cuota del
+     * movimiento total.
+     */
+    conPiernas("26.90", "7.60", "oficial", "0.78");
+    render(<GapDecomposition />);
+
+    const texto = document.body.textContent ?? "";
+    expect(texto).toMatch(/78 % del movimiento/);
+    expect(texto).not.toMatch(/del cierre/);
+  });
+
+  it("sin responsable no se escribe la cuota: no hay a quién atribuirla", () => {
+    conPiernas("0", "-0.40", null, "0");
+    render(<GapDecomposition />);
+    expect(document.body.textContent ?? "").not.toMatch(/del movimiento/);
+  });
+
+  it("en inglés", () => {
+    conPiernas("26.90", "7.60", "oficial", "0.78");
+    render(<GapDecomposition />, { idioma: "en" });
+    expect(document.body.textContent ?? "").toMatch(/78 % of the movement/);
+  });
+});

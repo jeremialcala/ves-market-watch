@@ -110,6 +110,10 @@ _RE_ENTRADA_BANCO = re.compile(
 )
 _RE_DISPONIBLE = re.compile(r"only\s+([\d.,]+)\s+available", re.IGNORECASE)
 
+# «{:Banesco {:volume 161309.48, :averageRate 556.12}, :Mercantil {…}}» — la forma
+# que trae `InforPerBank` desde el export de julio de 2026.
+_RE_ENTRADA_ANIDADA = re.compile(r":([^\s,{}]+)\s*\{([^{}]*)\}")
+
 
 @dataclass(frozen=True, slots=True)
 class EntradaBanco:
@@ -118,12 +122,29 @@ class EntradaBanco:
     disponible: Decimal | None
 
 
-def parse_mapa_bancos(texto: str | None) -> dict[str, EntradaBanco]:
-    """Mapa banco → valor con anotaciones opcionales entre paréntesis."""
+def parse_mapa_bancos(
+    texto: str | None, clave: str | None = None
+) -> dict[str, EntradaBanco]:
+    """Mapa banco → valor, en cualquiera de las dos formas que publica la fuente.
+
+    **Plana**: `{:Banesco 396.79, :Mercantil 396.32 (lower liquidity)}` — el valor
+    es escalar y las anotaciones viajan entre paréntesis.
+
+    **Anidada**: `{:Banesco {:volume 161309.48, :averageRate 556.12}}` — cada banco
+    trae su propio submapa. Ahí hay que decir QUÉ clave se quiere (`clave`), porque
+    el submapa lleva varias magnitudes. Sin `clave` no se puede elegir, así que se
+    devuelve vacío en vez de adivinar.
+    """
     if not texto:
         return {}
+    if es_mapa_anidado(texto):
+        return _parse_anidado(str(texto), clave)
+    return _parse_plano(str(texto))
+
+
+def _parse_plano(texto: str) -> dict[str, EntradaBanco]:
     entradas: dict[str, EntradaBanco] = {}
-    for nombre, valor, anotacion in _RE_ENTRADA_BANCO.findall(str(texto)):
+    for nombre, valor, anotacion in _RE_ENTRADA_BANCO.findall(texto):
         anotacion = anotacion or ""
         disponible = None
         if m := _RE_DISPONIBLE.search(anotacion):
@@ -136,11 +157,46 @@ def parse_mapa_bancos(texto: str | None) -> dict[str, EntradaBanco]:
     return entradas
 
 
+def _parse_anidado(texto: str, clave: str | None) -> dict[str, EntradaBanco]:
+    if clave is None:
+        return {}
+    entradas: dict[str, EntradaBanco] = {}
+    for nombre, cuerpo in _RE_ENTRADA_ANIDADA.findall(texto):
+        interior = _parse_plano(cuerpo)
+        if clave in interior:
+            entradas[nombre] = interior[clave]
+    return entradas
+
+
+def claves_anidadas(texto: str | None) -> tuple[str, ...]:
+    """Claves del primer submapa: con qué magnitudes viene un mapa anidado.
+
+    Es lo que permite mapearlo por CONTENIDO. El nombre de la columna no sirve:
+    `InforPerBank` no contiene ninguna palabra de volumen y aun así es donde
+    viaja el volumen por banco.
+    """
+    if not texto or not es_mapa_anidado(texto):
+        return ()
+    for _, cuerpo in _RE_ENTRADA_ANIDADA.findall(str(texto)):
+        if claves := tuple(_parse_plano(cuerpo)):
+            return claves
+    return ()
+
+
 def es_mapa_bancos(valor: str | None) -> bool:
     return bool(valor) and str(valor).strip().startswith("{:")
 
 
+def es_mapa_anidado(valor: str | None) -> bool:
+    """Un mapa de bancos cuyos valores son, a su vez, mapas."""
+    return es_mapa_bancos(valor) and bool(_RE_ENTRADA_ANIDADA.search(str(valor)))
+
+
 # --- detección de columnas --------------------------------------------------
+
+KEYWORDS_TASA = ("rate", "tasa", "price", "precio", "average", "promedio")
+KEYWORDS_VOLUMEN = ("volume", "volumen", "size", "amount", "monto")
+
 
 @dataclass(frozen=True, slots=True)
 class MapeoColumnas:
@@ -151,6 +207,10 @@ class MapeoColumnas:
     mapa_tasas: str | None
     mapa_volumenes: str | None
     extra: tuple[str, ...]
+    # Cuando el mapa correspondiente es ANIDADO, la clave del submapa de la que
+    # sale el número. `None` = mapa plano (el valor es el escalar directo).
+    clave_tasas: str | None = None
+    clave_volumenes: str | None = None
 
 
 def _norm(nombre: str) -> str:
@@ -181,13 +241,25 @@ def detectar_columnas(
     col_id = next((c for c in escalares if _norm(c) in ("id", "_id")), None)
     restantes = [c for c in escalares if c != col_id]
 
-    mapa_tasas = _buscar(mapas, ("rate", "tasa", "price", "precio", "average", "promedio"))
-    mapa_volumenes = _buscar(
-        [c for c in mapas if c != mapa_tasas],
-        ("volume", "volumen", "size", "amount", "monto"),
-    )
-    if mapa_tasas is None and len(mapas) == 1 and mapa_volumenes is None:
-        mapa_tasas = mapas[0]  # un solo mapa sin keyword: se asume tasas
+    planos = [c for c in mapas if not es_mapa_anidado(fila_muestra.get(c))]
+    anidados = [c for c in mapas if es_mapa_anidado(fila_muestra.get(c))]
+
+    mapa_tasas = _buscar(planos, KEYWORDS_TASA)
+    mapa_volumenes = _buscar([c for c in planos if c != mapa_tasas], KEYWORDS_VOLUMEN)
+    if mapa_tasas is None and len(planos) == 1 and mapa_volumenes is None:
+        mapa_tasas = planos[0]  # un solo mapa plano sin keyword: se asume tasas
+
+    # Los mapas anidados se mapean por CONTENIDO, no por nombre de columna: el
+    # export publica el volumen por banco en `InforPerBank`, cuyo nombre no lleva
+    # ninguna palabra de volumen. Buscar en el nombre lo dejaba fuera y `volume`
+    # quedaba nulo mientras el dato estaba ahí.
+    clave_tasas = clave_volumenes = None
+    for columna in anidados:
+        claves = claves_anidadas(fila_muestra.get(columna))
+        if mapa_volumenes is None and (k := _buscar(list(claves), KEYWORDS_VOLUMEN)):
+            mapa_volumenes, clave_volumenes = columna, k
+        elif mapa_tasas is None and (k := _buscar(list(claves), KEYWORDS_TASA)):
+            mapa_tasas, clave_tasas = columna, k
 
     fecha = _buscar(
         restantes,
@@ -225,6 +297,8 @@ def detectar_columnas(
         mapa_tasas=mapa_tasas,
         mapa_volumenes=mapa_volumenes,
         extra=extra,
+        clave_tasas=clave_tasas,
+        clave_volumenes=clave_volumenes,
     )
 
 
@@ -250,9 +324,13 @@ def parsear_fila(
     if precio is None or precio <= 0:
         raise FilaInvalida("precio ilegible o no positivo")
 
-    tasas = parse_mapa_bancos(fila.get(mapeo.mapa_tasas) if mapeo.mapa_tasas else None)
+    tasas = parse_mapa_bancos(
+        fila.get(mapeo.mapa_tasas) if mapeo.mapa_tasas else None,
+        mapeo.clave_tasas,
+    )
     volumenes = parse_mapa_bancos(
-        fila.get(mapeo.mapa_volumenes) if mapeo.mapa_volumenes else None
+        fila.get(mapeo.mapa_volumenes) if mapeo.mapa_volumenes else None,
+        mapeo.clave_volumenes,
     )
     bancos = {
         nombre: DatoBanco(

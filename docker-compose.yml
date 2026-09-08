@@ -13,7 +13,7 @@ name: ves-market-watch
 
 services:
   rabbitmq:
-    image: rabbitmq:4-management
+    image: rabbitmq:4-management@sha256:17e61a9b064066c87368f33cf80b0b05749cbacebf204ed0b674a4a7bcd05c38
     # Sin esto, un reinicio del daemon de Docker deja la infra caída mientras
     # los servicios (que sí reinician) quedan en crash-loop (visto 2026-07-23).
     restart: unless-stopped
@@ -27,7 +27,17 @@ services:
       retries: 12
 
   timescaledb:
-    image: timescale/timescaledb:latest-pg16
+    # Fijada por DIGEST (T8). `latest-pg16` es un tag MÓVIL: sin digest, un
+    # `compose up` cualquier día trae otra imagen.
+    #
+    # Ojo con cuál se fija, que aquí hay dato y no solo build. Este digest es el
+    # que la instalación venía usando y está probado contra este directorio de
+    # datos. Fijar el digest MÁS NUEVO del tag —lo primero que uno hace— dejó la
+    # base en `FATAL: incorrect checksum in control file` y el contenedor en
+    # bucle de reinicio (comprobado el 2026-09-08). En una imagen con estado, el
+    # digest bueno es el que ya funciona, no el último publicado; actualizarlo es
+    # una migración, no un pin.
+    image: timescale/timescaledb:latest-pg16@sha256:ba149561ad4ddff5940d6eb0a0df60aefd1355cee1a450928f271267038fc888
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: postgres
@@ -36,6 +46,19 @@ services:
       # 5433 en el host: el 5432 suele estar ocupado por un PostgreSQL local/WSL.
       - "5433:5432"
     volumes:
+      # Volumen CON NOMBRE para los datos, y esta línea tiene una fecha detrás.
+      #
+      # Hasta el 2026-08-23 no estaba, así que los datos vivían en el volumen
+      # anónimo que crea la imagen. La cabecera de este archivo decía —y decía
+      # verdad cuando se escribió— que la infraestructura era «efímera a
+      # propósito»; para cuando dejó de serlo, nadie actualizó la línea. Un
+      # `docker compose up` recreó los contenedores y se llevó por delante nueve
+      # meses de serie: 1.017.655 indicadores y el histórico del BCV desde 2020.
+      # Se recuperaron del volumen huérfano, de pura suerte.
+      #
+      # Con nombre, el volumen sobrevive a `up`, a `down` y a un cambio de rama.
+      # Solo `docker compose down -v` lo borra, y eso ya es una decisión.
+      - ves_market_datos:/var/lib/postgresql/data
       # La DB de desarrollo nace con el esquema del ingestor aplicado.
       # Archivo individual (no el directorio): montar el directorio completo
       # aplastaría el init propio de la imagen (000_install_timescaledb.sh),
@@ -44,6 +67,8 @@ services:
       - ./apps/ingestor-bcv/db/migrations/002_suspect_resolution.sql:/docker-entrypoint-initdb.d/901_suspect_resolution.sql:ro
       - ./apps/indicator-engine/db/migrations/001_indicators.sql:/docker-entrypoint-initdb.d/902_indicators.sql:ro
       - ./apps/indicator-engine/db/migrations/002_signals.sql:/docker-entrypoint-initdb.d/902b_signals.sql:ro
+      - ./apps/indicator-engine/db/migrations/003_analysis.sql:/docker-entrypoint-initdb.d/902c_analysis.sql:ro
+      - ./apps/indicator-engine/db/migrations/004_indicators_compression.sql:/docker-entrypoint-initdb.d/902d_indicators_compression.sql:ro
       - ./apps/ingestor-binance/db/migrations/001_p2p_snapshots.sql:/docker-entrypoint-initdb.d/903_p2p_snapshots.sql:ro
       - ./apps/ingestor-historico/db/migrations/001_historical_snapshots.sql:/docker-entrypoint-initdb.d/904_historical_snapshots.sql:ro
     healthcheck:
@@ -65,6 +90,11 @@ services:
       TOP_K: "200"
       FETCH_INTERVAL_SECONDS: "60"
       REQUEST_BUDGET_PER_MIN: "40"
+      # Paginas del top-K en vuelo a la vez (ADR-0026, enmienda a ADR-0005).
+      # NO sube las peticiones por minuto: siguen siendo 20 por ciclo contra
+      # las 40 del presupuesto. Sube el pico instantaneo, que es el vector de
+      # T7 — por eso 4 y no 10. Si Binance empieza a devolver 429, esto BAJA.
+      PAGINAS_EN_PARALELO: "4"
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -114,12 +144,168 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@timescaledb:5432/ves_market
       AMQP_URL: amqp://guest:guest@rabbitmq/
       HTTP_HOST: 0.0.0.0
+      # SPA en dev (vite, 5173), build nginx del compose (8080) y el host del
+      # túnel Cloudflare (HTTPS real, que es lo que hace al cliente «verificable»
+      # para Auth0 y mata la pantalla de consentimiento). Parametrizado para no
+      # tener que editar el compose por entorno.
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:8080,https://criterio-dev.higerotech.com}
+      # Cuota por token. El default es el de producción y sube SOLO en el job de
+      # DAST: con 120/min, ZAP se estrella contra su propio 429 y deja parte de
+      # la superficie sin escanear (24 peticiones en la corrida del 2026-09-06).
+      # Sin esta línea, poner la variable en el workflow no hacía nada —el
+      # contenedor no la veía— y el comentario del job prometía algo que no
+      # ocurría.
+      RATE_LIMIT_PER_MIN: ${RATE_LIMIT_PER_MIN:-120}
     ports:
       # 8800 en el host: el 8000 suele estar ocupado por otro proyecto local.
       - "8800:8000" # REST /api/v1 + WSS /ws/v1 (health público: /api/v1/health)
+    # Sin esto, `up -d --wait` devuelve con uvicorn todavía arrancando: compose
+    # da por bueno un servicio sin healthcheck en cuanto el contenedor corre.
+    # Lo pagaba quien encadenara algo detrás —el e2e en vivo del pipeline lo
+    # hace— viendo un «connection refused» que parecía del gateway y era del
+    # reloj. `urlopen` levanta en cualquier código != 2xx, así que el 503 de
+    # `database: down` cuenta como no listo; el 200 de `degraded` (broker o
+    # JWKS caídos) cuenta como listo, que es la verdad: el REST está sirviendo.
+    # Python y no curl porque la imagen es `python:3.12-slim` y no lo trae.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3)",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     depends_on:
       rabbitmq:
         condition: service_healthy
       timescaledb:
         condition: service_healthy
     restart: unless-stopped
+
+  cloudflared:
+    # Publica el dev por el túnel de Cloudflare, y existe aquí por una razón
+    # concreta: **para que el ingress apunte a nombres de servicio y no a una IP**.
+    #
+    # Hasta el 2026-08-23 el conector corría suelto en la red `bridge`, sin
+    # acceso a esta red, así que las reglas del panel tenían que apuntar a la IP
+    # de LAN del host. Esa IP es de DHCP: cambió de `192.168.1.43` a `.46` y se
+    # llevó por delante el entorno entero —la regla del API acabó apuntando al
+    # puerto del SPA, con lo que cada llamada del cliente recibía un `index.html`
+    # y el WSS nunca hacía upgrade—. Desde esta red, `web-spa` y `api-gateway`
+    # resuelven por nombre y no dependen de la red de nadie.
+    #
+    # `profiles` porque no todo el que levanta el stack quiere —ni puede—
+    # exponerlo:  docker compose --profile tunel up -d
+    profiles: [tunel]
+    # Fijada a la versión que ya corría: el `latest` de un conector se actualiza
+    # solo y aquí no interesa descubrir una versión nueva un lunes.
+    image: cloudflare/cloudflared:2026.6.0@sha256:55d8bb268e90b09d3bf05a9bb5d3bc6ddad1b0b69739e4f15daaa7e6676238b6
+    command: tunnel --no-autoupdate run
+    environment:
+      # El token AUTORIZA a servir el túnel: es un secreto, vive en el .env de la
+      # raíz (gitignorado) y nunca en este archivo.
+      #
+      # Va por entorno y no como argumento del `command` porque en la línea de
+      # órdenes lo ve cualquiera que haga `docker inspect` —así se filtró uno el
+      # 2026-08-23—. Que quede claro: por entorno TAMPOCO es un escondite,
+      # `docker inspect` también lo muestra; lo que protege es el .env.
+      #
+      # Sin `:?` a propósito: el compose interpola el archivo ENTERO aunque el
+      # servicio no se levante, y un `:?` rompería `docker compose up` a todo el
+      # que no use el túnel.
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      # Con el healthcheck del gateway, esperar a `service_healthy` evita los
+      # `connection refused` del arranque, que en el log del conector parecen un
+      # problema de red y son el reloj.
+      api-gateway:
+        condition: service_healthy
+      web-spa:
+        condition: service_started
+    restart: unless-stopped
+
+  web-spa:
+    build:
+      context: .
+      dockerfile: apps/web-spa/Dockerfile
+      # Un solo input para el bundle Y para la CSP del nginx (ver el Dockerfile).
+      # Con los defaults puestos, `docker compose up --build` sin variables se
+      # comporta igual que siempre; cambiar de tenant o de dominio es exportar
+      # estas variables, no editar tres archivos a mano.
+      args:
+        VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN:-auth.higerotech.com}
+        VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID:-8CpfA64FlGTmuyF8w07rDFlrZHEeuRER}
+        VITE_AUTH0_AUDIENCE: ${VITE_AUTH0_AUDIENCE:-https://api.vesmarketwatch/}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8800}
+    # Dashboard estático (nginx). El browser del host llama al gateway por
+    # localhost:8800 (CORS allowlist) — el contenedor solo sirve archivos.
+    ports:
+      - "8080:80"
+    depends_on:
+      api-gateway:
+        condition: service_started
+    restart: unless-stopped
+
+  respaldo:
+    # Respaldo a Google Drive: incremental cada hora, full cada 24 h y una
+    # restauración de verdad cada domingo. El detalle está en
+    # `scripts/respaldo/README.md`; lo que hay que saber aquí es por qué existe.
+    #
+    # El 2026-08-23 un `docker compose up` recreó los contenedores y se llevó la
+    # base entera —`timescaledb` no declara volumen y el anónimo que crea la
+    # imagen no sobrevive a una recreación—. Se recuperó del volumen huérfano,
+    # de suerte: nadie la había respaldado nunca.
+    #
+    # Tras un perfil, como el túnel: quien levante el stack para trastear no
+    # tiene por qué subir nada a ningún sitio.
+    #   docker compose --profile respaldo up -d
+    profiles: [respaldo]
+    build:
+      context: .
+      dockerfile: scripts/respaldo/Dockerfile
+    environment:
+      PGHOST: timescaledb
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: ves_market
+      # Remoto `crypt` de rclone: Drive guarda contenido que no puede leer. La
+      # base tiene datos Interno y la clasificación no dice nada sobre sacarlos
+      # a un tercero, así que se cifra en cliente y la pregunta no se plantea.
+      #
+      # Sin `:?` a propósito: el compose interpola el archivo ENTERO aunque el
+      # servicio no se levante, y rompería `up` a quien no use el respaldo.
+      RCLONE_REMOTE: ${RCLONE_REMOTE:-}
+      RCLONE_CONFIG: /config/rclone/rclone.conf
+      # El `rclone.conf` del volumen está cifrado con contraseña de rclone, y el
+      # cron corre desatendido: sin esto, cada ejecución se quedaría esperando
+      # una contraseña que nadie va a teclear.
+      #
+      # Que quede escrito lo que esto compra y lo que no: `docker inspect`
+      # muestra la variable, igual que el token del túnel, así que no protege
+      # frente a quien ya tiene la máquina. Lo que sí cierra es que el volumen
+      # por separado —una copia suelta, un mount mal puesto— no sirva de nada:
+      # el token de Drive va cifrado dentro del archivo.
+      #
+      # Sin `:?` por la misma razón que `RCLONE_REMOTE`: el compose interpola el
+      # archivo entero aunque el servicio no se levante.
+      RCLONE_CONFIG_PASS: ${RCLONE_CONFIG_PASS:-}
+    volumes:
+      # La autorización de Google vive aquí: se hace una vez con `rclone config`
+      # y persiste. Contiene credenciales, así que es un volumen con nombre y no
+      # un bind al repositorio.
+      - rclone_config:/config/rclone
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  # Los datos de TimescaleDB. Ver el comentario en el servicio: antes eran un
+  # volumen anónimo y una recreación de contenedores se los llevó.
+  ves_market_datos:
+  rclone_config:

@@ -17,6 +17,7 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
     "pyyaml>=6.0",
 ]
 
@@ -37,4 +38,5 @@ pythonpath = ["src", "."]
 markers = [
     "integration: adaptadores contra infraestructura real (docker compose up -d --wait)",
     "e2e: flujo completo contra RabbitMQ y TimescaleDB reales (docker compose up -d --wait)",
+    "security: escenarios de abuso de los PRD y amenazas del threat model (T4, T9, T11)",
 ]

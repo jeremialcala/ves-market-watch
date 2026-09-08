@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import date, datetime
+from decimal import Decimal
+from typing import Sequence
 
 from indicator_engine.adapters.amqp.publisher import (
     construir_evento_indicadores,
     construir_evento_senal,
 )
+from indicator_engine.domain.analisis import Analisis, Distribucion
+from indicator_engine.domain.comparativas import Agregado
 from indicator_engine.domain.models import Indicador
 from indicator_engine.domain.reglas import Senal
 
@@ -20,6 +24,9 @@ class InMemoryIndicatorRepository:
         self.indicadores: list[Indicador] = []
         self.procesados: dict[str, str] = {}  # event_id → event_type
         self.senales: list[Senal] = []
+        self.analisis: list[tuple[Analisis, dict]] = []
+        # Vigencia de la tasa oficial por moneda (ADR-0022). Vacío = sin tasa.
+        self.fechas_valor: dict[str, date] = {}
 
     async def ya_procesado(self, event_id: str) -> bool:
         return event_id in self.procesados
@@ -32,6 +39,15 @@ class InMemoryIndicatorRepository:
             if indicador.nombre == nombre and indicador.moneda == moneda:
                 return indicador
         return None
+
+    async def fecha_valor_oficial(self, moneda: str) -> date | None:
+        """La fecha-valor que el test haya declarado para esa moneda.
+
+        Por defecto `None` = «no hay tasa», que es rancia. El default NO es
+        vigente a propósito: un test que se olvide de declararla debe ver el
+        caso degradado, no uno cómodo.
+        """
+        return self.fechas_valor.get(moneda)
 
     async def indicador_asof(
         self, nombre: str, moneda: str, momento: datetime
@@ -55,11 +71,63 @@ class InMemoryIndicatorRepository:
     async def guardar_senales(self, senales: list[Senal]) -> None:
         self.senales.extend(senales)
 
+    async def guardar_analisis(self, analisis: Analisis, payload: dict) -> None:
+        # Idempotencia por la misma PK que la tabla: (as_of, moneda, triggered_by).
+        clave = (analisis.as_of, analisis.moneda, analisis.triggered_by)
+        if any(
+            (a.as_of, a.moneda, a.triggered_by) == clave for a, _ in self.analisis
+        ):
+            return
+        self.analisis.append((analisis, payload))
+
+
+class InMemoryDistribucionRepository:
+    """Doble del puerto `DistribucionRepository`, independiente del de indicadores.
+
+    `precargadas` se indexa por nombre; lo que no esté ahí simplemente no
+    aparece en el resultado — igual que un indicador sin filas en la ventana.
+    """
+
+    def __init__(
+        self,
+        precargadas: dict[str, Distribucion] | None = None,
+        agregados_precargados: dict[str, dict[int, Agregado]] | None = None,
+    ) -> None:
+        self.precargadas: dict[str, Distribucion] = dict(precargadas or {})
+        self.agregados_precargados: dict[str, dict[int, Agregado]] = dict(
+            agregados_precargados or {}
+        )
+        self.llamadas: list[tuple[tuple[str, ...], str, datetime]] = []
+
+    async def distribuciones(
+        self,
+        nombres: Sequence[str],
+        moneda: str,
+        desde: datetime,
+        percentiles: Sequence[Decimal],
+    ) -> dict[str, Distribucion]:
+        self.llamadas.append((tuple(nombres), moneda, desde))
+        return {n: self.precargadas[n] for n in nombres if n in self.precargadas}
+
+    async def agregados(
+        self,
+        nombres: Sequence[str],
+        moneda: str,
+        ventanas_dias: Sequence[int],
+        ahora: datetime,
+    ) -> dict[str, dict[int, Agregado]]:
+        return {
+            n: self.agregados_precargados[n]
+            for n in nombres
+            if n in self.agregados_precargados
+        }
+
 
 class CollectingEventPublisher:
     def __init__(self) -> None:
         self.eventos: list[dict] = []
         self.senales: list[dict] = []
+        self.analisis: list[dict] = []
 
     async def publish_indicators_updated(
         self,
@@ -76,6 +144,10 @@ class CollectingEventPublisher:
         evento = construir_evento_senal(senal)
         self.senales.append(evento)
         logger.info("[memoria] signals.emitted %s", evento["payload"])
+
+    async def publish_analysis_updated(self, evento: dict) -> None:
+        self.analisis.append(evento)
+        logger.info("[memoria] analysis.updated %s", evento["payload"]["as_of"])
 
 
 class LoggingAlertNotifier:

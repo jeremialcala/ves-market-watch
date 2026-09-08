@@ -39,6 +39,7 @@ async def run(settings: Settings, once: bool, dry_run: bool) -> None:
         top_k=settings.top_k,
         rows_per_page=settings.rows_per_page,
         max_retries=settings.max_retries,
+        paginas_en_paralelo=settings.paginas_en_paralelo,
         max_response_bytes=settings.max_response_bytes,
     )
     breaker = CircuitBreaker(

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 340" fill="none" role="img" aria-label="Higerotech">
+  <g stroke="#FFFFFF" stroke-width="16" stroke-linejoin="round" stroke-linecap="round" fill="none">
+    <polygon points="200,60 260.62,95 260.62,165 200,200 139.38,165 139.38,95"></polygon>
+    <polygon points="200,60 260.62,95 260.62,165 200,200 139.38,165 139.38,95" transform="rotate(120 200 200)"></polygon>
+    <polygon points="200,60 260.62,95 260.62,165 200,200 139.38,165 139.38,95" transform="rotate(240 200 200)"></polygon>
+  </g>
+  <circle cx="200" cy="60" r="24" fill="#9EBCB6"></circle>
+  <circle cx="321.24" cy="270" r="24" fill="#9EBCB6"></circle>
+  <circle cx="78.76" cy="270" r="24" fill="#9EBCB6"></circle>
+  <circle cx="200" cy="200" r="22" fill="#F97171"></circle>
+</svg>

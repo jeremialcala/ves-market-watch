@@ -1,6 +1,11 @@
 # ADR-0007: Máquina de estados de la tasa oficial (valid / suspect / stale)
 
-- **Estado:** accepted (implementado en `apps/ingestor-bcv`, 2026-07-05)
+- **Estado:** accepted (implementado en `apps/ingestor-bcv`, 2026-07-05) —
+  **enmendado por [ADR-0022](0022-vigencia-de-la-tasa-oficial-por-fecha-valor.md)**
+  el 2026-08-02: la transición a `stale` NO es un umbral de horas sino que la
+  **fecha-valor** de la tasa haya pasado. El BCV publica el viernes por la tarde
+  la tasa del lunes, así que medirla en horas la marcaba rancia todos los fines
+  de semana.
 - **Fecha:** 2026-07-05
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
@@ -17,7 +22,7 @@ estados sin publicar datos dudosos ni ocultar la degradación a los consumidores
 Modelar la tasa oficial con máquina de estados explícita:
 
 ```
-capturada ──validación ok──> valid ──sin actualización > umbral (6 h)──> stale
+capturada ──validación ok──> valid ──fecha-valor ya pasada (ADR-0022)──> stale
     │
     └─fuera de rango (|Δ| > 20 % vs. última valid)──> suspect
                 suspect ──aprobación humana──> valid

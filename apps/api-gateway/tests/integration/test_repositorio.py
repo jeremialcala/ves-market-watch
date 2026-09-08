@@ -87,11 +87,61 @@ async def test_historial_indicadores_agrega_por_bucket(pool, repo):
             valor,
         )
     filas, total = await repo.historial_indicadores(
-        base - timedelta(hours=3), base, "1h", 0, 100
+        base - timedelta(hours=3), base, "1h", None, None, 0, 100
     )
     assert total == 2  # dos buckets de 1 h
     # el bucket más reciente primero; dentro del bucket viejo gana el último valor
     assert [f["value"] for f in filas] == ["102.00000000", "101.00000000"]
+
+
+async def test_historial_indicadores_agrega_por_bucket_de_15_min(pool, repo):
+    """El bucket de 15 min agrupa DE VERDAD, no solo se acepta.
+
+    Se anadio para la barra del intradia (tres pastillas 5/15/60 min) y el
+    contrato solo tenia 5m/1h/1d: un 15m se iba en 422. Cuatro capturas dentro
+    de la misma hora tienen que caer en dos buckets de 15 min y en uno solo de
+    1 h — si el intervalo no llegara al `time_bucket`, los dos totales
+    coincidirian y la prueba no diria nada.
+    """
+    base = AHORA.replace(minute=0, second=0, microsecond=0) - timedelta(hours=2)
+    for minuto, valor in ((1, "100.00"), (7, "101.00"), (16, "102.00"), (29, "103.00")):
+        await pool.execute(
+            "INSERT INTO indicators (as_of, indicator, currency, value, calc_version)"
+            " VALUES ($1, 'official_rate', 'USD', $2, 1)",
+            base + timedelta(minutes=minuto),
+            valor,
+        )
+    desde, hasta = base - timedelta(minutes=1), base + timedelta(hours=1)
+
+    filas, total = await repo.historial_indicadores(desde, hasta, "15m", None, None, 0, 100)
+    assert total == 2
+    # Bucket reciente primero; dentro de cada uno gana la ultima captura.
+    assert [f["value"] for f in filas] == ["103.00000000", "101.00000000"]
+
+    _, total_1h = await repo.historial_indicadores(desde, hasta, "1h", None, None, 0, 100)
+    assert total_1h == 1
+
+
+async def test_historial_indicadores_filtra_en_servidor(pool, repo):
+    """El filtro por indicador/moneda es del SQL, no del cliente: sin él, un
+    dashboard paginaría toda la tabla y agotaría su cuota (visto en vivo)."""
+    for nombre, moneda in (
+        ("p2p_brecha_pct_buy", "VES"),
+        ("p2p_spread_pct", "VES"),
+        ("official_rate", "USD"),
+    ):
+        await _sembrar_indicador(pool, nombre, "1.0", currency=moneda)
+    filas, total = await repo.historial_indicadores(
+        AHORA - timedelta(hours=1),
+        AHORA + timedelta(minutes=1),
+        "1h",
+        "p2p_brecha_pct_buy",
+        "VES",
+        0,
+        100,
+    )
+    assert total == 1
+    assert filas[0]["indicator"] == "p2p_brecha_pct_buy"
 
 
 async def test_snapshot_p2p_reciente_decodifica_items(pool, repo):
@@ -138,3 +188,34 @@ async def test_el_pool_del_gateway_es_solo_lectura(repo):
 
 async def test_ping(repo):
     assert await repo.ping() is True
+
+
+async def test_analisis_vigente_toma_la_ultima_revision_y_conserva_los_strings(
+    pool, repo
+):
+    """El codec jsonb ya registrado decodifica el documento sin round-trip por
+    float: los decimales llegan al SPA como el string exacto que se publicó."""
+    for minutos, posicion in ((10, "0.1000"), (1, "0.2996")):
+        await pool.execute(
+            "INSERT INTO indicator_analysis (as_of, currency, triggered_by,"
+            " calc_version, analysis_version, ruleset_version, confidence,"
+            " official_stale, scale_source, payload)"
+            " VALUES ($1, 'VES', gen_random_uuid(), 1, 1, 1, 'normal', false,"
+            " 'percentiles', $2::jsonb)",
+            AHORA - timedelta(minutes=minutos),
+            json.dumps(
+                {
+                    "as_of": (AHORA - timedelta(minutes=minutos)).isoformat(),
+                    "indicators": [{"position": posicion, "value": "13.220000"}],
+                }
+            ),
+        )
+
+    fila = await repo.analisis_vigente("VES")
+
+    assert fila["payload"]["indicators"][0]["position"] == "0.2996"  # la última
+    assert fila["payload"]["indicators"][0]["value"] == "13.220000"  # ceros intactos
+
+
+async def test_analisis_vigente_sin_fila_es_none(pool, repo):
+    assert await repo.analisis_vigente("COP") is None

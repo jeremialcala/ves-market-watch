@@ -1,0 +1,63 @@
+# Config del módulo de análisis de indicadores (RF-6) — CONFIG VERSIONADA EN REPO.
+#
+# Mismo patrón que `senales.v1.yaml`: se carga al arrancar, no se edita en runtime
+# (ASVS V14, A02/A08). Cambiar la ventana, el mínimo de muestras o un dominio de
+# respaldo es un commit auditable; subir `version` corta una nueva definición
+# publicada (viaja en el payload como `analysis_version`).
+#
+# Qué define este archivo: la ESCALA contra la que se lee cada medidor del panel
+# —percentiles reales de la hypertable `indicators` en la ventana— y el respaldo
+# visible cuando todavía no hay historia suficiente.
+#
+# Lo que NO define: el mapeo indicador→reglas. Ese se deriva del ruleset cargado
+# (`senales.v*.yaml`) para que no pueda desincronizarse.
+#
+# Contrato del evento emitido: schemas/analysis.v1.json. Contexto: ADR-0019.
+
+version: 1
+
+# Ventana de historia contra la que se compara cada valor. Viaja en el payload
+# (`scale.window_days`) y la UI la escribe en el pie del medidor.
+ventana_dias: 90
+
+# Filas mínimas en la ventana para que los percentiles se consideren una escala
+# real. Por debajo: respaldo del ruleset, declarado en `scale.source`.
+# ~100 min de captura a 2 snapshots/min (ver ADR-0019, arranque en frío).
+muestras_minimas: 200
+
+# Cortes de la escala. `percentiles` va a la consulta SQL (percentile_disc) y
+# `anclas` son sus coordenadas de dibujo: los dos arrays son paralelos y deben
+# tener la misma longitud (lo verifica `cargar_config_analisis`).
+percentiles: [10, 50, 90]
+anclas: ["0.10", "0.50", "0.90"]
+
+# Los seis medidores del panel del dashboard. `dominio_respaldo` es la ÚNICA
+# constante escrita a mano del sistema: cierra los extremos de la barra cuando
+# no hay percentiles. Aplica solo con `scale.source: ruleset`, viaja en
+# `scale.domain` y NUNCA clasifica (por eso ahí la banda es `unscaled`).
+indicadores:
+  - nombre: p2p_brecha_pct_buy
+    dominio_respaldo: { minimo: "0", maximo: "200" }
+
+  - nombre: p2p_spread_pct
+    dominio_respaldo: { minimo: "-1", maximo: "5" }
+
+  - nombre: p2p_ratio_oferta_demanda
+    dominio_respaldo: { minimo: "0", maximo: "3" }
+
+  - nombre: p2p_momentum_bid_3h_pct
+    dominio_respaldo: { minimo: "-3", maximo: "3" }
+
+  - nombre: p2p_drenaje_oferta_6h_pct
+    dominio_respaldo: { minimo: "-80", maximo: "80" }
+
+  - nombre: p2p_outliers_pct_buy
+    dominio_respaldo: { minimo: "0", maximo: "100" }
+    # Umbral real que no vive en el ruleset de señales: por encima de él la
+    # lectura entera se marca `confidence: low`. Se dibuja como corte en el
+    # respaldo para que la barra no quede sin referencia.
+    # El canario `test_analisis.py` verifica que este 30 sigue coincidiendo con
+    # el del dominio: si alguien cambia uno, el test cae.
+    umbrales_sistema:
+      - { clave: confianza_baja, op: gt, valor: "30",
+          origen: "indicator_engine.domain.calculos.UMBRAL_CONFIANZA_OUTLIERS_PCT" }

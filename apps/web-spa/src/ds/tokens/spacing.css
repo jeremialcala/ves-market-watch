@@ -1,0 +1,30 @@
+/* Higerotech — espaciado y layout. El sitio no usa una escala 4/8 estricta:
+   estos son los valores reales que aparecen en index.html. */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 14px;
+  --space-5: 18px;
+  --space-6: 20px;
+  --space-7: 24px;
+  --space-8: 28px;
+  --space-9: 32px;
+  --space-10: 40px;
+  --space-12: 56px;
+  --space-14: 60px;
+  --space-16: 100px;
+
+  /* Layout */
+  --maxw: 1180px;
+  --container-pad: 24px;
+  --nav-height: 76px;
+  --section-pad-y: 100px;
+  --section-pad-y-sm: 72px;
+  --hero-pad: 104px 0 110px;
+  --cta-pad-y: 96px;
+
+  /* Breakpoints (referencia; CSS custom props no sirven en @media) */
+  --bp-tablet: 980px;
+  --bp-mobile: 560px;
+}

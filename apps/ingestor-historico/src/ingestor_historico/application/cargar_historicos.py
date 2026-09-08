@@ -33,6 +33,7 @@ class ResumenCarga:
     total_filas: int
     insertadas: int
     duplicadas: int  # en el archivo + ya presentes en el repositorio
+    actualizadas: int  # preexistentes con un campo vacío rellenado
     descartadas: dict[str, int]  # motivo → cantidad
     desde: datetime | None
     hasta: datetime | None
@@ -56,6 +57,7 @@ class CargarHistoricos:
         filas: Sequence[dict[str, str]],
         archivo: str,
         tz: tzinfo,
+        rellenar_vacios: bool = False,
     ) -> ResumenCarga:
         if not filas:
             raise FormatoNoSoportado("el archivo no tiene filas de datos")
@@ -80,7 +82,9 @@ class CargarHistoricos:
             snapshots.append(snapshot)
 
         snapshots.sort(key=lambda s: s.capturado_en)
-        persistencia = await self._repositorio.guardar_lote(snapshots, archivo)
+        persistencia = await self._repositorio.guardar_lote(
+            snapshots, archivo, rellenar_vacios
+        )
 
         bancos = sorted({banco for s in snapshots for banco in s.bancos})
         return ResumenCarga(
@@ -88,6 +92,7 @@ class CargarHistoricos:
             total_filas=len(filas),
             insertadas=persistencia.insertados,
             duplicadas=duplicadas_archivo + persistencia.duplicados,
+            actualizadas=persistencia.actualizados,
             descartadas=dict(descartes),
             desde=snapshots[0].capturado_en if snapshots else None,
             hasta=snapshots[-1].capturado_en if snapshots else None,

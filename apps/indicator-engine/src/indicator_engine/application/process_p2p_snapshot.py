@@ -12,9 +12,15 @@ Por cada snapshot (un lado del mercado) produce, en un solo lote atómico:
   al procesar SELL) y drenaje de oferta (6 h, al procesar BUY)
   (knowledge/metrics/microestructura-p2p.md).
 
+Además, por cada revisión se publica el **análisis** (RF-6): la lectura mecánica
+de los medidores del panel contra su propia historia y contra los umbrales del
+ruleset (`application/analizar_revision.py`). Es un evento aparte y opcional —
+un fallo suyo no afecta a indicadores ni señales.
+
 Calidad: con `confianza_baja` (> 30 % outliers) solo se publican la referencia
 y el % de outliers — las señales derivadas se suprimen, nunca en silencio: el
-propio `p2p_outliers_pct` deja el rastro del porqué.
+propio `p2p_outliers_pct` deja el rastro del porqué. El análisis sí se emite,
+marcado `confidence: low` y con la proximidad no evaluable.
 
 Semántica at-least-once idéntica a fase 1: marcar procesado al FINAL; la
 persistencia es idempotente por PK y re-publicar `indicators.updated` es
@@ -24,9 +30,11 @@ preferible a perderlo.
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from decimal import Decimal
 
+from indicator_engine.application.analizar_revision import AnalizarRevision
 from indicator_engine.application.ports import (
     EventPublisher,
     IndicatorRepository,
@@ -41,6 +49,7 @@ from indicator_engine.domain.calculos import (
     calcular_variacion,
 )
 from indicator_engine.domain.models import (
+    MONEDA_OFICIAL_REFERENCIA,
     OFFICIAL_RATE,
     P2P_BRECHA_ABS,
     P2P_BRECHA_PCT,
@@ -48,6 +57,7 @@ from indicator_engine.domain.models import (
     P2P_LIQUIDEZ,
     P2P_MEDIANA,
     P2P_MEJOR_PRECIO,
+    P2P_MEJOR_PRECIO_FILTRADO,
     P2P_MERCHANTS_PCT,
     P2P_MOMENTUM_BID_3H_PCT,
     P2P_OUTLIERS_PCT,
@@ -58,12 +68,26 @@ from indicator_engine.domain.models import (
     nombre_por_lado,
 )
 from indicator_engine.domain.reglas import Ruleset, Senal, evaluar_reglas
+from indicator_engine.domain.vigencia import oficial_rancia
 
 logger = logging.getLogger("indicator_engine")
 
-# La brecha se calcula contra la tasa oficial de esta moneda (par USDT/VES →
-# el proxy oficial es el USD del BCV).
-MONEDA_OFICIAL_REFERENCIA = "USD"
+# `MONEDA_OFICIAL_REFERENCIA` vive en `domain/models.py`: la brecha se calcula
+# contra la tasa oficial de esa moneda (par USDT/VES → el proxy oficial es el USD
+# del BCV), y desde RF-7 la necesita también el análisis de la revisión.
+
+
+@dataclass(frozen=True, slots=True)
+class VistaVigente:
+    """Indicadores considerados vigentes en esta revisión, con el instante al que
+    pertenece cada valor.
+
+    Se calcula UNA vez y la comparten señales y análisis: así la síntesis del
+    panel describe exactamente la misma evaluación que decidió las emisiones.
+    """
+
+    valores: dict[str, Decimal] = field(default_factory=dict)
+    as_of: dict[str, datetime] = field(default_factory=dict)
 
 
 class ProcesarSnapshotP2P:
@@ -72,7 +96,6 @@ class ProcesarSnapshotP2P:
         publisher: EventPublisher,
         repository: IndicatorRepository,
         calc_version: int = 1,
-        umbral_stale: timedelta = timedelta(hours=6),
         ventana_momentum: timedelta = timedelta(hours=3),
         ventana_drenaje: timedelta = timedelta(hours=6),
         # Más viejo que esto, el lado opuesto pertenece a otra época del mercado
@@ -88,17 +111,20 @@ class ProcesarSnapshotP2P:
         # Antigüedad máxima de un indicador para contar como vigente al evaluar
         # reglas: evita disparar señales con microestructura rancia.
         max_age_indicadores: timedelta = timedelta(minutes=20),
+        # Análisis de la revisión (RF-6). None → el motor se comporta
+        # exactamente igual que antes (mismo patrón que `ruleset`).
+        analisis: AnalizarRevision | None = None,
     ) -> None:
         self._publisher = publisher
         self._repository = repository
         self._calc_version = calc_version
-        self._umbral_stale = umbral_stale
         self._ventana_momentum = ventana_momentum
         self._ventana_drenaje = ventana_drenaje
         self._tolerancia_opuesto = tolerancia_lado_opuesto
         self._holgura_ventana = holgura_ventana
         self._ruleset = ruleset
         self._max_age = max_age_indicadores
+        self._analisis = analisis
         self._cooldown = (
             timedelta(minutes=ruleset.cooldown_min) if ruleset else timedelta()
         )
@@ -113,6 +139,14 @@ class ProcesarSnapshotP2P:
             self._indicador(nombre_por_lado(P2P_VWAP, snap.side), snap, referencia.vwap),
             self._indicador(
                 nombre_por_lado(P2P_MEJOR_PRECIO, snap.side), snap, referencia.mejor_precio
+            ),
+            # Va junto al anterior a proposito: la diferencia entre los dos mide
+            # cuanto se separa el escaparate del libro real. En SELL el top of
+            # book estaba marcado como outlier en 103 de 318 snapshots medidos.
+            self._indicador(
+                nombre_por_lado(P2P_MEJOR_PRECIO_FILTRADO, snap.side),
+                snap,
+                referencia.mejor_precio_filtrado,
             ),
             self._indicador(nombre_por_lado(P2P_LIQUIDEZ, snap.side), snap, referencia.liquidez),
             self._indicador(
@@ -144,23 +178,61 @@ class ProcesarSnapshotP2P:
             as_of=snap.capturado_en,
         )
 
+        # La vista vigente se calcula UNA vez y la comparten señales y análisis:
+        # así la síntesis del panel describe la misma evaluación que decidió las
+        # emisiones, no una segunda lectura del estado.
+        vista = (
+            await self._vista_vigente(snap, indicadores)
+            if self._ruleset is not None
+            else VistaVigente()
+        )
+
         # Señales (RF-4): solo con ruleset y confianza suficiente — nunca desde
         # datos low_confidence (el precio degradado ya se publicó marcado arriba).
         senales: list[Senal] = []
         if self._ruleset is not None and not referencia.confianza_baja:
-            senales = await self._evaluar_senales(snap, indicadores)
+            senales = await self._evaluar_senales(snap, vista)
+
+        # Análisis (RF-6): DESPUÉS de las señales, para que `summary.rules_met`
+        # describa la misma evaluación, y ANTES de marcar procesado (misma
+        # semántica at-least-once). Un fallo del análisis no manda el snapshot a
+        # la DLQ ni impide que indicadores y señales queden publicados: es una
+        # lectura del panel, no el cálculo.
+        if self._analisis is not None:
+            try:
+                await self._analisis.ejecutar(
+                    vista=vista.valores,
+                    as_of_por_indicador=vista.as_of,
+                    as_of=snap.capturado_en,
+                    moneda=snap.fiat,
+                    triggered_by=snap.event_id,
+                    calc_version=self._calc_version,
+                    confianza_baja=referencia.confianza_baja,
+                    official_stale=official_stale,
+                )
+            except Exception:
+                logger.exception(
+                    "análisis de la revisión %s fallido; indicadores y señales "
+                    "siguen publicados",
+                    snap.event_id,
+                )
 
         await self._repository.marcar_procesado(snap.event_id, "p2p.snapshot")
         return ResultadoProcesamiento(
             indicadores=indicadores, official_stale=official_stale, senales=senales
         )
 
-    async def _evaluar_senales(self, snap, indicadores) -> list[Senal]:
+    async def _evaluar_senales(self, snap, vista: VistaVigente) -> list[Senal]:
         """Evalúa el ruleset contra los indicadores vigentes y emite las señales
-        que disparan, respetando el cooldown por tipo (dedup, RF-4/A08)."""
-        vista = await self._vista_vigente(snap, indicadores)
+        que disparan, respetando el cooldown por tipo (dedup, RF-4/A08).
+
+        La vista puede ser un superconjunto de lo que el ruleset referencia (el
+        análisis pide más nombres): `evaluar_reglas` solo lee los nombres de sus
+        propias condiciones, así que no cambia nada — fijado con
+        `test_la_vista_ampliada_no_cambia_las_senales_emitidas`.
+        """
         emitidas: list[Senal] = []
-        for disparo in evaluar_reglas(self._ruleset, vista):
+        for disparo in evaluar_reglas(self._ruleset, vista.valores):
             desde = snap.capturado_en - self._cooldown
             if await self._repository.senal_reciente(disparo.tipo, snap.fiat, desde):
                 logger.info(
@@ -188,27 +260,42 @@ class ProcesarSnapshotP2P:
                 )
         return emitidas
 
-    async def _vista_vigente(self, snap, indicadores) -> dict[str, Decimal]:
-        """Valores vigentes de los indicadores que referencia el ruleset: los del
-        lote actual (`as_of` = ahora) más los últimos conocidos aún frescos
-        (≤ `max_age`). Un indicador ausente o rancio no entra — su regla no dispara."""
+    async def _vista_vigente(self, snap, indicadores) -> VistaVigente:
+        """Valores vigentes de los indicadores que referencian el ruleset y el
+        análisis: los del lote actual (`as_of` = ahora) más los últimos conocidos
+        aún frescos (≤ `max_age`). Un indicador ausente o rancio no entra — su
+        regla no dispara y su medidor no publica lectura."""
         referenciados = {
             cond.indicador for regla in self._ruleset.reglas for cond in regla.condiciones
         }
-        del_lote = {i.nombre: i.valor for i in indicadores}
-        vista: dict[str, Decimal] = {}
-        for nombre in referenciados:
+        if self._analisis is not None:
+            referenciados |= self._analisis.nombres_requeridos()
+
+        del_lote = {i.nombre: i for i in indicadores}
+        vista = VistaVigente()
+        for nombre in sorted(referenciados):
             if nombre in del_lote:
-                vista[nombre] = del_lote[nombre]
+                vista.valores[nombre] = del_lote[nombre].valor
+                vista.as_of[nombre] = del_lote[nombre].as_of
                 continue
             ind = await self._repository.ultimo_indicador(nombre, snap.fiat)
             if ind is not None and snap.capturado_en - ind.as_of <= self._max_age:
-                vista[nombre] = ind.valor
+                vista.valores[nombre] = ind.valor
+                vista.as_of[nombre] = ind.as_of
         return vista
 
     async def _agregar_brecha(self, snap, mediana, indicadores) -> bool:
         """Brecha del lado vs la última tasa oficial conocida (as-of, ADR-0009).
-        Retorna la bandera `official_stale` (ADR-0007); sin tasa → True y sin brecha."""
+
+        Retorna `official_stale`, que sale de la **fecha-valor** de la tasa y no
+        de su antigüedad (ADR-0022). Antes se comparaba contra `oficial.as_of`,
+        que es cuándo CAMBIÓ el indicador: como el BCV publica el viernes por la
+        tarde la tasa del lunes, la bandera se encendía todos los fines de
+        semana sobre una tasa perfectamente vigente — y con ella se suprimían la
+        atribución y su prosa.
+
+        Sin tasa → True y sin brecha.
+        """
         oficial = await self._repository.ultimo_indicador(
             OFFICIAL_RATE, MONEDA_OFICIAL_REFERENCIA
         )
@@ -221,7 +308,13 @@ class ProcesarSnapshotP2P:
         indicadores.append(
             self._indicador(nombre_por_lado(P2P_BRECHA_PCT, snap.side), snap, brecha.gap_pct)
         )
-        return snap.capturado_en - oficial.as_of > self._umbral_stale
+        fecha_valor = await self._repository.fecha_valor_oficial(
+            MONEDA_OFICIAL_REFERENCIA
+        )
+        # Contra `capturado_en` del snapshot y no contra el reloj: la vigencia se
+        # juzga en el instante del dato que se está procesando, para que un
+        # reproceso tardío no reescriba la historia con el día de hoy.
+        return oficial_rancia(fecha_valor, snap.capturado_en)
 
     async def _agregar_microestructura(self, snap, referencia, indicadores) -> None:
         """Spread y ratio O/D con el último lado opuesto, solo si está fresco."""

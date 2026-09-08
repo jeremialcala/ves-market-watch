@@ -17,11 +17,27 @@ from fastapi import APIRouter, Depends, Query, Request, Response
 from api_gateway.adapters.http.problem import NoEncontrado
 from api_gateway.domain.errores import ErrorAutenticacion
 from api_gateway.domain.modelos import Usuario
-from api_gateway.domain.paginacion import validar_pagina, validar_rango
+from api_gateway.domain.paginacion import INTERVALOS, validar_pagina, validar_rango
 
 router = APIRouter(prefix="/api/v1")
 
 _MONEDA = Query(default="USD", pattern=r"^[A-Z]{3}$")
+# Los indicadores P2P se persisten bajo el fiat del par (VES), no bajo la
+# pierna oficial (ADR-0014).
+_MONEDA_P2P = Query(default="VES", pattern=r"^[A-Z]{3}$")
+
+# Nombres de indicador y tipos de señal: identificadores internos, no texto
+# libre. Los 25 indicadores y los 2 tipos que existen encajan todos aquí.
+#
+# El patrón no es cosmético. Sin él estos dos parámetros llegaban tal cual a
+# PostgreSQL, y un byte NUL —`?type=%00`, la sonda clásica de inyección— hacía
+# reventar la consulta: **500 en texto plano**, fuera del contrato problem+json
+# y contra el control de «errores uniformes» (V10/A10). `currency` y `side` no
+# se veían afectados porque ya validaban con `pattern` y `Literal`; la asimetría
+# era el defecto. Lo encontró el DAST del 2026-09-06 en `/signals`, y al
+# reproducirlo apareció también en `indicator` de `/indicators/history`, que el
+# escáner no llegó a marcar.
+_NOMBRE_INTERNO = r"^[a-z0-9_]+$"
 
 
 def _protegido(permiso: str):
@@ -33,7 +49,16 @@ def _protegido(permiso: str):
         usuario = await request.app.state.validador.validar(token.strip())
         usuario.exigir(permiso)
         cuota = request.app.state.limitador.consumir(usuario.sub)
-        response.headers.update(cuota.como_headers())
+        cabeceras = cuota.como_headers()
+        response.headers.update(cabeceras)
+        # Y también en `request.state`, para que los manejadores de error las
+        # encuentren: el `Response` de arriba solo llega al cliente cuando el
+        # handler DEVUELVE. Si lanza —un 404 de «sin datos frescos», por
+        # ejemplo—, la respuesta la construye `problem.py` desde cero y estas
+        # cabeceras se perdían, aunque la petición ya hubiera gastado cuota.
+        # Lo destapó el e2e en vivo la primera vez que corrió contra una base
+        # vacía: en desarrollo siempre hay datos y nunca se veía el 404.
+        request.state.cabeceras_cuota = cabeceras
         return usuario
 
     return Depends(dependencia)
@@ -108,16 +133,42 @@ async def historial_indicadores(
     _usuario: Annotated[Usuario, _protegido("read:indicators")],
     desde: datetime = Query(alias="from"),
     hasta: datetime = Query(alias="to"),
-    interval: Literal["5m", "1h", "1d"] = Query(default="1h"),
+    interval: Literal["5m", "15m", "1h", "1d"] = Query(default="1h"),
+    indicator: str | None = Query(
+        default=None, min_length=1, max_length=80, pattern=_NOMBRE_INTERNO
+    ),
+    currency: str | None = Query(default=None, pattern=r"^[A-Z]{3}$"),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=100, ge=1, le=500),
 ) -> dict:
     desde, hasta = _utc(desde), _utc(hasta)
-    validar_rango(desde, hasta)
+    # Con intervalo: el tope son las FILAS que devolvería, no los días. Un año a
+    # `1d` son 365 filas y hasta 2026-09-08 estaba prohibido, mientras que 90
+    # días a `5m` —25.920— pasaba.
+    validar_rango(desde, hasta, INTERVALOS[interval])
     pagina = validar_pagina(page, page_size)
     return await request.app.state.consultas.historial_indicadores.ejecutar(
-        desde, hasta, interval, pagina
+        desde, hasta, interval, pagina, indicator, currency
     )
+
+
+# -- analysis ----------------------------------------------------------------
+
+
+@router.get("/analysis/current")
+async def analisis_vigente(
+    request: Request,
+    # Permiso `read:indicators` REUTILIZADO a propósito: el análisis es la
+    # lectura de esos mismos indicadores. Un `read:analysis` nuevo exigiría
+    # aprovisionarlo en el tenant Auth0 y daría 403 a todo token ya emitido
+    # (decisión registrada en ADR-0019).
+    _usuario: Annotated[Usuario, _protegido("read:indicators")],
+    currency: str = _MONEDA_P2P,
+) -> dict:
+    resultado = await request.app.state.consultas.analisis.ejecutar(currency)
+    if resultado is None:
+        raise NoEncontrado(f"Sin análisis vigente para {currency}.")
+    return resultado
 
 
 # -- market ------------------------------------------------------------------
@@ -144,7 +195,9 @@ async def senales(
     _usuario: Annotated[Usuario, _protegido("read:signals")],
     desde: datetime = Query(alias="from"),
     hasta: datetime = Query(alias="to"),
-    type_: str | None = Query(default=None, alias="type"),
+    type_: str | None = Query(
+        default=None, alias="type", min_length=1, max_length=80, pattern=_NOMBRE_INTERNO
+    ),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=100, ge=1, le=500),
 ) -> dict:

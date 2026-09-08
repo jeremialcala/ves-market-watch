@@ -1,4 +1,4 @@
-# Diseño del Sistema — VES Market Watch
+# Diseño del Sistema — Criterio
 
 - **Estado:** approved (Gate 1, HITL 2026-07-11)
 - **Fecha:** 2026-07-26
@@ -19,7 +19,7 @@ no conoce infraestructura. Comunicación entre servicios **event-driven** vía R
 | Ingesta Oficial | `ingestor-bcv` | Capturar y validar tasa oficial | TasaOficial |
 | Ingesta Histórica | `ingestor-historico` | Cargar históricos externos por lote (batch, sin bus — ADR-0013) | SnapshotHistorico, DatoBanco, VarianzaHistorica |
 | Indicadores | `indicator-engine` | Calcular indicadores y señales | Indicador, Señal, PrecioReferencia, Profundidad |
-| Acceso | `api-gateway` | Validación de tokens (Resource Server), REST, WSS, rate limiting | Usuario, Suscripción |
+| Acceso | `api-gateway` + `web-spa` (capa de presentación, no un contexto nuevo — ADR-0017) | Validación de tokens (Resource Server), REST, WSS, rate limiting; dashboard en el browser | Usuario, Suscripción |
 
 ## Flujo crítico (secuencia)
 
@@ -94,6 +94,7 @@ Ver `docs/02-design/api-contracts.md` (REST + eventos WSS/AMQP).
 | `historical_market_snapshots` | Históricos de precio desde exports externos (detalle por banco en JSONB, ADR-0013) | permanente | ✔ implementada |
 | `p2p_top_of_book` | Mejor precio/volúmenes por snapshot | ≥ 12 meses | planificada |
 | `signals` | Señales emitidas con evidencia | ≥ 12 meses | implementada (RF-4, ADR-0015) |
+| `indicator_analysis` | Análisis de la revisión, payload verbatim en JSONB (banda, escala, proximidad y la lectura del mercado) | 90 días (nativa) | ✔ implementada (RF-6/ADR-0019 · `reading` desde RF-7/ADR-0021) |
 
 Migraciones por servicio en `apps/<servicio>/db/migrations/` (montadas en el init del
 `docker-compose.yml`). Agregados continuos 5 min / 1 h / 1 d para intradía: planificados.

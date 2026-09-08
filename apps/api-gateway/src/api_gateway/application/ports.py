@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from datetime import date, datetime
+from typing import Protocol
 
 from api_gateway.domain.modelos import Usuario
 
@@ -20,6 +21,25 @@ class TokenValidator(ABC):
     @abstractmethod
     def estado(self) -> str:
         """'ok' | 'degraded' — salud del validador para /health (sin llamar a Auth0)."""
+
+    async def precargar(self) -> None:
+        """Prepara lo que necesite antes de la primera validación (best-effort).
+
+        No es abstracto: un validador que no dependa de la red —los dobles de
+        test— no tiene nada que precargar y no debería verse obligado a decirlo.
+        """
+
+
+class AlertNotifier(Protocol):
+    """Canal de alertas de operación — mismo puerto que el indicator-engine.
+
+    El gateway alerta las transiciones del bus: sin bus no hay push WSS y el
+    síntoma para el cliente es «datos que no se mueven», silencioso salvo que
+    alguien mire `/health` a mano.
+    """
+
+    async def alertar(self, mensaje: str) -> None:
+        pass
 
 
 class LecturaRepository(ABC):
@@ -50,10 +70,13 @@ class LecturaRepository(ABC):
         desde: datetime,
         hasta: datetime,
         intervalo: str,
+        indicador: str | None,
+        moneda: str | None,
         offset: int,
         limite: int,
     ) -> tuple[list[dict], int]:
-        """Serie agregada por time_bucket (último valor del bucket), formato largo."""
+        """Serie agregada por time_bucket (último valor del bucket), formato
+        largo; filtros opcionales por indicador canónico y moneda."""
 
     @abstractmethod
     async def snapshot_p2p_reciente(self, side: str) -> dict | None:
@@ -68,6 +91,11 @@ class LecturaRepository(ABC):
         offset: int,
         limite: int,
     ) -> tuple[list[dict], int]: ...
+
+    @abstractmethod
+    async def analisis_vigente(self, currency: str) -> dict | None:
+        """Última revisión de `indicator_analysis` por (currency, as_of DESC):
+        {as_of, payload}. El payload es el documento publicado tal cual (RF-6)."""
 
     @abstractmethod
     async def ping(self) -> bool: ...

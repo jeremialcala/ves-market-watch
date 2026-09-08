@@ -80,3 +80,16 @@ def test_dispersion_normal_de_mercado_agrupado_no_se_marca():
     )]
 
     assert not any(a.outlier for a in etiquetar_outliers(anuncios))
+
+
+def test_mercado_a_precio_cero_no_divide_por_cero():
+    """Degenerado pero alcanzable: si el endpoint devolviera precios en cero
+    —cambio de unidad, campo vacío parseado como 0—, el etiquetado relativo
+    dividiría por la mediana. Se sale antes: sin referencia no hay outlier que
+    declarar, y una excepción aquí tumbaría el ciclo entero.
+    """
+    anuncios = [_anuncio("0", str(i)) for i in range(5)]
+
+    etiquetados = etiquetar_outliers(anuncios, k=3.5)
+
+    assert not any(a.outlier for a in etiquetados)

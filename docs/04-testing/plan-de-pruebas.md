@@ -1,27 +1,39 @@
-# Plan de Pruebas — VES Market Watch
+# Plan de Pruebas — Criterio
 
 - **Fase AI-DLC:** 04-testing
-- **Estado:** draft — para revisión y aprobación (Gate 2)
-- **Alcance:** plataforma completa (5 servicios + RabbitMQ + TimescaleDB + contratos del bus y de API)
-- **Fecha:** 2026-07-26
+- **Estado:** draft — para revisión y aprobación (Gate 3)
+- **Alcance:** plataforma completa (5 servicios + `web-spa` + RabbitMQ + TimescaleDB + contratos del bus y de API)
+- **Fecha:** 2026-07-31
 - **Decisores:** Jeremi Alcalá
 - **Versión:** 0.4.0
 - **Fuentes de verdad:** PRDs en `docs/01-requirements/`, diseño en `docs/02-design/`
   (incl. `threat-model.md` columna «Verificación fase 04-testing»), contratos en `schemas/`
   y `docs/02-design/api-contracts.md`, ADRs en `docs/00-project/adr/`.
 
+> **Renumeración de gates (2026-09-06).** Este documento decía «Gate 2» y era un
+> error de numeración: en AI-DLC la fase 04-testing cierra el **Gate 3**
+> (`tests pasando + DAST limpio + perf dentro de SLOs`), y el **Gate 2** es el de
+> la fase 03-implementation (`SAST limpio + deps verificadas + 80 % cobertura`).
+>
+> **No fue un renombrado:** la lista que este plan llamaba «Gate 2» mezclaba
+> criterios de ambos. La cobertura del 80 % y los controles SAST/SCA/secretos se
+> quedan donde estaban —son Gate 2 y aquí se citan como tal—; lo que se mueve al
+> Gate 3 es la pirámide de pruebas, el DAST y los SLOs. Ver
+> `.ai-dlc/gates/gate-2-implementation.md` y `gate-3-testing.md`.
+
 ## 1. Objetivo
 
 Verificar que la plataforma mide correctamente la brecha entre la tasa oficial **VES/USD (BCV)**
 y el mercado P2P **VES/USDT (Binance)**, que los contratos entre servicios se respetan, y que
-los controles de seguridad priorizados en el threat model (T1–T12) se comportan según diseño.
-El plan sirve como criterio de cierre del **Gate 2** y como guía viva para completar lo pendiente
-(los 5 servicios ya tienen código y suite; queda el e2e autenticado en vivo con token real —
-client M2M, HITL — la suite `security` transversal y el pipeline CI).
+los controles de seguridad priorizados en el threat model (T1–T15) se comportan según diseño.
+El plan sirve como criterio de cierre del **Gate 3** y como guía viva para completar lo pendiente
+(los 5 servicios ya tienen código y suite; el e2e autenticado en vivo con token real
+**quedó cumplido el 2026-08-07** —ver «E2E autenticado en vivo»— y quedan la suite
+`security` transversal y llevarlo al pipeline CI).
 
 ## 2. Estrategia de pruebas
 
-Se mantiene la **pirámide AI-DLC** ya adoptada por los cuatro servicios con código, con cinco niveles.
+Se mantiene la **pirámide AI-DLC** ya adoptada por los cinco servicios con código, con cinco niveles.
 Cada nivel tiene un marcador `pytest` y un requisito de infraestructura explícito para poder
 ejecutar la suite con o sin `docker compose`.
 
@@ -34,7 +46,58 @@ ejecutar la suite con o sin `docker compose`.
 | **security** | Escenarios de abuso de los PRDs y amenazas del threat model | según caso | `security` *(a introducir en api-gateway)* |
 
 Regla transversal (ya vigente): **sin infraestructura, los tests que la requieren hacen `skip`
-elegante con instrucciones**, nunca fallan por ausencia de compose.
+elegante con instrucciones**, nunca fallan por ausencia de compose. La regla vale
+en local y **se invierte en el pipeline**: allí el entorno lo monta el propio
+trabajo, así que su ausencia es un defecto y no una circunstancia (§11).
+
+El front-end (`apps/web-spa`, ADR-0017) replica la pirámide en **vitest**: unit/component/
+contract corren **sin infraestructura por diseño** (MSW + WebSocket mock; fixtures
+`satisfies` los tipos generados del OpenAPI = contrato verificado en compilación, con
+check de frescura de tipos en `npm test`), umbral de cobertura ≥ 80 % de ramas aplicado
+en la config, y el e2e en vivo (`npm run test:e2e:live`) hace skip sin credenciales M2M.
+
+### E2E autenticado en vivo (2026-08-07)
+
+La suite se parte en dos porque los requisitos no son los mismos:
+
+- **Rechazos — sin credenciales, corren siempre que el gateway esté arriba.**
+  REST sin token y con token inventado → 401 con `problem+json` y sin decir qué
+  parte de la validación falló (eso sería un oráculo); `health` sigue público; y
+  **WSS sin token o con token falso cierra con 4401**, no con un 1006 mudo. Son
+  las aserciones de T11 y T15 y hasta ahora **solo existían como unit tests**: en
+  vivo intervienen nginx, el túnel y el proxy, y el `TestClient` de Starlette es
+  in-process —con el fallo del handshake puesto, los unit tests pasaban—.
+- **Camino feliz — requiere el client M2M**: `client_credentials` → REST
+  autenticado → WSS subscribe/ack/ping. **Cumplido el 2026-08-07: 6/6.** Los 30 s
+  que tarda son la espera del ping del gateway, que llega a los 30 —no es lentitud,
+  es el contrato—.
+
+  **El client M2M es una aplicación APARTE de la del SPA.** El primer intento usó
+  el `client_id` del SPA, que es público por diseño —viaja en el bundle y está como
+  valor por defecto en `docker-compose.yml`— y es de tipo *Single Page
+  Application*: Auth0 no le permite el grant `client_credentials`. Hace falta una
+  aplicación *Machine to Machine* propia, con sus credenciales.
+
+**La disponibilidad del gateway se resuelve una vez y las suites usan `skipIf`.**
+La primera versión hacía `if (!arriba) return` en cada test y eso reportaba
+**PASSED con el gateway apagado**: una suite que certifica nada. Comprobado
+apuntando a un puerto muerto —salían cinco en verde—; ahora salen seis «skipped».
+En el pipeline esa misma decisión se invierte con `E2E_LIVE_EXIGIDO=1`, porque
+allí el entorno lo monta el trabajo y su ausencia es un defecto (§11).
+
+**Desde el 2026-08-20 corre en el pipeline** (`e2e-vivo.yml`): los rechazos en
+cada PR, el camino feliz en push a main/develop y en el cron de las 06:00 UTC.
+Sigue haciendo falta la corrida manual contra `criterio-dev` para lo que CI no
+puede montar —nginx y el túnel—.
+
+**Qué tiene que tener el client M2M** (aprovisionado el 2026-08-07 en el
+dashboard de Auth0): una aplicación *Machine to Machine* autorizada para la API
+`https://api.vesmarketwatch/` con los
+**cinco** permisos que el gateway exige —`read:rates`, `read:indicators`,
+`read:signals`, `read:depth`, `stream:events`—. No hay `read:analysis`:
+`/analysis/current` reutiliza `read:indicators` a propósito. Las credenciales
+viajan por entorno (`AUTH0_M2M_CLIENT_ID` / `AUTH0_M2M_CLIENT_SECRET`), nunca al
+repo, y ningún mensaje de error del test las incluye.
 
 ```sh
 python -m pytest -m "not integration and not e2e"   # rápido, sin infraestructura
@@ -48,7 +111,9 @@ tests). Se mide con `pytest --cov --cov-branch` por app y se reporta en el pipel
 ## 3. Entornos y datos de prueba
 
 - **Infra compartida dev/test:** `docker-compose.yml` de la raíz levanta RabbitMQ (5672/15672)
-  y TimescaleDB (5433). Es la misma infra para `integration` y `e2e`.
+  y TimescaleDB (5433) —la misma infra para `integration` y `e2e`— y además las apps
+  (los 3 servicios con daemon, `api-gateway` en 8800 y `web-spa` en 8080), que no hacen
+  falta para correr las suites.
 - **Datos reales congelados:** los fixtures son respuestas reales capturadas en spikes
   (p. ej. `apps/ingestor-binance/tests/fixtures/adv_search_*.json`, spike 2026-07-05; bundle TLS
   del BCV en `apps/ingestor-bcv/certs/`). Se usan para pruebas deterministas sin golpear las
@@ -65,11 +130,12 @@ Estado observado en el repo (conteo de funciones `test_`):
 
 | Servicio | Estado código | Tests actuales | Huecos de prueba |
 |---|---|---|---|
-| `ingestor-bcv` | Implementado | **54** (unit, integration, contract, e2e) | Confirmar cobertura de ramas ≥ 80 %; añadir marcador `security` para escenarios T1 (HTML alterado + tasa fuera de rango) |
-| `ingestor-binance` | Implementado | **48** (unit, integration, contract, e2e) | Igual que arriba; escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local |
-| `indicator-engine` | Fases 1, 2 y señales implementadas (RF-4/RF-5, ADR-0015) | **77** (unit, contract, integration, e2e) | Confirmar cobertura de ramas ≥ 80 %; recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) |
-| `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) | **39** (unit + integración contra TimescaleDB real) | Confirmar cobertura de ramas ≥ 80 % |
-| `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **78** (unit, contract vs. OpenAPI, integration incl. pool read-only, e2e bus→WSS) | e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL); marker `security` dedicado; cobertura ≥ 80 % |
+| `ingestor-bcv` | Implementado | **80** (unit, integration, contract, e2e, `security`) | ~~Cobertura de ramas 76 %~~ **99,36 %** (2026-08-04); ~~añadir marcador `security` para escenarios T1~~ **añadido**: seis casos de HTML alterado en `unit/test_parser_html_alterado.py`, corren con `-m security` |
+| `ingestor-binance` | Implementado | **90** (unit, integration, contract, e2e, `security`) | ~~Cobertura de ramas 75,92 %~~ **99,27 %** (2026-08-04); ~~escenario T7 (429 → circuit breaker) ya en `unit/test_resilience.py`, elevar a `integration` con servidor local~~ **elevado**: `integration/test_client_errores.py` lleva el 429 real por HTTP hasta el breaker y comprueba que el ciclo siguiente **no consulta** |
+| `indicator-engine` | Fases 1, 2, señales (RF-4/RF-5, ADR-0015), análisis de la revisión (RF-6, ADR-0019) y lectura del estado de mercado (RF-7, ADR-0021) | **338** (unit, contract, integration, e2e) | Cobertura de ramas **86 %** (medida 2026-08-04 sobre `src/`); recalibración **HITL** de los umbrales del ruleset (`config/senales.v1.yaml`) y de los dos ejes del régimen (`config/lectura.v1.yaml`); contrastar en vivo la atribución con responsable `oficial` o `ambos` — hace falta un día en que la tasa del BCV cambie de verdad, no solo que esté vigente (ADR-0022 destapó que este hueco se venía describiendo mal: se decía que el fin de semana la suprimía «por diseño», cuando lo que la suprimía era la rancidez mal medida) |
+| `ingestor-historico` | Implementado (batch por demanda, sin bus; ADR-0013) — más el histórico de tasas oficiales del BCV (RF-6) y la brecha derivada del lado venta (RF-7), 2026-08-01 | **138** (unit + integración contra TimescaleDB real, incl. las tablas de los servicios vecinos) | ~~Cobertura de ramas 71,71 %~~ **97,22 %** (2026-08-04); ~~integración del cargador de oficiales contra TimescaleDB real~~ **hecha**: `integration/test_tablas_vecinas.py` prueba contra la base real los dos adaptadores que escriben en `official_rates` e `indicators` |
+| `api-gateway` | **Implementado** (2026-07-26; ADR-0016) | **146** (unit incl. CORS, refresco del JWKS, profundidad sin outliers y supervisión del consumidor AMQP, contract vs. OpenAPI, integration incl. pool read-only y caída del bus, e2e bus→WSS) | ~~e2e autenticado **en vivo** con token real de Auth0 (client M2M — HITL)~~ **cumplido 2026-08-07**: 6/6 con client M2M propio; marker `security` dedicado; cobertura **92,65 %** (2026-08-06) |
+| `web-spa` | **Implementado** (2026-07-27; ADR-0017) | **664** vitest (unit, component, contract `satisfies` + check de frescura de tipos; incl. sistema de diseño, i18n, sellos de demo, panel de medidores y lectura del mercado con dato real en ES/EN, shell responsive, canarios de paleta, punto de corte y cabeceras CSP, y los cinco bloques del Intradía: criterio de selección, histéresis de los cruces, bloque enfrentado, condiciones del ruleset con su línea de disparo en escala, barra de control con su indicador de frescura, formato único de Δ con sus guardas de fuente, catálogo etiqueta/clave en los dos idiomas, tooltip de los sparklines, estado cero con su nota condicionada al dato, canario de tokens de tema y contrato de la tarjeta de métrica, el resumen de cruces repetidos, y el ciclo de reconexión del WSS: 4401 encadenado con backoff y parada, y el contador de reintentos que el handshake NO reinicia; y el Histórico rehecho: capa de referencia, panel de lectura, episodios comparables, historial de reglas sin contador de aciertos, eje X temporal con sus marcas de calendario, tooltip de tres líneas, estados de ventana insuficiente y serie vacía, el ritmo de la vista fijado leyendo la hoja, y el componente único `SerieTemporal` con su recorrido por teclado) — **89,26 % ramas** (umbral 80 % ya aplicado en `vite.config.ts`) | ~~e2e en vivo `npm run test:e2e:live` (client M2M — HITL)~~ **cumplido 2026-08-07** (6/6); checklist con login real (tokens fuera de storage, renovación 15 min) |
 
 > El plan cubre tanto la **consolidación** de lo existente como la **especificación** de los casos
 > que deben acompañar el código pendiente, para que se escriban junto con la implementación (no
@@ -78,6 +144,12 @@ Estado observado en el repo (conteo de funciones `test_`):
 ## 5. Casos de prueba por servicio
 
 Notación: `[U]` unit · `[I]` integration · `[C]` contract · `[E]` e2e · `[S]` security.
+
+> Esta sección detalla los cuatro servicios del **flujo reactivo**. `ingestor-historico`
+> (batch por demanda, sin bus) y `web-spa` (pirámide vitest propia) no tienen subsección
+> de casos: su cobertura vive en la tabla de §4, en la matriz de §8 y en la sección
+> «Tests» del README de cada app (ninguna de las dos tiene `tests/README.md`, a
+> diferencia de los cuatro servicios del flujo).
 
 ### 5.1 ingestor-bcv
 - `[U]` Parser extrae todas las monedas publicadas y la fecha-valor común; descubrimiento dinámico
@@ -119,12 +191,17 @@ Notación: `[U]` unit · `[I]` integration · `[C]` contract · `[E]` e2e · `[S
 - `[I]` Consumidor AMQP real; `[E]` flujo `official.rate.updated` → `indicators.updated`.
 
 **Fase 2 y señales (implementadas y verificadas e2e, 2026-07-22 — RF-4/RF-5, ADR-0015) —
-casos cubiertos por la suite actual (77 tests):**
+casos cubiertos por la suite actual (335 tests):**
 - `[U]` Precio de referencia P2P: **mediana y VWAP** del top-N filtrado por lado — cubierto
   (`unit/test_referencia_p2p.py`).
 - `[U]` **Brecha BCV↔P2P** (abs y %), spreads compra/venta, volúmenes agregados, profundidad por
-  bandas de 0,5 %, variación intradía (apertura VET) — cubierto (`unit/test_calculos.py`,
-  `unit/test_process_p2p_snapshot.py`).
+  bandas de 0,5 % — cubierto (`unit/test_calculos.py`, `unit/test_process_p2p_snapshot.py`).
+- **Variación intradía (apertura VET)**: este plan la daba por cubierta en el motor hasta el
+  2026-07-29; era un error de redacción — no existe ningún cálculo de apertura en
+  `indicator-engine` (ni código ni tests). Hoy se deriva en el **cliente**, sobre las series que
+  ya devuelve `/indicators/history` (`web-spa`: `lib/intradia.ts`, `unit/intradia.test.ts`,
+  `component/intradia.test.tsx`). Persistirla como indicador propio del motor sigue pendiente y
+  exigiría `calc_version` nuevo.
 - `[U/S]` **T2** (filtrado final) — snapshots sintéticos manipulados: filtrado MAD/IQR y marca
   `low_confidence`; los outliers no distorsionan la brecha ni las señales — cubierto.
 - `[U]` Reglas de **señales** configurables (ruleset `config/senales.v1.yaml`: `arranque_alcista`,
@@ -141,7 +218,98 @@ casos cubiertos por la suite actual (77 tests):**
 - `[E]` Flujo `p2p.snapshot` (+ `official.rate.updated`) → `indicators.updated` + `signals.emitted`
   — verificado e2e (2026-07-22).
 
-### 5.4 api-gateway (implementado 2026-07-26 — 78 tests; ✔ = cubierto por la suite)
+**Análisis de la revisión (implementado y verificado e2e, 2026-08-01 — RF-6, ADR-0019):**
+- `[U]` Las cuatro bandas cubren el rango sin huecos, con el **valor exacto en el corte**
+  contando hacia arriba — `unit/test_analisis.py`.
+- `[U]` La escala degrada al respaldo del ruleset por muestras insuficientes, serie
+  constante o **cortes coincidentes**, y la elección viaja en el payload. El último caso
+  es el que destapó el defecto de `p2p_outliers_pct_buy` con datos reales (ver abajo).
+- `[U]` Posición acotada a [0,1], nudos de igual x colapsados sin dividir por cero, y
+  `None` cuando no hay cortes: cero píxeles inventados.
+- `[U]` **Canario**: el `30` de `config/analisis.v1.yaml` es el mismo
+  `UMBRAL_CONFIANZA_OUTLIERS_PCT` de `calculos.py` — si alguien cambia uno, el test cae.
+- `[U]` Config inválida aborta el arranque; desempates (`bloqueada_por`, `closest_rule`)
+  deterministas y documentados en el schema.
+- `[U]` Proximidad k/n: indicador ausente ⇒ regla no evaluable con `value: null`; con
+  `confidence: low` ninguna regla es evaluable; cuando una regla dispara, `completa`
+  coincide con `evaluar_reglas` — `unit/test_reglas.py`.
+- `[U]` Cache de distribuciones con **reloj inyectado** (sin `sleep`): dentro del TTL no
+  reconsulta, vencido refresca, un fallo sirve la entrada vencida y sin cache previa
+  devuelve `{}` (degradación visible) — `unit/test_cache_distribuciones.py`.
+- `[U]` **No-regresión del camino de señales**: la vista ampliada que pide el análisis no
+  cambia las señales emitidas — se comparan lado a lado con y sin análisis.
+- `[U]` Un fallo del análisis no manda el snapshot a la DLQ ni impide publicar
+  indicadores y señales.
+- `[C]` `schemas/analysis.v1.json` validado sobre el evento del **productor real**, con
+  todos los decimales en punto fijo — `contract/test_analysis_event_schema.py`.
+- `[I]` `percentile_disc` devuelve `Decimal` exacto y valores realmente observados; la
+  ventana recorta; un indicador sin filas no aparece — `integration/test_distribuciones_timescale.py`.
+- `[I]` Payload verbatim en `indicator_analysis`, reentrega que no duplica y las
+  revisiones de BUY y SELL del mismo instante conviviendo — `integration/test_analysis_repository.py`.
+- `[E]` Flujo `p2p.snapshot` → `analysis.updated` al bus y a la tabla, con la escala de
+  percentiles reales ejercitada — `e2e/test_flujo_snapshot_a_analisis.py`.
+
+### Lectura del estado de mercado (RF-7, ADR-0021)
+
+- `[U]` Los tres tramos de cada eje con el **valor exacto en el umbral** (el umbral no se
+  cruza a sí mismo), y `None` cuando no hay dato — no «lateral»/«estable», que afirmarían
+  quietud sin saberlo — `unit/test_lectura.py`.
+- `[U]` Régimen `null` con **cualquiera** de los dos ejes sin resolver; los ejes que sí
+  resolvieron se publican igual — `unit/test_lectura.py`.
+- `[U]` Atribución con `Δoficial = 0` (BCV sin publicar en la ventana), con el BCV
+  publicando, en el punto exacto de dominancia, y `None` cuando nada se movió —
+  `unit/test_lectura.py`.
+- `[U]` **Los silencios**: sin atribución con la oficial rancia, sin frase de banda en
+  bandas intermedias o con escala en respaldo, sin proximidad a reglas con confianza
+  baja — `unit/test_lectura.py`.
+- `[U]` 12 mutaciones de config que **abortan el arranque**, incluida
+  `dominancia_minima < 0.5`, que haría que los dos lados «dominaran» a la vez —
+  `unit/test_lectura.py`.
+- `[U]` **La guarda de hueco de captura NO se aplica a `official_rate`**, con su propio
+  test nominal: esa serie se persiste solo al cambiar, así que una fila vieja es meseta y
+  `Δ = 0` es la evidencia que la atribución necesita. Con la guarda puesta, la atribución
+  no se disparaba casi nunca — `unit/test_analizar_revision_lectura.py`.
+- `[C]` El evento **con** `reading` valida contra el schema y el evento **sin** `reading`
+  también: la aditividad es lo que permite desplegar el gateway por delante del motor.
+  Seis variantes rechazadas, entre ellas un claim predictivo fuera del enum y prosa
+  colada en el evento — `contract/test_analysis_event_schema.py`.
+
+### Comparativa contra la historia (RF-7, ampliación 2026-08-01)
+
+- `[U]` La ventana COMPLETA más ancha es la referencia; una ancha pero incompleta no
+  lo es, y sin ninguna completa se afirma `historia_parcial` en su lugar —
+  `unit/test_comparativas.py`.
+- `[U]` Se publican TODAS las ventanas, incompletas incluidas, con su cobertura:
+  filtrarlas escondería el dato que hace honesta la etiqueta del cliente.
+- `[I]` **La media no se inclina hacia el tramo más muestreado.** Sembrado a
+  propósito: 48 h a 40 % con 6 muestras/hora y 48 h a 10 % con 120/hora. La media
+  honesta es 25 %; una media por muestra da 11,4 %. Es exactamente lo que pasó al
+  empalmar el histórico con la serie del motor —
+  `integration/test_distribuciones_timescale.py`.
+- `[I]` Los extremos SÍ son por muestra (un pico de una sola lectura sobrevive), y
+  los contadores son **enteros serializables**: `sum()` sobre `bigint` devuelve
+  `numeric` y ese `Decimal` reventaba el `json.dumps` del payload.
+- `[U]` **Coherencia de presentación**: la cifra que cita la prosa tiene que estar en
+  la tarjeta. Nació de un defecto real —se afirmaba una distancia contra la media
+  mientras se mostraba el máximo— y es la regla que lo impide —
+  `component/descomposicion.test.tsx`.
+
+> **Arranque en frío: comportamiento correcto, no un bug.** En un compose recién
+> levantado `indicators` está vacía, `samples < 200` y **los seis medidores salen en
+> respaldo del ruleset**: cifras reales, pie con el contador de muestras y sin relleno
+> donde no hay cortes. Hacen falta ~100 min de captura (2 snapshots/min) para entrar en
+> régimen de percentiles, y no todos a la vez —los de ventana móvil solo se emiten en su
+> lado—. Para ejercitarlo sin esperar: bajar `muestras_minimas` (es lo que hace el test
+> e2e), correr el `ingestor-historico`, o dejar el compose ~2 h.
+
+> **Lo que solo aparece con datos reales.** El test unitario de bandas pasaba con
+> distribuciones sintéticas bien formadas; fue el compose con 14 039 muestras reales de
+> `p2p_outliers_pct_buy` —casi todas cero, p10 = p50 = p90 = 0— el que mostró un snapshot
+> impecable clasificado `very_high`. La lección para el plan: **una suite verde sobre
+> fixtures no sustituye mirar el payload que sale en vivo**, sobre todo en distribuciones
+> con moda en un extremo.
+
+### 5.4 api-gateway (implementado 2026-07-26 — 108 tests; ✔ = cubierto por la suite)
 - `[U]` ✔ Validación estricta de inputs (fechas, `interval`, `side`, tópicos); políticas de
   **scopes/permisos**; validación del **access token de Auth0** (RS256 vía JWKS; `iss`/`aud`/`exp`)
   con par RSA/JWKS local de test (`tests/soporte_auth.py`). El gateway **no emite** tokens (ADR-0012).
@@ -164,6 +332,12 @@ casos cubiertos por la suite actual (77 tests):**
   (403 con el permiso requerido en el detalle) (escenario negativo 7).
 - `[C]` ✔ Respuestas REST validadas contra **OpenAPI 3.1** (`contract/test_rest_contract.py`);
   eventos push validados contra los schemas canónicos (la AsyncAPI los referencia); errores RFC 7807.
+- `[U/I]` ✔ **Resiliencia del bus** (2026-07-30) — arranque sin broker (el REST sirve y el
+  supervisor reintenta con backoff), alerta única por episodio al caer y al restablecerse,
+  `/health` reporta `broker: down` mientras no hay consumo real, y tras la reconexión la cola
+  efímera, sus bindings y el consumidor se restauran y el push se reanuda
+  (`unit/test_consumidor_reconexion.py`, `integration/test_consumidor_amqp.py`; verificado en
+  vivo con `rabbitmqctl close_connection`).
 - `[E]` ✔ parcial — REST autenticado + evento del bus → push WSS (`e2e/test_flujo_completo.py`,
   token de test). El flujo con **login real** (Auth Code + PKCE → access token de Auth0) queda
   pendiente del client de prueba (HITL).
@@ -187,7 +361,7 @@ los tramos ya están verificados por partes: bus → indicadores/señales (e2e d
 2026-07-22) y bus → REST/WSS del gateway (e2e del gateway, 2026-07-26). Falta encadenarlos
 desde las fuentes vivas en una sola suite raíz.
 
-## 7. Seguridad — trazabilidad a amenazas (T1–T12)
+## 7. Seguridad — trazabilidad a amenazas (T1–T15)
 
 Cada amenaza priorizada del threat model tiene su verificación. Esta tabla es la fuente para el
 cierre de la columna «Verificación fase 04-testing».
@@ -205,7 +379,10 @@ cierre de la columna «Verificación fase 04-testing».
 | T9 | SQL injection en histórico | Queries parametrizadas + validación; **SAST** + tests de inyección | api-gateway `[S]` |
 | T10 | Señales sin trazabilidad | Auditoría end-to-end de una señal; reproducibilidad por `calc_version` | engine `[U/S]`; e2e plataforma |
 | T11 | ID token / token de otra audiencia como bearer | Rechazo por `aud`/`iss` inválidos y firma JWKS → 401 | api-gateway `[U/S]` |
-| T12 | Robo de token en el navegador (XSS) | Token en memoria, vida corta y rotación (revisión en el SPA, fuera de este repo) | SPA (fuera de alcance) |
+| T12 | Robo de token en el navegador (XSS) | Token solo en memoria (`cacheLocation: memory`), vida corta y refresh rotation; CSP del nginx sin `unsafe-inline` | web-spa `[U/S]` (ADR-0017; antes «fuera de este repo») |
+| T13 | Señal emitida sin insumos frescos / con estado stale | Frescura entre lados y `official_stale` propagado a la evidencia | indicator-engine `[U/S]` |
+| T14 | Export CSV malicioso envenena el histórico | Parseo adaptativo con rechazo sin columna de precio, descarte contado y carga idempotente | ingestor-historico `[U/S]`, `[I]` |
+| T15 | Origen web no autorizado consume la API desde el browser | CORS por allowlist (origen permitido con ACAO, ajeno sin ACAO, errores problem+json con ACAO) | api-gateway `[U/S]` |
 
 > **T6 y T8 no son tests de `pytest`** sino **gates del pipeline CI** (secrets scanning y SCA);
 > se listan aquí para que su verificación quede trazada en el mismo plan.
@@ -228,41 +405,433 @@ cierre de la columna «Verificación fase 04-testing».
 | Rate limit + lockout + límites WSS | api-streaming (esc. neg. 2–4) | I/S | api-gateway |
 | Validación de inputs / inyección | api-streaming (esc. neg. 5) | S | api-gateway |
 | Aislamiento entre consumidores | api-streaming (esc. neg. 6) | S | api-gateway |
+| Login PKCE + token solo en memoria + renovación silenciosa | web-spa-dashboard (RF-1) | U/S | web-spa |
+| Dashboard en vivo con push WSS y resync REST por (re)conexión | web-spa-dashboard (RF-2, RF-3) | U/C | web-spa |
+| Histórico ≤ 90 días con paginación transparente | web-spa-dashboard (RF-4) | U/C | web-spa |
+| Honestidad del dato (404 «sin datos», null «—», decimal exacto) | web-spa-dashboard (RF-5) | U | web-spa |
+| Variación intradía vs. apertura del día operativo VET | web-spa-dashboard (RF-7) | U | web-spa |
+| Vista de análisis con sus números reales | web-spa-dashboard (RF-8) | U/C | web-spa |
+| Idioma ES/EN completo y separadores por locale | web-spa-dashboard (RF-9) | U | web-spa |
+| Tema claro/oscuro explícito y recordado | web-spa-dashboard (RF-10) | U | web-spa |
+| Lectura del mercado sin consejo ni pronóstico, en ES/EN | web-spa-dashboard (RF-12) | U/C | web-spa |
+| Histórico de tasas oficiales: columna ASK, escala BsD y procedencia visible | ingesta-historica (RF-6) | U | ingestor-historico |
+| Brecha derivada del lado venta, cortada antes de la serie del motor | ingesta-historica (RF-7) | U | ingestor-historico |
+| Comparativa contra la historia con cobertura declarada | motor-indicadores (RF-7) | U/I/C | indicator-engine |
+| La cifra que cita la prosa está en la tarjeta | web-spa-dashboard (RF-12) | U | web-spa |
+| Sello `demo · sin fuente` en todo bloque sin dato servido | web-spa-dashboard (RF-5 ampliado) | U/S | web-spa |
 
 ## 9. Pruebas no funcionales
 
-- **Rendimiento / carga:** `api-gateway` bajo exceso de cuota (T4) y `indicator-engine` con backlog
-  de eventos (latencia de recálculo aceptable). Herramienta sugerida: `locust`/`k6` contra el
-  gateway; para el bus, generador de eventos sintéticos.
+### SLOs de latencia — medidos el 2026-09-06
+
+Hasta hoy los SLOs estaban **declarados en los PRD y nunca contrastados**: esta
+sección decía «herramienta sugerida: `locust`/`k6`» y ahí se quedó. Sugerida no
+es medida, y el propio plan usa esa distinción como criterio en otros sitios.
+
+| SLO | Origen | Medido | Veredicto |
+|---|---|---|---|
+| REST consultas actuales ≤ **300 ms** (p95) | `api-streaming.md` | **44 ms** (n=300) | ✅ |
+| REST histórico ≤ **2 s** | `api-streaming.md` | **757 ms** (n=90) | ✅ |
+| Ingesta consulta→evento ≤ **5 s** (p95) | `ingesta-binance-p2p.md` | ~~7,16 s~~ → **1,40 s** (ADR-0026) | ✅ |
+| Ciclos completados ≥ **99 %** | `ingesta-binance-p2p.md` | **99,72 %** (n=2.174) | ✅ |
+| Push WSS ≤ **1 s** desde publicación interna | `api-streaming.md` | **11 ms** (n=42) | ✅ |
+
+**REST** — `scripts/medir_slo_rest.py` contra el gateway real con token M2M del
+tenant: 420 peticiones, **todas 200 y ningún 429**, acompasadas a 100/min bajo
+el techo de cuota de 120. Detalle por endpoint:
+
+| Endpoint | n | p50 | p95 | max |
+|---|---:|---:|---:|---:|
+| `/analysis/current` | 60 | 6 ms | 28 ms | 87 ms |
+| `/rates/p2p/current` | 60 | 9 ms | 29 ms | 118 ms |
+| `/market/depth` | 60 | 16 ms | 37 ms | 54 ms |
+| `/rates/official/current` | 60 | 16 ms | 38 ms | 52 ms |
+| `/indicators/current` | 60 | 25 ms | **72 ms** | 160 ms |
+| `/rates/official/history` | 30 | 62 ms | 99 ms | 150 ms |
+| `/signals` | 30 | 31 ms | 51 ms | 59 ms |
+| `/indicators/history` | 30 | 709 ms | **785 ms** | 814 ms |
+
+Los dos SLOs REST se cumplen con holgura, pero conviene anotar dónde está el
+techo: `/indicators/history` consume el **39 % del presupuesto** de 2 s él solo,
+y es el único que se acerca.
+
+**Un hallazgo que no se ve en la latencia final.** Medida por `psql`, la
+consulta de `/indicators/current` tarda ~80 ms y parecía comerse un tercio del
+presupuesto. El `EXPLAIN ANALYZE` la parte en dos: **3,75 ms de ejecución y
+78,39 ms de planificación**, sobre los 41 chunks de `indicators`. El 95 % del
+coste es el planificador, no la consulta. No aparece en el p95 del endpoint
+porque `asyncpg` prepara y cachea las sentencias (`statement_cache_size` por
+defecto, 100), así que se paga una vez por conexión y luego no. **Pero crece con
+el número de chunks**, y `indicators` va por 41 y subiendo (1,4 M filas,
+~1.100/hora). La primera petición tras cada reinicio del gateway lo paga entero,
+y el margen de hoy —44 ms sobre 300— es el que lo hace irrelevante. Vigilar
+cuando la tabla crezca o si se reduce el intervalo de chunk.
+
+**WSS** — `scripts/medir_slo_wss.py`, 126 eventos en 22 minutos con un cliente
+suscrito a los cinco tópicos. La latencia se mide como `t(recepción del frame) −
+occurred_at del sobre`, y `occurred_at` lo pone el productor justo al publicar
+(`indicator_engine/adapters/amqp/publisher.py`), así que el intervalo cubre la
+cadena entera: serialización, RabbitMQ, el consumidor del gateway, el fan-out a
+suscriptores y la red.
+
+| tópico | n | p50 | p95 | max |
+|---|---:|---:|---:|---:|
+| `indicators` | 42 | 8 ms | **11 ms** | 16 ms |
+| `p2p.snapshot` | 42 | 28 ms | 40 ms | 47 ms |
+| `analysis` | 42 | 46 ms | 71 ms | 103 ms |
+| **agregado** | **126** | 28 ms | **58 ms** | 103 ms |
+
+El SLO nombra al indicador, y ese va a **11 ms de p95 contra un techo de 1 s**:
+dos órdenes de magnitud de margen. El más pesado es `analysis`, coherente con
+sus ~8 kB de payload.
+
+**Los dos relojes son el mismo** —productor y medidor sobre el kernel de esta
+máquina—, así que no hay deriva que corregir. Contra un despliegue con el motor
+en otro host, esta medición dejaría de ser válida sin relojes sincronizados.
+
+**Un control de T11 verificado sin querer.** A los 15 minutos el gateway cerró la
+conexión con `4401 token expirado`: la expiración se comprueba sobre la conexión
+**ya establecida**, no solo en el handshake. Es una aserción que no estaba
+escrita en ninguna suite y que aquí se observó desde fuera. El medidor reconecta
+con token nuevo, y esa reconexión queda contada en el informe.
+
+**Ingesta — resuelto el 2026-09-06 por ADR-0026.** Las 10 páginas del top-K
+pasan a pedirse en **lotes concurrentes de 4** en vez de en fila. Medido contra
+el servicio real tras desplegarlo:
+
+| | secuencial (n=4.342, 41 h) | lotes de 4 (n=28, 15 min) |
+|---|---:|---:|
+| p95 consulta→evento | **7,16 s** | **1,40 s** |
+| capturas por encima de 5 s | 34,6 % | **0 %** |
+| ciclo completo, media | 8,47 s | 2,23 s |
+
+**Y sin fricción con la fuente:** 300 respuestas, **todas 200**. Cero 429, cero
+reintentos agotados, cero capturas parciales, y los 200 anuncios íntegros por
+lado.
+
+**La muestra nueva es corta y conviene decirlo:** 28 capturas en 15 minutos
+contra las 4.342 en 41 h de la medición original. La mejora es inequívoca —el
+peor caso observado, 1,41 s, está a un tercio del umbral— pero **el p95 definitivo
+pide una corrida larga**, y sobre todo hay que volver a mirar la tasa de 429 y
+las aperturas del breaker pasados unos días: el riesgo que asume ADR-0026 no se
+manifiesta en quince minutos.
+
+Lo que sigue en pie del análisis anterior, porque explica por qué esto hacía
+falta: el SLO y ADR-0005 se escribieron sin mirarse, y como estaban configurados
+eran incompatibles. La enmienda no relaja el polling educado —**las peticiones
+por minuto son las mismas**, 20 por ciclo contra 40 de presupuesto—; lo único que
+sube es el pico instantáneo, y por eso el lote es 4 y no 10.
+
+**Cómo se midió el incumplimiento original.** Sobre 4.342 capturas reales en
+41 h de log (2026-09-05 01:47 → 2026-09-06 19:06). El log registra el ciclo
+completo, que son los dos lados secuenciales, así que cada lado se deriva:
+`SELL = t(SELL OK) − t(BUY OK)` y `BUY = total − SELL`. Que el intervalo medido
+es el del PRD está comprobado contra el código: `CapturarSnapshot.ejecutar()` va
+de `fetch_ads()` a `publish_p2p_snapshot()`, o sea consulta→evento.
+
+| serie | n | p50 | p95 | p99 | max |
+|---|---:|---:|---:|---:|---:|
+| BUY | 2.171 | 3,31 s | 7,41 s | 7,86 s | 51,77 s |
+| SELL | 2.171 | 2,98 s | 5,89 s | 6,32 s | 56,46 s |
+| **agregado** | **4.342** | 3,15 s | **7,16 s** | — | — |
+
+**El 34,6 % de las capturas supera los 5 s.** La causa está a la vista: **10
+peticiones HTTP secuenciales por lado** (`ROWS_PER_PAGE=20`, top-200), así que la
+latencia es la de Binance multiplicada por diez y ahí vive la cola.
+
+**Esto choca con ADR-0005** («polling P2P educado»). El SLO se escribió antes que
+la decisión de paginar con cortesía y, como están configurados hoy, son
+incompatibles: o se relaja el SLO, o sube `ROWS_PER_PAGE`, o se paralelizan
+páginas —que es justo lo que la ADR quiso evitar—. **Es una decisión de producto
+con una ADR de por medio, no un defecto**, y no debe cerrarse arreglando el
+número que peor quede.
+
+**Lo que estas cifras NO cubren:** miden el gateway en `localhost:8800`. Nginx y
+el túnel de Cloudflare quedan fuera, y el camino del navegador es más largo. Para
+el SLO de la plataforma servida hay que repetir la medición contra el hostname
+público.
+
+- **Rendimiento / carga:** pendiente el escenario de **saturación** —`api-gateway`
+  bajo exceso de cuota (T4) e `indicator-engine` con backlog de eventos—. Lo
+  medido arriba es latencia en régimen normal, que no dice nada de cómo se
+  degrada bajo carga: son dos preguntas distintas y solo una está respondida.
 - **Resiliencia:** caída y recuperación de RabbitMQ y TimescaleDB (reintentos, sin pérdida de
   eventos gracias al sobre con `event_id`); reanudación tras 429 de Binance; BCV caído → `stale`.
 - **Idempotencia y orden:** eventos duplicados y reordenados no corrompen indicadores (T5/T10).
 - **Observabilidad:** logs estructurados por ciclo verificables (RF-6 de ingesta-binance); export
   de métricas queda para fase 05-deployment.
 
-## 10. Criterios de entrada y salida (Gate 2)
+## 10. Criterios de entrada y salida (Gate 3)
 
 **Entrada:**
 - Código de la funcionalidad implementado y revisado.
 - `docker-compose.yml` levanta y las suites `integration`/`e2e` corren en verde localmente.
 
-**Salida (cierre de Gate 2):**
-1. Cobertura de ramas **≥ 80 %** por servicio con código.
+**Salida (cierre de Gate 3):**
+1. Cobertura de ramas **≥ 80 %** por servicio con código. **CUMPLIDO en los seis
+   (2026-08-04).** Llegó a estar sin cumplir en tres: la medición del 2026-08-03
+   se hizo con `--cov` a secas, que mete los propios ficheros de test en el
+   denominador y por tanto inflaba el total. Remedido sobre `src/` —lo que el SPA
+   ya venía haciendo con `include: ["src/**"]`— aparecieron tres por debajo, y se
+   cubrieron:
+
+   **Qué mide cada columna, porque no era lo mismo en las seis filas.** En los
+   cinco servicios Python la cifra que se venía citando es la **combinada** de
+   `coverage` (`percent_covered`: sentencias + ramas sobre `src/`), no las ramas
+   solas; en el SPA, `vitest` sí reporta ramas aparte y es esa la que se cita y la
+   que aplica el umbral de `vite.config.ts`. Se separan aquí para que la
+   comparación entre filas signifique algo. **El criterio de salida se cumple con
+   cualquiera de las dos**: la más baja en ramas puras es 82,71 %.
+
+   | Servicio | Combinada (`src/`) | Ramas solas | ≥ 80 % |
+   |---|---|---|---|
+   | `ingestor-bcv` | 99,36 % | 96,94 % (95/98) | ✔ |
+   | `ingestor-binance` | 99,30 % | 97,30 % (72/74) | ✔ |
+   | `ingestor-historico` | 97,22 % | 93,43 % (185/198) | ✔ |
+   | `api-gateway` | 92,86 % | 84,38 % (135/160) | ✔ |
+   | `web-spa` | 92,87 % | **89,26 %** (1454/1629) | ✔ |
+   | `indicator-engine` | 85,89 % | 82,71 % (311/376) | ✔ |
+
+   Cifras de la propia pipeline (**2026-09-07**, corrida 34076936596 sobre
+   `develop`), no de una ejecución a mano: **el punto 5 de esta lista deja de
+   estar pendiente para la cobertura**.
+
+   **Lo único que se movió a la baja en un mes es la combinada del SPA**, de
+   94,89 % a 92,87 %: el trabajo de Histórico añadió código más deprisa que
+   pruebas. Sus **ramas subieron** (88,13 % → 89,26 %), que es lo que aplica el
+   umbral, y las dos métricas siguen holgadamente sobre el criterio; queda
+   anotado porque una segunda caída seguida ya sería una tendencia y no un
+   desfase. El refactor al componente único de serie (2026-09-06) ya recuperó
+   parte de la caída —la combinada pasó de 92,78 % a 92,87 % y las ramas de
+   88,86 % a 89,26 %—: un solo gráfico probado a fondo cubre lo que antes eran
+   dos a medias.
+
+   La pipeline no impone el 80 % plano a los **cinco servicios Python** sino un
+   **trinquete** en el valor actual de cada uno: el criterio de salida es el 80 %,
+   pero lo que rompe el build es cualquier retroceso desde donde está hoy. El
+   `web-spa` es la excepción y aplica el **80 % de ramas liso** de
+   `vite.config.ts`.
+
+   **El patrón que dejaron los tres:** lo que faltaba no era código de negocio
+   —dominio y aplicación ya iban del 94 % al 100 %— sino el **entrypoint**, el
+   **bucle programado** y, en dos de los tres, la **configuración**. Es decir,
+   todo lo que parece cableado y no lo es: el suelo antimartilleo, la garantía de
+   `--dry-run`, el `finally` que libera conexiones y los fail-fast de arranque. Y
+   en los **tres**, `connect()`/`close()` de los repositorios estaba sin
+   ejercitar por la misma causa: los fixtures de integración reciben el pool ya
+   construido, así que la forma en que el servicio se conecta de verdad no la
+   probaba nadie.
 2. Todos los casos de las secciones 5–7 aplicables al alcance entregado, en verde.
-3. Cada amenaza T1–T12 con su verificación satisfecha (tests o gate de CI).
+   **Cumplido**: 1 456 tests en verde, los seis proyectos, en cada push desde el
+   2026-08-04. Lo que la pipeline no ejecuta es el e2e autenticado en vivo, que
+   depende de credenciales del tenant (punto abierto abajo).
+3. Cada amenaza T1–T15 con su verificación satisfecha (tests o gate de CI).
+   **Casi**: T1, T6, T7 y T9 pasaron a cubiertas el 2026-08-04 (marcadores
+   `security` y gates de CI). **T8 queda parcial** —el SCA corre, pero sin
+   lockfiles ni digests audita un árbol que cambia entre ejecuciones— y T3, T4,
+   T13 conservan partes que son revisión humana, no test.
 4. Contract tests en verde en **productor y consumidor** para cada evento con schema.
-5. Gates de CI: **secrets scanning** (T6) y **SCA** (T8) sin hallazgos por encima del umbral.
+   **Cumplido** y verificado en cada push.
+5. Gates de CI: **secrets scanning** (T6) y **SCA** (T8) sin hallazgos por encima
+   del umbral. **Cumplido con una excepción aceptada**: los tres gates rompen el
+   build y están en verde. El SCA cerró de paso 3 vulnerabilidades `high` que ya
+   estaban en el `web-spa`.
+
+   **Riesgo aceptado (2026-08-06, Jeremi Alcalá) — CVE-2026-59870 en `js-yaml`.**
+   Llega por `openapi-typescript → @redocly/openapi-core → js-yaml@4.x`. Se acepta
+   porque el vector —consumo cuadrático de CPU al resolver `!!omap`— **no es
+   alcanzable aquí**: lo único que ese paquete parsea es
+   `apps/api-gateway/docs/openapi.yaml`, un fichero del repo sin `!!omap` que
+   ningún tercero controla; y es dependencia de desarrollo que genera
+   `types.gen.ts` en build, no entra en el bundle.
+
+   **No se arregla ya porque el arreglo rompe la herramienta.** `js-yaml` solo
+   corrige en 5.x y se probó el override: deja el audit en cero y **revienta el
+   generador** —js-yaml 5 retiró `types.merge` y redocly falla al cargar—. Un gate
+   en verde con la herramienta rota es peor que uno en rojo.
+   `openapi-typescript@7.13.0` ya es la última y fija redocly en 1.34.x.
+
+   ~~**Se retira** cuando `openapi-typescript` publique una versión con
+   `@redocly/openapi-core@2.x`~~ — **retirada el 2026-09-06, en la revisión
+   anotada, y por una vía que la condición escrita no contemplaba.**
+
+   **El aviso decía que no se retroportaría a 4.x, y se retroportó.** Existe
+   `js-yaml@4.3.1` y el rango vulnerable del aviso bajó a `4.0.0 - 4.3.0`;
+   `@redocly/openapi-core@1.34.19` lo fija, y satisface el `^1.34.6` que pide
+   `openapi-typescript@7.13.0`. O sea: **un `npm update` de una transitiva**, sin
+   override, sin js-yaml 5 y sin esperar a redocly 2.x — que a día de hoy sigue
+   sin llegar, porque `openapi-typescript@7.13.0` continúa siendo la última
+   publicada y aún depende de la línea 1.34.
+
+   **La lección es sobre la condición, no sobre el CVE.** Estaba escrita como una
+   sola ruta —«que openapi-typescript suba a redocly 2.x»— y la realidad tomó
+   otra. Quien solo hubiera comprobado la condición literal habría renovado la
+   excepción un mes más con el arreglo ya disponible. Lo que salvó la revisión fue
+   mirar el árbol, no el texto. **Una condición de retirada describe una salida
+   probable, no la única.**
+
+   Comprobado al retirarla: `npm audit` en **0 vulnerabilidades**; `npm run
+   generate:api` da el mismo `types.gen.ts` —la diferencia de 1.304 bytes era
+   exactamente el número de líneas, o sea CRLF→LF del checkout en Windows, y `git
+   diff` sale vacío—; `check:api-types`, `typecheck` y `build` en verde. Y el
+   auditor hizo lo suyo: **falló porque la excepción ya no aplicaba**, que es para
+   lo que se escribió.
 6. Sin tests marcados `xfail`/`skip` salvo los de infraestructura documentados.
+   **Cumplido**: cero `xfail` y cero `skip` incondicionales en el monorepo; los
+   únicos saltos son los de infraestructura ausente, y desde el 2026-08-04 **solo
+   un fallo de conexión** los provoca — antes cualquier error del andamiaje se
+   disfrazaba de «no hay TimescaleDB» y dejaba la suite en verde sin ejecutar.
+
+**Lo que le falta a Gate 3 para cerrarse**, en orden de dependencia:
+
+| Pendiente | Por qué sigue abierto |
+|---|---|
+| ~~Llevar el e2e en vivo **al pipeline**~~ **hecho 2026-08-20** | `e2e-vivo.yml` levanta el gateway con compose en el propio runner (§11). ~~Queda un paso **HITL**: dar de alta `AUTH0_M2M_CLIENT_ID` y `AUTH0_M2M_CLIENT_SECRET`~~ — **hecho el 2026-08-23**, ambos secretos están en *Settings → Secrets → Actions* |
+| ~~**DAST**: no había nada dinámico~~ **hecho 2026-09-06** | `seguridad.yml` suma el job `dast` con ZAP guiado por el OpenAPI, en dos pasadas (§11). Era el hueco real del gate: SAST, SCA y secretos son controles de Gate 2 y ninguno toca una instancia corriendo |
+| ~~Deuda de T8: **lockfiles + imágenes por digest**~~ **cerrada 2026-09-08** | `requirements.lock` con hashes en los cinco servicios, instalado por CI, por las imágenes y por `pip-audit`; y todas las imágenes por digest, incluida `timescaledb:latest-pg16`. Se regeneran con `scripts/regenerar-locks.sh`, dentro de la misma imagen que instala |
+| ~~Deuda de T8: **CVE-2026-59870 (`js-yaml`) aceptado**~~ **retirado 2026-09-06** | El parche SÍ se retroportó a la línea 4 —`js-yaml@4.3.1`, con el rango vulnerable ya en `4.0.0 - 4.3.0`— y `@redocly/openapi-core@1.34.19` lo fija. Bastó `npm update`: sin override, sin js-yaml 5 y sin esperar a redocly 2.x. `npm audit` en 0 |
+| ~~Marcador `security` en `api-gateway`~~ **hecho 2026-09-06** | 17 tests en `tests/security/` con las cargas que un escáner manda de serie. Nacieron de un defecto real: el DAST encontró que `?type=%00` devolvía un **500 en texto plano**, y al reproducirlo salió el mismo fallo en `indicator`. Comprobado que discriminan: 16 fallan si se quita el patrón |
+| Recalibración **HITL** de umbrales (ruleset y régimen) | Decisión humana con datos de producción |
 
 ## 11. Automatización y CI
 
-- **Matriz por app:** cada servicio corre `pytest -m "not integration and not e2e"` en cada push, y
-  la suite completa con `docker compose` en el pipeline de integración.
-- **Gates de seguridad en CI (Gate 2):** SAST (T9), SCA con umbral de severidad (T8), secrets
-  scanning (T6). Imágenes fijadas por digest.
-- **Reporte de cobertura** por servicio publicado como artefacto del pipeline.
+**Implementada el 2026-08-04** en `.github/workflows/` (GitHub Actions; el repo es
+público, así que los minutos son gratis).
+
+- **`ci.yml` — matriz por app:** los cinco servicios Python y el `web-spa`, en
+  paralelo y sin `fail-fast`. Corre la **suite completa, integration y e2e
+  incluidas**, contra TimescaleDB y RabbitMQ como `services:` del trabajo — no
+  hace falta variante de configuración porque los `conftest.py` ya caían a
+  `127.0.0.1:5433` y `:5672`, que es lo que publica el mapeo de puertos. El SPA
+  suma `typecheck`, `lint`, `check:api-types` y `build` (que usa `tsc -b`, más
+  estricto que el typecheck: ya dejó pasar una vez un campo ausente del contrato).
+  Sin filtros por ruta: 1 456 tests son baratos y un filtro mal puesto da verdes
+  vacíos.
+- **`dast.yml` no existe: el DAST vive en `seguridad.yml` (2026-09-06).** Es un
+  control de seguridad y va con los otros tres, aunque sea el único que necesita
+  el gateway **corriendo** y por eso levanta su propio stack con compose.
+
+  **Dos pasadas, porque prueban cosas distintas.** La de **sin token** ejerce el
+  borde de autenticación: con el contrato en la mano, ZAP pide los 8 endpoints y
+  todos deben dar 401. Es T11 y T15 desde fuera del proceso, no con el
+  `TestClient` in-process. La de **con token M2M** ejerce los handlers —inyección
+  por parámetros, abuso de rango, el fuzzing de paginación que este plan llevaba
+  pendiente—. Correr solo la primera daría mucho verde sobre una superficie que
+  nunca se toca.
+
+  **`RATE_LIMIT_PER_MIN: 20000` en el job, y no es aflojar el control.** En la
+  corrida local del 2026-09-06, **24 peticiones de ZAP volvieron 429** y esa parte
+  de la superficie se quedó sin escanear: con la cuota de producción el escaneo
+  se mide a sí mismo. Que el limitador funciona lo prueba el test de T4 en la
+  suite `security`, no este job. *(Dicho sea de paso: ver a ZAP chocar contra el
+  429 es la primera evidencia de T4 frente a una herramienta de ataque real.)*
+
+  **El veredicto lo da `triar_dast.py`, no ZAP.** ZAP corre con `-I` y nunca falla
+  por avisos; el script rompe el build con Medio o Alto, y también con cualquier
+  **Bajo sin declarar** —hay que aceptarlo con su motivo escrito, como las
+  excepciones de `.gitleaks.toml`—. Comprobado que muerde: sale 1 con un hallazgo
+  Alto, 1 con un Bajo nuevo, 1 si no hay informes y 0 con los informes reales.
+
+  **Y hay una guarda contra el verde vacío.** Un scan «autenticado» al que le
+  rebotan los 401 sale en verde: ZAP no sabe que esperábamos entrar. Pasó dos
+  veces montando esto —el `-z` del replacer se ignora en silencio, con y sin el
+  prefijo `-config`— y las dos veces el informe decía 116 PASS, 0 FAIL sobre una
+  superficie intacta. Lo delataban 24 respuestas 401 enterradas entre las alertas
+  informativas. Ahora la cabecera se inyecta por `--hook`, que confirma el alta
+  por la API, y `dast.py` aborta si el informe trae un solo 401.
+
+- **`e2e-vivo.yml` — el gateway y el tenant de verdad (2026-08-20):** un solo
+  trabajo que levanta `api-gateway` con `docker compose up --wait` en el runner
+  —arrastrando timescaledb, que nace con el esquema por los montajes de initdb, y
+  rabbitmq— y corre `npm run test:e2e:live` contra `localhost:8800`.
+
+  **Los disparadores salen de que las dos suites prueban cosas distintas.** Los
+  rechazos prueban CÓDIGO (que el 401 sea 401, que el WSS cierre con 4401) y eso
+  se rompe con un commit: van en **cada PR**. El camino feliz prueba la
+  CONFIGURACIÓN del tenant —que la app M2M exista, con su grant y sus permisos— y
+  eso no se rompe con un commit sino cuando alguien toca el panel de Auth0 un
+  martes cualquiera: va en **push a main/develop y en un cron a las 06:00 UTC**,
+  con el mismo razonamiento que la pasada semanal de `seguridad.yml`. Ponerlo en
+  cada PR lo ejecutaría cuando no hace falta y no lo ejecutaría cuando sí.
+
+  **En CI, «no estaba el entorno» tiene que ser rojo.** Todo el archivo de tests
+  está construido sobre `skipIf`, que es lo correcto en local y se invierte aquí:
+  el job monta el entorno, así que si algo falta —secreto rotado y no
+  actualizado, contenedor que no arrancó— un skip sería verde certificando nada,
+  el mismo fallo que la suite ya tuvo. El job pasa `E2E_LIVE_EXIGIDO=1` fuera de
+  los PR y el test lo convierte en fallo de carga del módulo. Comprobado
+  ejecutándolo en los dos modos de ausencia: sin credenciales y con el gateway
+  apagado, ambos salen en rojo con el motivo escrito.
+
+  **Qué eventos alcanzan el secreto.** Aquí hubo una afirmación equivocada que
+  conviene dejar corregida y no borrada: se escribió que «el secreto no es
+  alcanzable desde ningún evento de PR», y **es falso**. El job inyecta
+  `secrets.*` en el entorno en **todos** los eventos; lo único condicionado es
+  `E2E_LIVE_EXIGIDO`. Lo que de verdad decide es GitHub: un PR de **fork** no
+  recibe secretos —el repo es público—, pero un PR del **propio repositorio sí**.
+  Se comprobó el 2026-08-23, cuando el camino feliz corrió en un PR y falló.
+
+  En la práctica el efecto es bueno: el camino feliz se ejercita en cada PR
+  interno y así apareció el hueco de las cabeceras de cuota en el 404. Pero la
+  garantía que se prometía no era la que da el diseño.
+
+  **Vacío cuenta como ausente**: en Actions un secreto que no existe interpola a
+  **cadena vacía**, no a variable sin definir, y con `=== undefined` un PR de
+  fork habría entrado al camino feliz con credenciales vacías.
+
+  Volcar los logs del gateway al fallar es seguro: `__main__.py` redacta
+  `token=…` de los access logs, y se comprobó sobre logs reales que sale
+  `token=[REDACTADO]`.
+
+  **Lo que este trabajo NO cubre:** nginx y el túnel de Cloudflare. El runner
+  habla con el contenedor a pelo, así que la corrida manual contra
+  `criterio-dev` no desaparece — pasa de ser la única comprobación a ser la del
+  despliegue. Y los `schedule` de GitHub solo disparan desde la rama por defecto,
+  así que el nocturno no empieza hasta que esto llegue a `main`.
+
+- **`seguridad.yml` — los gates de seguridad, rompiendo el build:**
+  - **T6:** `gitleaks` sobre la **historia completa** (`fetch-depth: 0`) — en un
+    repo público, un secreto borrado al commit siguiente sigue ahí. Con
+    `--redact`, para que el hallazgo no sea una segunda fuga en unos logs
+    públicos.
+  - **T8:** `pip-audit` en un venv por servicio (`--skip-editable --strict`) y,
+    en el SPA, `scripts/auditar-npm.mjs` sobre `npm audit --json` con umbral
+    `high`. Umbral de Python: **cero vulnerabilidades conocidas**, con excepciones
+    explícitas si hace falta — más estricto que un corte por severidad, y con
+    mejor rastro de auditoría.
+
+    **Por qué no es `npm audit` pelado.** No sabe de allowlists: o pasa entero o
+    falla entero, y las dos salidas fáciles —bajar el umbral, añadir `--omit=dev`—
+    desactivan el control para todo el árbol de desarrollo. El script solo silencia
+    lo que esté aceptado por escrito en `scripts/npm-audit-excepciones.json`, con
+    su motivo, quien lo acepta y su condición de retirada; resuelve la cadena de
+    `via`, así que aceptar un aviso cubre los paquetes que solo son vulnerables por
+    depender de él, sin pedir una excepción por eslabón.
+
+    **Y falla también cuando una excepción deja de aplicar.** Es la propiedad que
+    impide que se pudra: el día que llegue el arreglo, el gate obliga a borrar la
+    entrada en vez de dejarla cubriendo en silencio lo siguiente que aparezca con
+    el mismo id. Verificado por mutación en los tres estados —sin excepción falla,
+    con excepción muerta falla, con el árbol real pasa—.
+  - **T9:** CodeQL (`security-and-quality`) para Python y TypeScript. **CodeQL por
+    sí solo no rompe el build**: deja una alerta y sigue. Un paso posterior lee el
+    SARIF y falla ante hallazgos de nivel `error` — ese es el umbral de severidad;
+    `warning` y `note` se quedan en la pestaña Security.
+  - Pasada semanal por `schedule`: una dependencia no cambia, pero lo que se
+    **sabe** de ella sí.
+- **Reporte de cobertura** por servicio como artefacto, **también en ejecuciones
+  rojas** — que es cuando hace falta.
+- **Pendiente del control de T8: fijar.** Los cinco servicios Python declaran
+  rangos (`fastapi>=0.111`) sin lockfile, y las imágenes van por tag —incluida
+  `timescale/timescaledb:latest-pg16`, un `latest` moviéndose bajo los tests—. El
+  SCA auditaba lo instalado, que era lo más honesto sin fijar, pero el control
+  dice «lockfiles + SCA + imágenes por digest» y de los tres solo estaba el del
+  medio. **Cerrado el 2026-09-08**: están los tres, y el auditor instala desde el
+  lock, así que el árbol auditado es el que se despliega.
 - **Fuente de convenciones de marcadores:** `[tool.pytest.ini_options]` en cada `pyproject.toml`
-  (`asyncio_mode = "auto"`, marcadores `integration` y `e2e`; añadir `security` en api-gateway).
+  (`asyncio_mode = "auto"`, marcadores `integration` y `e2e`; `security` ya en
+  `ingestor-bcv` —T1, HTML alterado— y en `ingestor-binance` —T7, 429 sostenido—.
+  **Pendiente en `api-gateway`**, que es donde viven T9 y T11.)
 
 ## 12. Riesgos y pendientes
 
@@ -270,11 +839,36 @@ cierre de la columna «Verificación fase 04-testing».
   contract tests del productor en verde (`contract/test_signal_event_schema.py`).
 - **Umbrales de señales (HITL):** los valores iniciales están fijados en `config/senales.v1.yaml`;
   su recalibración requiere decisión humana con datos de producción.
-- ~~`api-gateway` sin código~~ **Resuelto:** implementado 2026-07-26 con 78 tests (§5.4);
+- ~~`api-gateway` sin código~~ **Resuelto:** implementado 2026-07-26 con 90 tests, hoy 108 (§5.4);
   queda el e2e autenticado en vivo (client M2M de prueba — HITL).
 - **Secret store concreto:** definido para fase 05; los tests de rotación (T6) se afinan entonces.
-- **Pipeline CI aún no presente en el repo:** los gates T6/T8 y la matriz de la sección 11 son
-  requisito a materializar como parte de Gate 2.
+- ~~Pipeline CI aún no presente en el repo~~ **Resuelto (2026-08-04):** dos
+  workflows en `.github/workflows/` con la matriz de §11 y los tres gates
+  rompiendo el build. La **deuda del control de T8 quedó cerrada el 2026-09-08**:
+  lockfiles con hashes en los cinco servicios Python e imágenes fijadas por
+  digest, así que el SCA ya no audita lo que se instaló esa vez sino el árbol
+  reproducible que se despliega.
+- ~~Paleta de series del `web-spa` en tema claro~~ **Resuelto (2026-07-31):**
+  las marcas de dato tienen slots propios validados (claro ΔE 8,1 · oscuro
+  ΔE 13,2) y el mapa de calor pasa a rampa secuencial de un tono por tema. La
+  verificación corre **con el validador**, no a ojo, y `tests/unit/paleta.test.ts`
+  fija los valores medidos para que un cambio de color no pase en silencio.
+  Sigue abierto, como asunto de diseño: subir el par del tema oscuro a la banda
+  de luminosidad y al piso de croma (hoy pasa CVD pero queda fuera en esas dos).
+- **La rampa teal del mapa de calor NO pasó por el validador (2026-08-02, rampa
+  sustituida el 2026-08-03).** El script del skill dataviz no está instalado en la
+  máquina donde se hizo el cambio. La rampa vigente es el **teal de marca a cinco
+  alfas** (8, 22, 40, 65 y 100 %), y de ella se midió aparte lo que estaba en
+  juego: contraste sobre la superficie (oscuro 1,19 · 1,66 · 2,53 · 4,25 · 7,85;
+  claro 1,11 · 1,35 · 1,77 · 2,68 · 5,15), monotonía de luminosidad y ΔE2000 del
+  salto teal→coral (14,0 protan). **Su primer escalón queda por debajo del 2:1**
+  que el proyecto exige a una marca sobre su fondo, y se acepta a propósito: en un
+  mapa lo que hay que distinguir es una celda de su **vecina**, no del fondo. Lo
+  que sí quedó indistinguible fue el hueco sin dato (1,06:1 contra la celda más
+  floja), resuelto con **forma** —un filete interior— y no con más color. Los
+  números están en `tests/unit/paleta.test.ts`. **Pendiente:** volver a pasarla por
+  el validador cuando el skill esté disponible — es la misma distancia entre
+  «medido» y «validado» que este apartado existe para no dejar difuminar.
 
 ---
 

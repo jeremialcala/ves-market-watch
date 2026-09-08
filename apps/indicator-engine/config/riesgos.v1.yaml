@@ -1,0 +1,104 @@
+# Config de los riesgos de la vista de Análisis — CONFIG VERSIONADA EN REPO.
+#
+# Mismo patrón que `senales.v1.yaml`, `analisis.v1.yaml` y `lectura.v1.yaml`: se
+# carga al arrancar, no se edita en runtime (ASVS V14, A02/A08). Cambiar un corte
+# es un commit auditable; subir `version` corta una definición nueva, y esa
+# versión viaja en el payload como `risks.version`.
+#
+# Qué define: los cortes que convierten un valor en un NIVEL (`alto`/`medio`/
+# `bajo`). Nada más. El texto de cada riesgo lo redacta el cliente a partir del
+# código, igual que hace con `reading.claims`.
+#
+# Por qué existe este archivo: la vista de Análisis pintaba los cuatro riesgos
+# con niveles escritos a mano en el componente. Un nivel cableado no es que sea
+# impreciso — es que no puede cambiar cuando el mercado cambia, y por eso decía
+# `alto` con el valor real en 60,50 % contra su propio umbral de 80 %
+# (`docs/01-requirements/analisis-comprensivo.md`).
+#
+# Lo que NO define: nada predictivo. Un riesgo describe el presente y el estado
+# de la propia plataforma, no lo que va a pasar.
+
+version: 1
+
+riesgos:
+  # ---------------------------------------------------------------------------
+  # Libro concentrado: qué parte del libro la ponen mesas profesionales.
+  #
+  # Alto significa que un puñado de anunciantes puede vaciar la banda al
+  # retirarse. Se mira el PEOR de los dos lados, no el buy solo: el libro está
+  # concentrado si lo está cualquiera de los dos, y mirar uno escondería la
+  # mitad del riesgo.
+  #
+  # Medido sobre 55.924 minutos de 90 d (peor lado de cada minuto):
+  #   p50 67,00 · p90 79,00 · p95 81,50 · p99 85,50
+  #
+  # 80 es el corte que la tarjeta ya declaraba («Alerta si merchants_pct > 80 %»)
+  # y cae en el p95: dispara el 8,14 % del tiempo. Se conserva a propósito —
+  # mover el umbral para que el nivel cuadre con la redacción sería arreglar el
+  # termómetro en vez de la fiebre.
+  #
+  # 72 cae entre la mediana y el p90 (dispara el 31,75 %): por debajo, el libro
+  # está como está un día cualquiera y llamarlo riesgo sería ruido.
+  - codigo: libro_concentrado
+    tipo: umbral_indicador
+    indicadores: [p2p_merchants_pct_buy, p2p_merchants_pct_sell]
+    peor: mayor
+    alto: "80"
+    medio: "72"
+
+  # ---------------------------------------------------------------------------
+  # Calidad del snapshot: cuánto está trabajando el filtro MAD/IQR.
+  #
+  # 30 NO es un número nuevo: es EXACTAMENTE `UMBRAL_CONFIANZA_OUTLIERS_PCT`
+  # (`domain/calculos.py`), con el que el motor degrada la confianza y suprime
+  # las señales que dependen del precio. Reutilizarlo evita que el producto
+  # tenga dos definiciones de «snapshot malo». Hay un test que ata las dos.
+  #
+  # Medido sobre 59.410 muestras de 90 d (buy): p10 = p50 = p90 = 0,00 ·
+  # p99 3,00 · máx 25,51. La distribución vive en cero, así que 3 —el p99— ya es
+  # cola: por encima, el filtro está trabajando más que un día normal.
+  #
+  # Nota honesta: con un máximo histórico de 25,51 %, el nivel `alto` de este
+  # riesgo NUNCA ha llegado a darse. Se declara igual porque el corte que lo
+  # define ya gobierna la supresión de señales; que no haya disparado es un
+  # hecho sobre el mercado, no una razón para no tener el corte.
+  - codigo: calidad_snapshot
+    tipo: umbral_indicador
+    indicadores: [p2p_outliers_pct_buy, p2p_outliers_pct_sell]
+    peor: mayor
+    alto: "30"
+    medio: "3"
+
+  # ---------------------------------------------------------------------------
+  # Rancidez de la oficial: la brecha se calculó contra una tasa cuya
+  # fecha-valor ya pasó (ADR-0022).
+  #
+  # Binario, no umbral: o el BCV publicó la de hoy o no. Cuando no, TODA la
+  # brecha de esta revisión está medida contra una tasa vencida, así que el
+  # riesgo es alto por definición y no admite gradación.
+  - codigo: oficial_rancia
+    tipo: bandera
+    bandera: official_stale
+    si: alto
+    si_no: bajo
+
+  # ---------------------------------------------------------------------------
+  # Umbrales sin recalibrar: el ruleset en uso nunca se ha recalibrado.
+  #
+  # `senales.v1.yaml` v1 sale de un backtest corto (11–20 jul) y sus resultados
+  # no están en el repo ni en la base. Esto NO se puede medir desde los datos de
+  # una revisión: es un hecho de proceso que un humano mantiene, y por eso vive
+  # en config y no en una consulta.
+  #
+  # `calibrado_hasta_version: 0` significa «ninguna versión del ruleset ha
+  # pasado por recalibración HITL». Al recalibrar y cortar la v2, quien lo haga
+  # sube este número a 2 y el riesgo baja solo.
+  #
+  # Se queda en `medio` y no en `alto` porque el ruleset no está roto: sus
+  # umbrales se eligieron con datos, solo que con pocos. Ver la ficha del
+  # Gate 1, «Sigue abierto: recalibración HITL de los umbrales del ruleset».
+  - codigo: umbrales_sin_recalibrar
+    tipo: calibracion
+    calibrado_hasta_version: 0
+    sin_calibrar: medio
+    calibrado: bajo

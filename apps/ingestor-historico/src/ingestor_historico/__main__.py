@@ -1,8 +1,20 @@
 """Entrypoint: `python -m ingestor_historico <comando>`.
 
-cargar <archivo.csv> [--dry-run] [--tz -04:00]
+cargar <archivo.csv> [--dry-run] [--tz -04:00] [--rellenar-vacios]
     Carga un export histórico en TimescaleDB (idempotente). Con --dry-run
-    parsea y resume sin tocar la base.
+    parsea y resume sin tocar la base. Con --rellenar-vacios, las filas ya
+    cargadas a las que les falte un campo que el export SÍ trae se completan
+    (reparación explícita; nunca sobrescribe un valor existente).
+
+cargar-oficiales <archivo.csv> [--dry-run] [--tz -04:00] [--monedas USD,EUR]
+    Carga el histórico de tasas oficiales del BCV en `official_rates`
+    (idempotente). Sin --monedas carga todas las del export.
+
+derivar-brechas [--dry-run]
+    Deriva la brecha histórica del LADO VENTA (`p2p_brecha_pct_sell`,
+    `p2p_brecha_abs_sell`) cruzando los snapshots cargados con la tasa oficial
+    vigente en cada instante. Se corta ANTES del primer punto que publicó el
+    motor: nunca escribe en el tramo de la serie viva.
 
 stats [--desde ISO] [--hasta ISO] [--por-dia] [--json]
     Varianza histórica del precio (global y por banco) sobre lo cargado.
@@ -18,12 +30,24 @@ from datetime import datetime
 from pathlib import Path
 
 from ingestor_historico.adapters.csv_reader import leer_csv
-from ingestor_historico.adapters.memory import InMemoryRepositorioHistorico
+from ingestor_historico.adapters.memory import (
+    InMemoryRepositorioHistorico,
+    InMemoryRepositorioTasasOficiales,
+)
 from ingestor_historico.application.cargar_historicos import (
     CargarHistoricos,
     ResumenCarga,
 )
+from ingestor_historico.application.cargar_tasas_oficiales import (
+    CargarTasasOficiales,
+    ResumenCargaOficiales,
+)
+from ingestor_historico.application.derivar_brechas import (
+    DerivarBrechas,
+    ResumenDerivacion,
+)
 from ingestor_historico.config import Settings, parse_tz
+from ingestor_historico.domain.brechas import INDICADOR_PCT, MONEDA
 from ingestor_historico.domain.estadisticas import (
     ResumenSerie,
     VarianzaHistorica,
@@ -39,12 +63,48 @@ def _imprimir_resumen_carga(resumen: ResumenCarga) -> None:
     print(f"filas:        {resumen.total_filas}")
     print(f"insertadas:   {resumen.insertadas}")
     print(f"duplicadas:   {resumen.duplicadas}")
+    if resumen.actualizadas:
+        print(f"actualizadas: {resumen.actualizadas} (campos vacios rellenados)")
     for motivo, cantidad in sorted(resumen.descartadas.items()):
         print(f"descartadas:  {cantidad} ({motivo})")
     if resumen.desde and resumen.hasta:
         # Salida ASCII: la consola de Windows puede ser cp1252.
         print(f"rango:        {resumen.desde.isoformat()} -> {resumen.hasta.isoformat()}")
     print(f"bancos:       {', '.join(resumen.bancos) or '-'}")
+
+
+def _imprimir_resumen_oficiales(resumen: ResumenCargaOficiales) -> None:
+    print(f"archivo:      {resumen.archivo}")
+    print(f"filas:        {resumen.total_filas}")
+    print(f"insertadas:   {resumen.insertadas}")
+    print(f"duplicadas:   {resumen.duplicadas}")
+    for motivo, cantidad in sorted(resumen.descartadas.items()):
+        print(f"descartadas:  {cantidad} ({motivo})")
+    if resumen.sin_hora:
+        # No es un detalle menor: esas filas llevan la FECHA real y una hora
+        # que no se sabe. Van marcadas en `source` para que se puedan aislar.
+        print(
+            f"sin hora:     {resumen.sin_hora} "
+            f"(fecha real, hora desconocida -> source='BCV-historico-sin-hora')"
+        )
+    if resumen.desde and resumen.hasta:
+        # Salida ASCII: la consola de Windows puede ser cp1252.
+        print(f"fecha valor:  {resumen.desde.isoformat()} -> {resumen.hasta.isoformat()}")
+    print(f"monedas:      {len(resumen.monedas)} ({', '.join(resumen.monedas) or '-'})")
+
+
+def _imprimir_resumen_derivacion(resumen: ResumenDerivacion) -> None:
+    print(f"puntos:       {resumen.puntos}")
+    print(f"insertadas:   {resumen.insertadas}  (2 indicadores por punto)")
+    print(f"duplicadas:   {resumen.duplicadas}")
+    for motivo, cantidad in sorted(resumen.omitidas.items()):
+        print(f"omitidas:     {cantidad} ({motivo})")
+    if resumen.frontera is not None:
+        print(f"corte:        {resumen.frontera.isoformat()} (arranque de la serie del motor)")
+    else:
+        print("corte:        - (el motor aun no publica esta serie)")
+    if resumen.desde and resumen.hasta:
+        print(f"rango:        {resumen.desde.isoformat()} -> {resumen.hasta.isoformat()}")
 
 
 def _formato_resumen(nombre: str, serie: ResumenSerie) -> str:
@@ -102,11 +162,87 @@ async def _cmd_cargar(args: argparse.Namespace, settings: Settings) -> None:
 
     try:
         resumen = await CargarHistoricos(repositorio).ejecutar(
-            cabeceras, filas, Path(args.archivo).name, tz
+            cabeceras, filas, Path(args.archivo).name, tz, args.rellenar_vacios
         )
         _imprimir_resumen_carga(resumen)
         if args.dry_run:
             print("(dry-run: nada se persistió)")
+    finally:
+        if cerrar:
+            await cerrar()
+
+
+async def _cmd_cargar_oficiales(
+    args: argparse.Namespace, settings: Settings
+) -> None:
+    tz = parse_tz(args.tz or settings.tz_origen)
+    cabeceras, filas = leer_csv(args.archivo)
+    monedas = (
+        frozenset(m.strip().upper() for m in args.monedas.split(",") if m.strip())
+        if args.monedas
+        else None
+    )
+
+    if args.dry_run:
+        repositorio = InMemoryRepositorioTasasOficiales()
+        cerrar = None
+    else:
+        from ingestor_historico.adapters.timescale.tasas_oficiales import (
+            TimescaleRepositorioTasasOficiales,
+        )
+
+        repositorio = await TimescaleRepositorioTasasOficiales.connect(
+            settings.database_url
+        )
+        cerrar = repositorio.close
+
+    try:
+        resumen = await CargarTasasOficiales(repositorio).ejecutar(
+            cabeceras, filas, Path(args.archivo).name, tz, monedas
+        )
+        _imprimir_resumen_oficiales(resumen)
+        if args.dry_run:
+            print("(dry-run: nada se persistio)")
+    finally:
+        if cerrar:
+            await cerrar()
+
+
+async def _cmd_derivar_brechas(
+    args: argparse.Namespace, settings: Settings
+) -> None:
+    if args.dry_run:
+        from ingestor_historico.adapters.memory import InMemoryRepositorioBrechas
+
+        # En seco se leen los puntos reales pero no se escribe: para eso hace
+        # falta el repositorio real como lector.
+        from ingestor_historico.adapters.timescale.brechas import (
+            TimescaleRepositorioBrechas,
+        )
+
+        lector = await TimescaleRepositorioBrechas.connect(settings.database_url)
+        try:
+            frontera = await lector.frontera_serie_viva(INDICADOR_PCT, MONEDA)
+            puntos = await lector.puntos_derivables(frontera)
+        finally:
+            await lector.close()
+        repositorio = InMemoryRepositorioBrechas(puntos, frontera)
+        cerrar = None
+    else:
+        from ingestor_historico.adapters.timescale.brechas import (
+            TimescaleRepositorioBrechas,
+        )
+
+        repositorio = await TimescaleRepositorioBrechas.connect(settings.database_url)
+        cerrar = repositorio.close
+
+    try:
+        resumen = await DerivarBrechas(repositorio).ejecutar(
+            sesgo_medido_pp=args.sesgo, horas_solape=args.horas_solape
+        )
+        _imprimir_resumen_derivacion(resumen)
+        if args.dry_run:
+            print("(dry-run: nada se persistio)")
     finally:
         if cerrar:
             await cerrar()
@@ -168,6 +304,37 @@ def main() -> None:
     p_cargar.add_argument("archivo", help="ruta al export CSV")
     p_cargar.add_argument("--dry-run", action="store_true", help="parsear sin persistir")
     p_cargar.add_argument("--tz", help="zona horaria del export (default TZ_ORIGEN, -04:00)")
+    p_cargar.add_argument(
+        "--rellenar-vacios",
+        action="store_true",
+        help="rellenar campos vacios de filas YA cargadas (reparacion; nunca sobrescribe)",
+    )
+
+    p_oficiales = sub.add_parser(
+        "cargar-oficiales", help="cargar el histórico de tasas oficiales del BCV"
+    )
+    p_oficiales.add_argument("archivo", help="ruta al export CSV (bcv_fx_historico.csv)")
+    p_oficiales.add_argument("--dry-run", action="store_true", help="parsear sin persistir")
+    p_oficiales.add_argument("--tz", help="zona del export (default TZ_ORIGEN, -04:00)")
+    p_oficiales.add_argument(
+        "--monedas", help="lista separada por comas (default: todas las del export)"
+    )
+
+    p_brechas = sub.add_parser(
+        "derivar-brechas", help="derivar la brecha historica del lado venta"
+    )
+    p_brechas.add_argument("--dry-run", action="store_true", help="calcular sin persistir")
+    p_brechas.add_argument(
+        "--sesgo",
+        default="-0.0776",
+        help="sesgo medido vs la serie del motor, en pp (va en metadata)",
+    )
+    p_brechas.add_argument(
+        "--horas-solape",
+        type=int,
+        default=279,
+        help="horas de solape sobre las que se midio el sesgo (va en metadata)",
+    )
 
     p_stats = sub.add_parser("stats", help="varianza histórica de lo cargado")
     p_stats.add_argument("--desde", help="ISO 8601 (con offset), inclusive")
@@ -183,7 +350,13 @@ def main() -> None:
     )
 
     settings = Settings.from_env()
-    comando = _cmd_cargar if args.comando == "cargar" else _cmd_stats
+    comandos = {
+        "cargar": _cmd_cargar,
+        "cargar-oficiales": _cmd_cargar_oficiales,
+        "derivar-brechas": _cmd_derivar_brechas,
+        "stats": _cmd_stats,
+    }
+    comando = comandos[args.comando]
     try:
         asyncio.run(comando(args, settings))
     except KeyboardInterrupt:

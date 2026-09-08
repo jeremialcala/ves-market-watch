@@ -14,6 +14,7 @@ from referencing.jsonschema import DRAFT202012
 
 from tests.conftest import (
     OPENAPI,
+    fila_analisis,
     fila_indicador,
     fila_senal,
     fila_tasa,
@@ -108,6 +109,55 @@ def test_indicadores_con_nulls_cumplen_schema(cliente, repositorio, auth):
     validar_contra("Indicators", r.json())
 
 
+def test_analisis_vigente_cumple_schema(cliente, repositorio, auth):
+    repositorio.analisis["VES"] = fila_analisis()
+    r = cliente.get("/api/v1/analysis/current", headers=auth)
+    assert r.status_code == 200
+    validar_contra("IndicatorAnalysis", r.json())
+
+
+def test_analisis_en_respaldo_de_ruleset_cumple_schema(cliente, repositorio, auth):
+    """La banda `unscaled` y una escala sin percentiles también son contrato."""
+    repositorio.analisis["VES"] = fila_analisis(fuente="ruleset")
+    r = cliente.get("/api/v1/analysis/current", headers=auth)
+    assert r.status_code == 200
+    cuerpo = r.json()
+    validar_contra("IndicatorAnalysis", cuerpo)
+    assert cuerpo["indicators"][0]["band"] == "unscaled"
+
+
+def test_analisis_usa_ves_por_defecto(cliente, repositorio, auth):
+    """Los p2p_* se persisten bajo el fiat del par, no bajo la pierna oficial."""
+    repositorio.analisis["VES"] = fila_analisis()
+    assert cliente.get("/api/v1/analysis/current", headers=auth).status_code == 200
+    # Sin fila para otra moneda: 404, no la de VES por descuido.
+    r = cliente.get(
+        "/api/v1/analysis/current", headers=auth, params={"currency": "COP"}
+    )
+    assert r.status_code == 404
+    validar_contra("Problem", r.json())
+
+
+def test_analisis_reutiliza_el_permiso_de_indicadores(cliente, repositorio):
+    """Decisión consciente (ADR-0019): un `read:analysis` nuevo daría 403 a todo
+    token ya emitido. Con `read:indicators` basta; sin él, 403."""
+    repositorio.analisis["VES"] = fila_analisis()
+    con_permiso = firmar_token(permisos=["read:indicators"])
+    r = cliente.get(
+        "/api/v1/analysis/current",
+        headers={"Authorization": f"Bearer {con_permiso}"},
+    )
+    assert r.status_code == 200
+
+    sin_permiso = firmar_token(permisos=["read:rates"])
+    r = cliente.get(
+        "/api/v1/analysis/current",
+        headers={"Authorization": f"Bearer {sin_permiso}"},
+    )
+    assert r.status_code == 403
+    assert "read:indicators" in r.json()["detail"]
+
+
 def test_historial_indicadores_cumple_schema(cliente, repositorio, auth):
     ahora = datetime.now(UTC)
     repositorio.historial_ind = [
@@ -130,6 +180,77 @@ def test_historial_indicadores_cumple_schema(cliente, repositorio, auth):
     )
     assert r.status_code == 200
     validar_contra("IndicatorHistoryPage", r.json())
+
+
+def test_historial_indicadores_acepta_los_intervalos_del_contrato(
+    cliente, repositorio, auth
+):
+    """Los cuatro del enum entran y cualquier otro se rechaza.
+
+    `15m` se anadio para la barra del intradia; sin esta prueba, quitarlo del
+    `Literal` dejaria la pastilla del medio devolviendo 422 y nadie se enteraria
+    hasta verlo en pantalla.
+    """
+    ahora = datetime.now(UTC)
+    repositorio.historial_ind = []
+    ventana = {
+        "from": (ahora - timedelta(days=1)).isoformat(),
+        "to": ahora.isoformat(),
+    }
+    for intervalo in ("5m", "15m", "1h", "1d"):
+        r = cliente.get(
+            "/api/v1/indicators/history",
+            headers=auth,
+            params={**ventana, "interval": intervalo},
+        )
+        assert r.status_code == 200, intervalo
+        assert r.json()["interval"] == intervalo
+
+    # Fuera del enum: 400 con problem+json, que es lo que dice el contrato para
+    # parametro invalido (no el 422 por defecto de FastAPI).
+    r = cliente.get(
+        "/api/v1/indicators/history",
+        headers=auth,
+        params={**ventana, "interval": "7m"},
+    )
+    assert r.status_code == 400
+    assert r.headers["content-type"].startswith("application/problem+json")
+
+
+def test_historial_indicadores_filtra_por_indicador_y_moneda(
+    cliente, repositorio, auth
+):
+    ahora = datetime.now(UTC)
+    repositorio.historial_ind = [
+        {
+            "as_of": ahora,
+            "indicator": nombre,
+            "currency": moneda,
+            "value": "1.00000000",
+            "calc_version": 1,
+        }
+        for nombre, moneda in (
+            ("p2p_brecha_pct_buy", "VES"),
+            ("p2p_spread_pct", "VES"),
+            ("official_rate", "USD"),
+            ("official_rate", "EUR"),
+        )
+    ]
+    r = cliente.get(
+        "/api/v1/indicators/history",
+        headers=auth,
+        params={
+            "from": (ahora - timedelta(days=1)).isoformat(),
+            "to": (ahora + timedelta(minutes=1)).isoformat(),
+            "indicator": "official_rate",
+            "currency": "EUR",
+        },
+    )
+    assert r.status_code == 200
+    cuerpo = r.json()
+    validar_contra("IndicatorHistoryPage", cuerpo)
+    assert cuerpo["pagination"]["total_items"] == 1
+    assert cuerpo["data"][0]["currency"] == "EUR"
 
 
 def test_profundidad_cumple_schema(cliente, repositorio, auth):

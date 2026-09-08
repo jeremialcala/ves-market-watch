@@ -49,3 +49,62 @@ def test_sin_anuncios_legibles_devuelve_vacio():
 
 def test_precio_no_positivo_se_descarta():
     assert calcular_profundidad([item_crudo("0", "5")], "buy", BAND, 3) == []
+
+
+def test_un_anuncio_marcado_outlier_no_ancla_la_rejilla():
+    """El defecto del 2026-08-06, fijado.
+
+    El ancla es el mejor precio del lado, así que un solo anuncio absurdo
+    desplaza las diez bandas enteras: aquel día el lado venta se anclaba en
+    920,00 —ocho anuncios, 2 983 USDT— mientras el libro real vivía entre 841 y
+    845,5 con ~8,3 M USDT, y las bandas del 0,5 % bajaban hasta 874 sin llegar
+    nunca al mercado. El panel enseñaba diez barras idénticas de 372 USDT: un
+    libro profundo que no existía.
+    """
+    items = [
+        item_crudo("920.00", "372", outlier=True),  # el anuncio manipulado
+        item_crudo("845.00", "1000"),
+        item_crudo("844.00", "2000"),
+        item_crudo("841.00", "3000"),
+    ]
+
+    niveles = calcular_profundidad(items, "sell", BAND, 3)
+
+    # Ancla en 845, no en 920: la primera banda ya toca el libro de verdad.
+    assert Decimal(niveles[0]["price_band"]) == Decimal("840.775")
+    assert niveles[0]["cum_volume"] == "6000"
+
+
+def test_sin_la_marca_no_se_filtra_nada():
+    """Los snapshots anteriores al cambio no llevan veredicto. Suponerles uno que
+    nadie emitió sería inventarlo: se pintan tal cual, como antes."""
+    items = [
+        item_crudo("920.00", "372", outlier=None),
+        item_crudo("845.00", "1000", outlier=None),
+    ]
+
+    niveles = calcular_profundidad(items, "sell", BAND, 1)
+
+    assert Decimal(niveles[0]["price_band"]) == Decimal("915.4")
+    assert niveles[0]["cum_volume"] == "372"
+
+
+def test_un_snapshot_todo_outliers_no_inventa_profundidad():
+    """Sin nada creíble que pintar, lista vacía — nunca una rejilla ficticia."""
+    items = [item_crudo("920.00", "372", outlier=True)]
+
+    assert calcular_profundidad(items, "sell", BAND, 3) == []
+
+
+def test_el_outlier_tampoco_suma_volumen_dentro_de_una_banda():
+    """No basta con no anclar en él: si cayera dentro de una banda seguiría
+    inflando el acumulado, que es la cifra que el panel escribe."""
+    items = [
+        item_crudo("100.00", "10"),
+        item_crudo("100.20", "999", outlier=True),  # dentro de la 1ª banda
+        item_crudo("100.40", "20"),
+    ]
+
+    niveles = calcular_profundidad(items, "buy", BAND, 1)
+
+    assert niveles[0]["cum_volume"] == "30"

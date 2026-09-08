@@ -1,12 +1,12 @@
 ---
 type: OKF Bundle
-title: VES Market Watch — Knowledge Bundle
+title: Criterio — Knowledge Bundle
 description: Contexto curado del proyecto en Open Knowledge Format (OKF v0.1) para consumo por agentes y humanos.
 tags: [okf, contexto, ves, fx]
-timestamp: 2026-07-26T00:00:00Z
+timestamp: 2026-08-01T00:00:00Z
 ---
 
-# VES Market Watch — Knowledge Bundle
+# Criterio — Knowledge Bundle
 
 Plataforma que trackea la brecha entre la tasa oficial VES/USD (BCV) y el mercado P2P
 VES/USDT (Binance), con motor de indicadores y salida REST/WSS. Este bundle es la
@@ -15,7 +15,17 @@ la fuente de verdad (los documentos AI-DLC y el código).
 
 ## Estado del proyecto (resumen vivo)
 
-- Fase AI-DLC: Gates 0 y 1 **aprobados HITL** (2026-07-11); fase 03 en curso.
+- Fase AI-DLC: Gates 0 y 1 **aprobados HITL** (2026-07-11) y Gates **2 y 3**
+  **aprobados HITL el 2026-09-08**, con lo que cierran 03-implementation y
+  04-testing. Ojo con la numeración: se llevó a la canónica el 2026-09-06
+  (03-implementation cierra el Gate 2; 04-testing, el Gate 3). Lo siguiente es
+  la fase 05-deployment y su Gate 4.
+- **La reserva del Gate 3 se resolvió midiendo, no declarando** (2026-09-08): la
+  verificación programada confirmó el p95 de ingesta en 1,44 s sobre 14,9 h, y
+  la fricción que marcó —22 respuestas 429, el 0,13 % de las peticiones— se
+  aceptó por escrito: absorbidas sin pérdida, ciclos al 100,00 % contra el
+  99,72 % previo, y la línea base de «cero 429» era una muestra de 15 minutos
+  donde lo esperable eran 0,4.
 - **Los 5 servicios implementados y verificados en vivo** (2026-07-26):
   [ingestor-bcv](services/ingestor-bcv.md) (multi-moneda, HITL),
   [ingestor-binance](services/ingestor-binance.md) (polling P2P educado),
@@ -25,24 +35,92 @@ la fuente de verdad (los documentos AI-DLC y el código).
   Server Auth0 — puerto 8800 en dev). El pipeline completo fuente → bus →
   indicadores/señales → REST/WSS está operativo; contratos formales en
   `../schemas/` + OpenAPI/AsyncAPI del gateway.
-- Siguiente paso natural: **front-end/SPA del tenant Auth0** (+ client M2M de
-  prueba para el e2e autenticado en vivo) y preparar la fase 04 (Gate 2).
+- **Front-end [web-spa](services/web-spa.md) implementado** (2026-07-27,
+  ADR-0017): dashboard React autenticado vía Auth0 con stream WSS + histórico;
+  CORS por allowlist en el gateway. El tenant está aprovisionado (app SPA y
+  client M2M) desde 2026-07-27.
+- El push WSS del gateway ya **se auto-recupera** ante caídas del bus, con alerta
+  por transición y `/health` honesto (2026-07-30).
+- El `web-spa` viste el **sistema de diseño Higerotech** con tema claro/oscuro e
+  interfaz ES/EN (2026-07-31, ADR-0018); los bloques que la plataforma todavía
+  no calcula van marcados `demo · sin fuente`.
+- **El panel de medidores dejó de ser demo** (2026-08-01, ADR-0019): el motor
+  publica por revisión la [lectura de cada
+  indicador](metrics/lectura-de-indicadores.md) —banda dentro de los percentiles
+  reales de su ventana de 90 días y proximidad a las reglas del ruleset— vía
+  [analysis.updated](events/analysis-updated.md), `GET /api/v1/analysis/current`
+  y el tópico WSS `analysis`. Es descripción del presente, no pronóstico.
+- **La tarjeta de régimen dejó de ser maqueta** (2026-08-01, ADR-0021): el motor
+  publica además la [lectura del mercado como un todo](metrics/lectura-de-mercado.md)
+  en el campo `reading` del mismo evento — régimen de dos ejes con umbrales
+  versionados y la **atribución** de qué lado movió la brecha, sobre la identidad
+  exacta `Δbrecha = Δparalelo − Δoficial`. Describe el presente en lenguaje llano;
+  no aconseja ni pronostica, y hay tests que lo defienden. El SPA baja de 3 sellos
+  demo a 2.
+- **La vista de Análisis se disolvió** (2026-09-07): la barra baja a tres
+  pestañas —Dashboard, Intradía, Histórico—. No se retiró su contenido sino la
+  pestaña: la presión de liquidez se monta junto a la profundidad y los riesgos
+  cierran el dashboard. RF-8 queda **absorbido en RF-2**, no retirado.
+- **No queda ningún sello demo** (2026-09-07): los **riesgos** pasaron a dato
+  servido —cortes en `riesgos.v1.yaml`, bloque `risks` del mismo evento— y los
+  **escenarios se retiraron**. Los dos casos no son el mismo: los riesgos ya
+  eran medibles y solo faltaba declarar los cortes; los escenarios **no se
+  pueden construir**, porque el régimen sobre el que condicionaban dura menos de
+  una hora contra un horizonte de 72 h. Determinación completa en
+  `../docs/01-requirements/analisis-comprensivo.md`.
+- **Login sin fricción, verificado en vivo** (2026-08-01, ADR-0020): dominio
+  propio `auth.higerotech.com` + desarrollo por túneles de Cloudflare. Entrar es
+  un redirect silencioso sin clics y la sesión sobrevive al F5, con los tokens
+  **solo en memoria** (T12 intacto).
+- **La tasa oficial rige por fecha valor, no por antigüedad** (2026-08-02,
+  ADR-0022): el BCV publica por la tarde la tasa del siguiente día hábil, así que
+  medir rancidez en horas marcaba `official_stale` tres días de cada semana sobre
+  una tasa vigente —y con esa bandera el motor suprime la atribución—. La regla es
+  transversal: motor y gateway.
+- **Una medición y una afirmación no comparten condición de publicación**
+  (2026-08-02, ADR-0023): las dos deltas del movimiento salen del claim de
+  atribución al campo `gap_legs` y se publican siempre; la atribución sigue
+  callándose cuando no hay nada que atribuir.
+- **El producto se llama Criterio** (2026-08-03, ADR-0024): cambian las etiquetas
+  —incluidas las tres del tenant de Auth0—, no los identificadores. El `audience`
+  conserva `vesmarketwatch` porque es una clave, no un nombre pendiente.
+- **La plataforma tiene CI desde el 2026-08-04**: dos workflows en
+  `.github/workflows/` con la suite completa de los seis proyectos —integration y
+  e2e incluidas, contra Timescale y RabbitMQ reales— y los tres gates de seguridad
+  **rompiendo el build** en vez de avisando (T6 gitleaks, T8 SCA, T9 CodeQL con
+  umbral sobre el SARIF, y **DAST con ZAP** contra el gateway real —T4/T9/T11—
+  desde el 2026-09-06, que encontró y cerró un 500 con byte NUL en query).
+- **Cobertura de ramas ≥ 80 % en los seis servicios** (remedida 2026-09-07; la
+  más baja sigue siendo 82,71 % en `indicator-engine`), el criterio de
+  salida 1 de Gate 2. Llegó a estar sin cumplir en tres: se había medido con
+  `--cov` a secas, que mete los ficheros de test en el denominador. Lo que faltaba
+  cubrir no era código de negocio sino entrypoints, bucles programados y
+  configuración — todo lo que **parece cableado y no lo es**.
+- **Los cinco SLO declarados están medidos y los cinco se cumplen** (2026-09-06).
+  El de ingesta era el que bloqueaba: 7,16 s contra un techo de 5 s, resuelto con
+  ADR-0026 —paginación en lotes concurrentes, sin subir las peticiones por
+  minuto— hasta **1,40 s** y cero 429.
+- Siguiente paso natural: decidir la topología de despliegue real (los túneles
+  son de desarrollo) y firmar los Gates 2 y 3. La deuda que sigue abierta es la de
+  T8, **cerrada el 2026-09-08**: lockfiles con hashes en los cinco servicios
+  Python —instalados por CI, por las imágenes y por `pip-audit`— e imágenes
+  fijadas por digest.
 - Historia de cambios: [log.md](log.md) y `../CHANGELOG.md`.
 
 ## Mapa del bundle
 
 | Sección | Contenido |
 |---|---|
-| [services/](services/index.md) | Los 5 servicios de la plataforma y su estado |
+| [services/](services/index.md) | Las 6 apps (5 servicios + `web-spa`) y su estado |
 | [events/](events/index.md) | Eventos AMQP del bus `market.events` |
 | [tables/](tables/index.md) | Tablas TimescaleDB (implementadas y planificadas) |
 | [metrics/](metrics/index.md) | Indicadores financieros que produce la plataforma |
 
 ## Fuentes de verdad (fuera del bundle)
 
-- Requisitos: `../docs/01-requirements/` (5 PRDs con escenarios de abuso y ASVS).
+- Requisitos: `../docs/01-requirements/` (6 PRDs con escenarios de abuso y ASVS).
 - Diseño: `../docs/02-design/` (arquitectura, threat model STRIDE/DREAD, contratos API).
-- Decisiones: `../docs/00-project/adr/` (ADR-0001…0015; una decisión = una ADR).
+- Decisiones: `../docs/00-project/adr/` (ADR-0001…0026; una decisión = una ADR).
 - Gates: `../.ai-dlc/gates/`.
 
 ## Convenciones del bundle

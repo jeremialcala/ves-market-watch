@@ -30,10 +30,11 @@ class Settings:
     # HTTP.
     http_host: str
     http_port: int
+    # CORS: orígenes browser permitidos (allowlist — el SPA en dev y en nginx).
+    allowed_origins: tuple[str, ...]
     # Rate limiting por token (ventana fija de 60 s).
     rate_limit_per_min: int
     # Frescura de la tasa oficial (ADR-0007: 6 h).
-    stale_threshold_hours: int
     # Antigüedad máx. (min) de los indicadores P2P para servirse como vigentes.
     p2p_frescura_min: int
     # Límites WSS (PRD api-streaming / api-contracts).
@@ -47,7 +48,7 @@ class Settings:
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> "Settings":
         env = dict(os.environ if env is None else env)
-        issuer = env.get("AUTH0_ISSUER", "https://dev-higerotech.us.auth0.com/")
+        issuer = env.get("AUTH0_ISSUER", "https://auth.higerotech.com/")
         return cls(
             auth0_issuer=issuer,
             auth0_audience=env.get("AUTH0_AUDIENCE", "https://api.vesmarketwatch/"),
@@ -61,8 +62,14 @@ class Settings:
             schemas_dir=env.get("SCHEMAS_DIR", str(SCHEMAS_POR_DEFECTO)),
             http_host=env.get("HTTP_HOST", "127.0.0.1"),
             http_port=int(env.get("HTTP_PORT", "8000")),
+            allowed_origins=tuple(
+                origen.strip()
+                for origen in env.get(
+                    "ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:8080"
+                ).split(",")
+                if origen.strip()
+            ),
             rate_limit_per_min=int(env.get("RATE_LIMIT_PER_MIN", "120")),
-            stale_threshold_hours=int(env.get("STALE_THRESHOLD_HOURS", "6")),
             p2p_frescura_min=int(env.get("P2P_FRESCURA_MIN", "20")),
             wss_max_conexiones=int(env.get("WSS_MAX_CONEXIONES", "5")),
             wss_max_suscripciones=int(env.get("WSS_MAX_SUSCRIPCIONES", "10")),

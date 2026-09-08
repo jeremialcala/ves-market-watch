@@ -1,0 +1,10 @@
+/* Sistema de diseño Higerotech — punto de entrada único.
+   Importado desde `src/index.css`; el orden importa: theme-light va al final
+   porque reasigna los mismos tokens bajo [data-theme="light"]. */
+@import url("tokens/fonts.css");
+@import url("tokens/colors.css");
+@import url("tokens/typography.css");
+@import url("tokens/spacing.css");
+@import url("tokens/effects.css");
+@import url("tokens/base.css");
+@import url("tokens/theme-light.css");

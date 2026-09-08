@@ -116,8 +116,15 @@ class CapturarSnapshot:
 
         # El crudo se persiste minimizado: sin alias ni identificadores crudos
         # del anunciante — solo el pseudónimo merchant_ref (ADR-0011).
+        # El veredicto de outlier viaja CON el crudo: quien lo lea después —la
+        # profundidad del gateway— no tiene por qué reimplementar el filtro MAD.
         await self._repository.guardar_crudo(
-            snapshot, minimizar_crudo(captura.anuncios_crudos, self._pseudonimizador)
+            snapshot,
+            minimizar_crudo(
+                captura.anuncios_crudos,
+                self._pseudonimizador,
+                [a.adv_no for a in anuncios if a.outlier],
+            ),
         )
         await self._publisher.publish_p2p_snapshot(snapshot)
 

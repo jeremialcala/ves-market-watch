@@ -17,11 +17,23 @@ import yaml
 from indicator_engine.adapters.amqp.consumer import ConsumidorMarketEvents
 from indicator_engine.adapters.amqp.publisher import AmqpEventPublisher
 from indicator_engine.adapters.memory import LoggingAlertNotifier
-from indicator_engine.adapters.timescale.repository import TimescaleIndicatorRepository
+from indicator_engine.adapters.timescale.distribuciones import DistribucionesConTTL
+from indicator_engine.adapters.timescale.repository import (
+    TimescaleDistribucionRepository,
+    TimescaleIndicatorRepository,
+)
+from indicator_engine.application.analizar_revision import AnalizarRevision
 from indicator_engine.application.contracts import ValidadorDeContratos
 from indicator_engine.application.process_official_rate import ProcesarTasaOficial
 from indicator_engine.application.process_p2p_snapshot import ProcesarSnapshotP2P
 from indicator_engine.config import Settings
+from indicator_engine.domain.analisis import ConfigAnalisis, cargar_config_analisis
+from indicator_engine.domain.comparativas import (
+    ConfigComparativas,
+    cargar_config_comparativas,
+)
+from indicator_engine.domain.lectura import ConfigLectura, cargar_config_lectura
+from indicator_engine.domain.riesgos import ConfigRiesgos, cargar_config_riesgos
 from indicator_engine.domain.reglas import Ruleset, cargar_ruleset
 
 logger = logging.getLogger("indicator_engine")
@@ -46,23 +58,132 @@ def _cargar_ruleset(path_str: str) -> Ruleset | None:
     return ruleset
 
 
+def _cargar_config_analisis(path_str: str) -> ConfigAnalisis | None:
+    """Carga la config del análisis de la revisión (RF-6). Sin archivo → análisis
+    deshabilitado (el resto del motor funciona igual). Una config mal formada
+    aborta el arranque: mejor no arrancar que publicar escalas inventadas."""
+    path = Path(path_str)
+    if not path.exists():
+        logger.warning("sin config de análisis en %s; análisis deshabilitado", path)
+        return None
+    config = cargar_config_analisis(yaml.safe_load(path.read_text(encoding="utf-8")))
+    logger.info(
+        "config de análisis v%d cargada (%d medidores, ventana %d d, mínimo %d muestras)",
+        config.version,
+        len(config.indicadores),
+        config.ventana_dias,
+        config.muestras_minimas,
+    )
+    return config
+
+
+def _cargar_config_comparativas(path_str: str) -> ConfigComparativas | None:
+    """Carga el bloque `comparativas` de la config de lectura (RF-7).
+
+    Ausente ⇒ la lectura se publica sin la comparativa historica: es aditiva y el
+    resto del analisis no depende de ella. Presente pero mal formada ⇒ el motor
+    NO arranca, mismo criterio que el resto de configs versionadas: una ventana
+    mal declarada produciria comparativas plausibles y falsas.
+    """
+    path = Path(path_str)
+    if not path.exists():
+        return None
+    bloque = (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("comparativas")
+    if bloque is None:
+        logger.warning("config de lectura sin bloque `comparativas`; sin historia")
+        return None
+    config = cargar_config_comparativas(bloque)
+    logger.info(
+        "comparativas cargadas: ventanas %s d, cobertura minima %s, desvio %s",
+        list(config.ventanas_dias),
+        config.cobertura_minima,
+        config.umbral_desvio,
+    )
+    return config
+
+
+def _cargar_config_lectura(path_str: str) -> ConfigLectura | None:
+    """Carga la config de la lectura del mercado (RF-7). Sin archivo, el analisis
+    se publica igual pero sin `reading`: el panel de medidores no depende de
+    esto. Una config mal formada aborta el arranque — un regimen plausible y
+    falso es peor que ninguno."""
+    path = Path(path_str)
+    if not path.exists():
+        logger.warning("sin config de lectura en %s; se publica sin `reading`", path)
+        return None
+    config = cargar_config_lectura(yaml.safe_load(path.read_text(encoding="utf-8")))
+    logger.info(
+        "config de lectura v%d cargada (ventana %d h, umbrales mov %s / brecha %s)",
+        config.version,
+        config.ventana_horas,
+        config.umbral_movimiento,
+        config.umbral_brecha,
+    )
+    return config
+
+
+def _cargar_config_riesgos(path_str: str) -> ConfigRiesgos | None:
+    """Carga los cortes de nivel de los riesgos. Sin archivo, el analisis se
+    publica igual pero sin `risks` — el resto de la vista no depende de esto.
+    Una config mal formada aborta el arranque: un panel de riesgos que dice
+    `bajo` sin dato detras tranquiliza, que es el peor error posible aqui."""
+    path = Path(path_str)
+    if not path.exists():
+        logger.warning("sin config de riesgos en %s; se publica sin `risks`", path)
+        return None
+    config = cargar_config_riesgos(yaml.safe_load(path.read_text(encoding="utf-8")))
+    logger.info(
+        "config de riesgos v%d cargada (%d riesgo(s): %s)",
+        config.version,
+        len(config.riesgos),
+        ", ".join(r.codigo for r in config.riesgos),
+    )
+    return config
+
+
 async def run(settings: Settings, drain: bool) -> None:
     repository = await TimescaleIndicatorRepository.connect(settings.database_url)
     publisher = AmqpEventPublisher(settings.amqp_url, settings.amqp_exchange)
     ruleset = _cargar_ruleset(settings.signals_ruleset_path)
+    config_analisis = _cargar_config_analisis(settings.analysis_config_path)
+    config_lectura = _cargar_config_lectura(settings.reading_config_path)
+    config_comparativas = _cargar_config_comparativas(settings.reading_config_path)
+    config_riesgos = _cargar_config_riesgos(settings.risks_config_path)
+
+    analisis: AnalizarRevision | None = None
+    if config_analisis is not None and ruleset is not None:
+        analisis = AnalizarRevision(
+            config=config_analisis,
+            ruleset=ruleset,
+            distribuciones=DistribucionesConTTL(
+                TimescaleDistribucionRepository(repository.pool),
+                ttl=timedelta(minutes=settings.analysis_cache_ttl_min),
+                timeout_s=settings.analysis_query_timeout_s,
+            ),
+            repository=repository,
+            publisher=publisher,
+            config_lectura=config_lectura,
+            config_comparativas=config_comparativas,
+            config_riesgos=config_riesgos,
+        )
+    elif config_analisis is not None:
+        # El análisis mide proximidad a las reglas y publica `ruleset_version`:
+        # sin ruleset no hay nada real que publicar, y inventar una versión sería
+        # peor que no emitir.
+        logger.warning("config de análisis sin ruleset de señales; análisis deshabilitado")
+
     procesador = ProcesarTasaOficial(
         publisher=publisher,
         repository=repository,
         calc_version=settings.calc_version,
-        umbral_stale=timedelta(hours=settings.stale_threshold_hours),
     )
     procesador_p2p = ProcesarSnapshotP2P(
         publisher=publisher,
         repository=repository,
         calc_version=settings.calc_version,
-        umbral_stale=timedelta(hours=settings.stale_threshold_hours),
         ruleset=ruleset,
         max_age_indicadores=timedelta(minutes=settings.signals_max_age_min),
+        analisis=analisis,
     )
     consumidor = ConsumidorMarketEvents(
         amqp_url=settings.amqp_url,

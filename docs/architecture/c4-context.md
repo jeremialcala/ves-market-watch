@@ -1,21 +1,21 @@
 # C4 — Diagrama de Contexto
 
 - **Estado:** approved (Gate 1, HITL 2026-07-11)
-- **Fecha:** 2026-07-26
+- **Fecha:** 2026-07-27
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
-- **Versión:** 0.3.1
+- **Versión:** 0.4.0
 
 *(Eje de estructura — ¿qué existe y quién lo usa?)*
 
 ```mermaid
 C4Context
-  title Contexto del sistema — VES Market Watch
+  title Contexto del sistema — Criterio
 
-  Person(consumerDev, "Usuario consumidor", "Persona que consulta indicadores vía un front-end/SPA (REST/WSS)")
+  Person(consumerDev, "Usuario consumidor", "Persona que consulta indicadores vía el dashboard web-spa del sistema (ADR-0017)")
   Person(admin, "Operador (Jeremi)", "Administra umbrales de señales y operación")
 
-  System(vmw, "VES Market Watch", "Trackea VES/USD oficial vs VES/USDT P2P y calcula indicadores financieros en tiempo casi real")
+  System(vmw, "Criterio", "Trackea VES/USD oficial vs VES/USDT P2P y calcula indicadores financieros en tiempo casi real")
 
   System_Ext(auth0, "Auth0", "OpenID Provider — login OIDC y emisión de tokens")
   System_Ext(binance, "Binance P2P", "Portal público de anuncios P2P USDT/VES")

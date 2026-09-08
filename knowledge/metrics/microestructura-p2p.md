@@ -30,6 +30,13 @@ queda en `p2p_outliers_pct_{lado}`.
 Percentiles de referencia — spread p10/p50/p90: 0,55/0,86/2,13 % · ratio:
 0,18/0,47/1,87 · liquidez asks: 317 k/737 k/1.989 k USDT.
 
+> **Estos números son del backtest, congelados.** Desde 2026-08-01 los p10/p50/p90
+> de la ventana móvil de 90 días se **calculan en vivo** por revisión y viajan en
+> [analysis.updated](../events/analysis-updated.md) — ver
+> [lectura de indicadores](lectura-de-indicadores.md). Los de esta línea siguen
+> siendo la referencia histórica que justificó los umbrales del ruleset; para
+> saber contra qué se está comparando *ahora*, mirar `scale.cuts` del evento.
+
 - **Arranque alcista**: momentum bid cruza de negativo a **> +0,5 %** con
   drenaje de oferta **< −40 %/6 h** y ratio **< 0,3**. (Se observó en el
   arranque del 13-jul y en la absorción del 20-jul.)

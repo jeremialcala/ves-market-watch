@@ -1,17 +1,26 @@
 """Casos de uso de lectura: frescura, confianza y armado de la vista REST."""
 
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
 from api_gateway.application.consultas import (
+    ConsultarSenales,
+    ConsultarAnalisisVigente,
     ConsultarIndicadoresVigentes,
     ConsultarReferenciaP2P,
     ConsultarTasaOficialVigente,
 )
-from tests.conftest import RepositorioEnMemoria, fila_indicador, fila_tasa
+from api_gateway.domain.paginacion import Pagina
+from tests.conftest import (
+    RepositorioEnMemoria,
+    fila_analisis,
+    fila_indicador,
+    fila_senal,
+    fila_tasa,
+    hoy_vet,
+)
 
-STALE = timedelta(hours=6)
 FRESCURA = timedelta(minutes=20)
 
 
@@ -23,21 +32,36 @@ def repo() -> RepositorioEnMemoria:
 # -- tasa oficial ------------------------------------------------------------
 
 
-async def test_tasa_vigente_fresca_no_es_stale(repo):
-    repo.tasas["USD"] = fila_tasa(hace=timedelta(hours=1))
-    resultado = await ConsultarTasaOficialVigente(repo, STALE).ejecutar("USD")
+async def test_la_tasa_de_hoy_no_es_stale(repo):
+    repo.tasas["USD"] = fila_tasa()
+    resultado = await ConsultarTasaOficialVigente(repo).ejecutar("USD")
     assert resultado["stale"] is False
     assert resultado["rate"] == "417.03000000"
 
 
-async def test_tasa_vieja_se_sirve_marcada_stale(repo):
-    repo.tasas["USD"] = fila_tasa(hace=timedelta(hours=7))
-    resultado = await ConsultarTasaOficialVigente(repo, STALE).ejecutar("USD")
+async def test_una_fecha_valor_YA_PASADA_se_sirve_marcada_stale(repo):
+    # Rancia significa: el BCV no publicó la tasa de hoy (ADR-0022).
+    repo.tasas["USD"] = fila_tasa(fecha_valor=hoy_vet() - timedelta(days=1))
+    resultado = await ConsultarTasaOficialVigente(repo).ejecutar("USD")
     assert resultado["stale"] is True
 
 
+async def test_una_CAPTURA_VIEJA_con_fecha_valor_futura_NO_es_stale(repo):
+    """El fin de semana: el viernes por la tarde el BCV publica la del lunes.
+
+    La regla vieja —antigüedad de la captura > 6 h— marcaba rancia esa tasa el
+    sábado y el domingo, contradiciendo a la propia app, que enseñaba al lado
+    «vigente 03/08».
+    """
+    repo.tasas["USD"] = fila_tasa(
+        hace=timedelta(days=3), fecha_valor=hoy_vet() + timedelta(days=1)
+    )
+    resultado = await ConsultarTasaOficialVigente(repo).ejecutar("USD")
+    assert resultado["stale"] is False
+
+
 async def test_sin_tasa_devuelve_none(repo):
-    assert await ConsultarTasaOficialVigente(repo, STALE).ejecutar("EUR") is None
+    assert await ConsultarTasaOficialVigente(repo).ejecutar("EUR") is None
 
 
 # -- referencia P2P ----------------------------------------------------------
@@ -89,7 +113,7 @@ async def test_indicadores_usd_con_p2p_fresco(repo):
     repo.vigentes[("p2p_spread_pct", "VES")] = fila_indicador("-0.35000000")
     repo.vigentes[("p2p_liquidez_buy", "VES")] = fila_indicador("125000.0")
     repo.vigentes[("p2p_liquidez_sell", "VES")] = fila_indicador("98000.0")
-    resultado = await ConsultarIndicadoresVigentes(repo, STALE, FRESCURA).ejecutar(
+    resultado = await ConsultarIndicadoresVigentes(repo, FRESCURA).ejecutar(
         "USD"
     )
     assert resultado["official_stale"] is False
@@ -104,7 +128,7 @@ async def test_indicadores_p2p_rancios_van_en_null(repo):
     repo.vigentes[("p2p_brecha_abs_buy", "VES")] = fila_indicador(
         "433.0", hace=timedelta(hours=2)
     )
-    resultado = await ConsultarIndicadoresVigentes(repo, STALE, FRESCURA).ejecutar(
+    resultado = await ConsultarIndicadoresVigentes(repo, FRESCURA).ejecutar(
         "USD"
     )
     assert resultado["gap_abs"] is None
@@ -114,7 +138,7 @@ async def test_indicadores_p2p_rancios_van_en_null(repo):
 async def test_indicadores_de_moneda_sin_par_p2p_van_en_null(repo):
     repo.tasas["EUR"] = fila_tasa(currency="EUR", rate="480.10000000")
     repo.vigentes[("official_rate", "EUR")] = fila_indicador("480.10000000")
-    resultado = await ConsultarIndicadoresVigentes(repo, STALE, FRESCURA).ejecutar(
+    resultado = await ConsultarIndicadoresVigentes(repo, FRESCURA).ejecutar(
         "EUR"
     )
     assert resultado["gap_abs"] is None and resultado["spread_pct"] is None
@@ -122,19 +146,109 @@ async def test_indicadores_de_moneda_sin_par_p2p_van_en_null(repo):
 
 async def test_indicadores_sin_official_rate_devuelve_none(repo):
     assert (
-        await ConsultarIndicadoresVigentes(repo, STALE, FRESCURA).ejecutar("USD")
+        await ConsultarIndicadoresVigentes(repo, FRESCURA).ejecutar("USD")
         is None
     )
 
 
-async def test_official_stale_si_no_hay_tasa_o_es_vieja(repo):
+async def test_official_stale_si_no_hay_tasa_o_su_fecha_valor_paso(repo):
     repo.vigentes[("official_rate", "USD")] = fila_indicador("417.03")
-    resultado = await ConsultarIndicadoresVigentes(repo, STALE, FRESCURA).ejecutar(
+    resultado = await ConsultarIndicadoresVigentes(repo, FRESCURA).ejecutar(
         "USD"
     )
     assert resultado["official_stale"] is True
-    repo.tasas["USD"] = fila_tasa(hace=timedelta(hours=8))
-    resultado = await ConsultarIndicadoresVigentes(repo, STALE, FRESCURA).ejecutar(
+    repo.tasas["USD"] = fila_tasa(fecha_valor=hoy_vet() - timedelta(days=1))
+    resultado = await ConsultarIndicadoresVigentes(repo, FRESCURA).ejecutar(
         "USD"
     )
     assert resultado["official_stale"] is True
+
+
+# -- análisis de la revisión (RF-6) ------------------------------------------
+
+
+async def test_analisis_vigente_devuelve_el_payload_tal_como_se_publico(repo):
+    """El gateway NO reclasifica bandas ni recalcula escalas: hacerlo abriría
+    una segunda fuente de verdad sobre la lectura del panel."""
+    fila = fila_analisis(hace=timedelta(minutes=1))
+    repo.analisis["VES"] = fila
+
+    resultado = await ConsultarAnalisisVigente(repo, FRESCURA).ejecutar("VES")
+
+    assert resultado is fila["payload"]
+    # Decimales como string exacto, sin round-trip por float.
+    assert resultado["indicators"][0]["position"] == "0.1966"
+
+
+async def test_un_analisis_rancio_no_se_sirve_como_vigente(repo):
+    """Mismo criterio que /rates/p2p/current (A10): nunca se presenta dato
+    rancio como actual — el panel prefiere decir que no hay lectura."""
+    repo.analisis["VES"] = fila_analisis(hace=timedelta(minutes=25))
+    assert await ConsultarAnalisisVigente(repo, FRESCURA).ejecutar("VES") is None
+
+
+async def test_sin_fila_devuelve_none(repo):
+    assert await ConsultarAnalisisVigente(repo, FRESCURA).ejecutar("VES") is None
+
+
+async def test_la_moneda_no_se_confunde(repo):
+    repo.analisis["VES"] = fila_analisis(hace=timedelta(minutes=1))
+    assert await ConsultarAnalisisVigente(repo, FRESCURA).ejecutar("COP") is None
+
+
+# -- resultado observado de una señal ----------------------------------------
+
+
+async def test_publica_la_variacion_de_la_brecha_tras_la_senal(repo):
+    repo.filas_senales = [fila_senal()]
+    resultado = await ConsultarSenales(repo).ejecutar(
+        datetime.now(UTC) - timedelta(days=1), datetime.now(UTC), None, Pagina(1, 50)
+    )
+
+    outcome = resultado["data"][0]["outcome"]
+    assert outcome["hours"] == 12
+    assert outcome["gap_delta_pp"] == "1.80"  # 15,00 − 13,20
+
+
+async def test_es_HISTORIA_no_acierto_no_hay_veredicto_ni_contador(repo):
+    """El no-objetivo del PRD: no insinuar capacidad predictiva.
+
+    Se publica la variación y nada más. Un «N de M» agregado se lee como tasa de
+    acierto — y con las 7 señales que hay hoy, una regla tiene n = 1, donde
+    «1 de 1» parecería un 100 %.
+    """
+    repo.filas_senales = [fila_senal()]
+    resultado = await ConsultarSenales(repo).ejecutar(
+        datetime.now(UTC) - timedelta(days=1), datetime.now(UTC), None, Pagina(1, 50)
+    )
+
+    outcome = resultado["data"][0]["outcome"]
+    assert set(outcome) == {"hours", "gap_delta_pp"}
+    # Ni veredicto por señal ni recuento agregado en la página.
+    for prohibido in ("hit", "acierto", "success", "score", "aciertos"):
+        assert prohibido not in outcome
+        assert prohibido not in resultado
+
+
+async def test_sin_cumplirse_la_ventana_NO_se_publica_resultado(repo):
+    """Todavía no ocurrió: rellenarlo con lo que haya contaría un tramo más
+    corto como si fuera el completo."""
+    fila = fila_senal()
+    fila["brecha_despues"] = None
+    repo.filas_senales = [fila]
+    resultado = await ConsultarSenales(repo).ejecutar(
+        datetime.now(UTC) - timedelta(days=1), datetime.now(UTC), None, Pagina(1, 50)
+    )
+
+    assert resultado["data"][0]["outcome"] is None
+
+
+async def test_sin_brecha_en_el_instante_de_la_senal_tampoco(repo):
+    fila = fila_senal()
+    fila["brecha_en_senal"] = None
+    repo.filas_senales = [fila]
+    resultado = await ConsultarSenales(repo).ejecutar(
+        datetime.now(UTC) - timedelta(days=1), datetime.now(UTC), None, Pagina(1, 50)
+    )
+
+    assert resultado["data"][0]["outcome"] is None

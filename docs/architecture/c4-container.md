@@ -1,24 +1,25 @@
 # C4 — Diagrama de Contenedores
 
 - **Estado:** approved (Gate 1, HITL 2026-07-11)
-- **Fecha:** 2026-07-26
+- **Fecha:** 2026-07-27
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
-- **Versión:** 0.3.1
+- **Versión:** 0.4.0
 
 *(Eje de estructura — contenedores y trust boundaries del threat model)*
 
 ```mermaid
 C4Container
-  title Contenedores — VES Market Watch
+  title Contenedores — Criterio
 
-  Person(consumerDev, "Usuario consumidor (SPA)", "REST/WSS + access token")
+  Person(consumerDev, "Usuario consumidor", "Usa el dashboard web-spa en su browser")
+  Container(spa, "web-spa", "React/TypeScript (estático en nginx; corre en el browser)", "Dashboard: brecha, P2P, señales, histórico — ADR-0017")
   System_Ext(auth0, "Auth0", "OpenID Provider (OIDC): login y emisión de tokens")
   System_Ext(binance, "Binance P2P", "Anuncios USDT/VES")
   System_Ext(bcv, "Sitio web BCV", "Tasa oficial VES/USD")
   System_Ext(legacy, "Sistema previo (exports CSV)", "Históricos de precio USDT/VES")
 
-  System_Boundary(vmw, "VES Market Watch (zona de confianza interna)") {
+  System_Boundary(vmw, "Criterio (zona de confianza interna)") {
     Container(ingBin, "ingestor-binance", "Python asyncio", "Polling P2P, normaliza y publica p2p.snapshot")
     Container(ingBcv, "ingestor-bcv", "Python asyncio", "Scraping BCV 2x/h, valida y publica official.rate.updated")
     Container(ingHist, "ingestor-historico", "Python (CLI batch)", "Carga exports CSV en historical_market_snapshots; sin bus (ADR-0013)")
@@ -41,15 +42,19 @@ C4Container
   Rel(ingBcv, db, "tasas oficiales", "SQL/TLS")
   Rel(engine, db, "indicadores y señales", "SQL/TLS")
   Rel(gateway, db, "histórico", "SQL/TLS, solo lectura")
-  Rel(consumerDev, auth0, "login OIDC (Auth Code + PKCE)", "HTTPS")
+  Rel(consumerDev, spa, "usa el dashboard", "HTTPS")
+  Rel(spa, auth0, "login OIDC (Auth Code + PKCE); refresh rotation", "HTTPS")
   Rel(gateway, auth0, "valida tokens (JWKS / discovery)", "HTTPS")
-  Rel(consumerDev, gateway, "REST /api/v1 + WSS", "HTTPS/WSS + access token")
+  Rel(spa, gateway, "REST /api/v1 + WSS /ws/v1", "HTTPS/WSS + access token; CORS allowlist")
 ```
 
 **Trust boundaries:**
 
 0. Usuario ↔ Auth0 ↔ api-gateway: identidad delegada a Auth0 (OIDC); el gateway solo acepta
    access tokens válidos (firma JWKS, `iss`/`aud`). No emite tokens ni guarda credenciales.
+   El `web-spa` corre EN el browser del usuario (zona no confiable aunque el código sea
+   nuestro): tokens solo en memoria + rotation + CSP (T12), y el gateway solo acepta
+   orígenes de la allowlist CORS (T15) — ADR-0017.
 1. Internet ↔ api-gateway: única entrada de data; access token + rate limiting + TLS.
 2. Fuentes externas ↔ ingestores: datos no confiables; validación de esquema y rango
    (incluye los exports CSV del ingestor-historico: parseo con rechazo/descarte, T14).

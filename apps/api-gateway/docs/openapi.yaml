@@ -15,8 +15,8 @@ openapi: 3.1.0
 # ---------------------------------------------------------------------------
 
 info:
-  title: VES Market Watch API
-  version: 0.4.0
+  title: Criterio API
+  version: 0.7.0
   description: |
     API de solo lectura sobre datos públicos del mercado cambiario venezolano:
     tasa oficial BCV, referencia P2P de Binance, indicadores derivados y señales.
@@ -30,11 +30,18 @@ info:
     **Convenciones transversales:**
     - Todos los valores monetarios/decimales viajan como **string** con precisión
       exacta — nunca float (evita pérdida de precisión en VES).
-    - Los históricos son paginados de forma **obligatoria**; rango máximo por
-      request de 90 días (violarlo → 422).
+    - Los históricos son paginados de forma **obligatoria**. El rango se acota
+      por **filas**, no por días: en `/indicators/history` el tope son 26.000
+      buckets (días ÷ `interval`); en los demás históricos, 90 días. Violarlo
+      → 422. El tope en filas es el peor caso que ya se permitía —90 días a
+      `5m` = 25.920 buckets—, repartido según lo que cuesta cada bucket en vez
+      de gastarse entero en la escala más fina.
     - Errores en formato **RFC 7807** (`application/problem+json`) sin detalles
       internos.
-    - Rate limit por token/IP; cada respuesta lleva cabeceras `X-RateLimit-*`.
+    - Rate limit por token; **toda respuesta que consuma cuota lleva cabeceras
+      `X-RateLimit-*`**, incluidas las de error (404, 400, 422 y el propio 429).
+      Los 401 y 403 no las llevan porque no gastan cuota: el limitador corre
+      después de validar token y permiso.
   contact:
     name: Jeremi Alcalá
   license:
@@ -55,6 +62,11 @@ tags:
     description: Profundidad del mercado P2P.
   - name: signals
     description: Señales financieras con evidencia trazable.
+  - name: analysis
+    description: |
+      Lectura mecánica de los medidores del panel (RF-6, ADR-0019): en qué banda
+      cae cada indicador dentro de su propia historia y a cuánto está de cada
+      umbral del ruleset. No contiene pronósticos.
   - name: system
     description: Salud del servicio (público).
 
@@ -178,7 +190,12 @@ paths:
       summary: Histórico de indicadores
       description: |
         Serie agregada de indicadores en formato largo (una fila por
-        indicador/moneda/instante), paginada. Rango máximo de 90 días por request.
+        indicador/moneda/instante), paginada.
+
+        **El rango se acota por filas, no por días**: `(to − from) / interval`
+        no puede pasar de 26.000 buckets. A `5m` eso son 90 días; a `1d`,
+        más de 70 años. Violarlo → 422, con el número de filas en el mensaje
+        para que se sepa si ensanchar el bucket o acortar el rango.
       operationId: getIndicatorsHistory
       security:
         - auth0: [read:indicators]
@@ -186,6 +203,8 @@ paths:
         - $ref: '#/components/parameters/FromDateTime'
         - $ref: '#/components/parameters/ToDateTime'
         - $ref: '#/components/parameters/Interval'
+        - $ref: '#/components/parameters/IndicatorName'
+        - $ref: '#/components/parameters/CurrencyFilter'
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
       responses:
@@ -202,6 +221,45 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/UnprocessableRange' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /analysis/current:
+    get:
+      tags: [analysis]
+      summary: Análisis de la última revisión
+      description: |
+        Lectura de los seis medidores del panel en la última revisión del
+        indicator-engine: banda dentro de la escala de percentiles reales de la
+        ventana (o del respaldo del ruleset, declarado en `scale.source`),
+        posición de dibujo, y proximidad de cada regla del ruleset versionado.
+
+        Se devuelve **tal como se publicó** en `analysis.updated`: el gateway no
+        reclasifica bandas ni recalcula escalas. Un análisis más viejo que la
+        frescura P2P no se sirve como vigente (404) — nunca se presenta dato
+        rancio como actual.
+
+        **No es un pronóstico**: `rule_proximity` y `summary` son aritmética
+        sobre el estado presente (k de n condiciones y cuál bloquea). Usa el
+        permiso `read:indicators`, el mismo que los indicadores que lee.
+      operationId: getAnalysisCurrent
+      security:
+        - auth0: [read:indicators]
+      parameters:
+        - $ref: '#/components/parameters/CurrencyP2P'
+      responses:
+        '200':
+          description: Análisis vigente.
+          headers:
+            X-RateLimit-Limit: { $ref: '#/components/headers/XRateLimitLimit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/XRateLimitRemaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/XRateLimitReset' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IndicatorAnalysis' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
   /market/depth:
@@ -338,7 +396,9 @@ components:
     ToDate:
       name: to
       in: query
-      description: Fin del rango (fecha, inclusive). Rango máximo de 90 días.
+      description: |
+        Fin del rango (fecha, inclusive). El tope depende del endpoint:
+        26.000 buckets en `/indicators/history`, 90 días en el resto.
       required: true
       schema:
         type: string
@@ -377,7 +437,7 @@ components:
       required: false
       schema:
         type: string
-        enum: [5m, 1h, 1d]
+        enum: [5m, 15m, 1h, 1d]
         default: 1h
     Currency:
       name: currency
@@ -388,6 +448,39 @@ components:
         type: string
         pattern: '^[A-Z]{3}$'
         default: USD
+    IndicatorName:
+      name: indicator
+      in: query
+      description: |
+        Filtra la serie por nombre canónico de indicador (p. ej.
+        `p2p_brecha_pct_buy`). Sin el filtro se devuelve el formato largo
+        completo — para gráficos de UN indicador, usar SIEMPRE este filtro
+        (evita paginar toda la tabla y agotar la cuota).
+      required: false
+      schema:
+        type: string
+    CurrencyP2P:
+      name: currency
+      in: query
+      description: |
+        Fiat del par sobre el que se leyó el panel. Los indicadores `p2p_*` se
+        persisten bajo el fiat (`VES`), no bajo la pierna oficial (ADR-0014).
+      required: false
+      schema:
+        type: string
+        pattern: '^[A-Z]{3}$'
+        default: VES
+    CurrencyFilter:
+      name: currency
+      in: query
+      description: |
+        Filtra por moneda del indicador (los `p2p_*` viven bajo `VES`; los
+        `official_rate*` bajo su moneda BCV). Sin default: sin el filtro se
+        devuelven todas las monedas.
+      required: false
+      schema:
+        type: string
+        pattern: '^[A-Z]{3}$'
     SignalType:
       name: type
       in: query
@@ -412,6 +505,12 @@ components:
   responses:
     BadRequest:
       description: Parámetros inválidos.
+      # Con cuota: si la petición pasó autenticación y permiso, el limitador ya
+      # la contó aunque el parámetro fuera inválido.
+      headers:
+        X-RateLimit-Limit: { $ref: '#/components/headers/XRateLimitLimit' }
+        X-RateLimit-Remaining: { $ref: '#/components/headers/XRateLimitRemaining' }
+        X-RateLimit-Reset: { $ref: '#/components/headers/XRateLimitReset' }
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
@@ -442,6 +541,13 @@ components:
             detail: "Se requiere el permiso 'read:signals'."
     NotFound:
       description: El recurso aún no tiene datos que servir.
+      # Un 404 SÍ gasta cuota: el limitador corre en la dependencia, antes de
+      # que el handler sepa si hay datos. Quien sondea un endpoint todavía sin
+      # datos tiene que poder ver cuánto le queda, o llega al 429 a ciegas.
+      headers:
+        X-RateLimit-Limit: { $ref: '#/components/headers/XRateLimitLimit' }
+        X-RateLimit-Remaining: { $ref: '#/components/headers/XRateLimitRemaining' }
+        X-RateLimit-Reset: { $ref: '#/components/headers/XRateLimitReset' }
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
@@ -452,6 +558,10 @@ components:
             detail: Sin tasa oficial registrada para USD.
     UnprocessableRange:
       description: Rango de fechas inválido o mayor a 90 días.
+      headers:
+        X-RateLimit-Limit: { $ref: '#/components/headers/XRateLimitLimit' }
+        X-RateLimit-Remaining: { $ref: '#/components/headers/XRateLimitRemaining' }
+        X-RateLimit-Reset: { $ref: '#/components/headers/XRateLimitReset' }
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
@@ -549,7 +659,11 @@ components:
           description: Instante de captura desde el BCV.
         stale:
           type: boolean
-          description: True si la tasa vigente supera el umbral de frescura.
+          description: |
+            True si la **fecha-valor** de la tasa ya pasó, es decir si el BCV no
+            ha publicado la de hoy (ADR-0022). No es una antigüedad de captura:
+            el viernes por la tarde el BCV publica la tasa del lunes, y esa tasa
+            está vigente todo el fin de semana.
       required: [currency, rate, value_date, captured_at, stale]
 
     OfficialRateHistoryItem:
@@ -618,6 +732,9 @@ components:
           description: Versión de la fórmula (reproducibilidad, RF-3).
         official_stale:
           type: boolean
+          description: |
+            La fecha-valor de la tasa contra la que se calculó la brecha ya pasó
+            (ADR-0022). Misma regla que la de `OfficialRate.stale`.
         gap_abs:
           oneOf:
             - { $ref: '#/components/schemas/SignedDecimal' }
@@ -675,7 +792,7 @@ components:
         pagination: { $ref: '#/components/schemas/PageMeta' }
         interval:
           type: string
-          enum: [5m, 1h, 1d]
+          enum: [5m, 15m, 1h, 1d]
       required: [data, pagination, interval]
 
     DepthLevel:
@@ -704,6 +821,29 @@ components:
           type: array
           items: { $ref: '#/components/schemas/DepthLevel' }
       required: [side, as_of, levels]
+
+    SignalOutcome:
+      type: object
+      additionalProperties: false
+      description: |
+        Qué hizo la brecha en las horas siguientes a la señal. **Es historia
+        observada, no una medida de acierto**: se publica la variación y nada
+        más — sin veredicto y sin contador agregado. El no-objetivo del PRD es no
+        insinuar capacidad predictiva, y un «N de M» se lee como tasa de acierto.
+
+        Ausente mientras la ventana no se haya cumplido: eso todavía no ocurrió.
+      properties:
+        hours:
+          type: integer
+          minimum: 1
+          description: Ventana observada tras la señal.
+        gap_delta_pp:
+          allOf: [{ $ref: '#/components/schemas/SignedDecimal' }]
+          description: |
+            Variación de `p2p_brecha_pct_buy` en puntos porcentuales entre el
+            instante de la señal y el final de la ventana. Ambos extremos se
+            resuelven as-of (ADR-0009).
+      required: [hours, gap_delta_pp]
 
     Signal:
       type: object
@@ -758,6 +898,13 @@ components:
               type: string
               description: Identificador versionado de la regla evaluada (`<type>@v<n>`).
           required: [inputs, rule]
+        outcome:
+          oneOf:
+            - { $ref: '#/components/schemas/SignalOutcome' }
+            - { type: 'null' }
+          description: |
+            Qué hizo la brecha tras la señal. `null` mientras la ventana no se
+            haya cumplido — o si falta alguno de los dos extremos.
       required: [type, direction, currency, as_of, emitted_at, calc_version, triggered_by, evidence]
 
     SignalPage:
@@ -769,6 +916,562 @@ components:
           items: { $ref: '#/components/schemas/Signal' }
         pagination: { $ref: '#/components/schemas/PageMeta' }
       required: [data, pagination]
+
+    Fraction:
+      type: string
+      pattern: '^[0-9]+(\.[0-9]+)?$'
+      description: |
+        Fracción en [0,1] como string exacto. **Coordenada de dibujo**, no un
+        percentil empírico: reproducible a partir de los `cuts` del mismo payload.
+      example: '0.3140'
+
+    AnalysisScaleCut:
+      type: object
+      additionalProperties: false
+      description: Un corte de la escala, con su valor real y dónde se dibuja.
+      properties:
+        key:
+          type: string
+          description: |
+            `p10`|`p50`|`p90` con `source: percentiles`; con `source: ruleset`,
+            la regla versionada (`arranque_alcista@v1`) o el umbral de sistema
+            (`confianza_baja`).
+        value: { $ref: '#/components/schemas/SignedDecimal' }
+        position: { $ref: '#/components/schemas/Fraction' }
+      required: [key, value, position]
+
+    AnalysisScale:
+      type: object
+      additionalProperties: false
+      description: |
+        La escala contra la que se leyó el medidor, con su FUENTE y sus
+        parámetros. Que la fuente viaje en el payload es lo que permite a la UI
+        decir contra qué se compara, en vez de degradar en silencio.
+      properties:
+        source:
+          type: string
+          enum: [percentiles, ruleset]
+          description: |
+            `percentiles` = percentiles reales de la ventana. `ruleset` =
+            respaldo con los umbrales reales del ruleset porque
+            `samples < min_samples`.
+        window_days:
+          type: integer
+          minimum: 1
+        samples:
+          type: integer
+          minimum: 0
+          description: Filas encontradas en la ventana (real, también en el respaldo).
+        min_samples:
+          type: integer
+          minimum: 1
+        computed_at:
+          oneOf:
+            - { type: string, format: date-time }
+            - { type: 'null' }
+          description: |
+            Cuándo se calculó la distribución. Puede ir por detrás de `as_of`
+            (se cachea con TTL); `null` si nunca se pudo consultar.
+        domain:
+          type: object
+          additionalProperties: false
+          description: |
+            Extremos de la barra. Con `percentiles` son el min/max reales de la
+            ventana; con `ruleset`, el dominio declarado en la config versionada
+            (constante de presentación, no dato de mercado).
+          properties:
+            min: { $ref: '#/components/schemas/SignedDecimal' }
+            max: { $ref: '#/components/schemas/SignedDecimal' }
+          required: [min, max]
+        cuts:
+          type: array
+          items: { $ref: '#/components/schemas/AnalysisScaleCut' }
+          description: |
+            Cortes ordenados por `value` ascendente. Vacío solo en el respaldo de
+            un indicador que no alimenta ninguna regla ni umbral de sistema.
+      required: [source, window_days, samples, min_samples, computed_at, domain, cuts]
+
+    AnalysisRuleRef:
+      type: object
+      additionalProperties: false
+      description: |
+        Una condición del ruleset que consume ESTE indicador, con cuánto le falta
+        al valor para satisfacerla.
+      properties:
+        rule:
+          type: string
+          description: Regla versionada `<type>@v<n>` (mismo id que `Signal.evidence.rule`).
+        type: { type: string }
+        direction:
+          type: string
+          enum: [alcista, bajista, neutral]
+        op:
+          type: string
+          enum: [gt, gte, lt, lte]
+        threshold: { $ref: '#/components/schemas/SignedDecimal' }
+        met: { type: boolean }
+        distance:
+          allOf:
+            - { $ref: '#/components/schemas/SignedDecimal' }
+          description: |
+            Cuánto debe moverse el valor EN LA DIRECCIÓN EXIGIDA:
+            `threshold - value` con gt/gte, `value - threshold` con lt/lte.
+            `<= 0` significa satisfecha. Nunca es una predicción de cuándo pasará.
+        threshold_position: { $ref: '#/components/schemas/Fraction' }
+      required: [rule, type, direction, op, threshold, met, distance, threshold_position]
+
+    AnalysisIndicator:
+      type: object
+      additionalProperties: false
+      description: |
+        La lectura de un medidor. Un indicador sin valor vigente NO aparece en el
+        array: nunca se infiere.
+      properties:
+        indicator:
+          type: string
+          description: Nombre canónico (`knowledge/metrics/`). No se traduce.
+        value: { $ref: '#/components/schemas/SignedDecimal' }
+        as_of:
+          type: string
+          format: date-time
+        band:
+          type: string
+          enum: [very_low, low, high, very_high, unscaled]
+          description: |
+            Vocabulario neutro de idioma; la prosa la redacta el cliente.
+            Con percentiles: `very_low` <p10 · `low` [p10,p50) · `high` [p50,p90)
+            · `very_high` >=p90. `unscaled` con el respaldo del ruleset: sin
+            distribución empírica no existe alto/bajo, y emitir ahí una banda
+            sería inventar dato.
+        position:
+          oneOf:
+            - { $ref: '#/components/schemas/Fraction' }
+            - { type: 'null' }
+          description: '`null` cuando no hay escala dibujable: nada que pintar.'
+        scale: { $ref: '#/components/schemas/AnalysisScale' }
+        rules:
+          type: array
+          items: { $ref: '#/components/schemas/AnalysisRuleRef' }
+          description: Vacío si el indicador no alimenta ninguna condición.
+      required: [indicator, value, as_of, band, position, scale, rules]
+
+    RuleCondition:
+      type: object
+      additionalProperties: false
+      properties:
+        indicator: { type: string }
+        op:
+          type: string
+          enum: [gt, gte, lt, lte]
+        threshold: { $ref: '#/components/schemas/SignedDecimal' }
+        value:
+          oneOf:
+            - { $ref: '#/components/schemas/SignedDecimal' }
+            - { type: 'null' }
+          description: |
+            `null` si el indicador no está vigente. Nunca se rellena con el
+            último conocido rancio.
+        met: { type: boolean }
+        distance:
+          oneOf:
+            - { $ref: '#/components/schemas/SignedDecimal' }
+            - { type: 'null' }
+      required: [indicator, op, threshold, value, met, distance]
+
+    RuleProximity:
+      type: object
+      additionalProperties: false
+      description: |
+        Cuántas condiciones de una regla se cumplen y cuál bloquea. Aritmética
+        sobre el estado presente, NO un pronóstico ni un régimen.
+      properties:
+        rule: { type: string }
+        type: { type: string }
+        direction:
+          type: string
+          enum: [alcista, bajista, neutral]
+        conditions_total:
+          type: integer
+          minimum: 1
+        conditions_met:
+          type: integer
+          minimum: 0
+        evaluable:
+          type: boolean
+          description: |
+            `false` si algún indicador de la regla no está vigente (mismo criterio
+            que la emisión: una regla con un indicador ausente no dispara) o si
+            `confidence: low`.
+        blocked_by:
+          oneOf:
+            - { type: string }
+            - { type: 'null' }
+          description: |
+            Indicador de la condición NO cumplida con mayor `distance`; empate por
+            orden alfabético. `null` si la regla se cumple entera o no es evaluable.
+        conditions:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/RuleCondition' }
+      required: [rule, type, direction, conditions_total, conditions_met, evaluable, blocked_by, conditions]
+
+    AnalysisSummary:
+      type: object
+      additionalProperties: false
+      description: |
+        Síntesis MECÁNICA del panel: qué regla está más cerca de cumplirse y qué
+        la bloquea. Sin probabilidades, sin horizontes temporales, sin régimen.
+      properties:
+        rules_total:
+          type: integer
+          minimum: 0
+        rules_evaluable:
+          type: integer
+          minimum: 0
+        closest_rule:
+          oneOf:
+            - { type: string }
+            - { type: 'null' }
+          description: |
+            Entre las evaluables no cumplidas: la de mayor `conditions_met`;
+            empate por menor `conditions_total` y luego orden alfabético. `null`
+            si ninguna es evaluable o todas se cumplen.
+        conditions_met:
+          type: integer
+          minimum: 0
+          description: Condiciones cumplidas de `closest_rule` (0 si no hay ninguna).
+        conditions_total:
+          type: integer
+          minimum: 0
+        blocked_by:
+          oneOf:
+            - { type: string }
+            - { type: 'null' }
+        rules_met:
+          type: array
+          items: { type: string }
+          description: |
+            Reglas con TODAS sus condiciones cumplidas en esta revisión. NO
+            implica que la señal se emitiera: el cooldown pudo suprimirla. La
+            emisión real vive en `/signals`.
+      required: [rules_total, rules_evaluable, closest_rule, conditions_met, conditions_total, blocked_by, rules_met]
+
+    ReadingClaim:
+      type: object
+      additionalProperties: false
+      description: |
+        Una afirmación de la lectura, en vocabulario neutro de idioma. La prosa
+        ES/EN la redacta el cliente.
+      properties:
+        code:
+          type: string
+          enum: [confianza_baja, oficial_rancia, brecha, atribucion, medidor_en_banda,
+                 regla_cerca, brecha_vs_historia, brecha_extremo, historia_parcial]
+          description: |
+            `atribucion` solo aparece si la brecha se movió **y** la oficial no
+            está rancia: con una tasa vencida, decir quién movió la brecha sería
+            afirmar de más.
+
+            `historia_parcial` aparece **en lugar de** `brecha_vs_historia`
+            cuando ninguna ventana alcanza su cobertura: es lo que impide leer
+            una media de 12 días como si fuera de 90.
+        data:
+          type: object
+          additionalProperties:
+            type: string
+          description: |
+            Cifras y cualificadores, como string exacto. Claves según el código:
+            `brecha` → {direccion, delta_pp, horas} · `atribucion` →
+            {responsable, paralelo, oficial} · `medidor_en_banda` →
+            {indicador, banda, dias} · `regla_cerca` → {regla, cumplidas, totales}.
+      required: [code, data]
+
+    MarketReading:
+      type: object
+      additionalProperties: false
+      description: |
+        Lectura del estado de mercado (ADR-0021). Describe el **presente**: el
+        régimen es la celda de una matriz de dos ejes clasificados por umbrales
+        de config versionada, no una anticipación de lo que viene. **No contiene
+        consejo**: ninguna afirmación dice qué hacer.
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          description: Versión de la config de lectura (umbrales, ventana, dominancia).
+        window_hours:
+          type: integer
+          minimum: 1
+        regime:
+          oneOf:
+            - { type: string }
+            - { type: 'null' }
+          description: |
+            `<axis_movement>_<axis_gap>`, p. ej. `lateral_comprimiendo`. `null` si
+            cualquiera de los dos ejes no resolvió — media clasificación no se
+            publica, porque «lateral» a secas daría a entender que la brecha está
+            quieta cuando no se sabe.
+        axis_movement:
+          oneOf:
+            - { type: string, enum: [subiendo, lateral, bajando] }
+            - { type: 'null' }
+        axis_gap:
+          oneOf:
+            - { type: string, enum: [ampliando, estable, comprimiendo] }
+            - { type: 'null' }
+        gauges_near_threshold:
+          type: integer
+          minimum: 0
+          description: |
+            Medidores con algún umbral sin cruzar a tiro de piedra, medido en
+            coordenadas de dibujo — normalizar es lo único que hace comparable un
+            porcentaje de brecha con un ratio.
+        claims:
+          type: array
+          items: { $ref: '#/components/schemas/ReadingClaim' }
+          description: En ORDEN de lectura; lo que invalida al resto va primero.
+      required: [version, window_hours, regime, axis_movement, axis_gap, gauges_near_threshold, claims]
+
+    IndicatorAnalysis:
+      type: object
+      additionalProperties: false
+      description: |
+        Lectura de los medidores del panel en una revisión (ADR-0019). Es el
+        `payload` del evento `analysis.updated`, servido verbatim.
+      properties:
+        as_of:
+          type: string
+          format: date-time
+          description: Instante del dato de mercado de la revisión, no la hora de emisión.
+        currency: { $ref: '#/components/schemas/Currency' }
+        calc_version:
+          type: integer
+          minimum: 1
+        analysis_version:
+          type: integer
+          minimum: 1
+          description: Versión de la config de análisis (ventana, cortes, dominios).
+        ruleset_version:
+          type: integer
+          minimum: 1
+        confidence:
+          type: string
+          enum: [normal, low]
+          description: |
+            `low` = > 30 % de outliers en el snapshot: las señales se suprimen y
+            ninguna regla es evaluable.
+        official_stale: { type: boolean }
+        triggered_by:
+          type: string
+          description: '`event_id` del `p2p.snapshot` que produjo la revisión (T10).'
+        indicators:
+          type: array
+          items: { $ref: '#/components/schemas/AnalysisIndicator' }
+        rule_proximity:
+          type: array
+          items: { $ref: '#/components/schemas/RuleProximity' }
+        summary: { $ref: '#/components/schemas/AnalysisSummary' }
+        reading:
+          $ref: '#/components/schemas/MarketReading'
+        gap_history:
+          $ref: '#/components/schemas/GapHistory'
+        gap_legs:
+          $ref: '#/components/schemas/GapLegs'
+        risks:
+          $ref: '#/components/schemas/AnalysisRisks'
+      required: [as_of, currency, calc_version, analysis_version, ruleset_version, confidence, official_stale, triggered_by, indicators, rule_proximity, summary]
+
+    AnalysisRisks:
+      type: object
+      additionalProperties: false
+      description: |
+        Nivel de cada riesgo de la vista de Análisis en esta revisión
+        (`riesgos.v1.yaml` del motor). OPCIONAL y aditivo, igual que `reading`:
+        sin config de riesgos el motor publica el mismo análisis sin este campo.
+
+        Los cortes que convierten un valor en un nivel son **config versionada
+        en repo**, no constantes del cliente: un nivel cableado en el componente
+        no puede cambiar cuando cambia el mercado.
+
+        **Qué NO es**: un pronóstico. Un riesgo describe el presente del mercado
+        o el estado de la propia plataforma.
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          description: Versión de `riesgos.v*.yaml`.
+        items:
+          type: array
+          description: |
+            Todos los riesgos declarados, **también los que no se pudieron
+            evaluar**, ordenados por gravedad (alto, medio, bajo, y al final los
+            no evaluables). Omitir uno lo haría desaparecer de la vista, y un
+            riesgo que desaparece se lee como un riesgo que no existe.
+          items: { $ref: '#/components/schemas/AnalysisRisk' }
+      required: [version, items]
+
+    AnalysisRisk:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum: [libro_concentrado, calidad_snapshot, oficial_rancia, umbrales_sin_recalibrar]
+          description: |
+            Codigo neutro de idioma. El cliente tiene un titulo y un texto por
+            codigo, en cada idioma - igual que con `reading.claims`.
+        level:
+          oneOf:
+            - { type: string, enum: [alto, medio, bajo] }
+            - { type: 'null' }
+          description: |
+            `null` = **no evaluable** en esta revision porque el indicador no
+            esta vigente. No se sustituye por el ultimo valor conocido ni se
+            degrada a `bajo`: un `bajo` sin dato detras tranquiliza, que es el
+            peor error posible en un panel de riesgos.
+        value:
+          oneOf:
+            - { $ref: '#/components/schemas/SignedDecimal' }
+            - { type: 'null' }
+          description: |
+            Valor que decidio el nivel, en punto fijo exacto. En
+            `umbrales_sin_recalibrar` es la version del ruleset en uso. `null` en
+            los riesgos binarios y en los no evaluables.
+        threshold:
+          oneOf:
+            - { $ref: '#/components/schemas/SignedDecimal' }
+            - { type: 'null' }
+          description: |
+            Corte a partir del cual el riesgo seria `alto`. Viaja en el payload
+            para que el cliente rotule el umbral real y no una copia suya que
+            puede quedarse atras.
+        source:
+          oneOf:
+            - { type: string }
+            - { type: 'null' }
+          description: |
+            Que decidio el nivel: el indicador del peor lado, o el nombre de la
+            bandera. Con dos lados, dice cual de los dos manda.
+      required: [code, level, value, threshold, source]
+
+    GapLegs:
+      type: object
+      additionalProperties: false
+      description: |
+        Las dos piernas que explican el movimiento de la brecha sobre la ventana
+        de lectura (ADR-0023). Se publica SIEMPRE que las variaciones sean
+        medibles, aunque no haya atribución: las deltas son hechos, mientras que
+        decir QUIÉN movió la brecha necesita que la brecha se haya movido y que
+        la tasa oficial esté vigente (ADR-0022). Por eso `responsible` puede ser
+        null con `official` y `parallel` presentes.
+
+        En VES ABSOLUTOS: es la única unidad donde `Δbrecha = Δparalelo −
+        Δoficial` es exacta. El neto NO viaja — el consumidor lo deriva de esa
+        identidad, en vez de recibir una tercera medición que podría no cuadrar
+        con las otras dos en pantalla.
+      properties:
+        hours:
+          type: integer
+          minimum: 1
+          description: Ventana medida, en horas. La misma del claim `brecha`.
+        official:
+          oneOf:
+            - { $ref: '#/components/schemas/SignedDecimal' }
+            - { type: 'null' }
+          description: |
+            Δ de la tasa oficial en VES. `0` es un dato, no un hueco: el BCV
+            publica por tramos y una meseta significa que no cambió.
+        parallel:
+          oneOf:
+            - { $ref: '#/components/schemas/SignedDecimal' }
+            - { type: 'null' }
+          description: |
+            Δ del paralelo (VWAP buy) en VES. null si hubo hueco de captura: ahí
+            la variación no es comparable y no se estira.
+        responsible:
+          oneOf:
+            - { type: string, enum: [paralelo, oficial, ambos] }
+            - { type: 'null' }
+          description: |
+            Qué pierna movió la brecha, o null si no se puede afirmar. La decide
+            el motor: recalcularla en el cliente crearía una segunda fuente de
+            verdad.
+        official_share:
+          oneOf:
+            - { $ref: '#/components/schemas/Decimal' }
+            - { type: 'null' }
+          description: |
+            Cuota del MOVIMIENTO total que puso la tasa oficial, en [0, 1]:
+            `|Δoficial| / (|Δoficial| + |Δparalelo|)`. Es el mismo número con el
+            que el motor decide `responsible`, y por eso se publica en vez de
+            recalcularse.
+
+            NO es «cuota del cierre»: con las dos piernas subiendo, la oficial
+            cierra la brecha y el paralelo la abre, así que del cierre la oficial
+            pone el 100 %. null si nada se movió o alguna pierna no es medible.
+      required: [hours, official, parallel, responsible, official_share]
+
+    GapHistoryReference:
+      type: object
+      additionalProperties: false
+      description: |
+        Una ventana de comparación. `days_covered` es el mecanismo de honestidad:
+        cuando es menor que `days_configured`, la serie NO alcanza la ventana
+        pedida y la UI debe rotular el tramo real («Promedio 12 d de 30») en vez
+        de la etiqueta nominal. Mismo criterio que `scale.samples`/`min_samples`
+        en los medidores.
+      properties:
+        days_configured:
+          type: integer
+          minimum: 1
+          description: La ventana que se pidió.
+        days_covered:
+          type: integer
+          minimum: 0
+          description: Hasta dónde llega la serie DENTRO de esa ventana.
+        samples: { type: integer, minimum: 0 }
+        mean:
+          oneOf: [{ $ref: '#/components/schemas/SignedDecimal' }, { type: 'null' }]
+        max:
+          oneOf: [{ $ref: '#/components/schemas/SignedDecimal' }, { type: 'null' }]
+        min:
+          oneOf: [{ $ref: '#/components/schemas/SignedDecimal' }, { type: 'null' }]
+      required: [days_configured, days_covered, samples, mean, max, min]
+
+    GapHistorySide:
+      type: object
+      additionalProperties: false
+      properties:
+        side:
+          type: string
+          enum: [buy, sell]
+        current:
+          oneOf: [{ $ref: '#/components/schemas/SignedDecimal' }, { type: 'null' }]
+          description: La brecha de hoy, la MISMA cifra que publica el resto del análisis.
+        references:
+          type: array
+          description: Una por ventana configurada, en orden creciente. Se publican todas, completas o no.
+          items: { $ref: '#/components/schemas/GapHistoryReference' }
+      required: [side, current, references]
+
+    GapHistory:
+      type: object
+      additionalProperties: false
+      description: |
+        La brecha de cada lado contra su propia historia (RF-7, ADR-0021).
+        Aditivo y opcional. Viaja en el mismo documento que el análisis por la
+        misma razón que `reading`: la tarjeta cita a la vez el valor de hoy y sus
+        referencias, así que tienen que ser atómicamente coherentes.
+
+        El lado **venta** tiene historia real desde 2025-12 (derivada de un export
+        externo, ver ADR-0013 RF-7); el de **compra**, solo desde que el motor
+        arrancó. Por eso `days_covered` no es decorativo.
+      properties:
+        sides:
+          type: array
+          description: Un elemento por lado con datos; un lado sin serie no aparece.
+          items: { $ref: '#/components/schemas/GapHistorySide' }
+      required: [sides]
 
     Health:
       type: object

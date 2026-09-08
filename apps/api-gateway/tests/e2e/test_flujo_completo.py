@@ -14,9 +14,11 @@ from fastapi.testclient import TestClient
 from api_gateway.adapters.auth.jwks import ValidadorTokenAuth0
 from api_gateway.app import create_app
 from tests.conftest import (
+    evento_analisis,
     evento_senal,
     firmar_token,
     jwks_de_test,
+    payload_analisis,
     settings_de_test,
 )
 from tests.contract.test_rest_contract import validar_contra
@@ -44,7 +46,8 @@ async def _sembrar(dsn: str) -> None:
     conexion = await asyncpg.connect(dsn)
     try:
         await conexion.execute(
-            "TRUNCATE official_rates, indicators, signals, p2p_snapshots_raw"
+            "TRUNCATE official_rates, indicators, signals, p2p_snapshots_raw,"
+            " indicator_analysis"
         )
         await conexion.execute(
             "INSERT INTO official_rates (captured_at, currency, rate, value_date, status)"
@@ -68,6 +71,15 @@ async def _sembrar(dsn: str) -> None:
                 {"rule": "correccion_inminente@v1", "inputs": {"p2p_spread_pct": "-0.8"}}
             ),
         )
+        await conexion.execute(
+            "INSERT INTO indicator_analysis (as_of, currency, triggered_by,"
+            " calc_version, analysis_version, ruleset_version, confidence,"
+            " official_stale, scale_source, payload)"
+            " VALUES ($1, 'VES', gen_random_uuid(), 1, 1, 1, 'normal', false,"
+            " 'percentiles', $2::jsonb)",
+            ahora - timedelta(minutes=1),
+            json.dumps(payload_analisis(as_of=ahora - timedelta(minutes=1))),
+        )
     finally:
         await conexion.close()
 
@@ -85,6 +97,25 @@ async def _publicar_senal(amqp: str) -> dict:
         await exchange.publish(
             aio_pika.Message(body=json.dumps(evento).encode()),
             routing_key="signals.emitted",
+        )
+    finally:
+        await conexion.close()
+    return evento
+
+
+async def _publicar_analisis(amqp: str) -> dict:
+    import aio_pika
+
+    evento = evento_analisis()
+    conexion = await aio_pika.connect(amqp)
+    try:
+        canal = await conexion.channel()
+        exchange = await canal.declare_exchange(
+            "market.events", aio_pika.ExchangeType.TOPIC, durable=True
+        )
+        await exchange.publish(
+            aio_pika.Message(body=json.dumps(evento).encode()),
+            routing_key="analysis.updated",
         )
     finally:
         await conexion.close()
@@ -124,6 +155,13 @@ def test_rest_y_push_wss_de_punta_a_punta(timescale_listo, amqp_listo):
         validar_contra("SignalPage", senales.json())
         assert senales.json()["data"][0]["type"] == "correccion_inminente"
 
+        # el análisis se sirve verbatim, con los decimales como string exacto
+        analisis = cliente.get("/api/v1/analysis/current", headers=auth)
+        assert analisis.status_code == 200
+        validar_contra("IndicatorAnalysis", analisis.json())
+        assert analisis.json()["summary"]["closest_rule"] == "techo_inminente@v1"
+        assert analisis.json()["indicators"][0]["position"] == "0.1966"
+
         # push WSS: evento en el bus → frame en el canal suscrito
         token = firmar_token()
         with cliente.websocket_connect(f"/ws/v1?token={token}") as ws:
@@ -141,3 +179,19 @@ def test_rest_y_push_wss_de_punta_a_punta(timescale_listo, amqp_listo):
                 raise AssertionError("el push de signals nunca llegó por el WSS")
             assert frame["event_id"] == evento["event_id"]
             assert frame["data"]["type"] == "techo_inminente"
+
+        # y el tópico nuevo del análisis viaja por el mismo canal
+        with cliente.websocket_connect(f"/ws/v1?token={token}") as ws:
+            ws.send_json({"action": "subscribe", "topics": ["analysis"]})
+            assert ws.receive_json()["type"] == "subscribed"
+
+            evento = asyncio.run(_publicar_analisis(amqp_listo))
+
+            for _ in range(15):
+                frame = ws.receive_json()
+                if frame.get("topic") == "analysis":
+                    break
+            else:
+                raise AssertionError("el push de analysis nunca llegó por el WSS")
+            assert frame["event_id"] == evento["event_id"]
+            assert frame["data"]["summary"]["closest_rule"] == "techo_inminente@v1"

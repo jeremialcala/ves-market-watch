@@ -11,11 +11,19 @@ OFFICIAL_RATE = "official_rate"
 OFFICIAL_RATE_CHANGE_ABS = "official_rate_change_abs"
 OFFICIAL_RATE_CHANGE_PCT = "official_rate_change_pct"
 
+# La pierna oficial del par USDT/VES: la brecha se calcula contra el USD del BCV
+# (ADR-0014), así que `official_rate` se persiste bajo `USD`, no bajo `VES`.
+# Vive aquí y no en un caso de uso porque ya lo necesitan dos.
+MONEDA_OFICIAL_REFERENCIA = "USD"
+
 # Fase 2 — indicadores P2P por lado (sufijo `_buy`/`_sell` vía `nombre_por_lado`).
 # Definiciones canónicas en knowledge/metrics/.
 P2P_MEDIANA = "p2p_mediana"
 P2P_VWAP = "p2p_vwap"
 P2P_MEJOR_PRECIO = "p2p_mejor_precio"
+# El mejor precio que sobrevive al filtro de outliers. Junto al anterior, su
+# diferencia mide cuanto se separa el escaparate del libro real (T2).
+P2P_MEJOR_PRECIO_FILTRADO = "p2p_mejor_precio_filtrado"
 P2P_LIQUIDEZ = "p2p_liquidez"
 P2P_MERCHANTS_PCT = "p2p_merchants_pct"
 P2P_OUTLIERS_PCT = "p2p_outliers_pct"

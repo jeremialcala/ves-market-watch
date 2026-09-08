@@ -53,13 +53,14 @@ El histórico se consulta, no se reproduce. Amenaza asociada: T14 del threat mod
   estado en memoria; el mapeo de columnas detectado se loguea en cada carga.
 
 ## Verificación
-- **39 tests** (unit del parser/estadísticas + integración contra TimescaleDB real).
+- **98 tests** (unit del parser/estadísticas + integración contra TimescaleDB real).
 - Verificación en vivo con el export real (1.064 filas, 2025-12-02 → 2025-12-11):
   carga completa sin descartes, recarga idempotente y varianza calculada (precio
   base: media 417.03, σ² 65.32, σ 8.08; por banco incluida).
 
 ## Pendiente
-- Exponer el histórico vía api-gateway (cuando exista el servicio) si el análisis
-  lo pide; hoy se consulta con `stats` o SQL directo.
+- Exponer el histórico vía api-gateway si el análisis lo pide: el servicio ya existe
+  (2026-07-26) pero **no lee esta tabla** — su repositorio solo consulta `official_rates`,
+  `indicators`, `p2p_snapshots_raw` y `signals`. Hoy se consulta con `stats` o SQL directo.
 - Decisión HITL sobre retención (hoy: permanente, ver tabla de persistencia en
   `docs/02-design/architecture.md`).

@@ -13,14 +13,21 @@ rate limit in-memory, profundidad interim): **ADR-0016**.
 
 ## Capas (hexagonal, `src/api_gateway/`)
 - **Dominio** (`domain/`): `Usuario` (sub, permisos del claim `permissions`, `exp`),
-  paginación y rango ≤ 90 días (`paginacion.py`), rate limit de ventana fija con
+  paginación y rango acotado —por **filas** en `/indicators/history`, por días
+  en el resto (`paginacion.py`)—, rate limit de ventana fija con
   reloj inyectable (`rate_limit.py`), profundidad por bandas de 0,5 % desde el
   mejor precio (`profundidad.py`, pura) y errores propios (`errores.py`).
 - **Aplicación** (`application/`): puertos `TokenValidator` y `LecturaRepository`
   (`ports.py`); casos de uso de lectura que arman las respuestas del contrato con
   frescura (`consultas.py` — un indicador P2P más viejo que `P2P_FRESCURA_MIN` no
-  se sirve como vigente); `GestorSuscripciones` WSS (whitelist de tópicos, límites
-  por `sub`, difusión best-effort — `suscripciones.py`).
+  se sirve como vigente, y lo mismo aplica a `ConsultarAnalisisVigente`);
+  `GestorSuscripciones` WSS (whitelist de tópicos, límites por `sub`, difusión
+  best-effort — `suscripciones.py`).
+- **Análisis (RF-6, ADR-0019)**: `ConsultarAnalisisVigente` devuelve el payload **tal
+  como se publicó** — el gateway no reclasifica bandas ni recalcula escalas. Hacerlo
+  abriría una segunda fuente de verdad sobre la lectura del panel, y dos fuentes que se
+  contradicen es peor que ninguna. El codec `jsonb` ya registrado lo decodifica
+  manteniendo los decimales como string exacto.
 - **Adaptadores** (`adapters/`):
   - `auth/jwks.py` — `ValidadorTokenAuth0`: RS256 vía JWKS con cache por `kid` y
     refresco acotado (≥ 60 s entre fetches); exige `aud` = API e `iss` = tenant —
@@ -31,14 +38,20 @@ rate limit in-memory, profundidad interim): **ADR-0016**.
     string exacto; `DISTINCT ON` para «última fila por día/indicador»;
     `time_bucket` + `last()` para el histórico agregado.
   - `amqp/consumer.py` — cola **efímera** (exclusiva, auto-delete) sobre
-    `market.events` con bind a los 4 routing keys; valida cada evento contra su
+    `market.events` con bind a los 5 routing keys; valida cada evento contra su
     schema (`schemas/`) y difunde `{topic, event_id, occurred_at, data}`.
+    **Auto-recuperable** (2026-07-30): si el bus no está al arrancar, un
+    supervisor reintenta con backoff exponencial + jitter hasta conectar; una
+    vez conectado, la `RobustConnection` re-declara cola, bindings y consumidor.
+    Cada transición (caída / restablecimiento) emite **una** alerta por episodio
+    vía `AlertNotifier` (`adapters/alertas.py`, CRITICAL en log).
   - `http/` — FastAPI: REST (`rest.py`, cadena token → permiso → rate limit por
     endpoint), WSS (`ws.py`, cierres 4401/4403/1008, ping 30 s, cierre programado
     al `exp` del token) y problemas RFC 7807 (`problem.py`).
 - **Arranque** (`app.py`, `__main__.py`): fábrica con inyección para tests; si el
-  broker falta al arrancar, REST sirve igual y `/health` reporta `degraded`; el
-  access log redacta `token=` de la query del handshake WSS.
+  broker falta al arrancar, REST sirve igual, `/health` reporta `degraded` y el
+  push WSS se engancha solo en cuanto el bus vuelva (sin reinicio); el access log
+  redacta `token=` de la query del handshake WSS.
 
 ## Seguridad
 - Validación del access token: firma RS256 vía JWKS de Auth0; verifica `iss` (tenant),
@@ -50,36 +63,60 @@ rate limit in-memory, profundidad interim): **ADR-0016**.
 - Límites WSS: ≤ 5 conexiones y ≤ 10 suscripciones por usuario (`sub`); cierre 4401 al
   expirar token; el token de `?token=` no se registra en logs.
 - Rate limit por `sub` (ventana fija 60 s, `X-RateLimit-*`, 429 + `Retry-After`) — T4.
+- **CORS por allowlist** (2026-07-27, ADR-0017): env `ALLOWED_ORIGINS` (default
+  `http://localhost:5173,http://localhost:8080` — el web-spa en dev y en nginx),
+  solo `GET`, header `Authorization`, sin credentials, `expose_headers` para
+  `X-RateLimit-*`/`Retry-After` (T15). El WSS no pasa por CORS (browsers no lo
+  aplican); validar `Origin` en el handshake queda como hardening futuro.
 - Logging de seguridad: authN fallida (motivo solo en log), rate limits (sin PII; solo `sub`).
 
 ## Tenant Auth0 (aprovisionado 2026-07-14)
 
-Tenant de desarrollo: `dev-higerotech.us.auth0.com` (config pública por diseño, ADR-0012 —
-no hay secretos de firma del lado del gateway).
+Tenant de desarrollo: `dev-higerotech.us.auth0.com`, servido desde el **dominio
+propio `auth.higerotech.com`** desde 2026-08-01 (ADR-0020). Config pública por
+diseño (ADR-0012): no hay secretos de firma del lado del gateway.
 
 | Recurso | Valor |
 |---|---|
-| API (Resource Server) | `VES Market Watch API` — id `6a56683fbcee12f7916916ae` |
+| API (Resource Server) | `Criterio API` — id `6a56683fbcee12f7916916ae` |
 | Audience | `https://api.vesmarketwatch/` |
-| Firma / vigencia | RS256; access token 900 s (también `token_lifetime_for_web`); sin offline access |
+
+**El nombre se renombró en el tenant el 2026-08-03; el audience no** (ADR-0024).
+Las tres etiquetas del tenant siguen al producto —`Criterio API`, `Criterio SPA`,
+`Criterio M2M tests`—, pero el `identifier` de un Resource Server es inmutable en
+Auth0 y, aunque no lo fuera, **viaja dentro de cada access token emitido** y está
+en la config del SPA y del gateway: cambiarlo es invalidar todo lo que haya en
+vuelo. Por eso el audience conserva `vesmarketwatch` y así se queda. Los
+`client_id` tampoco se movieron: el nombre es etiqueta, el id es identidad.
+
+| Firma / vigencia | RS256; access token 900 s (también `token_lifetime_for_web`); **offline access habilitado** (corregido 2026-08-01: esta tabla decía «sin offline access» y el tenant lo tenía activo — la doc describía un tenant que no era el real) |
 | RBAC | `enforce_policies: true`, `token_dialect: access_token_authz` (permisos viajan en el claim `permissions`) |
 | Permisos | `read:rates`, `read:indicators`, `read:signals`, `read:depth`, `stream:events` |
 | Rol `viewer` (`rol_04JPNH53SrEU3ybX`) | Los 5 permisos (todo el catálogo actual es de solo lectura/streaming) |
 | Rol `operator` (`rol_WqmKgWUWzfl8ICD9`) | Los mismos 5; se diferenciará con el permiso admin de re-validación HITL (ADR-0007) cuando exista |
+| Refresh token | Rotación (`rotating`), expiración 30 d absoluta / 1 d de inactividad |
+| Dominio propio | `auth.higerotech.com` (`cd_rBB36mckbyHfvLgk`), cert Let's Encrypt gestionado por Auth0 |
 | Attack protection | Brute-force: block+user_notification, 10 intentos · Breached-password: block+admin_notification (inmediata) · Suspicious-IP throttling: block+admin_notification |
 
 Config del gateway (variables de entorno, todas públicas):
 
 ```env
-AUTH0_DOMAIN=dev-higerotech.us.auth0.com
-AUTH0_ISSUER=https://dev-higerotech.us.auth0.com/
+# El issuer es el del DOMINIO PROPIO: con él, el claim `iss` de los tokens deja
+# de ser el canónico. El gateway valida issuer de forma estricta, así que este
+# valor y el dominio del SPA se mueven juntos o son 401 en todo (ADR-0020).
+AUTH0_ISSUER=https://auth.higerotech.com/
 AUTH0_AUDIENCE=https://api.vesmarketwatch/
-JWKS_URI=https://dev-higerotech.us.auth0.com/.well-known/jwks.json
+JWKS_URI=https://auth.higerotech.com/.well-known/jwks.json
 ```
 
 ## Contratos
 - **REST:** `docs/openapi.yaml` (OpenAPI 3.1, validada con `openapi-spec-validator`).
-  8 endpoints `/api/v1`, seguridad OAuth2 con los 5 scopes; ajustes al implementarse:
+  9 endpoints `/api/v1` (v0.5.0 suma `/analysis/current`; v0.6.0 suma el objeto
+  **`reading`** opcional a `IndicatorAnalysis` — la lectura del mercado de ADR-0021,
+  aditiva para que el gateway pueda ir por delante del motor), seguridad OAuth2 con los 5
+  scopes — el análisis **reutiliza `read:indicators`** (ADR-0019: un permiso nuevo
+  exigiría aprovisionarlo en el tenant y daría 403 a todo token ya emitido); ajustes al
+  implementarse:
   `currency` opcional en tasa oficial, 404 en los «current» sin datos, `spread_pct`
   (la microestructura real del engine) en lugar de spreads por lado inexistentes.
 - **WSS:** `docs/asyncapi.yaml` (AsyncAPI 3.0, 2026-07-26 — cierra el TODO): canal
@@ -87,13 +124,19 @@ JWKS_URI=https://dev-higerotech.us.auth0.com/.well-known/jwks.json
   payload canónico de los eventos referenciando `schemas/` (sin duplicar contratos).
 
 ## Verificación
-- **78 tests** en verde: unit (dominio + validador con JWKS RSA local propio),
+- **108 tests** en verde: unit (dominio + validador con JWKS RSA local propio),
   contract (respuestas vs. `openapi.yaml`, errores RFC 7807), integration
   (TimescaleDB y RabbitMQ reales; INSERT rechazado por el pool read-only) y e2e
   (REST autenticado + `signals.emitted` del bus → frame WSS). Ver `tests/README.md`.
 - **En vivo** (compose raíz, puerto host 8800): `/api/v1/health` →
   `{"status":"ok","components":{"database":"ok","broker":"ok","auth":"ok"}}` con la
   plataforma completa corriendo, y 401 `problem+json` sin token contra el tenant real.
+  Corte forzado de la conexión del gateway (`rabbitmqctl close_connection`,
+  2026-07-30): alerta de caída inmediata, **restablecido en 28 ms** con la cola
+  efímera, sus 4 bindings y el consumidor restaurados (verificado con
+  `rabbitmqctl list_queues`/`list_bindings`) — el resto de servicios sin tocar.
 
 ## Pendiente
-- `<TODO: app SPA (cliente público, Auth Code + PKCE) en el tenant — se crea junto con el front-end; client M2M de prueba para el e2e autenticado en vivo (HITL); MFA del tenant se decide cuando haya usuarios reales>`
+- MFA del tenant cuando haya usuarios reales.
+  *(La app SPA y el client M2M quedaron aprovisionados el 2026-07-27; este TODO
+  sobrevivió a su propio cierre — encontrado al revisar pendientes el 2026-08-01.)*

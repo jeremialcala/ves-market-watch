@@ -50,6 +50,50 @@ def test_mejor_precio_es_top_of_book_sin_filtrar():
     assert referencia.mediana == Decimal("851")
 
 
+def test_mejor_precio_filtrado_es_el_mejor_que_sobrevive_al_filtro():
+    """El par (sin filtrar, filtrado) es lo que hace legible el top of book.
+
+    Medido sobre datos reales el 2026-08-07: en el lado SELL el primer anuncio
+    estaba marcado como outlier en 103 de 318 snapshots. Publicar solo el sin
+    filtrar contaba un tercio de las veces un precio que el propio filtro habia
+    descartado; filtrarlo habria destruido su significado.
+    """
+    referencia = calcular_referencia_p2p(
+        [_anuncio("700", outlier=True), _anuncio("850"), _anuncio("851"), _anuncio("852")]
+    )
+    assert referencia.mejor_precio == Decimal("700")
+    assert referencia.mejor_precio_filtrado == Decimal("850")
+
+
+def test_sin_outliers_los_dos_mejores_precios_coinciden():
+    """Cuando coinciden, el escaparate ES el libro: esa igualdad es el dato."""
+    referencia = calcular_referencia_p2p(
+        [_anuncio("850"), _anuncio("851"), _anuncio("852")]
+    )
+    assert referencia.mejor_precio == referencia.mejor_precio_filtrado == Decimal("850")
+
+
+def test_el_filtrado_respeta_el_orden_de_la_fuente_en_los_dos_lados():
+    """Filtrar preserva el orden, asi que `limpios[0]` es el mejor por el mismo
+    criterio que `anuncios[0]`: en BUY el mas barato, en SELL el mas caro.
+
+    Comprobado contra el crudo: el primer anuncio fue el minimo en 318/318
+    snapshots BUY y el maximo en 318/318 SELL.
+    """
+    # BUY: la fuente ordena ascendente y el outlier esta arriba del todo.
+    compra = calcular_referencia_p2p(
+        [_anuncio("700", outlier=True), _anuncio("850"), _anuncio("860")]
+    )
+    assert compra.mejor_precio_filtrado == Decimal("850")
+
+    # SELL: la fuente ordena descendente; el mejor filtrado sigue siendo el
+    # primero de los limpios, no el minimo.
+    venta = calcular_referencia_p2p(
+        [_anuncio("920", outlier=True), _anuncio("860"), _anuncio("850")]
+    )
+    assert venta.mejor_precio_filtrado == Decimal("860")
+
+
 def test_confianza_baja_cuando_mas_de_30_pct_outliers():
     limpios = [_anuncio("850")] * 6
     marcados = [_anuncio("9999", outlier=True)] * 4

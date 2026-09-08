@@ -1,0 +1,13 @@
+# Finales de línea de los archivos que se ejecutan DENTRO de un contenedor.
+#
+# En Windows, git los sacaría con CRLF y el resultado es de los que cuestan una
+# tarde: un script con `#!/bin/sh\r` hace que el kernel busque un intérprete
+# llamado `/bin/sh\r` y falle con «no such file or directory» —señalando al
+# shell, no al script—, y busybox `crond` no reconoce las líneas de un crontab
+# con CR.
+#
+# Alcance deliberadamente estrecho: aquí no se normaliza el árbol entero, que
+# sería un diff enorme ajeno a lo que se está resolviendo.
+*.sh            text eol=lf
+**/Dockerfile   text eol=lf
+scripts/respaldo/crontab text eol=lf

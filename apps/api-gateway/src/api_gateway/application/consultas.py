@@ -13,9 +13,11 @@ from __future__ import annotations
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
+from api_gateway.adapters.timescale.repository import VENTANA_RESULTADO_H
 from api_gateway.application.ports import LecturaRepository
 from api_gateway.domain.paginacion import Pagina, meta_pagina
 from api_gateway.domain.profundidad import calcular_profundidad
+from api_gateway.domain.vigencia import oficial_rancia
 
 FIAT_P2P = "VES"
 MONEDA_BRECHA = "USD"  # la pierna oficial del par USDT/VES (ADR-0014)
@@ -27,9 +29,8 @@ def _por_lado(nombre: str, side: str) -> str:
 
 
 class ConsultarTasaOficialVigente:
-    def __init__(self, repo: LecturaRepository, umbral_stale: timedelta) -> None:
+    def __init__(self, repo: LecturaRepository) -> None:
         self._repo = repo
-        self._umbral = umbral_stale
 
     async def ejecutar(self, currency: str) -> dict | None:
         fila = await self._repo.tasa_oficial_vigente(currency)
@@ -41,7 +42,9 @@ class ConsultarTasaOficialVigente:
             "rate": fila["rate"],
             "value_date": fila["value_date"].isoformat(),
             "captured_at": captured_at.isoformat(),
-            "stale": datetime.now(UTC) - captured_at > self._umbral,
+            # `stale` sale de la fecha-valor, no de la antigüedad de la captura
+            # (ADR-0022): el viernes por la tarde el BCV publica la del lunes.
+            "stale": oficial_rancia(fila["value_date"], datetime.now(UTC)),
         }
 
 
@@ -120,11 +123,9 @@ class ConsultarIndicadoresVigentes:
     def __init__(
         self,
         repo: LecturaRepository,
-        umbral_stale: timedelta,
         frescura_p2p: timedelta,
     ) -> None:
         self._repo = repo
-        self._umbral = umbral_stale
         self._frescura = frescura_p2p
 
     async def ejecutar(self, currency: str) -> dict | None:
@@ -133,9 +134,10 @@ class ConsultarIndicadoresVigentes:
         if fila_oficial is None:
             return None
         tasa = await self._repo.tasa_oficial_vigente(currency)
-        official_stale = (
-            tasa is None
-            or datetime.now(UTC) - tasa["captured_at"] > self._umbral
+        # Misma regla que el motor (ADR-0022), para que el REST y el análisis no
+        # se contradigan sobre la misma tasa. Sin tasa → rancia.
+        official_stale = oficial_rancia(
+            None if tasa is None else tasa["value_date"], datetime.now(UTC)
         )
         respuesta: dict = {
             "currency": currency,
@@ -183,10 +185,16 @@ class ConsultarHistoricoIndicadores:
         self._repo = repo
 
     async def ejecutar(
-        self, desde: datetime, hasta: datetime, intervalo: str, pagina: Pagina
+        self,
+        desde: datetime,
+        hasta: datetime,
+        intervalo: str,
+        pagina: Pagina,
+        indicador: str | None = None,
+        moneda: str | None = None,
     ) -> dict:
         filas, total = await self._repo.historial_indicadores(
-            desde, hasta, intervalo, pagina.offset, pagina.tamano
+            desde, hasta, intervalo, indicador, moneda, pagina.offset, pagina.tamano
         )
         return {
             "data": [
@@ -225,6 +233,53 @@ class ConsultarProfundidad:
         }
 
 
+class ConsultarAnalisisVigente:
+    """Última lectura de los medidores del panel (RF-6, ADR-0019).
+
+    Devuelve el payload **tal como se publicó**: el gateway no reclasifica
+    bandas ni recalcula escalas. Hacerlo abriría una segunda fuente de verdad
+    sobre la lectura del panel, y dos fuentes que se contradicen es peor que
+    ninguna. Mismo criterio de frescura que `/rates/p2p/current`: una revisión
+    más vieja que la frescura P2P no se sirve como vigente (A10).
+    """
+
+    def __init__(self, repo: LecturaRepository, frescura: timedelta) -> None:
+        self._repo = repo
+        self._frescura = frescura
+
+    async def ejecutar(self, currency: str) -> dict | None:
+        fila = await self._repo.analisis_vigente(currency)
+        if fila is None:
+            return None
+        as_of: datetime = fila["as_of"]
+        if datetime.now(UTC) - as_of > self._frescura:
+            return None
+        return fila["payload"]
+
+
+def _resultado_observado(fila) -> dict | None:
+    """Qué hizo la brecha en las horas siguientes a la señal.
+
+    **Es historia, no acierto.** Se publica la variación y nada más: ni un
+    veredicto, ni un contador agregado de «N de M». El no-objetivo del PRD es no
+    insinuar capacidad predictiva, y un contador agregado se lee como una tasa de
+    acierto — sobre todo con las 7 señales que hay hoy, donde una regla tiene
+    n = 1 y «1 de 1» parecería un 100 %.
+
+    `None` mientras la ventana no se haya cumplido: eso todavía no ocurrió, y
+    rellenarlo con lo que haya sería contar un tramo más corto como si fuera el
+    completo.
+    """
+    antes = fila["brecha_en_senal"]
+    despues = fila["brecha_despues"]
+    if antes is None or despues is None:
+        return None
+    return {
+        "hours": VENTANA_RESULTADO_H,
+        "gap_delta_pp": format(Decimal(despues) - Decimal(antes), "f"),
+    }
+
+
 class ConsultarSenales:
     def __init__(self, repo: LecturaRepository) -> None:
         self._repo = repo
@@ -246,6 +301,7 @@ class ConsultarSenales:
                     "calc_version": f["calc_version"],
                     "triggered_by": f["triggered_by"],
                     "evidence": f["evidence"],
+                    "outcome": _resultado_observado(f),
                 }
                 for f in filas
             ],

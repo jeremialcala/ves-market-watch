@@ -1,0 +1,3463 @@
+/**
+ * Estilos del dashboard sobre el sistema de diseño Higerotech.
+ *
+ * Regla: aquí NO se inventan colores ni tamaños — todo sale de los tokens de
+ * `ds/tokens/*`. El diseño importado (`VES Market Watch.dc.html`) resuelve todo
+ * con estilos en línea porque es un archivo de la herramienta de diseño; en la
+ * app se traduce a clases para que los componentes se lean y los temas claro /
+ * oscuro funcionen sin duplicar valores.
+ *
+ * Serie de datos: los colores de gráfico siguen siendo los del skill dataviz
+ * (buy/sell como par categórico), mapeados ahora a los acentos de marca —
+ * teal para compra, coral para venta, salvia para lo que no tiene lado.
+ */
+
+@import url("./ds/styles.css");
+
+/* -- colores de DATO (no de interfaz) --------------------------------------
+ * Los acentos de marca visten el cromo; las marcas de dato llevan slots
+ * propios, validados con el validador del skill dataviz (`--mode light|dark`
+ * contra la superficie de tarjeta). Mezclarlos fue el error del rediseño: en
+ * tema claro el par compra/venta daba ΔE 5,9 bajo protanopia — por debajo del
+ * piso de 6, donde ni el rótulo visible lo excusa.
+ *
+ * Categórico (compra ↔ venta), medido:
+ *   claro  #10846e ↔ #cf4946 → ΔE 8,1 (deutan) · croma, banda y contraste ok
+ *   oscuro #8ad6cc ↔ #f97171 → ΔE 13,2 (deutan) · contraste ok
+ * El oscuro se deja en los acentos de marca: separa de sobra y es el aspecto
+ * aprobado. Sus avisos de banda y croma quedan anotados en el design.md.
+ *
+ * «Sin lado» NO es una tercera categoría: es la AUSENCIA de lado (tasa oficial,
+ * microestructura). Por eso va en tinta neutra en vez de un tercer tono — el
+ * salvia de marca leía gris igualmente (croma 0,046) y encima competía con el
+ * teal. Cada panel que lo usa lleva etiqueta y valor visibles.
+ */
+:root {
+  --series-buy: #8ad6cc;
+  --series-sell: #f97171;
+  --series-aqua: var(--text-muted);
+
+  /* Rampa secuencial del mapa: UN tono (el teal de marca) a cinco alfas.
+     Índice 1 = brecha menor. Contra la tarjeta da 1,19 · 1,66 · 2,53 · 4,25 ·
+     7,85, con saltos crecientes de 1,39 → 1,85 entre escalones: lo que importa
+     en un mapa es distinguir una celda de su VECINA, no del fondo. */
+  --calor-1: rgb(138 214 204 / 8%);
+  --calor-2: rgb(138 214 204 / 22%);
+  --calor-3: rgb(138 214 204 / 40%);
+  --calor-4: rgb(138 214 204 / 65%);
+  --calor-5: rgb(138 214 204 / 100%);
+  /* Hueco sin dato. El blanco al 4 % queda a 1,13:1 del fondo y a 1,06:1 de la
+     celda más floja — o sea, indistinguible de ambas. Por eso la ausencia se
+     marca además con FORMA (un filete interior), que no compite por ese tramo
+     estrechísimo de luminosidad. */
+  --calor-hueco: rgb(255 255 255 / 4%);
+  --calor-hueco-filete: rgb(255 255 255 / 10%);
+
+  /* Exceso: por encima del p90. NO es la continuación de la rampa, es otra
+     categoría — y por eso cambia de tono. Son los dos escalones más marcados
+     de la coral ya validada, reutilizados sin tocar. */
+  --calor-alto-1: #fe9b96;
+  --calor-alto-2: #fec3bf;
+
+  /* Banda de rango del gráfico de 24 h y serie de venta atenuada. La venta va
+     en TEAL, no en coral: el coral queda reservado para el disparo. Las dos
+     series se separan por LUMINOSIDAD —7,85:1 contra 2,82:1 sobre la tarjeta—,
+     que es lo que el daltonismo no altera, y la de venta sigue discontinua. */
+  --banda-rango: rgb(138 214 204 / 12%);
+  --serie-venta-suave: rgb(138 214 204 / 45%);
+  /* Halo de la tarjeta rectora: ACENTO sobre fondo neutro. Va más flojo que el
+     tinte de «Lectura de hoy» (14 %), que es superficie teñida y sigue siendo
+     la única. */
+  --halo-rector: rgb(138 214 204 / 13%);
+
+  /* Dirección de señal: es ESTADO, no serie — siempre con su texto al lado. */
+  --dir-alcista: var(--teal);
+  --dir-bajista: var(--coral);
+  --dir-neutral: var(--text-dim);
+  --grid-chart: var(--border);
+}
+
+[data-theme="light"] {
+  --series-buy: #10846e;
+  --series-sell: #cf4946;
+  --series-aqua: var(--text-muted);
+
+  /* Mismas alfas sobre el teal del tema claro: 1,11 · 1,35 · 1,77 · 2,68 · 5,15. */
+  --calor-1: rgb(31 122 112 / 8%);
+  --calor-2: rgb(31 122 112 / 22%);
+  --calor-3: rgb(31 122 112 / 40%);
+  --calor-4: rgb(31 122 112 / 65%);
+  --calor-5: rgb(31 122 112 / 100%);
+  --calor-hueco: rgb(45 49 52 / 4%);
+  --calor-hueco-filete: rgb(45 49 52 / 12%);
+
+  --calor-alto-1: #972e30;
+  --calor-alto-2: #760715;
+
+  --banda-rango: rgb(31 122 112 / 12%);
+  --serie-venta-suave: rgb(31 122 112 / 45%);
+  --halo-rector: rgb(31 122 112 / 13%);
+}
+
+@keyframes vmw-pulso {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}
+
+body {
+  font-size: var(--fs-body-xs);
+  line-height: var(--lh-body);
+}
+
+/* -- estructura ------------------------------------------------------------ */
+
+.vmw-app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--ink);
+  color: var(--text);
+}
+
+.vmw-contenedor {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 var(--container-pad);
+}
+
+.vmw-vista {
+  flex: 1;
+  padding: clamp(24px, 4vw, 44px) 0 96px;
+}
+
+/*
+ * Separación uniforme entre los bloques de una vista: 24 px.
+ *
+ * Antes era `.vmw-seccion + .vmw-seccion { 46px }`, y esa regla **solo aplicaba
+ * entre dos `.vmw-seccion` adyacentes**: bastaba con que se colara un
+ * `.vmw-grid` entre medias —la fila de brecha, la de referencia P2P— para que
+ * la cadena se rompiera y los bloques quedaran PEGADOS. Medido en el dashboard:
+ * la escalera real era 0 · 0 · 46 · 46 · 0 · 0 · 46, no una separación.
+ *
+ * El selector va por hijo directo del contenedor de la vista, así que abarca
+ * todo lo que sea un bloque de primer nivel —sección, rejilla o tarjeta— sin
+ * depender de que lleve una clase concreta.
+ */
+.vmw-vista > .vmw-contenedor > * + * {
+  margin-top: 24px;
+}
+
+/* Ritmo de Intradía: 46 px entre bloques. La regla base (24 px) la comparten
+   las otras tres vistas, así que esto va en un modificador en vez de mover el
+   ritmo de todo el producto de refilón. */
+.vmw-vista--intradia > .vmw-contenedor > * + * {
+  margin-top: 46px;
+}
+
+.vmw-seccion__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 14px;
+  margin-bottom: 18px;
+}
+
+.vmw-seccion__titulo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(20px, 2.4vw, 24px);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-title);
+  color: var(--white);
+}
+
+.vmw-seccion__bajada {
+  font-size: var(--fs-meta);
+  color: var(--text-dim);
+}
+
+.vmw-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(var(--min, 300px), 100%), 1fr)
+  );
+}
+
+/*
+ * Reparto vertical dentro de una tarjeta que la rejilla estira.
+ *
+ * `.vmw-grid` alinea a `stretch`, así que en una fila con una tarjeta alta y
+ * otra corta la corta CRECE pero su contenido se queda amontonado arriba: queda
+ * un bloque muerto al pie (medidos 160 px en la descomposición y 161 en la
+ * referencia P2P). Se resolvió repartiendo y no recortando —`align-items:start`
+ * dejaría las tarjetas desiguales, que es peor— ni rellenando con contenido
+ * inventado, que en este proyecto no es una opción.
+ *
+ * `--al-fondo` ancla un elemento al pie; `--crece` reparte el sobrante entre los
+ * hijos que lo pidan.
+ */
+.vmw-tarjeta--reparte {
+  display: flex;
+  flex-direction: column;
+}
+
+.vmw-tarjeta--reparte > .vmw-al-fondo {
+  margin-top: auto;
+}
+
+.vmw-tarjeta--reparte > .vmw-crece {
+  flex: 1;
+}
+
+/* Un contenedor que crece también reparte: su propio pie baja al fondo. */
+.vmw-tarjeta--reparte > .vmw-crece:not(.vmw-grid) {
+  display: flex;
+  flex-direction: column;
+}
+
+.vmw-tarjeta--reparte > .vmw-crece > .vmw-al-fondo {
+  margin-top: auto;
+}
+
+/* Los hijos de una rejilla que crece se estiran con ella y reparten lo suyo. */
+.vmw-crece.vmw-grid > .vmw-tarjeta {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* -- superficies ----------------------------------------------------------- */
+
+.vmw-tarjeta {
+  padding: 26px 28px;
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  border: var(--border-width) solid var(--border);
+  min-width: 0;
+}
+
+.vmw-tarjeta--panel {
+  background: var(--surface-panel);
+}
+
+.vmw-tarjeta--sm {
+  padding: 20px 22px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-panel);
+}
+
+.vmw-eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-caption);
+  letter-spacing: var(--ls-kicker);
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.vmw-cifra {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.03em;
+  color: var(--white);
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-nota {
+  margin: 0;
+  font-size: var(--fs-body-sm);
+  line-height: var(--lh-body);
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+
+.vmw-sin-datos {
+  margin: 0.6rem 0 0;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.vmw-badge {
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid var(--border);
+  background: var(--overlay-soft);
+  color: var(--text-muted);
+  font-size: var(--fs-tiny);
+  white-space: nowrap;
+}
+
+.vmw-badge--alerta {
+  border-color: var(--coral-line);
+  background: var(--coral-tint);
+  color: var(--coral);
+}
+
+/* -- shell: tira de estado, nav, menú -------------------------------------- */
+
+.vmw-shell {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--ink);
+}
+
+/* UNA sola línea: con `wrap` la tira se partía en dos en cuanto entraba un dato
+   más, que es lo que la volvía un panel. Lo que sobra se repliega por punto de
+   corte (`__secundario`), no envolviendo. */
+.vmw-tira {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 14px;
+  white-space: nowrap;
+  padding: 7px var(--container-pad);
+  background: var(--surface-band);
+  border-bottom: var(--border-width) solid var(--border);
+  font-size: var(--fs-caption);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.vmw-tira__sep {
+  opacity: 0.4;
+}
+
+.vmw-tira__relleno {
+  flex: 1;
+}
+
+/* 76 px FIJOS y sin envolver. Con `min-height` + `wrap` la barra crecía a dos
+   filas en cuanto el nombre de usuario era largo, y una barra pegajosa que
+   cambia de alto mueve todo el contenido bajo ella. Lo que no cabe se repliega
+   por punto de corte (la variante compacta), no apilándose. */
+.vmw-nav {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 10px 24px;
+  height: var(--nav-height);
+  padding: 0 var(--container-pad);
+  background: var(--nav-bg);
+  backdrop-filter: var(--blur-nav);
+  border-bottom: var(--border-width) solid var(--border);
+}
+
+.vmw-nav__marca {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* No cede ancho: lo que cede es el desplazamiento de las pestañas. */
+  flex: none;
+}
+
+.vmw-nav__marca img {
+  width: 26px;
+  height: 26px;
+}
+
+.vmw-nav__titulo {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
+  color: var(--white);
+  white-space: nowrap;
+}
+
+/* Las pestañas NO envuelven: la barra pasó a alto fijo (76 px), así que una
+   segunda fila ya no la hace crecer — se sale de ella. Medido entre el punto de
+   corte compacto (760 px) y ~1050: a 820 px eran tres filas desbordando la
+   barra. Si no caben, la tira de pestañas se desplaza en horizontal, que las
+   deja todas alcanzables sin romper el alto. */
+.vmw-nav__tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  min-width: 0;
+  scrollbar-width: none;
+  gap: 4px;
+}
+
+.vmw-nav__relleno {
+  flex: 1;
+}
+
+.vmw-nav__acciones {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vmw-nav__usuario {
+  flex: none;
+  font-size: var(--fs-body-xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 22ch;
+}
+
+.vmw-nav__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* Cada pestaña conserva su ancho; lo que cede es el desplazamiento. */
+.vmw-nav__tabs > .vmw-tab {
+  flex: none;
+}
+
+.vmw-tab {
+  padding: 9px 18px;
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid transparent;
+  background: none;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-sm);
+  cursor: pointer;
+  transition: color var(--dur-fast) ease, border-color var(--dur-fast) ease;
+}
+
+/* Hover a teal, nunca subrayado: la pestaña activa ya se distingue por su
+   pastilla, así que el hover solo tiene que insinuar el destino. */
+.vmw-tab:hover {
+  color: var(--teal);
+  text-decoration: none;
+}
+
+.vmw-tab[aria-selected="true"] {
+  border-color: var(--teal-line);
+  background: var(--teal-tint);
+  color: var(--teal);
+}
+
+.vmw-toggle {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--overlay-soft);
+  border: var(--border-width) solid var(--border);
+}
+
+.vmw-mini {
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid transparent;
+  background: none;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+  cursor: pointer;
+}
+
+.vmw-mini[aria-pressed="true"] {
+  border-color: var(--teal-line);
+  background: var(--teal-tint);
+  color: var(--teal);
+}
+
+.vmw-boton-suave {
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid var(--border);
+  background: var(--overlay-soft);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+  cursor: pointer;
+}
+
+.vmw-boton-suave:hover {
+  color: var(--text);
+}
+
+.vmw-nav-compacta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 8px 16px;
+  background: var(--nav-bg);
+  backdrop-filter: var(--blur-nav);
+  border-bottom: var(--border-width) solid var(--border);
+}
+
+.vmw-nav-compacta img {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+
+.vmw-nav-compacta .vmw-nav__titulo {
+  font-size: 15.5px;
+}
+
+/* La vista actual sustituye a las pestañas mientras el menú está plegado.
+   `flex: none` es deliberado: sin él, flex la estruja a 0 px mucho antes de su
+   punto de corte y el texto queda partido a media palabra. O cabe entera, o se
+   retira; nunca a medias. */
+.vmw-nav-compacta__vista {
+  flex: none;
+  font-size: var(--fs-micro);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* El que sí cede es el título de marca, con elipsis en vez de desbordar. */
+.vmw-nav-compacta .vmw-nav__marca {
+  min-width: 0;
+}
+
+.vmw-nav-compacta .vmw-nav__titulo {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vmw-icono-boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid var(--border);
+  background: var(--overlay-soft);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.vmw-punto {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-tiny);
+  color: var(--sage);
+  white-space: nowrap;
+}
+
+.vmw-punto::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: currentcolor;
+  box-shadow: var(--glow-dot);
+  animation: vmw-pulso 2.4s ease-in-out infinite;
+}
+
+.vmw-punto--alerta {
+  color: var(--coral);
+}
+
+.vmw-menu {
+  padding: 14px 16px 18px;
+  background: var(--surface-band);
+  border-bottom: var(--border-width) solid var(--border);
+  display: grid;
+  gap: 14px;
+}
+
+.vmw-menu__tabs {
+  display: grid;
+  gap: 6px;
+}
+
+.vmw-menu__tabs .vmw-tab {
+  min-height: 44px;
+  padding: 12px 18px;
+  text-align: left;
+  border-color: var(--border);
+  font-size: var(--fs-body);
+}
+
+.vmw-menu__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.vmw-menu__meta {
+  font-size: var(--fs-tiny);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+/* -- repliegue responsivo del shell ---------------------------------------- */
+
+/* Entre la barra ancha y la compacta la tira se queda sin sitio antes de que
+   la nav cambie de variante: se repliegan los datos secundarios (suscripciones
+   y cuota) para no partirla en dos filas. Lo que nunca se repliega es el estado
+   del stream ni la antigüedad del último evento. */
+@media (max-width: 1079px) {
+  .vmw-tira__secundario {
+    display: none;
+  }
+}
+
+/* Por debajo del corte, la tira NO existe: su contenido vive en la barra
+   compacta y en la línea meta del menú. `StatusStrip` ya devuelve null, pero la
+   regla se declara también aquí porque el estado de React llega un tic tarde y
+   la tira alcanzaba a pintarse un fotograma. El 759 es `ANCHO_COMPACTO - 1` de
+   `lib/useCompacto.ts`; que no se separen lo vigila `tests/unit/compacto.test.ts`. */
+@media (max-width: 759px) {
+  .vmw-tira {
+    display: none;
+  }
+}
+
+/* Móvil estrecho: el nombre de la vista cede el sitio antes que la marca o el
+   pulso del stream — está a un toque de distancia en el menú. El corte está en
+   480 px, que es donde deja de caber entera junto a marca, pulso y botón. */
+@media (max-width: 479px) {
+  .vmw-nav-compacta__vista {
+    display: none;
+  }
+}
+
+/* -- hero de la brecha ----------------------------------------------------- */
+
+.vmw-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 34px 34px 30px;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(160deg, var(--dark-3), var(--dark-2));
+  border: var(--border-width) solid var(--border);
+}
+
+.vmw-hero__brillo {
+  position: absolute;
+  inset: -40% -30% auto auto;
+  width: 420px;
+  height: 420px;
+  border-radius: 100%;
+  background: radial-gradient(circle, var(--teal-tint-strong), transparent 68%);
+  pointer-events: none;
+}
+
+/* Los hijos suben sobre el halo. La lista de EXCLUIDOS tiene que nombrar todos
+   los adornos absolutos: al añadir `__halo` sin ponerlo aquí, heredó
+   `position: relative`, entró en el flujo y empujó la tarjeta entera 380 px. */
+.vmw-hero > *:not(.vmw-hero__brillo, .vmw-rector__halo) {
+  position: relative;
+}
+
+.vmw-hero__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 22px;
+  margin-top: 18px;
+}
+
+.vmw-hero__cifra {
+  font-size: clamp(46px, 8.5vw, 78px);
+  line-height: 0.9;
+  letter-spacing: -0.035em;
+  white-space: nowrap;
+}
+
+.vmw-hero__pie {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 26px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: var(--border-width) solid var(--border);
+  font-size: var(--fs-meta);
+  color: var(--text-muted);
+}
+
+/* Halo de la tarjeta rectora: desborda por la esquina superior derecha y lo
+   recorta el `overflow: hidden` de `.vmw-hero`. */
+.vmw-rector__halo {
+  position: absolute;
+  inset: -38% -26% auto auto;
+  width: 380px;
+  height: 380px;
+  border-radius: 100%;
+  background: radial-gradient(circle, var(--halo-rector), transparent 68%);
+  pointer-events: none;
+}
+
+/* El contexto de la cifra, anclado a su LÍNEA DE BASE. */
+.vmw-hero__contexto {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 10px;
+}
+
+.vmw-hero__equivalente {
+  font-size: var(--fs-body);
+  color: var(--text-muted);
+}
+
+/* Salvia si la brecha comprime, coral si abre. El signo ya va en el número: el
+   color refuerza, no codifica solo. */
+.vmw-hero__contra[data-sentido="comprime"] {
+  color: var(--sage);
+}
+
+.vmw-hero__contra[data-sentido="abre"] {
+  color: var(--coral);
+}
+
+/* El eje vive FUERA del SVG, que se estira con `preserveAspectRatio="none"` y
+   deformaría cualquier texto de dentro. */
+.vmw-spark__marco {
+  position: relative;
+  padding-left: 54px;
+}
+
+.vmw-spark__eje {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 48px;
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-spark__eje > span {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+.vmw-spark {
+  width: 100%;
+  height: 110px;
+  display: block;
+}
+
+/* Cuatro rótulos no caben repartidos a los extremos: se apilaban unos sobre
+   otros. Fluyen con separación fija y envuelven cuando toca. */
+.vmw-spark__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+  margin-top: 10px;
+  padding-left: 54px;
+  font-size: var(--fs-caption);
+  color: var(--text-dim);
+}
+
+/* -- barras (medidores, comparativas, profundidad) ------------------------- */
+
+.vmw-barra {
+  position: relative;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--overlay-soft);
+  overflow: hidden;
+}
+
+.vmw-barra__relleno {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--teal);
+}
+
+.vmw-barra--con-umbral {
+  overflow: visible;
+}
+
+.vmw-barra__umbral {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 16px;
+  background: var(--coral);
+}
+
+/* Sin escala dibujable: el hueco se ve, pero vacío — no se rellena a ojo. */
+.vmw-barra--sin-escala {
+  border: var(--border-width) dashed var(--border);
+  background: transparent;
+}
+
+/* Umbral ya cumplido en teal; pendiente sigue en coral (regla de arriba).
+   El color NO codifica solo: la línea de regla del desplegable lo dice en
+   palabras, requisito extra por el defecto abierto de paleta en tema claro. */
+.vmw-barra__umbral[data-cumple="true"] {
+  background: var(--teal);
+}
+
+/* La síntesis del panel, ya sin la tarjeta-marco que la envolvía. */
+/* -- medidor ---------------------------------------------------------------
+ * Radio 22 sobre `--dark-3` con hairline al 8 %. La barra lleva TRES cosas y
+ * cada una con su tratamiento: banda normal = superficie, umbral = línea coral,
+ * hoy = pastilla teal. Nunca el mismo para dos.
+ */
+.vmw-medidor {
+  border-radius: 22px;
+  background: var(--dark-3);
+  border: var(--border-width) solid var(--border);
+}
+
+.vmw-medidor__cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.vmw-medidor__escala {
+  margin-top: 4px;
+  font-size: var(--fs-caption);
+  color: var(--text-dim);
+  text-align: right;
+}
+
+/* Distintivo de banda. Es ESTADO, no serie: por eso va con su texto, nunca
+   codificado solo por color. */
+.vmw-medidor__badge {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid var(--border);
+  background: var(--overlay-soft);
+  color: var(--text-muted);
+  font-size: var(--fs-tiny);
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.vmw-medidor__badge[data-tono="coral"] {
+  border-color: var(--coral-line);
+  background: var(--coral-tint);
+  color: var(--coral);
+}
+
+/* Los cortes bajo la barra, cada uno en su posición real. `translateX(-50%)`
+   los centra sobre la marca; los de los extremos se sujetan con `clamp` para
+   que no se salgan de la tarjeta. */
+.vmw-medidor__cortes {
+  position: relative;
+  height: 16px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-medidor__cortes > span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* A qué aviso alimenta el medidor: vocabulario del contrato, sin traducir. */
+.vmw-medidor__reglas-pie {
+  margin-top: 12px;
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+  word-break: break-word;
+}
+
+.vmw-medidor__valor {
+  margin-top: 10px;
+  font-family: var(--font-display);
+  font-size: 30px;
+}
+
+/* Sin escala empírica no hay cifra: se dice, con el mismo peso tipográfico que
+   tendría el número para que la tarjeta no se descuadre. */
+.vmw-medidor__sin-historia {
+  margin-top: 10px;
+  font-size: var(--fs-body-sm);
+  line-height: 38px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.vmw-medidor__escala-barra {
+  position: relative;
+  height: 6px;
+  margin-top: 16px;
+  border-radius: var(--radius-pill);
+  background: var(--overlay-soft);
+}
+
+/* El tramo normal: superficie, no marca. */
+.vmw-medidor__banda {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 10%);
+}
+
+/* El umbral: LÍNEA fina y coral, para que no se confunda con el valor de hoy. */
+.vmw-medidor__umbral {
+  position: absolute;
+  top: -5px;
+  width: 1.5px;
+  height: 16px;
+  background: var(--coral);
+}
+
+.vmw-medidor__umbral[data-cumple="true"] {
+  background: var(--teal);
+}
+
+/* Hoy: PASTILLA, otra forma y otro color que el umbral. */
+.vmw-medidor__hoy {
+  position: absolute;
+  top: -4px;
+  width: 3px;
+  height: 14px;
+  transform: translateX(-1.5px);
+  border-radius: var(--radius-pill);
+  background: var(--teal);
+  box-shadow: var(--glow-dot);
+}
+
+/* Barra vacía: el hueco se VE, no se rellena a ojo. */
+.vmw-medidor__escala-barra--vacia {
+  background: none;
+  border: var(--border-width) dashed var(--border);
+}
+
+/* Botón de TEXTO, teal, con 44 px de alto: es un objetivo táctil, no un enlace
+   de 14 px que haya que acertar. */
+.vmw-medidor__boton {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--teal);
+  font-family: var(--font-sans);
+  font-size: var(--fs-meta);
+  cursor: pointer;
+}
+
+.vmw-medidor__boton:hover {
+  color: var(--teal-hover);
+}
+
+/* La misma flecha dice las dos direcciones: gira al abrir. */
+.vmw-medidor__boton svg {
+  transition: transform var(--dur-fast) ease;
+}
+
+.vmw-medidor__boton[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
+.vmw-medidor__detalle {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: var(--border-width) solid var(--border);
+  display: grid;
+  gap: 6px;
+}
+
+.vmw-medidor__detalle .vmw-eyebrow:not(:first-child) {
+  margin-top: 10px;
+}
+
+.vmw-medidor__reglas {
+  margin: 0;
+  padding-left: 18px;
+  font-size: var(--fs-meta);
+  color: var(--text-muted);
+}
+
+.vmw-medidor__reglas > li[data-cumple="true"] {
+  color: var(--text);
+}
+
+.vmw-medidor__aviso {
+  margin-top: 10px;
+  font-size: var(--fs-micro);
+  color: var(--text-dim);
+}
+
+.vmw-medidor__aviso {
+  color: var(--coral);
+}
+
+.vmw-profundidad__fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vmw-profundidad__precio {
+  width: 62px;
+  text-align: right;
+  font-size: var(--fs-caption);
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-profundidad__vol {
+  width: 74px;
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-profundidad .vmw-barra {
+  flex: 1;
+  height: 16px;
+  border-radius: var(--radius-sm);
+}
+
+.vmw-profundidad .vmw-barra__relleno {
+  border-radius: var(--radius-sm);
+  opacity: 0.85;
+}
+
+/* -- compra vs. venta, métrica por métrica (Intradía) ----------------------- */
+
+/* La tabla no se estrecha por debajo de su ancho legible: en móvil se desplaza
+   en horizontal antes que apilar dos lados que existen para compararse. */
+.vmw-vs {
+  overflow-x: auto;
+  border-radius: 28px;
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+  padding: 8px 26px 20px;
+}
+
+.vmw-vs__tabla {
+  min-width: 660px;
+}
+
+.vmw-vs__cabecera,
+.vmw-vs__fila {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(0, 1.35fr) minmax(0, 1.35fr);
+  gap: 16px;
+}
+
+.vmw-vs__cabecera {
+  padding: 14px 0 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+
+/* El color de la CABECERA es el del lado. En las filas el mismo par de tonos
+   codifica la dirección: por eso el signo de la Δ va siempre escrito. */
+.vmw-vs__col-compra {
+  color: var(--teal);
+}
+
+.vmw-vs__col-venta {
+  color: var(--coral);
+}
+
+.vmw-vs__fila {
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.vmw-vs__fila:last-child {
+  border-bottom: none;
+}
+
+.vmw-vs__metrica {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vmw-vs__nombre {
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--white);
+}
+
+/* La clave técnica del contrato, idéntica en todos los bloques del Intradía.
+   Space Grotesk porque es un identificador, no prosa: se lee carácter a
+   carácter y a menudo se copia. */
+.vmw-serie__clave,
+.vmw-vs__clave {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  color: var(--text-dim);
+  word-break: break-word;
+}
+
+.vmw-vs__celda {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 12px;
+  align-items: center;
+}
+
+.vmw-vs__celda--vacia {
+  display: block;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.vmw-vs__cifras {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.vmw-vs__valor {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--white);
+}
+
+.vmw-vs__delta {
+  font-size: 12.5px;
+}
+
+.vmw-vs__apertura {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.vmw-vs__spark {
+  width: 96px;
+  height: 34px;
+  display: block;
+}
+
+/* La nota cruza la fila entera: habla de la métrica, no de uno de los lados. */
+.vmw-vs__nota {
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* -- cronología de la sesión (Intradía) ------------------------------------- */
+
+.vmw-crono {
+  list-style: none;
+  margin: 0;
+  padding: 26px 28px;
+  border-radius: 28px;
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+}
+
+.vmw-crono__evento {
+  display: grid;
+  grid-template-columns: 62px 18px 1fr;
+  gap: 16px;
+  padding-bottom: 22px;
+}
+
+/* El último no arrastra hueco: cerraría el bloque con un vacío que parece un
+   evento que no llegó. */
+.vmw-crono__evento[data-ultimo="si"] {
+  padding-bottom: 0;
+}
+
+.vmw-crono__hora {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--text-dim);
+  text-align: right;
+  line-height: 1.4;
+}
+
+/* Punto y línea: la línea se estira hasta el evento siguiente, así que el
+   último la deja en cero y el hilo termina donde termina la sesión. */
+.vmw-crono__eje {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.vmw-crono__eje i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+  margin-top: 4px;
+}
+
+.vmw-crono__eje b {
+  flex: 1;
+  width: 1px;
+  background: var(--border);
+}
+
+.vmw-crono__evento[data-ultimo="si"] .vmw-crono__eje b {
+  display: none;
+}
+
+.vmw-crono__contenido {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vmw-crono__titulo-evento {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--white);
+}
+
+.vmw-crono__texto {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* Las cifras del momento, en la display: son el respaldo del titular y se leen
+   como dato, no como prosa. */
+.vmw-crono__cifras {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+/* -- qué se movió desde la apertura (Intradía) ------------------------------ */
+
+/* -- microestructura (Intradía) -------------------------------------------- */
+
+/* Aquí el color NO es del lado —estas cuatro no lo tienen— sino del ESTADO de
+   la condición: coral cumple, teal no. Ninguna va en gris: el gris quedaría para
+   la tarjeta sin regla, que es el único caso en el que no hay estado que decir. */
+/* -- lectura de la sesión (Intradía) --------------------------------------- */
+
+/* Bloque rector de la vista: la ÚNICA superficie con tinte coral aquí, igual
+   que «Lectura de hoy» es la única con tinte teal en el dashboard. El coral es
+   del ruleset —lo que dispara—, no un adorno. */
+.vmw-sesion {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-radius: 28px;
+  padding: 24px 28px;
+  background: linear-gradient(160deg, var(--coral-tint), var(--dark-2));
+  border: 1px solid var(--coral-line);
+}
+
+.vmw-sesion__fila1 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.vmw-sesion__eyebrow {
+  font-size: 12.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--coral);
+  font-weight: 600;
+}
+
+.vmw-sesion__sello {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.vmw-sesion__empuje {
+  flex: 1;
+}
+
+.vmw-sesion__accion {
+  border-radius: 100px;
+  min-height: 40px;
+  padding: 0 18px;
+  font: inherit;
+  font-size: var(--fs-meta);
+  color: var(--text);
+  background: var(--overlay-soft);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.vmw-sesion__accion--coral {
+  background: var(--coral-tint);
+  border-color: var(--coral-line);
+  color: var(--coral);
+}
+
+.vmw-sesion__accion:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.vmw-sesion__fila2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vmw-sesion__punto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--coral);
+  color: var(--coral); /* `currentcolor` del halo */
+  box-shadow: var(--glow-dot);
+}
+
+.vmw-sesion__veredicto {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3.4vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--white);
+}
+
+.vmw-sesion__prosa {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text);
+  max-width: 820px;
+}
+
+.vmw-sesion__hechos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vmw-sesion__hecho {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 100px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--overlay-soft);
+  border: 1px solid var(--border);
+}
+
+.vmw-sesion__hecho i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--coral);
+}
+
+/* Las condiciones cierran el bloque tras un hairline: son el detalle que
+   sostiene el titular, no una lista aparte. */
+.vmw-sesion__condiciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.vmw-sesion__condicion {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* snake_case sin retocar: es el nombre del contrato. */
+.vmw-sesion__cond-nombre {
+  font-size: 13px;
+  color: var(--text-muted);
+  word-break: break-word;
+}
+
+.vmw-sesion__cond-valor {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* El color dice si la condición está cumplida; el texto de abajo lo dice
+   también, para que no dependa solo del tono. */
+.vmw-sesion__condicion[data-cumple="si"] .vmw-sesion__cond-valor {
+  color: var(--teal);
+}
+
+.vmw-sesion__condicion[data-cumple="no"] .vmw-sesion__cond-valor {
+  color: var(--coral);
+}
+
+.vmw-sesion__cond-umbral {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+/* -- mapa de calor --------------------------------------------------------- */
+
+.vmw-calor {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.vmw-calor__dias {
+  display: grid;
+  /* El MISMO gap que las filas: esta columna es un grid paralelo, y con 4 aquí y
+     2 allá cada día se despega un poco de su fila hasta desfasar 28 px abajo. */
+  gap: 2px;
+  /* Sin esto el grid estira sus pistas para llenar el alto de la parrilla y cada
+     etiqueta se despega ~0,25 px de su fila (3,6 px al llegar arriba del todo). */
+  align-content: start;
+  /* Exactamente el alto de la cabecera de horas: 14 de línea + 4 de margen. */
+  padding-top: 18px;
+  flex: none;
+  font-size: var(--fs-tiny);
+  color: var(--text-dim);
+}
+
+.vmw-calor__dia {
+  height: 18px;
+  line-height: 18px;
+  text-align: right;
+  width: 44px;
+}
+
+.vmw-calor__parrilla {
+  flex: 1;
+  min-width: 560px;
+}
+
+.vmw-calor__horas,
+.vmw-calor__fila {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  /* 2 px: la retícula deja de competir con la mancha, que es lo que se lee. */
+  gap: 2px;
+}
+
+/* Las filas del mapa, con el mismo gap que las celdas dentro de cada fila: el
+   espaciado es isótropo y la mancha no se estira en un eje. */
+.vmw-calor__filas {
+  display: grid;
+  gap: 2px;
+}
+
+.vmw-calor__horas {
+  font-size: 11px;
+  /* Fijo, no `normal`: es lo que la columna de días compensa con su padding. */
+  line-height: 14px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.vmw-calor__celda {
+  height: 18px;
+  border-radius: 3px;
+  background: var(--calor-hueco);
+}
+
+/* La ausencia de dato se marca por FORMA además de por color: el hueco y la
+   celda más floja se diferencian en 1,06:1, que no es diferencia ninguna. */
+.vmw-calor__celda[data-vacia="si"] {
+  box-shadow: inset 0 0 0 1px var(--calor-hueco-filete);
+}
+
+/* Leyenda a la IZQUIERDA bajo la retícula: una barra continua con sus dos
+   extremos rotulados, a 13 px. */
+.vmw-calor__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  margin-top: 18px;
+  font-size: var(--fs-micro);
+  color: var(--text-dim);
+}
+
+.vmw-calor__escala {
+  width: 200px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(
+    90deg,
+    var(--calor-1),
+    var(--calor-2),
+    var(--calor-3),
+    var(--calor-4),
+    var(--calor-5)
+  );
+}
+
+/* El exceso va como muestra suelta, no pegado al final de la barra: es una
+   categoría aparte, y encadenarlo al degradado lo leería como «más de lo
+   mismo». */
+.vmw-calor__exceso {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vmw-calor__muestra {
+  width: 22px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(
+    90deg,
+    var(--calor-alto-1),
+    var(--calor-alto-2)
+  );
+}
+
+/* -- señales --------------------------------------------------------------- */
+
+.vmw-senal {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 8px 16px;
+  padding: 18px 0;
+  border-bottom: var(--border-width) solid var(--border);
+}
+
+/* Pie del grupo: la regla versionada y cuándo disparó por última vez. */
+.vmw-senal__pie {
+  margin-top: 4px;
+  font-size: var(--fs-micro);
+  color: var(--text-dim);
+}
+
+/* Cada disparo dentro del grupo desplegado. */
+.vmw-evidencia__una + .vmw-evidencia__una {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: var(--border-width) solid var(--border);
+}
+
+/* El resultado observado. Sin color de veredicto a propósito: es un hecho, no
+   un acierto ni un fallo. */
+.vmw-evidencia__resultado {
+  margin-top: 14px;
+  font-size: var(--fs-body-xs);
+  color: var(--text);
+}
+
+.vmw-evidencia__traza {
+  margin-top: 14px;
+  font-size: var(--fs-meta);
+  color: var(--text-muted);
+  word-break: break-word;
+}
+
+.vmw-senal__cuando {
+  font-size: var(--fs-micro);
+  color: var(--text-dim);
+  padding-top: 3px;
+}
+
+.vmw-senal__boton {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+
+.vmw-senal__punto {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+}
+
+.vmw-senal__tipo {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
+  color: var(--white);
+}
+
+.vmw-senal__direccion {
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-caption);
+}
+
+.vmw-senal__regla {
+  font-size: var(--fs-micro);
+  color: var(--text-dim);
+}
+
+.vmw-evidencia {
+  margin-top: 14px;
+  padding: 18px 20px;
+  border-radius: var(--radius);
+  background: var(--surface-panel);
+  border: var(--border-width) solid var(--border);
+}
+
+.vmw-evidencia__insumo dt {
+  font-family: var(--font-display);
+  font-size: var(--fs-caption);
+  color: var(--text-dim);
+}
+
+.vmw-evidencia__insumo dd {
+  margin: 4px 0 0;
+  font-size: var(--fs-body);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -- histórico e intradía -------------------------------------------------- */
+
+.vmw-controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-panel);
+  border: var(--border-width) solid var(--border);
+}
+
+/* -- tarjeta de metrica (movers, microestructura y lo que venga) ----------- */
+
+/* Una sola definicion para todos los bloques. Antes eran dos con el mismo
+   dibujo y valores que ya habian empezado a divergir (gap 10 contra 12, trazo
+   1,6 contra 1,8), y esa deriva es la que dejo cuatro titulos en blanco sobre
+   blanco durante ocho commits.
+
+   Todo en tokens que ya valian lo pedido: --border es el 8 %, --border-2 el
+   14 %, --lift son -4px y --dur-card 0,25 s. Sin sombra en reposo, sin scale y
+   sin estado de pulsado: el sistema no los define. Sin degradado y sin borde
+   lateral de color; el relieve lo dan el borde y la elevacion. */
+/* Rejilla comun de tarjetas: 18 px, y el minimo que hace que quepan tres en
+   ancho de escritorio sin apretar la nota. */
+.vmw-metrica__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.vmw-metrica {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: 22px;
+  padding: 22px 24px;
+  background: var(--dark-3);
+  border: var(--border-width) solid var(--border);
+  transition:
+    border-color var(--dur-card) var(--ease-out-expo),
+    transform var(--dur-card) var(--ease-out-expo);
+}
+
+.vmw-metrica:hover {
+  border-color: var(--border-2);
+  transform: var(--lift);
+}
+
+/* El movimiento del hover se anula con el ajuste del sistema; el cambio de
+   borde se queda, porque no es movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  .vmw-metrica {
+    transition: border-color var(--dur-card) var(--ease-out-expo);
+  }
+
+  .vmw-metrica:hover {
+    transform: none;
+  }
+}
+
+/* Foco visible: obligatorio y con separacion, para que el anillo no se coma el
+   borde de la tarjeta. `focus-within` ademas, porque lo que hoy recibe el foco
+   es lo que la tarjeta contenga, no ella. */
+.vmw-metrica:focus-visible,
+.vmw-metrica:focus-within {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.vmw-metrica[data-tono="alerta"] {
+  border-color: var(--coral-line);
+}
+
+.vmw-metrica__cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.vmw-metrica__nombre-serie {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.vmw-metrica__etiqueta {
+  display: block;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.vmw-metrica__pastilla {
+  flex: none;
+  font-size: 12px;
+  border-radius: var(--radius-pill);
+  padding: 3px 11px;
+  background: var(--overlay-soft);
+  color: var(--text-muted);
+}
+
+.vmw-metrica__pastilla[data-tono="alerta"] {
+  background: var(--coral-tint);
+  color: var(--coral);
+}
+
+.vmw-metrica__pastilla[data-tono="calma"] {
+  background: var(--teal-tint);
+  color: var(--teal);
+}
+
+.vmw-metrica__cifra-fila {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.vmw-metrica__cifra {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.03em;
+  color: var(--white);
+}
+
+.vmw-metrica__delta {
+  font-size: 13px;
+}
+
+.vmw-metrica__spark {
+  width: 100%;
+  height: 48px;
+  display: block;
+}
+
+.vmw-metrica__pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.vmw-metrica__nota {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* Regla del ruleset a la que pertenece la condicion. Display porque es un
+   identificador, como la clave de la serie. */
+.vmw-metrica__regla {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+/* -- estado cero de una serie ---------------------------------------------- */
+
+/* Ocupa el hueco de la chispa: sin salto de layout al pasar de una serie con
+   movimiento a una en cero. La linea dice que HAY dato y es constante; el hueco
+   vacio diria que falta. */
+.vmw-cero {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.vmw-cero__linea {
+  width: 100%;
+  height: var(--border-width);
+  background: var(--border);
+}
+
+/* Salvia: el color con el que el proyecto marca la validacion. El cero de
+   outliers no es una ausencia, es el filtro habiendo hecho su trabajo. */
+.vmw-cero__etiqueta {
+  font-size: 12.5px;
+  color: var(--sage);
+}
+
+/* -- tooltip de los sparklines -------------------------------------------- */
+
+/* El hueco del sparkline es el sistema de referencia: el tooltip sale del flujo
+   y aparecer no mueve un pixel de la tarjeta. */
+.vmw-chispa {
+  position: relative;
+}
+
+/* Desenfoque: el MISMO tratamiento que la barra de navegacion, que es el otro
+   unico sitio del sistema que lo usa (`--blur-nav`). Dos superficies flotantes,
+   un solo lenguaje. */
+.vmw-chispa__tooltip {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--tooltip-bg);
+  backdrop-filter: var(--blur-nav);
+  border: var(--border-width) solid var(--border);
+  /* No captura el puntero: si lo hiciera, entrar en el tooltip seria salir del
+     grafico y el tooltip parpadearia. */
+  pointer-events: none;
+  white-space: nowrap;
+  transform: translate(-50%, -100%);
+}
+
+/* Cerca del borde del viewport se ancla por su lado en vez de centrarse. */
+.vmw-chispa__tooltip[data-voltear="der"] {
+  transform: translate(-100%, -100%);
+}
+
+.vmw-chispa__tooltip[data-voltear="izq"] {
+  transform: translate(0, -100%);
+}
+
+.vmw-chispa__hora {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.vmw-chispa__valor {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* -- par etiqueta/clave en la parrilla ------------------------------------- */
+
+.intradia-titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.intradia-etiqueta {
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+/* -- barra de control del Intradía ----------------------------------------- */
+
+/* Modificador, no cambio de la base: `.vmw-controles` la comparte Histórico y
+   allí la barra sigue siendo la de antes. */
+.vmw-controles--intradia {
+  padding: 14px 18px;
+  border-radius: 22px;
+  /* El fondo ya es `--dark-2`: `--surface-panel` es su alias semántico y la base
+     lo usa. No se repite el token crudo. */
+}
+
+/* Grupo excluyente. `role="radiogroup"` + `aria-checked` en los botones: para
+   quien navega con lector, tres pastillas sueltas serían tres botones sin
+   relación, y lo que hay es UNA elección con tres opciones. */
+.vmw-bucket {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.vmw-bucket__opcion {
+  min-height: 40px;
+  padding: 9px 18px;
+  border-radius: 100px;
+  background: var(--overlay-soft);
+  border: var(--border-width) solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-xs);
+  cursor: pointer;
+}
+
+.vmw-bucket__opcion[aria-checked="true"] {
+  background: var(--teal-tint);
+  border-color: var(--teal-line);
+  color: var(--teal);
+}
+
+/* Empujado al extremo: es un estado, no un control, y no compite con ellos. */
+.vmw-frescura {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.vmw-frescura__punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--sage);
+  color: var(--sage); /* `currentcolor` del halo */
+  box-shadow: var(--glow-dot);
+  animation: vmw-pulso 2.4s ease-in-out infinite;
+}
+
+/* Sin dato fresco el punto NO late ni va en salvia: un latido verde mientras la
+   carga falla afirma que hay vida donde no la hay. */
+.vmw-frescura__punto[data-vivo="no"] {
+  background: var(--text-dim);
+  box-shadow: none;
+  animation: none;
+}
+
+@keyframes vmw-pulso {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vmw-frescura__punto {
+    animation: none;
+  }
+}
+
+.vmw-chip {
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid var(--border);
+  background: var(--surface-card);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-xs);
+  cursor: pointer;
+}
+
+.vmw-chip[aria-pressed="true"] {
+  border-color: var(--teal-line);
+  background: var(--teal-tint);
+  color: var(--teal);
+}
+
+.vmw-select {
+  padding: 10px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  color: var(--text);
+  border: var(--border-width) solid var(--border);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-xs);
+}
+
+.vmw-grafico {
+  width: 100%;
+  height: 260px;
+  margin-top: 18px;
+  display: block;
+}
+
+.vmw-eje {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: var(--fs-caption);
+  color: var(--text-dim);
+}
+
+/* -- pie ------------------------------------------------------------------- */
+
+.vmw-footer {
+  border-top: var(--border-width) solid var(--border);
+  background: var(--surface-band);
+}
+
+.vmw-footer__contenido {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 24px;
+  padding: 26px var(--container-pad);
+  font-size: var(--fs-meta);
+  color: var(--text-muted);
+}
+
+/* -- pantallas de sesión --------------------------------------------------- */
+
+.pantalla-centrada {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  gap: 1rem;
+  padding: 2rem;
+}
+
+/* -- lectura del mercado --------------------------------------------------- */
+
+/* El punto ya no codifica un estado: la lectura la lleva el texto. Es cromo. */
+.vmw-regimen__punto {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--teal);
+  box-shadow: var(--glow-dot);
+  flex: none;
+}
+
+.vmw-regimen__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.vmw-regimen__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--overlay-soft);
+  color: var(--text-muted);
+  font-size: var(--fs-micro);
+  white-space: nowrap;
+}
+
+.vmw-regimen__chipPunto {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--sage);
+  flex: none;
+}
+
+/* El color NO es la única codificación: el propio texto del chip dice qué pasa
+   («Confianza baja…», «1 medidor cerca…»). */
+.vmw-regimen__chip[data-tono="coral"] {
+  color: var(--coral);
+}
+.vmw-regimen__chip[data-tono="coral"] .vmw-regimen__chipPunto {
+  background: var(--coral);
+}
+
+/* --- Descomposición de la brecha (RF-12, ADR-0021) ---------------------- */
+
+.vmw-descomp__cifras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  justify-content: space-between;
+  font-size: var(--fs-meta);
+  color: var(--text-muted);
+}
+
+.vmw-descomp__barra {
+  display: flex;
+  height: 52px;
+  margin-top: 14px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.vmw-descomp__pierna,
+.vmw-descomp__hueco {
+  display: flex;
+  align-items: center;
+  font-size: var(--fs-meta);
+  /* Sin `min-width: 0` el texto de una pierna estrecha desborda la barra y se
+     come a la otra. */
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.vmw-descomp__pierna {
+  background: var(--teal-tint-strong);
+  color: var(--teal);
+  padding-left: 16px;
+}
+
+.vmw-descomp__hueco {
+  background: var(--coral-tint-strong);
+  color: var(--coral);
+  justify-content: center;
+}
+
+/* Las tres cifras del movimiento, bajo la barra. `auto-fit` y no `repeat(3)`:
+   con «Neto brecha» y un valor de cinco dígitos, tres columnas fijas se
+   solapaban por debajo de 380 px. */
+.vmw-descomp__piernas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 16px 18px;
+  margin-top: 22px;
+}
+
+.vmw-descomp__pierna-et {
+  display: block;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.vmw-descomp__pierna-val {
+  display: block;
+  margin-top: 7px;
+  font-family: var(--font-display);
+  font-size: clamp(19px, 2.3vw, 25px);
+  line-height: 1.1;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* La pierna que el motor señala como responsable. El color NO va solo: la prosa
+   de atribución que sigue la nombra con todas las letras. */
+.vmw-descomp__pierna-val[data-responsable="si"] {
+  color: var(--teal);
+}
+
+.vmw-descomp__interpretacion {
+  margin-top: 12px;
+  color: var(--text);
+}
+
+/* Los dos lados se apilan en móvil y conviven en columnas cuando cabe. */
+.vmw-descomp__lados {
+  display: grid;
+  gap: 22px;
+  margin-top: 18px;
+}
+
+@media (min-width: 620px) {
+  .vmw-descomp__lados {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.vmw-descomp__lado {
+  font-size: var(--fs-body-xs);
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.vmw-descomp__filas {
+  display: grid;
+  gap: 14px;
+}
+
+.vmw-descomp__fila {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--fs-body-xs);
+}
+
+.vmw-descomp__valor {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.vmw-descomp__parcial {
+  margin-top: 12px;
+  font-size: var(--fs-meta);
+}
+
+/* --- Sparkline con dos series (RF-2) ------------------------------------ */
+
+/* La leyenda va pegada a su color: es lo que distingue las dos líneas. El
+   punto se dibuja con el mismo token que el trazo. */
+.vmw-spark__serie {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.vmw-spark__serie::before {
+  content: "";
+  width: 10px;
+  height: 2px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.vmw-spark__serie--compra::before {
+  background: var(--series-buy);
+}
+
+/* Discontinua, igual que el trazo: quien no distinga los colores sigue
+   diferenciando las series por la forma. */
+.vmw-spark__serie--venta::before {
+  background: repeating-linear-gradient(
+    to right,
+    var(--series-sell) 0 4px,
+    transparent 4px 7px
+  );
+}
+
+/* --- Titular del veredicto y paneles nuevos del dashboard --------------- */
+
+/* El titular ocupa todo el ancho: es la respuesta a «qué pasa», y el resto de
+   la vista es su detalle. */
+.vmw-veredicto {
+  display: grid;
+  gap: 4px;
+}
+
+.vmw-hero__contra {
+  margin-top: 8px;
+  font-size: var(--fs-meta);
+  color: var(--text-muted);
+}
+
+/* --- Distancia al disparo ---------------------------------------------- */
+
+.vmw-disparo__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 16px;
+}
+
+.vmw-disparo__regla {
+  font-family: "Space Grotesk", Inter, sans-serif;
+  font-size: var(--fs-body);
+  color: var(--text);
+}
+
+.vmw-disparo__conteo {
+  font-size: var(--fs-meta);
+  color: var(--text-muted);
+}
+
+.vmw-disparo__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+/* Cuatro columnas en pantalla ancha; en móvil se apilan en dos, que es donde
+   el nombre del indicador deja de caber al lado del umbral. */
+.vmw-disparo__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: start;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-body-xs);
+}
+
+/* Cada mitad apila su par: nombre sobre valor · falta sobre umbral. */
+.vmw-disparo__que,
+.vmw-disparo__cuanto {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.vmw-disparo__cuanto {
+  text-align: right;
+}
+
+/* Una columna de la rejilla que apila tarjetas y NO las estira: si se
+   estiraran, la de abajo heredaría el hueco que acabamos de quitar. */
+.vmw-columna {
+  display: grid;
+  gap: 24px;
+  align-content: start;
+}
+
+.vmw-disparo__fila:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.vmw-disparo__nombre {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+/* El valor va BAJO su nombre, no alineado a la derecha: el `text-align: right`
+   venía de la fila de cuatro columnas y aquí lo empujaba al otro extremo de la
+   tarjeta, lejos del indicador que describe. */
+.vmw-disparo__valor {
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  font-size: var(--fs-body-sm);
+}
+
+.vmw-disparo__umbral,
+.vmw-disparo__falta {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* La condición cumplida se marca con color Y con la palabra «cumplida»: el
+   color nunca es la única codificación. */
+.vmw-disparo__fila[data-cumple="si"] .vmw-disparo__falta {
+  color: var(--sage);
+}
+
+.vmw-disparo__nota {
+  margin-top: 14px;
+}
+
+/* --- Calidad y procedencia del dato ------------------------------------ */
+
+.vmw-proc__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.vmw-proc__fila {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-body-xs);
+}
+
+.vmw-proc__fila:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* Las bandas de precio reparten el alto de la columna. Los dos lados no tienen
+   el mismo número de bandas —el libro no es simétrico—, así que el corto dejaba
+   162 px muertos al pie en vez de espaciar sus filas. */
+.vmw-profundidad__filas {
+  display: grid;
+  gap: 7px;
+  margin-top: 18px;
+  align-content: space-between;
+}
+
+/* La variación de la oficial. El color acompaña al signo, que ya va escrito. */
+.vmw-oficial__delta {
+  margin-top: 6px;
+  font-size: var(--fs-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--teal);
+}
+
+.vmw-oficial__delta[data-signo="baja"] {
+  color: var(--coral);
+}
+
+.vmw-proc__punto {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 9px;
+  border-radius: 50%;
+  background: var(--teal);
+  vertical-align: middle;
+}
+
+.vmw-proc__punto[data-tono="coral"] {
+  background: var(--coral);
+}
+
+.vmw-proc__etiqueta {
+  color: var(--text-muted);
+}
+
+.vmw-proc__valor {
+  color: var(--text);
+  text-align: right;
+}
+
+/* Lo degradado se marca, pero el texto ya lo dice por sí solo. */
+.vmw-proc__valor[data-tono="coral"] {
+  color: var(--coral);
+}
+
+/*
+ * «Lectura de hoy»: la ÚNICA superficie con tinte de la vista.
+ *
+ * Que sea la única es lo que la hace funcionar — dos superficies teñidas
+ * compiten y ninguna destaca. Por eso el degradado teal vive aquí y en ningún
+ * otro sitio del dashboard.
+ */
+.vmw-veredicto {
+  border-radius: 28px;
+  background: linear-gradient(160deg, var(--teal-tint-strong), var(--dark-2));
+  border: var(--border-width) solid var(--teal-line);
+  padding: 24px 28px;
+}
+
+.vmw-veredicto__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+
+/* El eyebrow es lo único teal del texto: marca la superficie, no compite con
+   el titular. La nota metodológica NO lo es — ver `__cuando`. */
+.vmw-veredicto__eyebrow {
+  color: var(--teal);
+  font-size: var(--fs-caption);
+  text-transform: uppercase;
+}
+
+.vmw-veredicto__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.vmw-accion {
+  height: 40px;
+  padding: 0 20px;
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid var(--border-2);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-xs);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+
+.vmw-accion:hover:not(:disabled) {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.vmw-accion--teal {
+  border-color: var(--teal-line);
+  background: var(--teal-tint);
+  color: var(--teal);
+}
+
+/* Deshabilitada Y con su porqué en el `title`: un botón muerto sin explicación
+   es peor que no ponerlo. */
+.vmw-accion:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* El titular: punto luminoso + h2 del sistema. */
+.vmw-veredicto__titular {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.vmw-veredicto__titulo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3.4vw, 34px);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--white);
+}
+
+/* 780 px: más largo que eso, la vista pierde el renglón al volver. */
+.vmw-veredicto__prosa {
+  margin: 14px 0 0;
+  max-width: 780px;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+
+/* Los chips en dos grupos: material de la lectura | conclusión. */
+.vmw-regimen__grupos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-top: 18px;
+}
+
+.vmw-regimen__divisor {
+  width: 1px;
+  height: 20px;
+  background: var(--border-2);
+}
+
+@media (width <= 620px) {
+  .vmw-regimen__divisor {
+    display: none;
+  }
+}
+
+/* La marca temporal del titular, junto al eyebrow. */
+/* Sello de frescura y nota metodológica: 13 px y `--text-dim`, NO teal. El teal
+   se reserva para el eyebrow, que es lo que marca la superficie. */
+.vmw-veredicto__cuando {
+  font-size: var(--fs-micro);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-dim);
+}
+
+/* Los dos paneles emparejados son TARJETAS, no secciones con título: así el
+   par se lee como dos tarjetas hermanas y no como dos bloques distintos. */
+.vmw-disparo,
+.vmw-proc {
+  margin-top: 16px;
+}
+
+.vmw-serieval {
+  width: 100%;
+  height: 280px;
+  display: block;
+}
+
+.vmw-serieval__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  align-items: center;
+  margin: 14px 0 0;
+  padding: 12px 0 0 66px;
+  list-style: none;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  /* Hairline y no `1px`: en pantallas densas un píxel CSS son dos físicos y el
+     filete se ve como una regla. */
+  border-top: 1px solid var(--border);
+}
+
+.vmw-serieval__leyenda > li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.vmw-serieval__leyenda strong {
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* La muestra de la banda SÍ lleva borde, aunque la banda del gráfico no: a
+   20×11 px un relleno del 5 % es invisible y la leyenda no explicaría nada. */
+.vmw-serieval__muestra {
+  width: 20px;
+  height: 11px;
+  border-radius: 3px;
+  background: var(--overlay-soft);
+  border: 1px solid var(--border);
+  flex: none;
+}
+
+.vmw-serieval__guion {
+  width: 20px;
+  height: 0;
+  border-top-width: 1.3px;
+  border-top-style: dashed;
+  flex: none;
+}
+
+.vmw-serieval__guion--mediana {
+  border-top-color: var(--sage);
+  opacity: 0.85;
+}
+
+.vmw-serieval__guion--hoy {
+  /* Token, no `#fff`: en tema claro vale `#15181b`. Ver el canario en
+     `tests/unit/tema-tokens.test.ts`. */
+  border-top-color: var(--white);
+  border-top-width: 1px;
+  opacity: 0.5;
+}
+
+.vmw-serieval__guion--umbral {
+  border-top-color: var(--coral);
+  opacity: 0.8;
+}
+
+/* -- «Lo que dice el histórico»: bloque rector de la vista ----------------- */
+
+/* Hermano sage del `.vmw-sesion` coral: misma arquitectura, otro acento. */
+.vmw-lecthist {
+  display: grid;
+  gap: 16px;
+  border-radius: 28px;
+  padding: clamp(22px, 3vw, 26px) clamp(22px, 3vw, 30px);
+  background: linear-gradient(160deg, var(--sage-tint), var(--dark-2));
+  border: 1px solid var(--sage-line);
+}
+
+.vmw-lecthist__fila1 {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.vmw-lecthist__eyebrow {
+  font-size: 12.5px;
+  letter-spacing: 0.12em;
+  /* En mayúsculas por CSS y no en el diccionario: así la cadena traducida se
+     lee normal en el código y en las herramientas de traducción. */
+  text-transform: uppercase;
+  color: var(--sage);
+  font-weight: 600;
+}
+
+.vmw-lecthist__ventana {
+  flex: 1;
+  text-align: right;
+  font-size: 13px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-lecthist__veredicto {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2.9vw, 30px);
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--white);
+}
+
+.vmw-lecthist__prosa {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--text-muted);
+  max-width: 78ch;
+}
+
+.vmw-lecthist__anclas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--sage-line);
+}
+
+.vmw-lecthist__ancla {
+  display: grid;
+  gap: 3px;
+  align-content: start;
+}
+
+.vmw-lecthist__ancla-nombre {
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.vmw-lecthist__ancla-valor {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  /* El color lo pone el componente por semántica; sin `color` aquí para que no
+     compita con el estilo en línea. */
+}
+
+.vmw-lecthist__ancla-detalle {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+/* -- «Episodios comparables» ---------------------------------------------- */
+
+.vmw-episodios {
+  display: grid;
+  gap: 18px;
+}
+
+.vmw-episodios__cabecera {
+  display: flex;
+  align-items: baseline;
+  gap: 8px 14px;
+  flex-wrap: wrap;
+}
+
+.vmw-episodios__titulo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(20px, 2.4vw, 24px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--white);
+}
+
+.vmw-episodios__bajada {
+  font-size: 13.5px;
+  color: var(--text-dim);
+}
+
+.vmw-episodios__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+/* El borde lo pone el componente con el color semántico del resultado. */
+.vmw-episodio {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  background: var(--dark-3);
+  border-radius: 22px;
+  padding: 22px 24px;
+  border: 1px solid var(--border);
+}
+
+.vmw-episodio__fila1 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vmw-episodio__fecha {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--white);
+}
+
+.vmw-episodio__pastilla {
+  margin-left: auto;
+  border-radius: 100px;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--overlay-soft);
+  border: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.vmw-episodio__regla {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.vmw-episodio__cabtabla,
+.vmw-episodio__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+}
+
+.vmw-episodio__cabtabla {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+.vmw-episodio__fila {
+  padding-top: 8px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.vmw-episodio__cond {
+  font-size: 13px;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.vmw-episodio__entonces,
+.vmw-episodio__hoy {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-episodio__entonces {
+  color: var(--white);
+}
+
+.vmw-episodio__despues {
+  display: grid;
+  gap: 5px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.vmw-episodio__eyebrow {
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+.vmw-episodio__prosa {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.vmw-episodio__resultado {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* -- «Historial de las reglas» -------------------------------------------- */
+
+.vmw-reglashist {
+  display: grid;
+  gap: 18px;
+}
+
+.vmw-reglashist__cabecera {
+  display: flex;
+  align-items: baseline;
+  gap: 8px 14px;
+  flex-wrap: wrap;
+}
+
+.vmw-reglashist__titulo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(20px, 2.4vw, 24px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--white);
+}
+
+.vmw-reglashist__bajada {
+  font-size: 13.5px;
+  color: var(--text-dim);
+}
+
+.vmw-reglashist__caja {
+  background: var(--dark-3);
+  border-radius: 28px;
+  border: 1px solid var(--border);
+  padding: 8px 26px 20px;
+}
+
+/* El scroll envuelve SOLO la tabla: la nota del pie tiene que verse sin
+   desplazarse, porque es la advertencia y no un detalle de la tabla. */
+.vmw-reglashist__scroll {
+  overflow-x: auto;
+}
+
+.vmw-reglashist__tabla {
+  min-width: 620px;
+}
+
+.vmw-reglashist__cabtabla,
+.vmw-reglashist__fila {
+  display: grid;
+  grid-template-columns:
+    minmax(200px, 1.6fr) 92px 92px minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.vmw-reglashist__cabtabla {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+
+.vmw-reglashist__fila {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.vmw-reglashist__regla {
+  display: grid;
+  gap: 2px;
+}
+
+.vmw-reglashist__nombre {
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--white);
+  text-transform: capitalize;
+}
+
+.vmw-reglashist__clave {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.vmw-reglashist__casos,
+.vmw-reglashist__medibles {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-reglashist__casos {
+  color: var(--white);
+}
+
+.vmw-reglashist__efecto {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-reglashist__muestra {
+  justify-self: start;
+  border-radius: 100px;
+  padding: 4px 12px;
+  font-size: 12.5px;
+  background: var(--overlay-soft);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.vmw-reglashist__nota {
+  margin: 16px 0 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* -- Histórico: protagonista y contexto ------------------------------------ */
+
+/* La serie evaluada manda: 280 px de gráfico y su capa de referencia entera. */
+.vmw-serieval__tarjeta {
+  background: var(--dark-3);
+  border-radius: 28px;
+  padding: 26px 28px 22px;
+  border: 1px solid var(--border);
+}
+
+/* La tasa oficial es contexto: la mitad de alto, área rellena y sin eje Y. El
+   contraste de tamaño y relleno es lo que dice quién manda — no un rótulo. */
+.vmw-oficial {
+  background: var(--dark-3);
+  border-radius: 28px;
+  padding: 24px 28px 20px;
+  border: 1px solid var(--border);
+}
+
+.vmw-oficial__cabecera {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.vmw-oficial__titulo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--white);
+}
+
+.vmw-oficial__bajada {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.vmw-oficial__resumen {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--teal);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* -- Serie evaluada: cabecera, eje de fechas y estadísticas --------------- */
+
+.vmw-serieval__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px 24px;
+  margin-bottom: 18px;
+}
+
+.vmw-serieval__ident {
+  display: grid;
+  gap: 6px;
+}
+
+.vmw-serieval__nombre {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--white);
+  text-transform: capitalize;
+}
+
+.vmw-serieval__clave {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.vmw-serieval__ahora {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.vmw-serieval__valor {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--white);
+  font-variant-numeric: tabular-nums;
+}
+
+/* El color lo pone el componente por semántica de la zona. */
+.vmw-serieval__percentil {
+  border-radius: 100px;
+  padding: 4px 12px;
+  font-size: 12.5px;
+  background: var(--overlay-soft);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.vmw-serieval__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.vmw-serieval__stat {
+  display: grid;
+  gap: 3px;
+  align-content: start;
+}
+
+.vmw-serieval__stat-nombre {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.vmw-serieval__stat-valor {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-serieval__stat-detalle {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* -- Controles de la serie evaluada, dentro de su tarjeta ----------------- */
+
+.vmw-ctrl {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 20px;
+  margin-top: 18px;
+  padding: 12px 16px;
+  border-radius: 22px;
+  background: var(--dark-2);
+  border: 1px solid var(--border);
+}
+
+.vmw-ctrl__grupo {
+  display: grid;
+  gap: 6px;
+}
+
+.vmw-ctrl__etiqueta {
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+
+.vmw-ctrl__pastillas {
+  display: flex;
+  gap: 8px;
+}
+
+.vmw-ctrl__pastilla {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 100px;
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.vmw-ctrl__pastilla[aria-pressed="true"] {
+  background: var(--teal-tint);
+  border-color: var(--teal-line);
+  color: var(--teal);
+}
+
+.vmw-ctrl__select {
+  min-height: 40px;
+  padding: 9px 14px;
+  border-radius: 100px;
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Empujada a la derecha y alineada con la base de los controles: es una nota
+   de procedencia, no un control más. */
+.vmw-ctrl__procedencia {
+  flex: 1;
+  text-align: right;
+  align-self: flex-end;
+  padding-bottom: 10px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/* Mismo tratamiento que la navbar: casi opaco y con desenfoque detrás. Sin
+   sombra de color — una sombra teñida sobre un gráfico teñido confunde el
+   límite de la superficie con un dato. */
+.vmw-tip {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  gap: 2px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgb(21 24 27 / 94%);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  /* Nunca captura el puntero: si lo hiciera, moverse sobre el propio tooltip
+     cerraría el crosshair que lo abrió. */
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.vmw-tip__cuando {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.vmw-tip__valor {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-tip__contexto {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* -- Estados del histórico: ventana corta y sin datos --------------------- */
+
+.vmw-serieval__corta {
+  margin-top: 14px;
+}
+
+/* Sobre la leyenda y no debajo: la advertencia se lee ANTES que las cifras que
+   matiza, no después de haberlas creído. */
+.vmw-corta {
+  display: inline-block;
+  border-radius: 100px;
+  padding: 5px 14px;
+  font-size: 12.5px;
+  background: var(--coral-tint);
+  border: 1px solid var(--coral-line);
+  color: var(--coral);
+}
+
+/* Ocupa el alto del gráfico que sustituye: la tarjeta no se encoge y la vista
+   no salta al cambiar de serie. */
+.vmw-vacio {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+  padding: 24px;
+}
+
+.vmw-vacio__icono {
+  color: var(--text-dim);
+}
+
+.vmw-vacio__titulo {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--white);
+}
+
+.vmw-vacio__linea {
+  font-size: 14px;
+  color: var(--text-muted);
+  max-width: 46ch;
+}
+
+.vmw-oficial__desfase {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+
+/* -- Ritmo de Histórico ---------------------------------------------------- */
+
+/*
+ * La vista tiene DOS clases de bloque y el ritmo lo dice: tarjetas que se leen
+ * seguidas y secciones que empiezan un tema nuevo.
+ *
+ *   lectura → serie evaluada    24 px   (base de la vista)
+ *   serie   → tasa oficial      22 px   (van juntas: protagonista y contexto)
+ *   → episodios                 46 px   (sección: cambia el tema)
+ *   → historial de reglas       46 px   (sección)
+ *
+ * Va en un modificador y no tocando la regla base, igual que hace Intradía:
+ * mover el ritmo del producto entero de refilón es justo lo que esa nota del
+ * contenedor advierte.
+ *
+ * Y va AQUÍ y no en `.vmw-oficial`: la regla base
+ * `.vmw-vista > .vmw-contenedor > * + *` tiene especificidad 0,2,0 y ganaba a
+ * un `margin-top` puesto en la clase del bloque (0,1,0). Los 22 px escritos así
+ * no se aplicaron nunca.
+ */
+.vmw-vista--historico > .vmw-contenedor > .vmw-oficial {
+  margin-top: 22px;
+}
+
+.vmw-vista--historico > .vmw-contenedor > .vmw-episodios,
+.vmw-vista--historico > .vmw-contenedor > .vmw-reglashist {
+  margin-top: 46px;
+}
+
+/* -- Serie temporal: EL gráfico de líneas del sistema --------------------- */
+
+.vmw-serie__marco {
+  position: relative;
+}
+
+/* La columna de valores mide 66 px y el lienzo empieza después. Cuando el eje
+   está apagado, el gráfico ocupa el ancho entero. */
+.vmw-serie__marco--eje {
+  padding-left: 66px;
+}
+
+.vmw-serie__valores {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 60px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-serie__valores > span {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+.vmw-serie__lienzo {
+  position: relative;
+  touch-action: pan-y;
+}
+
+/* Foco visible obligatorio: la serie se recorre con teclado y sin esto no se
+   vería dónde está el cursor. */
+.vmw-serie__lienzo:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.vmw-serie__svg {
+  width: 100%;
+  display: block;
+}
+
+/* Revelado estándar del sistema. Sin sombra, sin degradado de trazo y sin más
+   animación que esta: un gráfico que entra con floritura distrae de lo único
+   que importa, que es la forma de la línea. */
+.vmw-serie__trazo {
+  animation: vmw-serie-revelar var(--dur-reveal) var(--ease-out-expo) both;
+}
+
+@keyframes vmw-serie-revelar {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.vmw-serie__punto {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--dark-3);
+  pointer-events: none;
+}
+
+/* Con teclado, el punto activo lleva su propio foco: el del lienzo dice «estás
+   en el gráfico», y este dice «en qué punto». */
+.vmw-serie__punto--foco {
+  outline: 2px solid var(--teal);
+  outline-offset: 3px;
+}
+
+.vmw-serie__fechas {
+  position: relative;
+  display: block;
+  height: 18px;
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.vmw-serie__fechas--eje {
+  padding-left: 66px;
+}
+
+.vmw-serie__fechas > span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.vmw-serie__fechas > span:first-child {
+  transform: none;
+}
+
+.vmw-serie__fechas > span:last-child {
+  transform: translateX(-100%);
+}
+
+/* El ajuste del sistema manda: sin revelado. */
+@media (prefers-reduced-motion: reduce) {
+  .vmw-serie__trazo {
+    animation: none;
+  }
+}

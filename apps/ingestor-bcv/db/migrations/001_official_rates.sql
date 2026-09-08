@@ -1,5 +1,5 @@
 -- 001 — Tasas oficiales BCV: hypertable + salud de la fuente (ADR-0002, PRD RF-5).
--- Aplicar con un rol administrador; el rol del servicio (ingestor_bcv) solo
+-- Aplicar con un rol administrador. El rol del servicio (ingestor_bcv) solo
 -- necesita INSERT/SELECT en official_rates e INSERT/UPDATE/SELECT en
 -- official_rate_source_health (mínimo privilegio, A01).
 

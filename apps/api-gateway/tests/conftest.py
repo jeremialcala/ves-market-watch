@@ -18,6 +18,8 @@ from urllib.parse import urlsplit, urlunsplit
 
 import pytest
 
+from api_gateway.domain.vigencia import VET
+
 from api_gateway.application.ports import LecturaRepository
 from api_gateway.config import Settings
 from tests.soporte_auth import (  # noqa: F401 — reexportados para los tests
@@ -40,6 +42,7 @@ MIGRACIONES = [
     RAIZ_REPO / "apps" / "ingestor-bcv" / "db" / "migrations" / "002_suspect_resolution.sql",
     RAIZ_REPO / "apps" / "indicator-engine" / "db" / "migrations" / "001_indicators.sql",
     RAIZ_REPO / "apps" / "indicator-engine" / "db" / "migrations" / "002_signals.sql",
+    RAIZ_REPO / "apps" / "indicator-engine" / "db" / "migrations" / "003_analysis.sql",
     RAIZ_REPO / "apps" / "ingestor-binance" / "db" / "migrations" / "001_p2p_snapshots.sql",
 ]
 
@@ -73,6 +76,7 @@ class RepositorioEnMemoria(LecturaRepository):
         self.historial_ind: list[dict] = []
         self.snapshots: dict[str, dict] = {}
         self.filas_senales: list[dict] = []
+        self.analisis: dict[str, dict] = {}
         self.db_ok = True
 
     async def tasa_oficial_vigente(self, currency: str) -> dict | None:
@@ -93,8 +97,16 @@ class RepositorioEnMemoria(LecturaRepository):
             if (n, currency) in self.vigentes
         }
 
-    async def historial_indicadores(self, desde, hasta, intervalo, offset, limite):
-        filas = [f for f in self.historial_ind if desde <= f["as_of"] <= hasta]
+    async def historial_indicadores(
+        self, desde, hasta, intervalo, indicador, moneda, offset, limite
+    ):
+        filas = [
+            f
+            for f in self.historial_ind
+            if desde <= f["as_of"] <= hasta
+            and (indicador is None or f["indicator"] == indicador)
+            and (moneda is None or f["currency"] == moneda)
+        ]
         return filas[offset : offset + limite], len(filas)
 
     async def snapshot_p2p_reciente(self, side):
@@ -108,20 +120,33 @@ class RepositorioEnMemoria(LecturaRepository):
         ]
         return filas[offset : offset + limite], len(filas)
 
+    async def analisis_vigente(self, currency):
+        return self.analisis.get(currency)
+
     async def ping(self):
         return self.db_ok
+
+
+def hoy_vet() -> date:
+    """El día en Caracas. `date.today()` usaría la zona de la máquina, que en CI
+    puede ser cualquiera — y la vigencia se juzga en VET (ADR-0022)."""
+    return datetime.now(VET).date()
 
 
 def fila_tasa(
     currency: str = "USD",
     rate: str = "417.03000000",
     hace: timedelta = timedelta(hours=1),
+    fecha_valor: date | None = None,
 ) -> dict:
+    """Una tasa oficial. `fecha_valor` es la VIGENCIA y `hace` solo cuándo se
+    capturó: son ejes distintos (ADR-0009) y desde ADR-0022 solo el primero
+    decide si está rancia."""
     ahora = datetime.now(UTC)
     return {
         "currency": currency,
         "rate": rate,
-        "value_date": date.today(),
+        "value_date": hoy_vet() if fecha_valor is None else fecha_valor,
         "captured_at": ahora - hace,
     }
 
@@ -152,15 +177,158 @@ def fila_senal(tipo: str = "correccion_inminente") -> dict:
             "rule": f"{tipo}@v1",
             "inputs": {"p2p_spread_pct": "-0.8", "p2p_momentum_bid_3h_pct": "1.4"},
         },
+        # Resultado observado: la brecha EN la señal y tras la ventana. `None` en
+        # la segunda = la ventana no se ha cumplido todavía.
+        "brecha_en_senal": "13.20",
+        "brecha_despues": "15.00",
     }
 
 
-def item_crudo(precio: str, disponible: str) -> dict:
-    """Item minimizado de `p2p_snapshots_raw.raw` (forma del ingestor-binance)."""
+def payload_analisis(
+    as_of: datetime | None = None,
+    currency: str = "VES",
+    confidence: str = "normal",
+    fuente: str = "percentiles",
+    triggered_by: str | None = None,
+) -> dict:
+    """Documento `IndicatorAnalysis` válido según `schemas/analysis.v1.json`
+    (`payload` del evento `analysis.updated`, que es lo que persiste el motor)."""
+    momento = as_of or (datetime.now(UTC) - timedelta(minutes=1))
+    escala = {
+        "source": fuente,
+        "window_days": 90,
+        "samples": 4187 if fuente == "percentiles" else 137,
+        "min_samples": 200,
+        "computed_at": momento.isoformat(),
+        "domain": {"min": "0", "max": "3"},
+        "cuts": (
+            [
+                {"key": "p10", "value": "0.40", "position": "0.1000"},
+                {"key": "p50", "value": "0.90", "position": "0.5000"},
+                {"key": "p90", "value": "2.20", "position": "0.9000"},
+            ]
+            if fuente == "percentiles"
+            else [
+                {"key": "techo_inminente@v1", "value": "0.2", "position": "0.0666"},
+            ]
+        ),
+    }
     return {
+        "as_of": momento.isoformat(),
+        "currency": currency,
+        "calc_version": 1,
+        "analysis_version": 1,
+        "ruleset_version": 1,
+        "confidence": confidence,
+        "official_stale": False,
+        "triggered_by": triggered_by or str(uuid.uuid4()),
+        "indicators": [
+            {
+                "indicator": "p2p_ratio_oferta_demanda",
+                "value": "0.59",
+                "as_of": momento.isoformat(),
+                "band": "low" if fuente == "percentiles" else "unscaled",
+                "position": "0.1966",
+                "scale": escala,
+                "rules": [
+                    {
+                        "rule": "techo_inminente@v1",
+                        "type": "techo_inminente",
+                        "direction": "bajista",
+                        "op": "lt",
+                        "threshold": "0.2",
+                        "met": False,
+                        "distance": "0.39",
+                        "threshold_position": "0.0666",
+                    }
+                ],
+            }
+        ],
+        "rule_proximity": [
+            {
+                "rule": "techo_inminente@v1",
+                "type": "techo_inminente",
+                "direction": "bajista",
+                "conditions_total": 3,
+                "conditions_met": 1,
+                "evaluable": True,
+                "blocked_by": "p2p_momentum_bid_3h_pct",
+                "conditions": [
+                    {
+                        "indicator": "p2p_momentum_bid_3h_pct",
+                        "op": "gt",
+                        "threshold": "1.5",
+                        "value": "0.30",
+                        "met": False,
+                        "distance": "1.20",
+                    },
+                    {
+                        "indicator": "p2p_spread_pct",
+                        "op": "lt",
+                        "threshold": "0.5",
+                        "value": "0.40",
+                        "met": True,
+                        "distance": "-0.10",
+                    },
+                    {
+                        "indicator": "p2p_ratio_oferta_demanda",
+                        "op": "lt",
+                        "threshold": "0.2",
+                        "value": "0.59",
+                        "met": False,
+                        "distance": "0.39",
+                    },
+                ],
+            }
+        ],
+        "summary": {
+            "rules_total": 3,
+            "rules_evaluable": 1,
+            "closest_rule": "techo_inminente@v1",
+            "conditions_met": 1,
+            "conditions_total": 3,
+            "blocked_by": "p2p_momentum_bid_3h_pct",
+            "rules_met": [],
+        },
+    }
+
+
+def fila_analisis(
+    hace: timedelta = timedelta(minutes=1), currency: str = "VES", **kwargs
+) -> dict:
+    """Fila de `indicator_analysis` tal como la devuelve el repositorio."""
+    momento = datetime.now(UTC) - hace
+    return {
+        "as_of": momento,
+        "payload": payload_analisis(as_of=momento, currency=currency, **kwargs),
+    }
+
+
+def evento_analisis(currency: str = "VES", **kwargs) -> dict:
+    """Evento `analysis.updated` válido según `schemas/analysis.v1.json`."""
+    return {
+        "event_id": str(uuid.uuid4()),
+        "event_type": "analysis.updated",
+        "schema_version": 1,
+        "occurred_at": datetime.now(UTC).isoformat(),
+        "producer": "indicator-engine",
+        "payload": payload_analisis(currency=currency, **kwargs),
+    }
+
+
+def item_crudo(precio: str, disponible: str, outlier: bool | None = False) -> dict:
+    """Item minimizado de `p2p_snapshots_raw.raw` (forma del ingestor-binance).
+
+    `outlier=None` omite la marca: es la forma de los snapshots anteriores a que
+    el ingestor empezara a persistir el veredicto.
+    """
+    item = {
         "adv": {"price": precio, "surplusAmount": disponible},
         "advertiser": {"userType": "user", "merchant_ref": "ab" * 16},
     }
+    if outlier is not None:
+        item["outlier"] = outlier
+    return item
 
 
 # -- eventos del bus (integration/e2e) ---------------------------------------
@@ -311,7 +479,7 @@ async def pool(timescale_listo: str):
     pool = await asyncpg.create_pool(timescale_listo, min_size=1, max_size=4)
     await pool.execute(
         "TRUNCATE official_rates, official_rate_source_health, indicators, "
-        "processed_events, signals, p2p_snapshots_raw"
+        "processed_events, signals, p2p_snapshots_raw, indicator_analysis"
     )
     yield pool
     await pool.close()

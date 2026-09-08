@@ -1,0 +1,261 @@
+# Gates de seguridad: T6 (fuga de secretos), T8 (compromiso de
+# dependencia) y T9 (SQL injection y demás, vía SAST).
+#
+# Van como PASOS QUE ROMPEN EL BUILD, no como avisos. GitHub ofrece gratis en
+# repos públicos secret scanning, Dependabot y CodeQL, pero esos avisan sin
+# detener nada, y un gate pide justo eso: algo que impida seguir. Las funciones
+# nativas se dejan encendidas como red de seguridad; lo que decide es esto.
+name: Seguridad
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  schedule:
+    # Una pasada semanal: una dependencia no cambia, pero lo que se SABE de ella
+    # sí. Un repo sin commits puede volverse vulnerable un martes cualquiera.
+    - cron: "0 6 * * 1"
+
+concurrency:
+  group: seguridad-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  secretos:
+    name: T6 · fuga de secretos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Historia completa: un secreto borrado en el commit siguiente sigue
+          # estando en el repo, y este es un repositorio PÚBLICO.
+          fetch-depth: 0
+
+      - name: Instalar gitleaks
+        env:
+          VERSION: 8.28.0
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
+
+      - name: Escanear la historia completa
+        # `--redact` para que un hallazgo no se convierta en una segunda fuga:
+        # los logs de Actions son públicos en un repo público. Las excepciones
+        # —dos, ambas comprobadas como públicas— viven en `.gitleaks.toml` con su
+        # motivo escrito, no como reglas apagadas.
+        run: >-
+          gitleaks detect --source .
+          --config .gitleaks.toml
+          --redact --exit-code 1 --verbose
+
+  dependencias:
+    name: T8 · SCA (${{ matrix.ecosistema }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ecosistema: python
+          - ecosistema: npm
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        if: matrix.ecosistema == 'python'
+        with:
+          python-version: "3.12"
+
+      # Auditar lo INSTALADO, no lo declarado: los cinco servicios declaran
+      # rangos (`fastapi>=0.111`) y no hay lockfiles, así que «la versión con la
+      # vulnerabilidad» solo existe una vez resuelta. Es lo más honesto que se
+      # puede hacer sin fijar; fijar es el paso siguiente y está anotado como
+      # deuda del control de T8.
+      - name: Auditar los cinco servicios Python
+        if: matrix.ecosistema == 'python'
+        run: |
+          fallos=0
+          for servicio in api-gateway indicator-engine ingestor-bcv ingestor-binance ingestor-historico; do
+            echo "::group::${servicio}"
+            # Un venv por servicio: auditar el entorno compartido mezclaría las
+            # dependencias de los cinco y un hallazgo no diría de quién es.
+            python -m venv "/tmp/venv-${servicio}"
+            venv="/tmp/venv-${servicio}/bin"
+            "${venv}/pip" install --upgrade --quiet pip pip-audit
+            # Desde el LOCK y con hashes: auditar lo que se resolvió en ESTA
+            # ejecución no dice nada sobre lo que se despliega. Ahora el árbol
+            # auditado es exactamente el que instalan CI y las imágenes (T8).
+            "${venv}/pip" install --quiet --require-hashes \
+                -r "apps/${servicio}/requirements.lock"
+            "${venv}/pip" install --quiet --no-deps -e "apps/${servicio}"
+            # Se audita el árbol CONGELADO, no el entorno. `--skip-editable` y
+            # `--strict` se contradicen: saltar el paquete del servicio —que no
+            # está en PyPI y no se puede auditar— produce justo la condición que
+            # `--strict` rechaza. `pip freeze --exclude-editable` deja fuera ese
+            # paquete y da el árbol real de dependencias, ya fijado, así que
+            # `--strict` puede exigir que TODO se haya auditado sin excepciones.
+            "${venv}/pip" freeze --exclude-editable > "/tmp/req-${servicio}.txt"
+            "${venv}/python" -m pip_audit \
+              --progress-spinner off \
+              --requirement "/tmp/req-${servicio}.txt" \
+              --no-deps \
+              --strict || fallos=1
+            echo "::endgroup::"
+          done
+          exit $fallos
+
+      - uses: actions/setup-node@v7
+        if: matrix.ecosistema == 'npm'
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: apps/web-spa/package-lock.json
+
+      # Aquí SÍ hay lockfile, así que se audita exactamente lo que se instala.
+      # Umbral en `high`: por debajo hay ruido de herramientas de desarrollo que
+      # no llega al bundle, y un gate que se ignora deja de ser un gate.
+      #
+      # No es `npm audit` pelado porque no sabe de allowlists: o pasa entero o
+      # falla entero. Bajar el umbral o añadir `--omit=dev` habría desactivado el
+      # control para todo el árbol de desarrollo. El script solo silencia lo que
+      # esté aceptado POR ESCRITO en `scripts/npm-audit-excepciones.json`, y
+      # **falla también cuando una excepción deja de aplicar**, para que se borre
+      # el día que llegue el arreglo en vez de cubrir lo siguiente en silencio.
+      - name: Auditar el web-spa
+        if: matrix.ecosistema == 'npm'
+        run: |
+          npm --prefix apps/web-spa ci
+          node scripts/auditar-npm.mjs apps/web-spa high
+
+  sast:
+    name: T9 · SAST (${{ matrix.lenguaje }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        lenguaje: [python, javascript-typescript]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.lenguaje }}
+          queries: security-and-quality
+
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.lenguaje }}
+          # El SARIF también en disco, para poder decidir aquí. Sube igual a la
+          # pestaña Security, que es donde vive la historia del hallazgo.
+          output: sarif-${{ matrix.lenguaje }}
+          upload: always
+
+      # CodeQL por sí solo NO rompe el build: deja una alerta y sigue. Eso vale
+      # como aviso, no como gate. Este paso es el umbral
+      # de severidad: `error` en SARIF son los hallazgos de seguridad graves;
+      # `warning` y `note` (la mitad de `security-and-quality` es calidad) se
+      # quedan en la pestaña Security sin detener a nadie.
+      - name: Umbral de severidad sobre el SARIF
+        run: |
+          python3 - "sarif-${{ matrix.lenguaje }}" <<'PY'
+          import json, pathlib, sys
+
+          graves = []
+          for archivo in pathlib.Path(sys.argv[1]).glob("*.sarif"):
+              sarif = json.loads(archivo.read_text(encoding="utf-8"))
+              for corrida in sarif.get("runs", []):
+                  # El nivel efectivo puede venir en el resultado o heredarse de
+                  # la configuración por defecto de la regla.
+                  reglas = {
+                      r.get("id"): r.get("defaultConfiguration", {}).get("level")
+                      for r in corrida.get("tool", {}).get("driver", {}).get("rules", [])
+                  }
+                  for hallazgo in corrida.get("results", []):
+                      nivel = hallazgo.get("level") or reglas.get(hallazgo.get("ruleId"))
+                      if nivel == "error":
+                          sitio = hallazgo["locations"][0]["physicalLocation"]
+                          graves.append(
+                              f'{sitio["artifactLocation"]["uri"]}'
+                              f':{sitio.get("region", {}).get("startLine", "?")}'
+                              f' [{hallazgo.get("ruleId")}] '
+                              f'{hallazgo.get("message", {}).get("text", "")}'
+                          )
+
+          for linea in graves:
+              print(linea)
+          print(f"{len(graves)} hallazgos de severidad error")
+          sys.exit(1 if graves else 0)
+          PY
+
+  dast:
+    name: T4/T9/T11 · DAST (ZAP)
+    runs-on: ubuntu-latest
+    # Los otros tres controles de este archivo son ESTÁTICOS: leen código o
+    # dependencias. Este es el único que necesita el gateway CORRIENDO, y por eso
+    # tarda más y se levanta su propio stack, igual que `e2e-vivo.yml`.
+    #
+    # Cierra el hueco que quedaba de Gate 3: había SAST, SCA y secretos —los tres
+    # de Gate 2— y NADA dinámico.
+    env:
+      # Ver la nota de `e2e-vivo.yml`: el compose interpola el archivo entero
+      # aunque solo se pida un servicio.
+      MERCHANT_HMAC_KEY: no-se-usa-en-este-job
+      # 20 000/min en vez de los 120 de producción, y NO es aflojar el control:
+      # es que sin esto el escaneo se mide a sí mismo. En la corrida local del
+      # 2026-09-06, 24 de las peticiones de ZAP volvieron 429 y esa parte de la
+      # superficie se quedó sin escanear. Que el limitador funcione lo prueba el
+      # test de T4 en la suite `security`, no este job.
+      #
+      # Llega al contenedor porque el compose lo interpola —`RATE_LIMIT_PER_MIN:
+      # ${RATE_LIMIT_PER_MIN:-120}`—. La primera versión de este job ponía la
+      # variable aquí sin esa línea en el compose: el gateway no la veía y el
+      # comentario prometía algo que no ocurría.
+      RATE_LIMIT_PER_MIN: "20000"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Levantar el gateway real con su DB y su bus
+        run: docker compose up -d --build --wait --wait-timeout 300 api-gateway
+
+      - name: Borde de autenticación (sin token)
+        # Los 8 endpoints deben responder 401 con el contrato en la mano. Es T11
+        # y T15 ejercidos desde fuera del proceso, no con el TestClient
+        # in-process de la suite unitaria.
+        run: python scripts/dast.py --sin-auth --salida informes-dast
+
+      - name: Handlers reales (con token M2M)
+        # En un PR de fork esto NO tiene secretos y el script aborta con un
+        # mensaje claro, que es lo que se quiere: mejor rojo explícito que un
+        # verde escaneando el 401. El `continue-on-error` solo cubre ese caso.
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
+        env:
+          AUTH0_M2M_CLIENT_ID: ${{ secrets.AUTH0_M2M_CLIENT_ID }}
+          AUTH0_M2M_CLIENT_SECRET: ${{ secrets.AUTH0_M2M_CLIENT_SECRET }}
+        run: python scripts/dast.py --con-auth --salida informes-dast
+
+      - name: Umbral de riesgo
+        # Rompe el build con Medio o Alto. Los dos Bajo conocidos
+        # —X-Content-Type-Options y Cross-Origin-Resource-Policy ausentes en el
+        # gateway— quedan declarados en `triar_dast.py`, uno a uno y con motivo,
+        # como se hace con las excepciones de `.gitleaks.toml`.
+        if: always()
+        run: python scripts/triar_dast.py informes-dast
+
+      - name: Guardar los informes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informes-dast
+          path: informes-dast/*.html
+          retention-days: 30
+
+      - name: Logs del gateway si algo falló
+        if: failure()
+        run: docker compose logs --no-color --tail 200

@@ -1,0 +1,29 @@
+# Excepciones del escaneo de secretos (T6).
+#
+# La regla NO se afloja: se declara caso por caso lo que ya se comprobó que es
+# público, y por qué. Un `generic-api-key` desactivado dejaría de ver el secreto
+# de verdad el día que aparezca.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = """
+Fixtures de la portada del BCV: son capturas literales de una página web PÚBLICA,
+guardadas para probar el parser contra HTML real (ADR-0006). El `theme_token` que
+dispara la regla es de Drupal y lo sirve el propio BCV a cualquiera que visite el
+sitio. Va por ruta y no por huella porque el fichero entero es material público:
+cualquier «secreto» dentro de él lo es por definición.
+"""
+paths = ['''apps/ingestor-bcv/tests/fixtures/.*\.html''']
+
+[[allowlists]]
+description = """
+`client_id` de la aplicación SPA en el tenant de Auth0. Es PÚBLICO por diseño
+(ADR-0012): viaja en el bundle que sirve el navegador y no autoriza nada por sí
+solo — el flujo es PKCE sin secreto de cliente. Aparece en el Dockerfile como
+valor por defecto de un ARG y en `config.ts` como defecto de la variable de
+entorno. Se lista el valor exacto en vez de la ruta: si mañana aparece un secreto
+DE VERDAD en el Dockerfile, la regla lo tiene que ver.
+"""
+regexes = ['''8CpfA64FlGTmuyF8w07rDFlrZHEeuRER''']

@@ -50,6 +50,24 @@ def problema(
     )
 
 
+def cabeceras_cuota(req: Request) -> dict[str, str] | None:
+    """Cabeceras `X-RateLimit-*` si esta petición llegó a consumir cuota.
+
+    El contrato promete la cuota en toda respuesta que la haya gastado, y un 404
+    la gasta: el limitador corre en la dependencia, antes de que el handler sepa
+    si hay datos. Sin esto, quien sondea un endpoint todavía sin datos consume su
+    límite a ciegas y se estrella contra un 429 que no vio venir.
+
+    Devuelve `None` —y no un dict vacío— porque es lo que `JSONResponse` espera
+    cuando no hay cabeceras que añadir.
+
+    Los 401 y 403 salen sin cabeceras a propósito, y es correcto: el limitador
+    va DESPUÉS de validar el token y el permiso, así que esas peticiones no
+    gastan cuota. Prometerles una cifra sería inventarla.
+    """
+    return getattr(req.state, "cabeceras_cuota", None)
+
+
 def registrar_manejadores(app: FastAPI) -> None:
     @app.exception_handler(ErrorAutenticacion)
     async def _401(_req: Request, exc: ErrorAutenticacion) -> JSONResponse:
@@ -65,16 +83,24 @@ def registrar_manejadores(app: FastAPI) -> None:
         )
 
     @app.exception_handler(NoEncontrado)
-    async def _404(_req: Request, exc: NoEncontrado) -> JSONResponse:
-        return problema(404, "Sin datos", exc.detalle, "not-found")
+    async def _404(req: Request, exc: NoEncontrado) -> JSONResponse:
+        return problema(
+            404, "Sin datos", exc.detalle, "not-found", cabeceras_cuota(req)
+        )
 
     @app.exception_handler(ParametroInvalido)
-    async def _400(_req: Request, exc: ParametroInvalido) -> JSONResponse:
-        return problema(400, "Parámetro inválido", str(exc), "invalid-parameter")
+    async def _400(req: Request, exc: ParametroInvalido) -> JSONResponse:
+        return problema(
+            400,
+            "Parámetro inválido",
+            str(exc),
+            "invalid-parameter",
+            cabeceras_cuota(req),
+        )
 
     @app.exception_handler(RequestValidationError)
     async def _400_fastapi(
-        _req: Request, exc: RequestValidationError
+        req: Request, exc: RequestValidationError
     ) -> JSONResponse:
         # El contrato usa 400 para parámetros inválidos (no el 422 default de
         # FastAPI). Solo se expone qué parámetro falló, nunca el traceback.
@@ -90,11 +116,15 @@ def registrar_manejadores(app: FastAPI) -> None:
             if parametros
             else "Parámetros inválidos."
         )
-        return problema(400, "Parámetro inválido", detalle, "invalid-parameter")
+        return problema(
+            400, "Parámetro inválido", detalle, "invalid-parameter", cabeceras_cuota(req)
+        )
 
     @app.exception_handler(RangoInvalido)
-    async def _422(_req: Request, exc: RangoInvalido) -> JSONResponse:
-        return problema(422, "Rango no procesable", str(exc), "range-too-large")
+    async def _422(req: Request, exc: RangoInvalido) -> JSONResponse:
+        return problema(
+            422, "Rango no procesable", str(exc), "range-too-large", cabeceras_cuota(req)
+        )
 
     @app.exception_handler(LimiteExcedido)
     async def _429(_req: Request, exc: LimiteExcedido) -> JSONResponse:

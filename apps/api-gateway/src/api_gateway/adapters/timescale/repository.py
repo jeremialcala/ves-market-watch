@@ -15,19 +15,24 @@ from datetime import date, datetime, timedelta
 import asyncpg
 
 from api_gateway.application.ports import LecturaRepository
+from api_gateway.domain.paginacion import INTERVALOS
 
-# asyncpg codifica timedelta como interval (un string no se castea en $1::interval).
-_INTERVALOS = {
-    "5m": timedelta(minutes=5),
-    "1h": timedelta(hours=1),
-    "1d": timedelta(days=1),
-}
+# El mapa vive en el dominio: lo usan el agrupado de aquí y la validación del
+# rango, que estima cuántas filas saldrían. asyncpg codifica timedelta como
+# interval (un string no se castea en $1::interval).
+_INTERVALOS = INTERVALOS
 
 
 async def _init_conexion(conexion: asyncpg.Connection) -> None:
     await conexion.set_type_codec(
         "jsonb", encoder=json.dumps, decoder=json.loads, schema="pg_catalog"
     )
+
+
+# Ventana del resultado observado de una señal. 12 h: cubre una sesión completa
+# del mercado P2P sin solaparse con la siguiente señal de la misma regla, que el
+# cooldown ya separa.
+VENTANA_RESULTADO_H = 12
 
 
 class TimescaleLecturaRepository(LecturaRepository):
@@ -121,6 +126,8 @@ class TimescaleLecturaRepository(LecturaRepository):
         desde: datetime,
         hasta: datetime,
         intervalo: str,
+        indicador: str | None,
+        moneda: str | None,
         offset: int,
         limite: int,
     ) -> tuple[list[dict], int]:
@@ -133,13 +140,17 @@ class TimescaleLecturaRepository(LecturaRepository):
                    last(calc_version, as_of) AS calc_version
             FROM indicators
             WHERE as_of BETWEEN $2 AND $3
+              AND ($4::text IS NULL OR indicator = $4)
+              AND ($5::text IS NULL OR currency = $5)
             GROUP BY 1, indicator, currency
             ORDER BY 1 DESC, indicator, currency
-            OFFSET $4 LIMIT $5
+            OFFSET $6 LIMIT $7
             """,
             intervalo_sql,
             desde,
             hasta,
+            indicador,
+            moneda,
             offset,
             limite,
         )
@@ -149,12 +160,16 @@ class TimescaleLecturaRepository(LecturaRepository):
                 SELECT 1
                 FROM indicators
                 WHERE as_of BETWEEN $2 AND $3
+                  AND ($4::text IS NULL OR indicator = $4)
+                  AND ($5::text IS NULL OR currency = $5)
                 GROUP BY time_bucket($1::interval, as_of), indicator, currency
             ) buckets
             """,
             intervalo_sql,
             desde,
             hasta,
+            indicador,
+            moneda,
         )
         return [dict(f) for f in filas], int(total)
 
@@ -187,14 +202,33 @@ class TimescaleLecturaRepository(LecturaRepository):
         offset: int,
         limite: int,
     ) -> tuple[list[dict], int]:
+        # `outcome_*`: la brecha EN la señal y `VENTANA_RESULTADO` después. Es
+        # historia observada, no una medida de acierto — la lectura la fija el
+        # caso de uso, que publica la variación y nada más (RF-5).
+        #
+        # Los dos lados usan el valor más cercano por debajo del instante
+        # buscado (`ORDER BY as_of DESC LIMIT 1`), el mismo criterio as-of que el
+        # motor (ADR-0009). Si la ventana aún no se ha cumplido, el segundo sale
+        # NULL y el resultado no se publica: todavía no ocurrió.
         filas = await self._pool.fetch(
             """
-            SELECT emitted_at, as_of, type, direction, currency,
-                   calc_version, triggered_by::text AS triggered_by, evidence
-            FROM signals
-            WHERE emitted_at BETWEEN $1 AND $2
-              AND ($3::text IS NULL OR type = $3)
-            ORDER BY emitted_at DESC
+            SELECT s.emitted_at, s.as_of, s.type, s.direction, s.currency,
+                   s.calc_version, s.triggered_by::text AS triggered_by,
+                   s.evidence,
+                   (SELECT i.value FROM indicators i
+                     WHERE i.indicator = 'p2p_brecha_pct_buy'
+                       AND i.currency = 'VES' AND i.as_of <= s.as_of
+                     ORDER BY i.as_of DESC LIMIT 1)::text AS brecha_en_senal,
+                   (SELECT i.value FROM indicators i
+                     WHERE i.indicator = 'p2p_brecha_pct_buy'
+                       AND i.currency = 'VES'
+                       AND i.as_of <= s.as_of + make_interval(hours => $6)
+                       AND i.as_of >= s.as_of
+                     ORDER BY i.as_of DESC LIMIT 1)::text AS brecha_despues
+            FROM signals s
+            WHERE s.emitted_at BETWEEN $1 AND $2
+              AND ($3::text IS NULL OR s.type = $3)
+            ORDER BY s.emitted_at DESC
             OFFSET $4 LIMIT $5
             """,
             desde,
@@ -202,6 +236,7 @@ class TimescaleLecturaRepository(LecturaRepository):
             tipo,
             offset,
             limite,
+            VENTANA_RESULTADO_H,
         )
         total = await self._pool.fetchval(
             """
@@ -215,6 +250,24 @@ class TimescaleLecturaRepository(LecturaRepository):
             tipo,
         )
         return [dict(f) for f in filas], int(total)
+
+    # -- análisis -----------------------------------------------------------
+
+    async def analisis_vigente(self, currency: str) -> dict | None:
+        # El payload se devuelve tal como se guardó: el codec jsonb ya
+        # registrado lo decodifica manteniendo los decimales como string, sin
+        # round-trip por float (ADR-0017).
+        fila = await self._pool.fetchrow(
+            """
+            SELECT as_of, payload
+            FROM indicator_analysis
+            WHERE currency = $1
+            ORDER BY as_of DESC
+            LIMIT 1
+            """,
+            currency,
+        )
+        return dict(fila) if fila is not None else None
 
     # -- salud --------------------------------------------------------------
 

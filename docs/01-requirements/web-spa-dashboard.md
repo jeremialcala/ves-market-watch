@@ -1,0 +1,470 @@
+# PRD — Dashboard web (front-end/SPA `apps/web-spa`)
+
+- **Estado:** accepted — en implementación (fase 03)
+- **Fecha:** 2026-07-31
+- **Decisores:** Jeremi Alcalá
+- **Fase AI-DLC:** 01-requirements
+- **Versión:** Unreleased (se sincroniza al próximo corte)
+- **Gate:** 0 (incremental — enmienda HITL del charter 2026-07-27, ADR-0017)
+- **Feature ID:** web-spa-dashboard
+
+Primera app consumidora de la plataforma: dashboard web autenticado (React,
+ADR-0017) que muestra en tiempo casi real la brecha cambiaria, la referencia
+P2P, la microestructura y las señales, con vista de histórico. Consume
+exclusivamente los contratos públicos del api-gateway
+(`apps/api-gateway/docs/openapi.yaml` y `asyncapi.yaml`); no habla con la DB ni
+con el bus. El flujo de autenticación (login Auth0 → REST → WSS → expiración)
+está especificado en el journey del PRD `api-streaming.md` §journey — este PRD
+lo **referencia** y no lo duplica.
+
+## Usuarios
+Personas autenticadas vía Auth0 (roles `viewer`/`operator`, ambos con los 5
+permisos de lectura/streaming hoy). Sin usuarios anónimos: solo la pantalla de
+login y el estado de salud son visibles sin sesión.
+
+> Enmienda 2026-07-31 (ADR-0018): el dashboard adopta el sistema de diseño
+> Higerotech y suma tres capacidades que este PRD no contemplaba — vista de
+> análisis, idioma ES/EN y tema claro/oscuro (RF-8 a RF-10). Se añade además la
+> regla de presentación de bloques sin fuente de datos, que es RF-5 aplicada al
+> diseño.
+
+> Enmienda 2026-08-01 (ADR-0020): **RF-1 gana criterios verificables.** Decía
+> «tokens solo en memoria; renovación silenciosa; logout», que no permite
+> distinguir un login que funciona de uno roto. Se añade: la recarga **no muestra
+> login** mientras viva la sesión SSO; **todo fallo de autenticación ofrece
+> reintento** (nunca un estado terminal); y los estados de sesión se **distinguen
+> entre sí** (comprobando / redirigiendo / error). El escenario de abuso 4 se
+> amplía con el *callback envenenado*: un `?code=` inválido en la URL no puede
+> dejar al usuario encerrado.
+
+> Enmienda 2026-08-01 (ADR-0019): el motor ya calcula la lectura de los
+> medidores (RF-6 del PRD del motor), así que el panel de instrumentos deja de
+> ser un bloque demo y pasa a explicarse en ES/EN con dato servido — **RF-11**,
+> más la enmienda correspondiente a «RF-5 ampliado».
+
+> Enmienda 2026-08-01 (ADR-0021): el motor ya produce la lectura del mercado
+> como un todo (RF-7 del PRD del motor), así que la tarjeta «Lectura de hoy»
+> deja de ser maqueta — **RF-12**, con su enmienda a «RF-5 ampliado».
+
+> Enmienda 2026-09-07: **no queda ningún sello demo en el producto.** Los
+> riesgos pasaron a dato servido y los escenarios se retiraron. Detalle y
+> medición en `analisis-comprensivo.md`.
+
+## Requisitos funcionales
+- **RF-1 — Login y sesión**: Auth Code + PKCE contra Universal Login (ADR-0012);
+  tokens solo en memoria; renovación silenciosa por refresh rotation; logout.
+  La recarga de página re-autentica **en silencio** (iframe `prompt=none` con la
+  cookie SSO — sin storage persistente ni login visible, T12).
+- **RF-2 — Vista en vivo (dashboard)**: tasa oficial multi-moneda
+  (USD/EUR/CNY/TRY/RUB) con bandera `stale`; referencia P2P de ambos lados con
+  `confidence` visible (low resaltado); brecha (`gap_abs`/`gap_pct`, lado buy) y
+  `spread_pct`; microestructura (ratio oferta/demanda, momentum 3 h, drenaje
+  6 h, liquidez, merchants %, outliers %); profundidad por bandas; feed de
+  señales con su evidencia (`rule` + `inputs`, trazabilidad T10) accesible.
+
+  **Enmienda 2026-09-08: se retira la «Cronología de señales» del dashboard.**
+  Era la tercera superficie del producto sobre lo mismo, y la que menos añadía:
+  el historial de reglas del Histórico sale de las mismas señales —agregadas por
+  regla, con su suficiencia declarada— y los episodios comparables muestran qué
+  hizo la brecha después de cada una. (La cronología de la **sesión** del
+  Intradía no cuenta como duplicado: no lee señales, deriva eventos de la serie
+  y del análisis.)
+
+  **Lo que se pierde, dicho sin rodeos**: la evidencia por señal —los `inputs`
+  concretos que dispararon— deja de verse en el producto. Sigue publicada en el
+  evento, en la tabla `signals` y en `GET /api/v1/signals`, así que **el control
+  de T10 no cambia**: su evidencia es la del motor y su verificación es la
+  auditoría end-to-end, no esta pantalla. Lo que cambia es que la trazabilidad
+  pasa a ser accesible **por API y no por interfaz**.
+
+  Si algún día se quiere de vuelta en pantalla, el sitio natural no es un bloque
+  propio sino una fila desplegable del historial de reglas: ahí el «qué disparó y
+  con qué valores» es el detalle de una fila que ya existe, en vez de una cuarta
+  vista del mismo hecho.
+
+  **Ampliación 2026-09-07 (absorbe RF-8)**: además, la **presión de liquidez**
+  por lado —junto a la profundidad, que la detalla por bandas— y los **riesgos
+  que vigilar**, con su nivel, su valor y el corte que lo decide
+  (`riesgos.v1.yaml`). Los riesgos cierran la vista a propósito: son lo que
+  podría dejar en falso todo lo anterior, no un dato más que compita con la
+  lectura.
+- **RF-3 — Tiempo real**: suscripción WSS a los 4 tópicos; la UI refleja un push
+  en < 1 s desde su recepción; reconexión automática con backoff y **reposición
+  del estado por REST** en cada (re)conexión (el push es best-effort,
+  ADR-0016); renovación del token del WSS antes de `exp` sin interacción.
+- **RF-4 — Histórico**: series de tasa oficial (por `value_date`) y de
+  indicadores (bucket 5m/1h/1d) con rango máximo de 90 días validado en
+  cliente, paginación transparente (`has_more`) con progreso y cancelación.
+- **RF-5 — Honestidad del dato**: los 404 de los endpoints «current» se muestran
+  como «sin datos frescos» (nunca error); los null de brecha/spread como «—»;
+  decimales renderizados desde el string exacto del contrato (nunca float para
+  lógica); frescura relativa visible por fuente (P2P 20 min, oficial 6 h).
+- **RF-6 — Estado de la conexión**: indicador visible de WSS
+  (conectado/reconectando), cuota `X-RateLimit-Remaining` y salud del gateway.
+- **RF-7 — Intradía (día operativo VET)**: parrilla con **todos** los indicadores
+  disponibles del día operativo de Venezuela (00:00 VET → ahora; UTC−4 fijo),
+  agrupados por oficial / compra / venta / microestructura. Cada panel muestra el
+  último valor, su serie del día y la **variación intradía** — Δ absoluta y
+  porcentual contra la **apertura** del día, según la define el glosario. La Δ se
+  calcula sobre el string decimal exacto (sin float). El **porcentaje se omite
+  cuando la apertura no es positiva**: con apertura cero no existe (∞/NaN) y con
+  apertura negativa miente el sentido —el momentum abrió en −0,24 y estaba en
+  +0,31, una subida, y el cociente escribía «−232 %» junto a una Δ de «+0,55»—; la
+  Δ en unidades es exacta y no depende del signo de la base. Un indicador nuevo
+  del motor aparece sin cambios en el front. Refresco automático cada 5 min, con
+  la granularidad elegible entre **5 min, 15 min y 1 h**.
+
+  **Todo formato de Δ pasa por una sola función (`lib/delta.ts`, 2026-08-06).**
+  Estaba repetido en cinco componentes con cinco criterios, y por ahí se colaron
+  dos cosas que llegaron a pantalla: un porcentaje que contradecía el signo que
+  tenía al lado y un signo duplicado. Las reglas:
+
+  - **Menos tipográfico U+2212**, nunca el guion ASCII; separadores del idioma.
+  - **«+» explícito solo en positivos**, y siempre escrito: el color no puede ser
+    la única pista de la dirección.
+  - **El porcentaje se omite si la apertura no llega a 0,5.** Una condición cubre
+    los tres casos malos: apertura cero (no existe el cociente), pequeña (un
+    movimiento de nada sale como «+133 %») y **negativa** (el cociente invierte el
+    sentido). La Δ en unidades es exacta siempre.
+  - **Sin cambio se dice** («— sin cambio»), no se pinta un «+0» que parece una
+    medición.
+  - **La unidad viaja pegada al valor** con espacio duro, nunca colgada del nombre
+    de la métrica.
+  - **Sin triángulos de dirección**: eran un tercer canal que repetía lo que ya
+    dicen el signo escrito y el color.
+
+  **Etiqueta y clave, separadas y en un solo catálogo (2026-08-06).** Cada serie
+  se nombra con una **etiqueta legible** en caja de oración («Brecha VES»,
+  «Drenaje oferta 6 h») y, debajo, su **clave técnica en snake_case**. Las dos
+  salen del mismo catálogo (`presentacionDe`), así que la tabla enfrentada, «qué
+  se movió», microestructura y la cronología nombran la misma serie igual. Cierra
+  además un hueco de RF-9 que arrastraba desde julio: las etiquetas estaban
+  cableadas en `lib/intradia.ts` y en inglés salían en español.
+
+  - **La clave es la del CONTRATO, no una decorativa.** `p2p_brecha_abs`,
+    `p2p_liquidez`, `p2p_drenaje_oferta_6h_pct` —los nombres reales de la tabla
+    `indicators`—. Es lo que se escribe en una consulta, en un ticket o lo que
+    sale en el CSV; un rótulo que no exista ahí sería un identificador que falla
+    en cuanto alguien lo copia. Un test lo fija.
+  - En la tabla la clave es la de la **familia** (`p2p_mediana`), porque la fila
+    cubre los dos lados y el sufijo pertenece a la columna; en las tarjetas y en
+    la cronología es la de la **serie** (`p2p_mediana_sell`), que es lo que ahí
+    se está mirando.
+  - Un indicador fuera del catálogo aparece con su nombre canónico y **sin
+    segunda línea**: repetir la misma cadena dos veces no informa.
+
+  **Tooltip propio para los sparklines (2026-08-06).** El único que había era el
+  de Recharts, en los paneles de la parrilla: se pintaba **dentro del flujo** de
+  la tarjeta —aparecer empujaba el layout— y tapaba la línea de apertura. Los 24
+  sparklines de la tabla enfrentada, «qué se movió» y microestructura no tenían
+  ninguno: la serie se veía pero no se podía leer un valor. Ahora los 27 comparten
+  uno:
+
+  - `position: absolute` sobre el hueco del sparkline, así que **sale del flujo**
+    y aparecer no mueve un píxel; `pointer-events: none`, para no robar el puntero
+    y provocar el parpadeo clásico.
+  - Se ancla sobre el punto con `translate(-50%, -100%)` y 8 px, usando las
+    **mismas coordenadas que dibuja la línea**: un tooltip que señala un punto
+    distinto del que se ve es peor que no tenerlo.
+  - **Voltea** a menos de 120 px del borde del viewport en vez de salirse.
+  - Superficie con el **mismo tratamiento que la barra de navegación**, que es el
+    otro único sitio del sistema con desenfoque (`--blur-nav`). El fondo es un
+    token que se voltea con el tema, como `--nav-bg`: cableado a la tinta oscura
+    sería una caja negra sobre papel en tema claro.
+  - **En táctil no aparece**: sin hover no habría forma de cerrarlo salvo tocando
+    otra cosa, y taparía la tarjeta que se acaba de tocar. El dato exacto de cada
+    bucket sale por «Exportar sesión», que sí funciona sin puntero.
+
+  **El cero como resultado, no como hueco (2026-08-06).** En `p2p_outliers_pct`
+  el cero **es lo deseado**: significa que el filtro MAD/IQR no tuvo que descartar
+  ningún anuncio. Cuando la serie entera vale cero, el área del sparkline se
+  sustituye por una línea hairline centrada y la frase «sin outliers en la
+  sesión» en salvia —el color con el que el proyecto marca la validación—; ni
+  chispa plana, que se lee igual que un dato que falta, ni «(—)».
+
+  - **Se dispara con TODOS los puntos a cero**, no con «no se movió» ni «el
+    último es cero»: la frase habla del día entero y una serie que tuvo outliers a
+    media mañana la desmentiría. En la tabla, la nota interpretativa
+    («snapshot limpio en ambos lados…») exige que **los dos lados** lo cumplan.
+    Cablearla habría escrito «el filtro no descartó nada hoy» el mismo día en que
+    descartó: el 6-ago hubo 17 lecturas no nulas en compra y 128 en venta.
+  - **Solo donde el proyecto tiene una lectura del cero** (`etiquetaCero` del
+    catálogo). Una mediana en cero no es «limpio», es que algo va mal; inventarle
+    una frase sería afirmar algo que nadie ha interpretado.
+  - **`p2p_outliers_pct` queda FUERA del ranking de «qué se movió»**, se mueva lo
+    que se mueva. Mide la calidad del snapshot, no el mercado, y como su σ de 7
+    días es diminuta cualquier microcambio le daba una z enorme: se vio en vivo
+    ocupando la primera tarjeta con un «−0,50 (−100 %)» que no decía nada del
+    mercado. Su sitio es su fila de la tabla, donde tiene contexto.
+
+  **Ritmo vertical normalizado (2026-08-06).** 46 px entre bloques, 18 px entre
+  la cabecera de sección y su contenido, 18 px entre tarjetas hermanas; el
+  contenedor mantiene 1180 px, 24 px de aire lateral y
+  `clamp(24px,4vw,44px)` / 96 px arriba y abajo. La cabecera es una fila flex a
+  línea base con h3 en caja de oración y, al lado, **un subtítulo que dice qué
+  mira el bloque**.
+
+  - **Fuera las pastillas «compra», «venta» y «sin lado».** No informaban: «sin
+    lado» repetía una obviedad del título y el lado de una tarjeta ya lo dice su
+    clave (`p2p_vwap_sell`). Cada sección gana en su sitio una frase que sí dice
+    algo.
+  - Los 46 px van en un **modificador de la vista**: la regla base de separación
+    (24 px) la comparten Dashboard, Análisis e Histórico, y ahí el ritmo medido es
+    otro.
+
+  **Una sola tarjeta de métrica (2026-08-06).** `MetricCard` la usan «qué se
+  movió» y microestructura, y es la que debe usar cualquier bloque futuro.
+  Contrato: etiqueta y clave **derivadas del catálogo**, valor, Δ con su color de
+  dirección, apertura, serie, y como opcionales umbral, pastilla, nota y pie
+  derecho.
+
+  - **La identidad entra como `indicador`, no como etiqueta + clave sueltas.** El
+    catálogo es el único dueño de ese par; aceptarlo por props reabriría la puerta
+    a que dos bloques nombren la misma serie distinto.
+  - Estilo **fijo y no personalizable por bloque**, todo en tokens que ya valían
+    lo pedido: `--dark-3`, radio 22, padding 22/24, gap 12, `--border` (8 %) y en
+    hover `--border-2` (14 %) con `--lift` (−4 px) en `--dur-card` (0,25 s).
+    **Sin sombra en reposo, sin scale y sin estado de pulsado** —el sistema no los
+    define—, **sin degradado y sin borde lateral de color**. Foco visible
+    obligatorio con `outline` de 2 px y `outline-offset` 3 px.
+  - El movimiento del hover se anula con `prefers-reduced-motion`; el cambio de
+    borde se queda, porque no es movimiento.
+
+  **La barra de control dice el estado, no ofrece un botón (2026-08-06).** El
+  botón «Actualizar» desaparece: la vista ya se recarga sola, así que lo que
+  faltaba no era un control sino saber si eso está pasando. En su sitio va un
+  indicador de frescura, y **solo late en salvia cuando hay dato fresco de
+  verdad**: si la carga falla, el punto se apaga y el texto dice desde cuándo no
+  se actualiza. Un latido verde mientras la carga falla afirma que hay vida donde
+  no la hay, justo en el momento en que alguien mira ese punto. El pulso se
+  detiene con `prefers-reduced-motion: reduce` —es la única animación en bucle de
+  la aplicación, y hay un test que exige que cualquier otra futura también se
+  exceptúe—.
+
+  **Ampliación 2026-08-06 — la vista se lee de arriba abajo (ADR-0025).** De la parrilla
+  original solo queda la tasa oficial: cada familia se fue al bloque que responde
+  a su pregunta, y **los cinco se derivan del dato**. Cada bloque decide además
+  qué codifica su color —lado en la parrilla, dirección de la Δ en el bloque
+  enfrentado, estado de la condición en microestructura—, y por eso ninguno deja
+  el signo ni el estado solo en el color:
+
+  1. **«Lectura de la sesión»**, bloque rector: qué dice el ruleset AHORA — qué
+     regla está más cerca, cuántas condiciones cumple y cuál la bloquea. Sale de
+     `analisis` (`summary` + `rule_proximity`); la regla más cercana la elige el
+     motor vía `summary.closest_rule`, **nunca el SPA**. Absorbe la frase de día
+     operativo, con la apertura de la sesión y lo transcurrido. «Exportar sesión»
+     vuelca cada bucket con el valor exacto; «Vigilar esta regla» va
+     **deshabilitada y explicándose**, igual que «Crear alerta» (ADR-0021).
+  2. **«Qué se movió desde la apertura»**: las cuatro series que explican la
+     sesión. El criterio **se calcula**: `z = |último − apertura| / σ₇d`, con σ
+     sobre los valores de los últimos 7 días. Normalizar es lo que permite
+     comparar unidades distintas — sin ello la liquidez copaba las cuatro
+     tarjetas por el mero tamaño de la cifra. Una serie sin historia queda fuera
+     del ranking (no hay con qué compararla) y una que llevaba 7 días quieta y
+     hoy se mueve va arriba del todo. La frase «el resto se mantuvo dentro de su
+     rango normal» **se cuenta**, no se cablea: el primer día en producción había
+     10 series fuera de rango y la frase habría sido falsa.
+  3. **«Compra vs. venta, métrica por métrica»** sustituye a las dos parrillas
+     de lado: la pregunta útil no es cómo va la liquidez de venta sino en qué se
+     diferencian los dos lados, y eso exige la misma fila. Las filas se
+     **derivan** de las series —una lista fija habría roto la promesa de este
+     mismo RF de que un indicador nuevo aparece sin tocar el front—; el orden sí
+     es declarado. Un lado sin serie **se dice**, no se rellena con el otro ni
+     con un cero. Dentro del bloque el lado lo dice la COLUMNA, así que el color
+     pasa a codificar la dirección de la Δ; como comparte tonos con las
+     cabeceras, el signo va siempre escrito.
+  4. **«Microestructura»** deja de ser parrilla: sus cuatro series no son cifras
+     del día como las demás, sino **condiciones** del ruleset, y lo que hay que
+     poder leer de un vistazo es si están cumplidas y a qué distancia quedan de
+     estarlo. Cada tarjeta lleva el estado, la línea de disparo dibujada **en la
+     escala de la serie** y el nombre de la regla con la posición de la condición
+     dentro de ella. El estado sale de `rule_proximity` —el SPA no evalúa nada— y
+     sin análisis **no se pinta ningún estado**. El color deja de codificar el
+     lado (estas cuatro no lo tienen) y pasa al estado: coral cumple, teal no.
+  5. **«Cronología de la sesión»**: apertura, cruces de umbral del ruleset,
+     saltos de liquidez sobre 2σ y último recálculo. Nada que no se pueda señalar
+     en una serie. Los cruces llevan **histéresis por permanencia** —el estado
+     nuevo tiene que aguantar 15 minutos— porque sin ella un indicador que oscila
+     junto a su umbral generaba un evento por temblor: 50 líneas, 48 de ellas
+     cuatro indicadores vibrando. La ventana de referencia de 7 días se pide
+     **aparte y en bucket de 1 h**, no en el del selector: a 5 min son más de
+     40 000 filas.
+
+     **Y las repeticiones se RESUMEN (2026-08-07).** La histéresis quita el ruido
+     pero los cruces que quedan son reales, y aun así eran 37 en una sesión,
+     repartidos en cinco condiciones que entraban y salían. Una condición que
+     cruza once veces **no cuenta once historias, cuenta una**: que hoy está
+     inestable. Con más de dos cruces, la cronología emite **un solo evento** que
+     dice cuántas veces, desde cuándo y cómo está ahora —la cuenta va escrita, así
+     que agrupar no esconde—. Medido sobre tres sesiones reales: **37/30/29
+     líneas pasan a 6/6/7**, y el corte es poco sensible (con 2, 3 o 4 sale lo
+     mismo). Se descartó alargar la permanencia, que era lo obvio: a 120 minutos
+     quedan 11/9/10 —peor— **y cada cruce real tardaría dos horas en aparecer**.
+
+- ~~**RF-8 — Vista de análisis**~~ (2026-07-31, ADR-0018) — **absorbido en RF-2
+  el 2026-09-07.** No se retira el requisito: se retira la **pestaña**, y su
+  contenido pasa al dashboard.
+
+  Lo que pedía era «lectura del mercado con escenarios y riesgos». De los tres,
+  la lectura del mercado ya la cubre RF-12 desde el 2026-08-01; los **riesgos**
+  pasaron a dato servido con cortes versionados; y los **escenarios** se
+  retiraron por inconstruibles —el régimen sobre el que condicionaban dura menos
+  de una hora contra un horizonte de 72 h—. Lo que quedaba era un dato del libro
+  (presión de liquidez) y cuatro autodiagnósticos de la plataforma: ninguno es
+  análisis del mercado, y ninguno justificaba una pestaña de primer nivel que
+  además prometía en su nombre lo que ya no contenía.
+
+  **Nada medido se pierde**: la presión de liquidez se monta junto a la
+  profundidad —misma pregunta, distinto grano— y los riesgos cierran el
+  dashboard. Determinación completa en `analisis-comprensivo.md`.
+- **RF-9 — Idioma ES/EN**: toda cadena de interfaz se muestra en el idioma
+  elegido, que se recuerda entre sesiones. NO se traducen los nombres canónicos
+  de indicadores ni de reglas de señal: son vocabulario del contrato. Los
+  decimales se formatean con los separadores del idioma (es-VE `1.234,56` ·
+  en-US `1,234.56`) desde el string exacto, nunca desde float.
+- **RF-10 — Tema claro/oscuro**: el tema es explícito (oscuro por marca, no
+  `prefers-color-scheme`), se cambia desde la barra y se recuerda. Ambos temas
+  se pintan con los mismos tokens del sistema de diseño.
+- **RF-11 — Explicación de los medidores (ES/EN)** (2026-08-01, ADR-0019): cada
+  medidor del panel debe decir **qué mide**, **qué dice ahora** y **a qué aviso
+  alimenta**, en los dos idiomas, a partir de la lectura que sirve el gateway
+  (`GET /api/v1/analysis/current` y tópico WSS `analysis`).
+
+  - El pie de la tarjeta muestra la escala **real** contra la que se compara: los
+    cortes publicados, o el contador de muestras cuando todavía se está en
+    respaldo.
+  - La barra se rellena en la posición del contrato y lleva **una marca por cada
+    regla** que el medidor alimenta (hay indicadores que alimentan tres). Si el
+    contrato no trae posición, **no se dibuja relleno**.
+  - El SPA no calcula nada de esto: banda, posición, posición de umbral,
+    distancia y estado de cada umbral vienen del motor. La única aritmética
+    permitida es convertir la fracción [0,1] a un ancho CSS.
+  - Registro **didáctico**, no de mesa de operaciones: las frases describen el
+    presente y nunca el futuro, ninguna dice «percentil X» (una sola cadena, en
+    el desplegable, explica cómo se lee la escala) y «señal» se dice **aviso**.
+    **Enmienda 2026-08-02:** la aclaración deja de ESCRIBIRSE en la interfaz. La misma advertencia salía tres veces en el mismo dashboard y repetida tres veces deja de leerse; además la tarjeta debe describir el mercado en lenguaje llano, no describirse a sí misma. Lo que el requisito protege —que la prosa no aconseje ni prediga— **no se relaja**: sigue vigilado por la batería de expresiones prohibidas contra el texto renderizado, ahora en los dos idiomas y sin el apaño de recortar el pie antes de buscar dentro de él.
+  - Estados degradados explícitos y distinguibles entre sí: sin análisis, medidor
+    sin lectura en esta revisión, sin valor vigente, escala en respaldo,
+    confianza baja y tasa oficial rancia.
+
+- **RF-12 — Lectura del mercado (ES/EN)** (2026-08-01, ADR-0021): la tarjeta de
+  cabecera debe decir **qué está haciendo el mercado ahora**, en lenguaje llano y
+  en los dos idiomas, a partir del campo `reading` que sirve el gateway.
+
+  - El titular es el **régimen** que publica el motor, no una cadena de ejemplo.
+    Sin régimen resoluble se dice, en vez de inventar medio titular.
+  - La prosa es **una frase por afirmación, en el orden que manda el motor**. El
+    SPA no reordena ni decide qué contar: si lo hiciera, habría dos fuentes de
+    verdad sobre la lectura.
+  - **Describe, no aconseja ni predice.** Nada imperativo («deberías», «hoy no hay
+    nada que ejecutar») ni predictivo («va a subir», «se espera»). Lo que orienta
+    va en **condicional** («si tienes que comprar, hoy…»).
+    **Enmienda 2026-08-02:** la aclaración deja de ESCRIBIRSE en la interfaz. La misma advertencia salía tres veces en el mismo dashboard y repetida tres veces deja de leerse; además la tarjeta debe describir el mercado en lenguaje llano, no describirse a sí misma. Lo que el requisito protege —que la prosa no aconseje ni prediga— **no se relaja**: sigue vigilado por la batería de expresiones prohibidas contra el texto renderizado, ahora en los dos idiomas y sin el apaño de recortar el pie antes de buscar dentro de él.
+  - Los **chips** salen del análisis: frescura, reglas disparadas, medidores cerca
+    de su umbral y confianza con su valor real. No hay barra de confianza: el
+    contrato la da binaria (`normal|low`) y una barra continua fingiría precisión.
+  - Estados degradados explícitos: sin lectura, sin régimen, confianza baja
+    (encabeza y desplaza al régimen), oficial rancia (sin atribución) y escala en
+    respaldo (sin la frase de banda).
+
+  **Ampliación 2026-08-01 — la descomposición de la brecha compara ambos lados.**
+  La tarjeta muestra compra y venta, cada uno contra su propia historia, y:
+
+  - **rotula el tramo REAL** de cada ventana cuando la serie no la alcanza
+    («Promedio 12 d de 30»), y pasa sola a la etiqueta nominal cuando la serie
+    crece. Antes decía «Promedio 30 días» sobre 12 días: el número era real y la
+    ventana no;
+  - **la cifra que cita la prosa tiene que estar a la vista**. Si el motor afirma
+    una distancia contra una referencia, esa referencia se muestra: una afirmación
+    incomprobable es tan mala como una falsa. Hay un test que lo fija;
+  - no recalcula nada: las referencias llegan del contrato (`gap_history`).
+
+  El **mapa de calor** pasa a mirar el lado **venta**, que es el que tiene historia
+  real; con el de compra las primeras filas quedaban vacías. Codifica **dos cosas
+  distintas de dos maneras distintas**: la magnitud, con una rampa secuencial de un
+  solo tono hasta el p90 —se lee de tenue a intensa—; y el **exceso** sobre ese p90,
+  con coral, que no es la continuación de la rampa sino una **categoría**. Sus
+  percentiles son de los 14 días que se están pintando y el subtítulo lo dice:
+  el lado venta **no es medidor del panel** y no tiene percentiles publicados que
+  citar. Las horas sin bucket quedan vacías y **se distinguen por forma** (un filete
+  interior), no por color: no se interpola para rellenar bonito. Cada vista que muestre
+  una serie de brecha **declara qué lado mira**: con dos series en la app, callarlo
+  es ambiguo. La **sparkline de 24 h** pinta los dos lados,
+  con **escala Y compartida** —sin ella cada serie se normaliza sola y la más baja
+  puede quedar dibujada por encima— y distinguibles por **forma además de color**.
+
+- **RF-5 ampliado — bloques sin fuente**: todo bloque que el diseño pida y la
+  plataforma no calcule debe distinguirse del dato servido **a simple vista**
+  (sello `demo · sin fuente` + explicación en la sección). Un ejemplo que se lee
+  igual que un dato del gateway es una violación de RF-5, no un detalle estético.
+
+  **Enmienda 2026-08-01 (ADR-0019): el panel de medidores deja de ser bloque
+  demo.** Lo que se marcaba —la escala percentil, el relleno, la marca de umbral
+  y la nota— ya lo calcula el motor por revisión, así que el sello se **retira**
+  del panel: mantenerlo sobre dato real sería tan deshonesto como no ponerlo
+  sobre un ejemplo. El sello sigue en el régimen de mercado y en la vista de
+  análisis, que continúan sin fuente.
+
+  **Enmienda 2026-08-01 (ADR-0021): la tarjeta de régimen deja de ser bloque
+  demo.** El titular, la prosa y los chips salen ahora de `reading`, así que el
+  sello se retira también de ahí: quedan **dos**, ambos en la vista de análisis.
+
+  **Enmienda 2026-09-07: el contador llega a CERO, y por dos caminos distintos
+  que conviene no confundir.**
+
+  - Los **riesgos redactados** pasaron a dato servido: sus cuatro condiciones ya
+    eran medibles y solo faltaba declarar los cortes que convierten un valor en
+    un nivel (`riesgos.v1.yaml`, bloque `risks`). Al conectarlos, la tarjeta que
+    decía `alto` pasó a `medio` — el sello tapaba un nivel que además era falso.
+  - Los **escenarios con probabilidades** (62/24/14 %) se **retiraron**. No se
+    hicieron reales porque **no se pueden construir**: además de que el contrato
+    prohíbe el pronóstico, el régimen sobre el que pretendían condicionar dura
+    menos de una hora contra un horizonte de 72 h, así que acumular más meses
+    tampoco lo arreglaría. La medición está en `analisis-comprensivo.md`.
+
+  El sello llegando a cero **no relaja la regla**: un bloque nuevo sin fuente
+  sigue obligado a llevarlo desde su primer commit, y por eso `DemoBadge` se
+  conserva aunque hoy no lo use nadie.
+
+## Requisitos no funcionales
+- Cobertura de ramas ≥ 80 % (criterio Gate 2, suite vitest sin infraestructura).
+- Bundle servible como estático (nginx) sin config en runtime: toda la
+  configuración es pública y horneada (`VITE_*`); cero secretos en el bundle.
+- Accesible sin datos: cada panel tiene estado vacío/degradado explícito.
+
+## Escenarios de abuso (superficie browser)
+1. **Robo de token por XSS (T12)**: script inyectado intenta leer el token →
+   mitigación: tokens solo en memoria del SDK (no localStorage/sessionStorage),
+   vida 900 s, refresh rotation (un refresh token robado se invalida al rotar),
+   CSP del nginx sin `unsafe-inline`, dependencias con lockfile (SCA en CI,
+   Gate 2). Verificación: test + revisión de `AuthProvider` + DevTools en e2e.
+2. **Origen web no autorizado (T15)**: una página de terceros intenta consumir
+   la API con el token de un usuario → CORS por allowlist en el gateway (solo
+   orígenes del despliegue); el WSS queda fuera de CORS por diseño del browser
+   (hardening futuro: validar `Origin` en el handshake).
+3. **Clickjacking**: el dashboard embebido en un iframe hostil → cabeceras del
+   nginx (`frame-ancestors 'none'` en CSP).
+4. **Token expirado/alterado**: el gateway responde 401 genérico → el SPA
+   fuerza refresh una sola vez y, si falla, vuelve al login; nunca muestra
+   diagnóstico interno (escenarios 1 y 3 de `api-streaming.md`).
+5. **Agotamiento del cupo WSS (1008)**: múltiples pestañas del mismo usuario →
+   singleton por pestaña + guard HMR; ante 1008, reintento con delay largo y
+   aviso «¿múltiples pestañas?» (elección de líder queda para v2).
+6. **Degradación silenciosa**: gateway `degraded`/datos rancios → la UI lo
+   pinta (RF-5/RF-6); jamás presenta dato viejo como vigente.
+
+## Trazabilidad
+- ASVS: **V3** (gestión de sesión: vida corta, rotación, sin storage
+  persistente), **V50/V5** (salida codificada por React + CSP, anti-XSS),
+  **V4** (control de acceso: scopes/permisos del token).
+- Amenazas: T12 (implementación aquí), T15 (CORS), T4 (límites respetados por
+  el cliente), T10 (evidencia de señales visible).
+- Contratos: `openapi.yaml` (tipos generados y verificados en compilación),
+  `asyncapi.yaml` (protocolo del StreamClient).
+- Decisiones: ADR-0012 (auth), ADR-0016 (semántica del push), ADR-0017 (este
+  producto).
+
+## Métricas de éxito
+- Push → UI < 1 s (heredada de `api-streaming.md`); reconexión con estado
+  coherente < 10 s tras recuperar red/gateway; cero tokens en storage
+  persistente (verificable en DevTools); suite en verde con ≥ 80 % de ramas.
