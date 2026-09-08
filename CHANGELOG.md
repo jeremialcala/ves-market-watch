@@ -38,6 +38,35 @@ Convención de mantenimiento (inventario por ejecución):
     tres comentarios que citaban el componente borrado como referencia de
     criterio.
 
+### Added
+
+- **Deuda de T8 cerrada: lockfiles con hashes e imágenes por digest
+  (2026-09-08).** Era la única reserva del Gate 2. El SCA corría y rompía el
+  build, pero auditaba lo que se hubiera resuelto en esa ejecución: dos corridas
+  del mismo commit podían instalar árboles distintos, y entonces «dependencias
+  verificadas» no decía sobre qué.
+  - **`requirements.lock` en los cinco servicios**, con versiones fijas y
+    **hashes**. Sin hashes un lock fija números pero no contenidos: un paquete
+    republicado con la misma versión pasaría inadvertido.
+  - **Lo instalan los tres sitios que importan**: CI, las imágenes y el propio
+    `pip-audit`. Ese último es el que lo convierte en garantía — el árbol
+    auditado es exactamente el que se despliega.
+  - **Se generan dentro de `python:3.12-slim`**, la misma imagen que luego
+    instala (`scripts/regenerar-locks.sh`): resolver en Windows o macOS produce
+    otro árbol y el `--require-hashes` de CI fallaría sin decir por qué.
+  - **Nueve imágenes fijadas por digest**: las 4 de build, las 3 del compose y
+    las 2 de servicios de CI.
+  - **Lección que costó un susto**: fijar el digest *más nuevo* del tag dejó
+    `timescaledb` en `FATAL: incorrect checksum in control file` con el
+    contenedor en bucle. En una imagen **con estado** el digest bueno es el que
+    ya funciona contra ese directorio de datos, no el último publicado —
+    actualizarlo es una migración, no un pin. Queda anotado en el propio
+    `docker-compose.yml` para quien vaya a tocarlo.
+  - Verificado: los cinco locks instalan con `--require-hashes` en un venv limpio
+    y sus suites pasan; las imágenes construyen; la pila levanta con los digests
+    fijados, los datos siguen intactos (1,45 M de filas) y el pipeline produce
+    revisiones.
+
 ### Changed
 
 - **El rango de los históricos se acota por FILAS, no por días (2026-09-08).**

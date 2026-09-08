@@ -1,3 +1,6 @@
+# Imágenes FIJADAS POR DIGEST, no por tag (T8): `node:24-alpine` y
+# `nginx:alpine` son tags móviles. Para actualizarlas:
+#   docker manifest inspect -v <tag> | jq -r '.[0].Descriptor.digest'
 # Contexto de build: la raíz del repo (ver docker-compose.yml). Multi-stage:
 # build con Node y estático final en nginx. Los tipos del contrato van
 # commiteados (types.gen.ts), así que el build no necesita apps/api-gateway/docs
@@ -14,7 +17,7 @@ ARG VITE_AUTH0_CLIENT_ID=8CpfA64FlGTmuyF8w07rDFlrZHEeuRER
 ARG VITE_AUTH0_AUDIENCE=https://api.vesmarketwatch/
 ARG VITE_API_BASE_URL=http://localhost:8800
 
-FROM node:24-alpine AS build
+FROM node:24-alpine@sha256:4caaaf42195bcd6f6f3559a413b20cb8f8ad089e231ee874cf7701643966689f AS build
 ARG VITE_AUTH0_DOMAIN
 ARG VITE_AUTH0_CLIENT_ID
 ARG VITE_AUTH0_AUDIENCE
@@ -29,7 +32,7 @@ RUN npm ci --no-fund --no-audit
 COPY apps/web-spa/ .
 RUN npm run build
 
-FROM nginx:alpine
+FROM nginx:alpine@sha256:bd43d3d8fdbbe597c36fea489886796466a9ea5b662e8c50897d53e190c88a3d
 ARG VITE_AUTH0_DOMAIN
 ARG VITE_API_BASE_URL
 COPY --from=build /opt/ves/apps/web-spa/dist /usr/share/nginx/html

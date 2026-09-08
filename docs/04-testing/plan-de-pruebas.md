@@ -688,7 +688,7 @@ público.
 |---|---|
 | ~~Llevar el e2e en vivo **al pipeline**~~ **hecho 2026-08-20** | `e2e-vivo.yml` levanta el gateway con compose en el propio runner (§11). ~~Queda un paso **HITL**: dar de alta `AUTH0_M2M_CLIENT_ID` y `AUTH0_M2M_CLIENT_SECRET`~~ — **hecho el 2026-08-23**, ambos secretos están en *Settings → Secrets → Actions* |
 | ~~**DAST**: no había nada dinámico~~ **hecho 2026-09-06** | `seguridad.yml` suma el job `dast` con ZAP guiado por el OpenAPI, en dos pasadas (§11). Era el hueco real del gate: SAST, SCA y secretos son controles de Gate 2 y ninguno toca una instancia corriendo |
-| Deuda de T8: **lockfiles + imágenes por digest** | Cambio de repositorio, no de pipeline: los cinco servicios declaran rangos y las imágenes van por tag (incluida `timescaledb:latest-pg16`) |
+| ~~Deuda de T8: **lockfiles + imágenes por digest**~~ **cerrada 2026-09-08** | `requirements.lock` con hashes en los cinco servicios, instalado por CI, por las imágenes y por `pip-audit`; y todas las imágenes por digest, incluida `timescaledb:latest-pg16`. Se regeneran con `scripts/regenerar-locks.sh`, dentro de la misma imagen que instala |
 | ~~Deuda de T8: **CVE-2026-59870 (`js-yaml`) aceptado**~~ **retirado 2026-09-06** | El parche SÍ se retroportó a la línea 4 —`js-yaml@4.3.1`, con el rango vulnerable ya en `4.0.0 - 4.3.0`— y `@redocly/openapi-core@1.34.19` lo fija. Bastó `npm update`: sin override, sin js-yaml 5 y sin esperar a redocly 2.x. `npm audit` en 0 |
 | ~~Marcador `security` en `api-gateway`~~ **hecho 2026-09-06** | 17 tests en `tests/security/` con las cargas que un escáner manda de serie. Nacieron de un defecto real: el DAST encontró que `?type=%00` devolvía un **500 en texto plano**, y al reproducirlo salió el mismo fallo en `indicator`. Comprobado que discriminan: 16 fallan si se quita el patrón |
 | Recalibración **HITL** de umbrales (ruleset y régimen) | Decisión humana con datos de producción |
@@ -824,8 +824,10 @@ público, así que los minutos son gratis).
 - **Pendiente del control de T8: fijar.** Los cinco servicios Python declaran
   rangos (`fastapi>=0.111`) sin lockfile, y las imágenes van por tag —incluida
   `timescale/timescaledb:latest-pg16`, un `latest` moviéndose bajo los tests—. El
-  SCA audita lo instalado, que es lo más honesto sin fijar, pero el control dice
-  «lockfiles + SCA + imágenes por digest» y de los tres solo está el del medio.
+  SCA auditaba lo instalado, que era lo más honesto sin fijar, pero el control
+  dice «lockfiles + SCA + imágenes por digest» y de los tres solo estaba el del
+  medio. **Cerrado el 2026-09-08**: están los tres, y el auditor instala desde el
+  lock, así que el árbol auditado es el que se despliega.
 - **Fuente de convenciones de marcadores:** `[tool.pytest.ini_options]` en cada `pyproject.toml`
   (`asyncio_mode = "auto"`, marcadores `integration` y `e2e`; `security` ya en
   `ingestor-bcv` —T1, HTML alterado— y en `ingestor-binance` —T7, 429 sostenido—.
@@ -842,10 +844,10 @@ público, así que los minutos son gratis).
 - **Secret store concreto:** definido para fase 05; los tests de rotación (T6) se afinan entonces.
 - ~~Pipeline CI aún no presente en el repo~~ **Resuelto (2026-08-04):** dos
   workflows en `.github/workflows/` con la matriz de §11 y los tres gates
-  rompiendo el build. Lo que queda de ese frente es la **deuda del control de
-  T8**: sigue sin haber lockfiles en los cinco servicios Python ni imágenes
-  fijadas por digest, así que el SCA audita lo que se instala en cada ejecución y
-  no un árbol reproducible.
+  rompiendo el build. La **deuda del control de T8 quedó cerrada el 2026-09-08**:
+  lockfiles con hashes en los cinco servicios Python e imágenes fijadas por
+  digest, así que el SCA ya no audita lo que se instaló esa vez sino el árbol
+  reproducible que se despliega.
 - ~~Paleta de series del `web-spa` en tema claro~~ **Resuelto (2026-07-31):**
   las marcas de dato tienen slots propios validados (claro ΔE 8,1 · oscuro
   ΔE 13,2) y el mapa de calor pasa a rampa secuencial de un tono por tema. La

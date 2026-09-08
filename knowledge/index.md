@@ -95,7 +95,9 @@ la fuente de verdad (los documentos AI-DLC y el código).
   minuto— hasta **1,40 s** y cero 429.
 - Siguiente paso natural: decidir la topología de despliegue real (los túneles
   son de desarrollo) y firmar los Gates 2 y 3. La deuda que sigue abierta es la de
-  T8: lockfiles en los cinco servicios Python e imágenes por digest.
+  T8, **cerrada el 2026-09-08**: lockfiles con hashes en los cinco servicios
+  Python —instalados por CI, por las imágenes y por `pip-audit`— e imágenes
+  fijadas por digest.
 - Historia de cambios: [log.md](log.md) y `../CHANGELOG.md`.
 
 ## Mapa del bundle

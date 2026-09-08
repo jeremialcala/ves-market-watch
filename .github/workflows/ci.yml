@@ -66,7 +66,7 @@ jobs:
       # `latest-pg16` es un tag móvil: reproducibilidad pendiente de fijar por
       # digest junto con las imágenes base (control de T8).
       timescaledb:
-        image: timescale/timescaledb:latest-pg16
+        image: timescale/timescaledb:latest-pg16@sha256:ba149561ad4ddff5940d6eb0a0df60aefd1355cee1a450928f271267038fc888
         env:
           POSTGRES_PASSWORD: postgres
         ports:
@@ -77,7 +77,7 @@ jobs:
           --health-timeout 5s
           --health-retries 12
       rabbitmq:
-        image: rabbitmq:4-management
+        image: rabbitmq:4-management@sha256:17e61a9b064066c87368f33cf80b0b05749cbacebf204ed0b674a4a7bcd05c38
         ports:
           - 5672:5672
         options: >-
@@ -93,13 +93,21 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: apps/${{ matrix.servicio }}/pyproject.toml
+          cache-dependency-path: apps/${{ matrix.servicio }}/requirements.lock
 
-      - name: Instalar el servicio con sus extras de desarrollo
+      # Desde el LOCK, con verificación de hashes (T8). Antes era
+      # `pip install -e ".[dev]"`, que resuelve de nuevo en cada ejecución: dos
+      # corridas del mismo commit podían instalar versiones distintas, y
+      # entonces ni los tests ni la auditoría dicen sobre QUÉ pasaron.
+      #
+      # El paquete del servicio va aparte y con `--no-deps` para que no vuelva
+      # a resolver nada: el lock ya trae el árbol completo.
+      - name: Instalar desde el lock, con hashes
         working-directory: apps/${{ matrix.servicio }}
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install --require-hashes -r requirements.lock
+          pip install --no-deps -e .
 
       # `python -m pytest`, no `pytest` a secas: el módulo pone el directorio
       # actual en `sys.path` y el script de consola no. El e2e del motor hace

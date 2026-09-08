@@ -13,7 +13,7 @@
 
 | Criterio | Estado | Evidencia |
 |---|---|---|
-| **Tests pasando** | ✅ | 1.456 tests en los seis proyectos, suite completa (`integration` y `e2e` incluidas) en cada push y PR. **Cero `skip`/`xfail` incondicionales** en el monorepo. E2E autenticado en vivo contra el tenant y el gateway reales, en el pipeline desde el 2026-08-20 |
+| **Tests pasando** | ✅ | 1.529 tests en los seis proyectos, suite completa (`integration` y `e2e` incluidas) en cada push y PR. **Cero `skip`/`xfail` incondicionales** en el monorepo. E2E autenticado en vivo contra el tenant y el gateway reales, en el pipeline desde el 2026-08-20 |
 | **DAST limpio** | ✅ | ZAP guiado por el OpenAPI en `seguridad.yml` (2026-09-06), en dos pasadas. **0 Alto, 0 Medio, 2 Bajo** aceptados con motivo en `scripts/triar_dast.py`. 116 reglas activas en PASS contra respuestas 200 reales |
 | **Rendimiento dentro de los SLOs** | ✅ | **Los 5 cumplen.** Medidos el 2026-09-06, no estimados; el de ingesta tras ADR-0026 |
 
@@ -61,7 +61,7 @@ escrita (bajar `PAGINAS_EN_PARALELO`).
 
 | Pendiente | Nota |
 |---|---|
-| Deuda de T8: lockfiles + imágenes por digest | Pertenece al **Gate 2**, y allí está anotada. Se repite aquí porque degrada la reproducibilidad de todo lo que este gate mide |
+| ~~Deuda de T8: lockfiles + imágenes por digest~~ | **Cerrada el 2026-09-08** (Gate 2). Lo que este gate mide es ya reproducible: los tests corren sobre el árbol del lock |
 | Recalibración HITL de umbrales del ruleset | Requiere datos de producción |
 | Rampa teal del mapa de calor por el validador de dataviz | Medida a mano, no validada; el script del skill no está en la máquina donde se hizo el cambio |
 | Escenario de **saturación** (T4) bajo carga | Lo medido es latencia en régimen normal. Cómo se degrada bajo carga es otra pregunta y sigue sin respuesta |

@@ -175,8 +175,11 @@ que rompe el build es cualquier retroceso desde donde está hoy cada uno. El
   792 de los cinco servicios Python y 664 del SPA. El **e2e autenticado en vivo
   con token real** se cumplió el 2026-08-07 (6/6 contra el tenant y el gateway
   reales) y **corre en el pipeline desde el 2026-08-20**. Lo que queda abierto es
-  la deuda del control de T8: sin lockfiles en los cinco servicios Python y sin
-  imágenes por digest. El CVE-2026-59870 de `js-yaml` **dejó de ser una excepción
+  la firma HITL de los dos gates. La **deuda de T8 se cerró el 2026-09-08**:
+  `requirements.lock` con hashes en los cinco servicios Python —de los que
+  instalan CI, las imágenes y el propio `pip-audit`, así que lo auditado es lo
+  que se despliega— y todas las imágenes fijadas por digest
+  (`scripts/regenerar-locks.sh` los regenera). El CVE-2026-59870 de `js-yaml` **dejó de ser una excepción
   aceptada el 2026-09-06**, cuando el parche llegó a la línea 4.x y bastó un
   `npm update`. Detalle en `docs/04-testing/plan-de-pruebas.md` §10 y §12.
 
