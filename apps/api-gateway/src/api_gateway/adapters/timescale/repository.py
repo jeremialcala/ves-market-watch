@@ -15,14 +15,12 @@ from datetime import date, datetime, timedelta
 import asyncpg
 
 from api_gateway.application.ports import LecturaRepository
+from api_gateway.domain.paginacion import INTERVALOS
 
-# asyncpg codifica timedelta como interval (un string no se castea en $1::interval).
-_INTERVALOS = {
-    "5m": timedelta(minutes=5),
-    "15m": timedelta(minutes=15),
-    "1h": timedelta(hours=1),
-    "1d": timedelta(days=1),
-}
+# El mapa vive en el dominio: lo usan el agrupado de aquí y la validación del
+# rango, que estima cuántas filas saldrían. asyncpg codifica timedelta como
+# interval (un string no se castea en $1::interval).
+_INTERVALOS = INTERVALOS
 
 
 async def _init_conexion(conexion: asyncpg.Connection) -> None:

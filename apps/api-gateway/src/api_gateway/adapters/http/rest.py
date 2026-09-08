@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, Query, Request, Response
 from api_gateway.adapters.http.problem import NoEncontrado
 from api_gateway.domain.errores import ErrorAutenticacion
 from api_gateway.domain.modelos import Usuario
-from api_gateway.domain.paginacion import validar_pagina, validar_rango
+from api_gateway.domain.paginacion import INTERVALOS, validar_pagina, validar_rango
 
 router = APIRouter(prefix="/api/v1")
 
@@ -142,7 +142,10 @@ async def historial_indicadores(
     page_size: int = Query(default=100, ge=1, le=500),
 ) -> dict:
     desde, hasta = _utc(desde), _utc(hasta)
-    validar_rango(desde, hasta)
+    # Con intervalo: el tope son las FILAS que devolvería, no los días. Un año a
+    # `1d` son 365 filas y hasta 2026-09-08 estaba prohibido, mientras que 90
+    # días a `5m` —25.920— pasaba.
+    validar_rango(desde, hasta, INTERVALOS[interval])
     pagina = validar_pagina(page, page_size)
     return await request.app.state.consultas.historial_indicadores.ejecutar(
         desde, hasta, interval, pagina, indicator, currency

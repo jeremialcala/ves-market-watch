@@ -19,6 +19,38 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **El rango de los históricos se acota por FILAS, no por días (2026-09-08).**
+  `/indicators/history` pasa a validar `(to − from) / interval` contra un tope
+  de 26 000 buckets. Los endpoints sin intervalo —tasas oficiales por
+  fecha-valor, señales— conservan el tope en días: ahí no hay bucket que contar.
+  - **El criterio viejo medía el eje equivocado.** Acotaba días de calendario
+    sin mirar el `interval`, cuando lo que cuesta una consulta es el número de
+    buckets que devuelve. Medido contra la base: 279 días a `1d` son **279
+    filas y 38,9 ms** y estaban **prohibidos**, mientras que 90 días a `5m`
+    —**25 920 filas** en 52 páginas— pasaban. Se bloqueaba lo barato y se
+    permitía lo que devuelve 93 veces más.
+  - **No se relaja el peor caso, se conserva.** 26 000 es justo lo que el
+    contrato ya permitía en su escala más fina; lo que cambia es que ese mismo
+    presupuesto se reparte según lo que cuesta cada bucket. A `5m` el tope sigue
+    siendo 90 días; a `1d` alcanza los **9 meses** de brecha derivada que ya
+    estaban en la base y eran inalcanzables desde el cliente.
+  - El 422 dice **cuántas filas** saldrían, para que quien lo recibe sepa si
+    ensanchar el bucket o acortar el rango. Antes hablaba de días, que no era
+    accionable con el intervalo puesto.
+  - El mapa de intervalos sube al dominio: lo necesitan el agrupado del
+    repositorio y la validación del rango, y tenerlo duplicado era garantizar
+    que un día dejaran de coincidir.
+
+- **`GET /api/v1/analysis/history` queda descartado, con la razón medida
+  (2026-09-08).** No es deuda pendiente sino decisión: servir documentos son
+  ~840 MB por 90 días; agregarlo al vuelo tarda **4,57 s** contra un SLO de
+  **≤ 2 s** y exigiría un continuous aggregate que el proyecto no usa; la
+  retención de `indicator_analysis` ya lo acota a 90 días; y al disolverse la
+  vista de Análisis se quedó sin consumidor. El único uso que sobrevivía lee de
+  `indicators`, así que lo desbloquea el tope por filas y no este endpoint.
+
+### Changed
+
 - **La vista de Análisis se disuelve (2026-09-07).** La barra baja a **tres**
   pestañas. Es una disolución, no un borrado: **nada medido se pierde**.
   - **Presión de liquidez → junto a `DepthChart`.** Misma pregunta con distinto
