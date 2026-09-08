@@ -107,7 +107,7 @@ class DistribucionRepository(Protocol):
         fabrica una distribución vacía). Un fallo devuelve `{}`, que degrada al
         respaldo del ruleset de forma visible en el payload.
         """
-        ...
+        raise NotImplementedError
 
     async def agregados(
         self,
