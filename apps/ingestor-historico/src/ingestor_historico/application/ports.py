@@ -57,7 +57,8 @@ class RepositorioBrechas(Protocol):
     `calc_version`— devolverían una u otra al azar.
     """
 
-    async def frontera_serie_viva(self, indicador: str, moneda: str) -> datetime | None: ...
+    async def frontera_serie_viva(self, indicador: str, moneda: str) -> datetime | None:
+        pass
 
     async def puntos_derivables(
         self, hasta_exclusive: datetime | None
