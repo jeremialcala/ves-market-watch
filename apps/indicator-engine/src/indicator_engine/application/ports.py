@@ -67,7 +67,7 @@ class IndicatorRepository(Protocol):
         no para qué día rige, y son cosas distintas. El viernes por la tarde el
         BCV publica la tasa del lunes: el cambio es de hace tres días y la tasa
         está vigente (`domain/vigencia.py`)."""
-        ...
+        pass
 
     async def senal_reciente(self, tipo: str, moneda: str, desde: datetime) -> bool:
         """True si ya hay una señal de ese tipo/moneda con `as_of >= desde`
