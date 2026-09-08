@@ -38,7 +38,8 @@ class AlertNotifier(Protocol):
     alguien mire `/health` a mano.
     """
 
-    async def alertar(self, mensaje: str) -> None: ...
+    async def alertar(self, mensaje: str) -> None:
+        pass
 
 
 class LecturaRepository(ABC):
