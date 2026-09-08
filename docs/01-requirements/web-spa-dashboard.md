@@ -44,9 +44,11 @@ login y el estado de salud son visibles sin sesión.
 
 > Enmienda 2026-08-01 (ADR-0021): el motor ya produce la lectura del mercado
 > como un todo (RF-7 del PRD del motor), así que la tarjeta «Lectura de hoy»
-> deja de ser maqueta — **RF-12**, con su enmienda a «RF-5 ampliado». Quedan
-> **dos** sellos demo: escenarios con probabilidades y riesgos redactados, que
-> siguen sin fuente porque hacerlos reales exigiría pronosticar.
+> deja de ser maqueta — **RF-12**, con su enmienda a «RF-5 ampliado».
+
+> Enmienda 2026-09-07: **no queda ningún sello demo en el producto.** Los
+> riesgos pasaron a dato servido y los escenarios se retiraron. Detalle y
+> medición en `analisis-comprensivo.md`.
 
 ## Requisitos funcionales
 - **RF-1 — Login y sesión**: Auth Code + PKCE contra Universal Login (ADR-0012);
@@ -367,10 +369,23 @@ login y el estado de salud son visibles sin sesión.
   **Enmienda 2026-08-01 (ADR-0021): la tarjeta de régimen deja de ser bloque
   demo.** El titular, la prosa y los chips salen ahora de `reading`, así que el
   sello se retira también de ahí: quedan **dos**, ambos en la vista de análisis.
-  Los **escenarios con probabilidades** (62/24/14 %) y los **riesgos redactados**
-  conservan el suyo, y no por falta de tiempo: hacerlos reales exigiría
-  pronosticar, que es lo que el proyecto declaró no-objetivo. Que el sello no baje
-  de dos es la señal de que la frontera sigue en pie.
+
+  **Enmienda 2026-09-07: el contador llega a CERO, y por dos caminos distintos
+  que conviene no confundir.**
+
+  - Los **riesgos redactados** pasaron a dato servido: sus cuatro condiciones ya
+    eran medibles y solo faltaba declarar los cortes que convierten un valor en
+    un nivel (`riesgos.v1.yaml`, bloque `risks`). Al conectarlos, la tarjeta que
+    decía `alto` pasó a `medio` — el sello tapaba un nivel que además era falso.
+  - Los **escenarios con probabilidades** (62/24/14 %) se **retiraron**. No se
+    hicieron reales porque **no se pueden construir**: además de que el contrato
+    prohíbe el pronóstico, el régimen sobre el que pretendían condicionar dura
+    menos de una hora contra un horizonte de 72 h, así que acumular más meses
+    tampoco lo arreglaría. La medición está en `analisis-comprensivo.md`.
+
+  El sello llegando a cero **no relaja la regla**: un bloque nuevo sin fuente
+  sigue obligado a llevarlo desde su primer commit, y por eso `DemoBadge` se
+  conserva aunque hoy no lo use nadie.
 
 ## Requisitos no funcionales
 - Cobertura de ramas ≥ 80 % (criterio Gate 2, suite vitest sin infraestructura).

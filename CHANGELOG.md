@@ -17,6 +17,28 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Removed
+
+- **Los escenarios con probabilidades se retiran de la vista de Análisis
+  (2026-09-07).** Con esto **el producto se queda sin ningún sello
+  `demo · sin fuente`** — era el último.
+  - **No se retiran por falta de tiempo sino porque no se pueden construir.**
+    Afirmaban una probabilidad (62/24/14 %) y un rango de la brecha a 72 h. Más
+    allá de que el contrato del análisis prohíba el pronóstico en su propio
+    texto, el dato no lo soporta: el `regime` sobre el que pretendían
+    condicionar **dura de 13 min a 1 h** —1 123 episodios en 38 días, unos 30
+    cambios al día— contra un horizonte de 72 h. Acumular más meses daría más
+    episodios de un minuto, no episodios largos.
+  - **Los dos sellos que caen el mismo día no son el mismo caso**, y el PRD lo
+    deja escrito para que no se confundan: los riesgos ya eran medibles y solo
+    les faltaban los cortes; los escenarios no tienen arreglo por esa vía.
+  - La bajada de la vista deja de prometer escenarios de ejemplo y dice lo que
+    el producto hace: describe lo que el mercado está haciendo, no lo que hará.
+  - **`DemoBadge` se conserva aunque ya no lo use nadie.** El mecanismo lo exige
+    RF-5/ADR-0018, no los bloques que marcaba: un bloque nuevo sin fuente tiene
+    que llevar sello desde su primer commit.
+  - Se retiran las 11 claves de i18n de los escenarios en los dos idiomas.
+
 ### Changed
 
 - **«Riesgos que vigilar» deja de ser redacción (2026-09-07).** `AnalysisView`

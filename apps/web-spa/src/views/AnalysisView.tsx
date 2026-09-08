@@ -1,53 +1,8 @@
-import type { CSSProperties } from "react";
-
-import { DemoBadge } from "../components/DemoBadge";
 import { PanelRiesgos } from "../components/PanelRiesgos";
 import { NoDataState } from "../components/NoDataState";
-import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
 import { formatDecimal, formatPct, toChartNumber } from "../lib/decimal";
 import { useMarket } from "../state/marketStore";
-
-interface Escenario {
-  nombre: Clave;
-  prob: string;
-  rango: string;
-  texto: Clave;
-  disparador: Clave;
-  color: string;
-  borde: string;
-}
-
-/** DEMO: escenarios y probabilidades no salen de ningún endpoint. */
-const ESCENARIOS: readonly Escenario[] = [
-  {
-    nombre: "analisis.escBase",
-    prob: "62 %",
-    rango: "12,5 – 14,2 %",
-    texto: "analisis.escBaseTexto",
-    disparador: "analisis.escBaseDisparador",
-    color: "var(--teal)",
-    borde: "var(--teal-line)",
-  },
-  {
-    nombre: "analisis.escCorrida",
-    prob: "24 %",
-    rango: "15,0 – 18,5 %",
-    texto: "analisis.escCorridaTexto",
-    disparador: "analisis.escCorridaDisparador",
-    color: "var(--coral)",
-    borde: "var(--coral-line)",
-  },
-  {
-    nombre: "analisis.escConvergencia",
-    prob: "14 %",
-    rango: "9,0 – 12,0 %",
-    texto: "analisis.escConvergenciaTexto",
-    disparador: "analisis.escConvergenciaDisparador",
-    color: "var(--sage)",
-    borde: "var(--sage-line)",
-  },
-];
 
 /** Presión de liquidez: esta sí es REAL — sale de la liquidez por lado que ya
  * proyecta el store desde los indicadores vigentes. */
@@ -127,11 +82,18 @@ function PresionLiquidez() {
 }
 
 /**
- * Vista «Análisis comprensivo» del diseño.
+ * Vista «Análisis comprensivo».
  *
- * Los escenarios (con sus probabilidades) y los riesgos son DEMO: ningún
- * endpoint los produce. Van con sello para que se distingan del dato real, y
- * la bajada de la vista lo dice antes de que se lea un solo número.
+ * **Ya no queda nada de ejemplo aquí.** Los riesgos pasaron a dato servido el
+ * 2026-09-07 y los **escenarios se retiraron** el mismo día: afirmaban una
+ * probabilidad y un rango de la brecha a 72 h, y eso no es que faltara
+ * calcularlo — es que no se puede construir. El régimen sobre el que
+ * pretendían condicionar dura menos de una hora contra ese horizonte, así que
+ * acumular más meses tampoco lo arreglaría
+ * (`docs/01-requirements/analisis-comprensivo.md`).
+ *
+ * Lo que queda son las dos cosas que sí se miden: cuánta liquidez sostiene cada
+ * lado del libro, y qué riesgos vigila la plataforma sobre sí misma.
  */
 export function AnalysisView() {
   const { t, idioma } = useI18n();
@@ -142,7 +104,6 @@ export function AnalysisView() {
       <div className="vmw-contenedor">
         <div className="vmw-eyebrow" style={{ color: "var(--teal)" }}>
           <span>{t("analisis.kicker")}</span>
-          <DemoBadge />
         </div>
         <h1
           className="vmw-cifra"
@@ -162,64 +123,6 @@ export function AnalysisView() {
         >
           {t("analisis.bajada")}
         </p>
-
-        <section
-          className="vmw-grid"
-          style={{ "--min": "320px", gap: "20px", marginTop: "40px" } as CSSProperties}
-        >
-          {ESCENARIOS.map((escenario) => (
-            <div
-              className="vmw-tarjeta"
-              key={escenario.nombre}
-              style={{ borderColor: escenario.borde }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  gap: "10px",
-                }}
-              >
-                <span className="vmw-eyebrow" style={{ color: escenario.color }}>
-                  {t(escenario.nombre)}
-                </span>
-                <span className="vmw-cifra" style={{ fontSize: "22px" }}>
-                  {escenario.prob}
-                </span>
-              </div>
-              <div
-                className="vmw-cifra"
-                style={{ marginTop: "16px", fontSize: "30px" }}
-              >
-                {escenario.rango}
-              </div>
-              <div
-                style={{
-                  marginTop: "4px",
-                  fontSize: "var(--fs-micro)",
-                  color: "var(--text-dim)",
-                }}
-              >
-                {t("analisis.brecha72")}
-              </div>
-              <p className="vmw-nota" style={{ marginTop: "16px" }}>
-                {t(escenario.texto)}
-              </p>
-              <div
-                style={{
-                  marginTop: "16px",
-                  paddingTop: "14px",
-                  borderTop: "1px solid var(--border)",
-                  fontSize: "var(--fs-meta)",
-                  color: "var(--text)",
-                }}
-              >
-                {t(escenario.disparador)}
-              </div>
-            </div>
-          ))}
-        </section>
 
         <section className="vmw-seccion">
           <div className="vmw-seccion__cabecera">

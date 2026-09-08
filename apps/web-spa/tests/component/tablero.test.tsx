@@ -423,7 +423,7 @@ describe("GapHeatmap", () => {
 // `tests/component/descomposicion.test.tsx`.
 
 describe("AnalysisView", () => {
-  it("ya solo sella los escenarios, y calcula la presión de liquidez real", () => {
+  it("NO queda un solo sello demo: todo lo que pinta es dato servido", () => {
     marketStore.resync({
       indicadores: {
         ...FIXTURE_INDICADORES,
@@ -432,11 +432,23 @@ describe("AnalysisView", () => {
     });
     render(<AnalysisView />);
 
-    // UN solo sello: el de la cabecera, por los escenarios. Los riesgos dejaron
-    // de ser redacción el 2026-09-07 y ya no lo llevan.
-    expect(screen.getAllByText("demo · sin fuente")).toHaveLength(1);
+    // Era la última vista con sello del producto. Los riesgos pasaron a dato
+    // servido el 2026-09-07 y los escenarios se retiraron el mismo día: no eran
+    // deuda pendiente sino un bloque inconstruible como estaba especificado.
+    expect(screen.queryByText("demo · sin fuente")).toBeNull();
     expect(screen.getByText("asks 1.201.837 USDT")).toBeTruthy();
     expect(screen.getByText("bids 2.025.806 USDT")).toBeTruthy();
+  });
+
+  it("y no queda rastro de los escenarios ni de sus probabilidades", () => {
+    marketStore.resync({ indicadores: FIXTURE_INDICADORES });
+    render(<AnalysisView />);
+
+    expect(screen.queryByText(/brecha a 72 h/i)).toBeNull();
+    expect(screen.queryByText("Corrida alcista")).toBeNull();
+    expect(screen.queryByText("Convergencia forzada")).toBeNull();
+    // La bajada tampoco puede seguir prometiendo escenarios de ejemplo.
+    expect(screen.getByText(/no lo que hará/i)).toBeTruthy();
   });
 
   it("sin liquidez servida lo dice en vez de dibujar una barra vacía", () => {

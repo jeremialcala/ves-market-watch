@@ -493,9 +493,7 @@ export const ES = {
   "analisis.titulo":
     "Qué está haciendo el mercado del VES y qué tendría que romperse para que cambie",
   "analisis.bajada":
-    "Los números de esta vista salen de los indicadores vigentes; la lectura, los escenarios y las probabilidades son de ejemplo — la plataforma no los calcula.",
-  "analisis.escenariosTitulo": "Escenarios",
-  "analisis.brecha72": "brecha a 72 h",
+    "Todo lo de esta vista sale de los indicadores vigentes y del análisis que publica el motor. No hay escenarios ni probabilidades: Criterio describe lo que el mercado está haciendo, no lo que hará.",
   "analisis.liquidezTitulo": "Presión de liquidez",
   "analisis.asks": "asks {valor} USDT",
   "analisis.bids": "bids {valor} USDT",
@@ -742,19 +740,6 @@ export const ES = {
     "Hacen falta la tasa oficial y el VWAP de compra para repartir el precio.",
   "calor.fallo": "No se pudo cargar la serie horaria de la brecha de venta.",
   "calor.sinSerie": "Sin serie horaria de venta en los últimos 14 días.",
-  "analisis.escBase": "Base",
-  "analisis.escBaseTexto":
-    "La oficial sigue subiendo y el paralelo permanece anclado por el muro de bids.",
-  "analisis.escBaseDisparador": "Se confirma si: el ratio se mantiene > 0,4",
-  "analisis.escCorrida": "Corrida alcista",
-  "analisis.escCorridaTexto":
-    "La liquidez de asks vuelve a drenarse por debajo de −40 %/6 h y el momentum cruza +0,5 %.",
-  "analisis.escCorridaDisparador": "Dispara la regla «arranque alcista»",
-  "analisis.escConvergencia": "Convergencia forzada",
-  "analisis.escConvergenciaTexto":
-    "El BCV acelera la oficial con el paralelo plano.",
-  "analisis.escConvergenciaDisparador":
-    "Vigila official_rate_change_pct al alza",
   "analisis.liquidezLectura":
     "Asks {asks} USDT contra bids {bids} USDT. El lado con más volumen acumulado es el que sostiene el precio; cuando ese muro se vacía, la brecha se mueve.",
   "analisis.nivelAlto": "alto",
@@ -1265,9 +1250,7 @@ export const EN: Record<Clave, string> = {
   "analisis.titulo":
     "What the VES market is doing, and what would have to break for it to change",
   "analisis.bajada":
-    "The numbers in this view come from the current indicators; the reading, the scenarios and the probabilities are samples — the platform does not compute them.",
-  "analisis.escenariosTitulo": "Scenarios",
-  "analisis.brecha72": "gap in 72 h",
+    "Everything in this view comes from the current indicators and the analysis the engine publishes. There are no scenarios and no probabilities: Criterio describes what the market is doing, not what it will do.",
   "analisis.liquidezTitulo": "Liquidity pressure",
   "analisis.asks": "asks {valor} USDT",
   "analisis.bids": "bids {valor} USDT",
@@ -1505,18 +1488,6 @@ export const EN: Record<Clave, string> = {
     "The official rate and the buy VWAP are needed to split the price.",
   "calor.fallo": "Could not load the hourly sell gap series.",
   "calor.sinSerie": "No hourly sell series in the last 14 days.",
-  "analisis.escBase": "Base",
-  "analisis.escBaseTexto":
-    "The official rate keeps climbing and the parallel stays anchored by the bid wall.",
-  "analisis.escBaseDisparador": "Confirms if: ratio stays > 0.4",
-  "analisis.escCorrida": "Bullish run",
-  "analisis.escCorridaTexto":
-    "Ask liquidity drains again below −40 %/6 h and momentum crosses +0.5 %.",
-  "analisis.escCorridaDisparador": "Fires the bullish start rule",
-  "analisis.escConvergencia": "Forced convergence",
-  "analisis.escConvergenciaTexto":
-    "The BCV accelerates the official rate while the parallel stays flat.",
-  "analisis.escConvergenciaDisparador": "Watch official_rate_change_pct rising",
   "analisis.liquidezLectura":
     "Asks {asks} USDT against bids {bids} USDT. The side with more cumulative volume is the one holding the price; when that wall empties, the gap moves.",
   "analisis.nivelAlto": "high",
