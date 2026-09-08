@@ -37,6 +37,25 @@ export type Lado = "buy" | "sell";
 export type Intervalo = components["parameters"]["Interval"];
 
 export const RANGO_MAX_DIAS = 90;
+
+/**
+ * Tope de buckets por request en `/indicators/history`, espejo de `FILAS_MAX`
+ * del gateway. El rango se acota por **filas**, no por días: lo que cuesta una
+ * consulta es `(hasta − desde) / intervalo`, no el ancho del calendario.
+ *
+ * 26.000 es el peor caso que el contrato ya permitía —90 días a `5m` son 25.920
+ * buckets—, repartido según lo que cuesta cada bucket en vez de gastarse entero
+ * en la escala más fina. A `1d` alcanza los 9 meses de brecha derivada que
+ * están en la base y hasta el 2026-09-08 eran inalcanzables desde aquí.
+ */
+export const FILAS_MAX = 26_000;
+
+const MINUTOS_POR_INTERVALO: Record<Intervalo, number> = {
+  "5m": 5,
+  "15m": 15,
+  "1h": 60,
+  "1d": 1440,
+};
 const PAGE_SIZE_MAX = 500;
 
 function lanzar(error: unknown, response: Response): never {
@@ -161,9 +180,20 @@ export async function salud(): Promise<Salud> {
   lanzar(resultado.error, resultado.response);
 }
 
-// -- históricos (paginados, rango ≤ 90 días) ---------------------------------
+// -- históricos (paginados, rango acotado) -----------------------------------
 
-export function validarRango(desde: Date, hasta: Date): void {
+/**
+ * Espejo de `validar_rango` del gateway: falla ANTES de gastar una petición.
+ *
+ * Con `intervalo`, el tope son los buckets que devolvería; sin él —tasas
+ * oficiales por fecha-valor, señales— sigue siendo el de días, porque ahí no
+ * hay bucket que contar.
+ */
+export function validarRango(
+  desde: Date,
+  hasta: Date,
+  intervalo?: Intervalo,
+): void {
   if (hasta < desde) {
     throw new ApiError({
       title: "Rango invertido",
@@ -171,12 +201,27 @@ export function validarRango(desde: Date, hasta: Date): void {
       detail: "El fin del rango es anterior al inicio.",
     });
   }
-  const dias = (hasta.getTime() - desde.getTime()) / 86_400_000;
-  if (dias > RANGO_MAX_DIAS) {
+  const minutos = (hasta.getTime() - desde.getTime()) / 60_000;
+  if (intervalo === undefined) {
+    if (minutos / 1440 > RANGO_MAX_DIAS) {
+      throw new ApiError({
+        title: "Rango no procesable",
+        status: 422,
+        detail: `El rango solicitado excede el máximo de ${RANGO_MAX_DIAS} días.`,
+      });
+    }
+    return;
+  }
+  // Cota SUPERIOR: los buckets posibles, no los que tengan dato.
+  const filas = Math.ceil(minutos / MINUTOS_POR_INTERVALO[intervalo]);
+  if (filas > FILAS_MAX) {
     throw new ApiError({
       title: "Rango no procesable",
       status: 422,
-      detail: `El rango solicitado excede el máximo de ${RANGO_MAX_DIAS} días.`,
+      detail:
+        `El rango solicitado devolvería hasta ${filas} filas con ese ` +
+        `intervalo, y el máximo es ${FILAS_MAX}. Pide un intervalo más ancho ` +
+        `o un rango más corto.`,
     });
   }
 }
@@ -239,7 +284,7 @@ export async function historialIndicadores(
   filtro: FiltroIndicador,
   { signal, alProgresar }: OpcionesPaginado = {},
 ): Promise<ItemIndicador[]> {
-  validarRango(desde, hasta);
+  validarRango(desde, hasta, intervalo);
   const filas: ItemIndicador[] = [];
   for (let page = 1; ; page += 1) {
     const pagina = await conReintento429(

@@ -192,11 +192,36 @@ describe("convenciones del contrato", () => {
     expect(filtroRecibido).toBe("p2p_brecha_pct_buy");
   });
 
-  it("valida el rango de 90 días en cliente (el 422 del server es cinturón)", () => {
+  it("valida el rango en cliente (el 422 del server es cinturón)", () => {
     const hasta = new Date("2026-07-27T00:00:00Z");
-    const desde = new Date(hasta.getTime() - 91 * 86_400_000);
-    expect(() => validarRango(desde, hasta)).toThrowError(ApiError);
-    expect(() => validarRango(hasta, desde)).toThrowError(/anterior al inicio/i);
+    const dias = (n: number) => new Date(hasta.getTime() - n * 86_400_000);
+    // Sin intervalo el tope sigue siendo en días: tasas oficiales y señales no
+    // tienen bucket que contar.
+    expect(() => validarRango(dias(91), hasta)).toThrowError(ApiError);
+    // Invertido: el inicio es posterior al fin.
+    expect(() => validarRango(hasta, dias(91))).toThrowError(/anterior al inicio/i);
+  });
+
+  it("con intervalo el tope son FILAS, y el peor caso de antes se conserva", () => {
+    const hasta = new Date("2026-07-27T00:00:00Z");
+    const dias = (n: number) => new Date(hasta.getTime() - n * 86_400_000);
+
+    // 90 d a 5 m = 25.920 buckets: era el máximo permitido y lo sigue siendo.
+    expect(() => validarRango(dias(90), hasta, "5m")).not.toThrow();
+    expect(() => validarRango(dias(91), hasta, "5m")).toThrowError(/26000/);
+
+    // Y lo que estaba prohibido midiendo el eje equivocado: 279 filas.
+    expect(() => validarRango(dias(279), hasta, "1d")).not.toThrow();
+    expect(() => validarRango(dias(365), hasta, "1d")).not.toThrow();
+  });
+
+  it("el error de rango dice FILAS, no días: se sabe qué hacer con él", () => {
+    const hasta = new Date("2026-07-27T00:00:00Z");
+    const desde = new Date(hasta.getTime() - 120 * 86_400_000);
+    expect(() => validarRango(desde, hasta, "5m")).toThrowError(/filas/i);
+    expect(() => validarRango(desde, hasta, "5m")).toThrowError(
+      /intervalo más ancho o un rango más corto/i,
+    );
   });
 
   it("salud es pública (sin Bearer) y acepta el 503 con schema Health", async () => {

@@ -164,15 +164,44 @@ Ordenado por lo que desbloquea:
    `analysis.updated`, con cada corte justificado por su distribución medida.
    **Conectada la vista el mismo día**: `PanelRiesgos` lee `risks` y el bloque
    perdió su sello `demo · sin fuente`.
-2. **`GET /api/v1/analysis/history`.** El régimen y la confianza históricos están
-   en `indicator_analysis` (hypertable, 88 896 filas), pero el gateway solo sirve
-   `/analysis/current`. **Ningún bloque que mire el pasado del análisis es
-   construible hasta que exista.** Es el hueco de API más grande de la vista.
-3. **Decisión sobre el techo de 90 días.** `RANGO_MAX_DIAS = 90` es regla de
-   contrato (`api_gateway/domain/paginacion.py`, replicada en el SPA). Los 9
-   meses de brecha de venta **existen en la base pero son inalcanzables desde el
-   cliente**. Cualquier lectura sobre la serie larga exige subir el techo o
-   servir la distribución ya calculada.
+2. ~~**`GET /api/v1/analysis/history`.**~~ **Descartado el 2026-09-08, con la
+   razón medida.** No es deuda pendiente: es una decisión.
+
+   - **No puede servir documentos.** 2 344 revisiones/día a ~4 KB cada una. Un
+     solo día son 9 MB; noventa, unos 840 MB. Tendría que ser una proyección.
+   - **Agregado al vuelo rompe un SLO firmado.** Un `time_bucket` de 1 h sobre
+     90 días tarda **4,57 s** —y eso con solo 39 días en la tabla—, contra un
+     SLO de histórico de **≤ 2 s** (medido en 757 ms). Cumplirlo exigiría un
+     **continuous aggregate**, mecanismo que el proyecto no usa en ninguna parte.
+   - **La retención ya lo acota a 90 días** (`drop_after: 90 days` sobre
+     `indicator_analysis`). El endpoint nunca podría ofrecer más ventana que la
+     que el tope de rango ya permite: los dos límites coinciden.
+   - **Y se quedó sin consumidor.** El argumento original era que ningún bloque
+     que mirase el pasado del análisis era construible sin él. Al disolverse la
+     vista de Análisis, no queda quien lo pida.
+
+   Lo que cierra el caso: el único uso que sobrevivía —la distribución
+   descriptiva de la brecha a 72 h— lee de `indicators`, **no** de
+   `indicator_analysis`. Lo desbloquea el punto 3, no este.
+
+   Si algún día vuelve a hacer falta, el trabajo real no es el endpoint sino el
+   continuous aggregate que lo sostenga dentro del SLO.
+3. ~~**Decisión sobre el techo de 90 días.**~~ **Resuelto el 2026-09-08.** No
+   subiendo el techo, sino **cambiando lo que mide**: el rango de
+   `/indicators/history` se acota por **filas** —`(to − from) / interval`, tope
+   26 000 buckets— y no por días de calendario.
+
+   El criterio viejo era ciego al intervalo, y eso acotaba el eje equivocado:
+
+   | Petición | Filas | En la DB | Regla vieja |
+   |---|---|---|---|
+   | 279 d a `1d` | 279 | 38,9 ms | **bloqueada** |
+   | 90 d a `5m` | 25 920 | 78,9 ms + 52 páginas | permitida |
+
+   **El peor caso no se relaja, se conserva**: 26 000 es justo lo que ya
+   permitía la escala más fina (90 d a `5m` = 25 920). Lo que cambia es que ese
+   presupuesto se reparte según lo que cuesta cada bucket. Los 9 meses de brecha
+   derivada quedan alcanzables a granularidad diaria.
 4. **Definición de un estado que dure**, si algún día se quiere algo
    condicionado. No es un problema de datos sino de diseño, y merece su ADR.
 

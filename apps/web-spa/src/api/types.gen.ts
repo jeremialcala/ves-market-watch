@@ -96,7 +96,12 @@ export interface paths {
         /**
          * Histórico de indicadores
          * @description Serie agregada de indicadores en formato largo (una fila por
-         *     indicador/moneda/instante), paginada. Rango máximo de 90 días por request.
+         *     indicador/moneda/instante), paginada.
+         *
+         *     **El rango se acota por filas, no por días**: `(to − from) / interval`
+         *     no puede pasar de 26.000 buckets. A `5m` eso son 90 días; a `1d`,
+         *     más de 70 años. Violarlo → 422, con el número de filas en el mensaje
+         *     para que se sepa si ensanchar el bucket o acortar el rango.
          */
         get: operations["getIndicatorsHistory"];
         put?: never;
@@ -963,7 +968,8 @@ export interface components {
          */
         FromDate: string;
         /**
-         * @description Fin del rango (fecha, inclusive). Rango máximo de 90 días.
+         * @description Fin del rango (fecha, inclusive). El tope depende del endpoint:
+         *     26.000 buckets en `/indicators/history`, 90 días en el resto.
          * @example 2026-07-17
          */
         ToDate: string;
@@ -1060,7 +1066,8 @@ export interface operations {
                  */
                 from: components["parameters"]["FromDate"];
                 /**
-                 * @description Fin del rango (fecha, inclusive). Rango máximo de 90 días.
+                 * @description Fin del rango (fecha, inclusive). El tope depende del endpoint:
+                 *     26.000 buckets en `/indicators/history`, 90 días en el resto.
                  * @example 2026-07-17
                  */
                 to: components["parameters"]["ToDate"];

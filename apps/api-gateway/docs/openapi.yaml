@@ -30,8 +30,12 @@ info:
     **Convenciones transversales:**
     - Todos los valores monetarios/decimales viajan como **string** con precisión
       exacta — nunca float (evita pérdida de precisión en VES).
-    - Los históricos son paginados de forma **obligatoria**; rango máximo por
-      request de 90 días (violarlo → 422).
+    - Los históricos son paginados de forma **obligatoria**. El rango se acota
+      por **filas**, no por días: en `/indicators/history` el tope son 26.000
+      buckets (días ÷ `interval`); en los demás históricos, 90 días. Violarlo
+      → 422. El tope en filas es el peor caso que ya se permitía —90 días a
+      `5m` = 25.920 buckets—, repartido según lo que cuesta cada bucket en vez
+      de gastarse entero en la escala más fina.
     - Errores en formato **RFC 7807** (`application/problem+json`) sin detalles
       internos.
     - Rate limit por token; **toda respuesta que consuma cuota lleva cabeceras
@@ -186,7 +190,12 @@ paths:
       summary: Histórico de indicadores
       description: |
         Serie agregada de indicadores en formato largo (una fila por
-        indicador/moneda/instante), paginada. Rango máximo de 90 días por request.
+        indicador/moneda/instante), paginada.
+
+        **El rango se acota por filas, no por días**: `(to − from) / interval`
+        no puede pasar de 26.000 buckets. A `5m` eso son 90 días; a `1d`,
+        más de 70 años. Violarlo → 422, con el número de filas en el mensaje
+        para que se sepa si ensanchar el bucket o acortar el rango.
       operationId: getIndicatorsHistory
       security:
         - auth0: [read:indicators]
@@ -387,7 +396,9 @@ components:
     ToDate:
       name: to
       in: query
-      description: Fin del rango (fecha, inclusive). Rango máximo de 90 días.
+      description: |
+        Fin del rango (fecha, inclusive). El tope depende del endpoint:
+        26.000 buckets en `/indicators/history`, 90 días en el resto.
       required: true
       schema:
         type: string

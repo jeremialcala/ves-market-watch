@@ -13,7 +13,8 @@ rate limit in-memory, profundidad interim): **ADR-0016**.
 
 ## Capas (hexagonal, `src/api_gateway/`)
 - **Dominio** (`domain/`): `Usuario` (sub, permisos del claim `permissions`, `exp`),
-  paginación y rango ≤ 90 días (`paginacion.py`), rate limit de ventana fija con
+  paginación y rango acotado —por **filas** en `/indicators/history`, por días
+  en el resto (`paginacion.py`)—, rate limit de ventana fija con
   reloj inyectable (`rate_limit.py`), profundidad por bandas de 0,5 % desde el
   mejor precio (`profundidad.py`, pura) y errores propios (`errores.py`).
 - **Aplicación** (`application/`): puertos `TokenValidator` y `LecturaRepository`
