@@ -28,8 +28,19 @@ Convención de mantenimiento (inventario por ejecución):
     falló o no hay un respaldo bueno reciente. Antes el contenedor no tenía
     healthcheck y un `crond` vivo pasaba por sano.
 
+### Security
+
+- **La caja de respaldo se fija por digest (T8).** Era el único `FROM` del
+  repo en un tag móvil (`alpine:3.22`): el control de supply chain se verifica
+  servicio por servicio y éste no encajaba en ninguna categoría —sin
+  dependencias Python ni npm, ningún auditor lo miraba—, justo en el
+  contenedor con `pg_dump` sobre toda la base y las credenciales de Drive.
+
 ### Fixed
 
+- **`init: true` en el servicio de respaldo.** El PID 1 era `crond`, que no
+  cosecha a los hijos que adopta, y el `wget` de busybox deja un ayudante
+  `ssl_client` por cada push: seis zombis en 19 horas.
 - **Los scripts de respaldo corren con `pipefail`.** Sin él, `rclone lsf | sort
   | tail -1` salía en verde con rclone caído y la verificación del 2026-09-13
   informó «no hay ningún full» con cinco fulls en Drive; el fallo real era el

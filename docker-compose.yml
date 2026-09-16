@@ -272,6 +272,12 @@ services:
     # tiene por qué subir nada a ningún sitio.
     #   docker compose --profile respaldo up -d
     profiles: [respaldo]
+    # `tini` como PID 1. Sin esto el PID 1 es `crond`, que no cosecha a los
+    # hijos que adopta: el `wget` de busybox lanza un ayudante `ssl_client`
+    # para hablar https, y cada push de `aviso` dejaba un zombi —seis en 19
+    # horas el 2026-09-16—. No consumen memoria, solo entradas de la tabla de
+    # procesos, pero son basura nuestra y esto la barre.
+    init: true
     build:
       context: .
       dockerfile: scripts/respaldo/Dockerfile
