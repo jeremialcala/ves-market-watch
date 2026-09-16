@@ -112,7 +112,10 @@ En Google Cloud Console, sobre el proyecto que tenga el cliente OAuth:
 
 - **Publica la app** (*Pantalla de consentimiento → Estado de publicación → Publicar*).
   Dejarla en *Testing* parece funcionar y **caduca el refresh token a los 7 días**:
-  el respaldo correría una semana y luego fallaría solo. Publicar **no dispara
+  el respaldo correría una semana y luego fallaría solo. **Pasó**: autorizado el
+  2026-08-31, el último respaldo bueno fue el 2026-09-07 a las 21:00 y luego
+  hubo 160 fallos seguidos con `invalid_grant` antes de que alguien lo viera.
+  Publicar **no dispara
   verificación de Google** porque el único scope es `drive.file`, que no es
   sensible ni restringido.
 - Habilita la **Google Drive API** en ese proyecto.
@@ -169,7 +172,12 @@ docker rm -f rclone-copia
 ```
 RCLONE_REMOTE=criterio-cifrado:
 RCLONE_CONFIG_PASS=<contraseña del rclone.conf>
+AVISO_URL=https://ntfy.sh/<tema-largo-y-aleatorio>
 ```
+
+`AVISO_URL` es a dónde llegan los avisos de fallo (ver *Avisos* abajo). En
+ntfy.sh el tema **es** la credencial: quien lo adivine lee los avisos, así que
+nada de `ves-respaldo`.
 
 `RCLONE_CONFIG_PASS` solo hace falta si cifraste el `rclone.conf` con contraseña
 de rclone, que es lo recomendable. El cron corre desatendido: sin esta variable,
@@ -204,6 +212,32 @@ docker compose exec respaldo restaurar ves_market_prueba ultimo 2026-08-23T19
 
 # la verificación semanal, a demanda
 docker compose exec respaldo verificar
+
+# ¿hay un respaldo bueno reciente? (es el healthcheck)
+docker compose exec respaldo estado
+```
+
+### Avisos
+
+Del 2026-09-07 al 2026-09-14 el respaldo falló cada hora y nadie se enteró en
+una semana: todo quedaba en `docker compose logs`, y ahí se mira cuando ya se
+sabe que algo va mal. Desde entonces un fallo se **empuja**:
+
+- **Push a ntfy.** Cada trabajo (`respaldar`, `verificar`) llama a `aviso` al
+  terminar. El primer fallo manda un push a `AVISO_URL`; si sigue fallando, se
+  repite cada 6 h (`AVISO_REPETIR_SEGUNDOS`) y no cada hora; cuando vuelve a
+  salir bien, llega un único «vuelve a funcionar». Para recibirlos, suscríbete
+  al tema en la app de ntfy.
+- **Healthcheck.** `estado` pone el contenedor en `unhealthy` si el último
+  intento de cualquier trabajo falló, si no hay un incremental bueno en 2 h 30
+  min, o si el último full bueno pasa de 28 h. Se ve en `docker compose ps` y
+  no depende de la red ni de ntfy.
+
+Probar el aviso sin romper nada:
+
+```sh
+docker compose exec respaldo aviso fallo prueba "esto es una prueba"
+docker compose exec respaldo aviso ok prueba   # manda el «vuelve a funcionar» y limpia
 ```
 
 ## Lo que este esquema NO es

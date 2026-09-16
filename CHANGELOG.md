@@ -17,6 +17,24 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **El respaldo avisa cuando falla (2026-09-14).** Del 2026-09-07 al 09-14
+  falló 160 veces seguidas —el refresh token de Drive caducó a los 7 días con
+  la app OAuth en «Testing»— y nadie lo supo en una semana.
+  - `aviso`: push a ntfy (`AVISO_URL`) en el primer fallo, repetido cada 6 h
+    mientras dure, y uno solo al recuperarse.
+  - `estado` como healthcheck del contenedor: `unhealthy` si el último intento
+    falló o no hay un respaldo bueno reciente. Antes el contenedor no tenía
+    healthcheck y un `crond` vivo pasaba por sano.
+
+### Fixed
+
+- **Los scripts de respaldo corren con `pipefail`.** Sin él, `rclone lsf | sort
+  | tail -1` salía en verde con rclone caído y la verificación del 2026-09-13
+  informó «no hay ningún full» con cinco fulls en Drive; el fallo real era el
+  token.
+
 ## [0.5.0] - 2026-09-08
 
 **Gates 2 y 3 aprobados HITL**, con lo que cierran las fases 03-implementation y

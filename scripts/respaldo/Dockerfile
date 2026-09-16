@@ -20,8 +20,12 @@ ENV TZ=America/Caracas
 COPY scripts/respaldo/respaldar.sh /usr/local/bin/respaldar
 COPY scripts/respaldo/restaurar.sh /usr/local/bin/restaurar
 COPY scripts/respaldo/verificar.sh /usr/local/bin/verificar
+COPY scripts/respaldo/aviso.sh /usr/local/bin/aviso
+COPY scripts/respaldo/estado.sh /usr/local/bin/estado
 COPY scripts/respaldo/crontab /etc/crontabs/root
-RUN chmod +x /usr/local/bin/respaldar /usr/local/bin/restaurar /usr/local/bin/verificar
+RUN chmod +x /usr/local/bin/respaldar /usr/local/bin/restaurar /usr/local/bin/verificar \
+      /usr/local/bin/aviso /usr/local/bin/estado \
+ && mkdir -p /var/lib/respaldo
 
 # `-f` en primer plano y `-d 8` para que los mensajes de cron salgan en
 # `docker compose logs`: un cron que falla en silencio es un respaldo que no

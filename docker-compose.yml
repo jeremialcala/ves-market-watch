@@ -302,6 +302,20 @@ services:
       # Sin `:?` por la misma razón que `RCLONE_REMOTE`: el compose interpola el
       # archivo entero aunque el servicio no se levante.
       RCLONE_CONFIG_PASS: ${RCLONE_CONFIG_PASS:-}
+      # Push de ntfy cuando un trabajo falla, y otro cuando se recupera (ver
+      # scripts/respaldo/aviso.sh). La URL lleva el tema, y quien conozca el
+      # tema lee los avisos: va en el .env, no aquí. Vacía, no hay push, pero el
+      # healthcheck de abajo sigue marcando el fallo.
+      AVISO_URL: ${AVISO_URL:-}
+    # Sano = hubo un respaldo BUENO hace poco, no «crond está vivo»: crond
+    # estuvo vivo toda la semana del 2026-09-07 en la que no se respaldó nada.
+    # `start_period` cubre la primera hora, hasta el primer incremental.
+    healthcheck:
+      test: ["CMD", "estado"]
+      interval: 5m
+      timeout: 10s
+      retries: 1
+      start_period: 75m
     volumes:
       # La autorización de Google vive aquí: se hace una vez con `rclone config`
       # y persiste. Contiene credenciales, así que es un volumen con nombre y no
