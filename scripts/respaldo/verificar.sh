@@ -11,7 +11,7 @@
 # Corre sola los domingos (ver crontab). Sale distinto de cero si el respaldo no
 # sirve, y ese código de salida es el que hay que vigilar.
 
-set -eu
+set -euo pipefail
 
 BASE_PRUEBA="${BASE_VERIFICACION:-ves_market_verificacion}"
 # Por debajo de esto, el respaldo no contiene una base de trabajo: contiene el
@@ -21,11 +21,27 @@ BASE_PRUEBA="${BASE_VERIFICACION:-ves_market_verificacion}"
 MINIMO_INDICADORES="${MINIMO_INDICADORES:-100000}"
 MINIMO_TASAS="${MINIMO_TASAS:-10000}"
 
+MOTIVO=""
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S %Z') verificar $*"; }
-morir() { log "FALLO: $*"; exit 1; }
+morir() { MOTIVO="$*"; log "FALLO: $*"; exit 1; }
+
+# Ese código de salida ya no depende de que alguien lo vigile: avisa solo.
+terminar() {
+  rc=$?
+  if [ "$rc" -eq 0 ]; then
+    aviso ok verificar
+  else
+    aviso fallo verificar "verificar: ${MOTIVO:-salió con código $rc}"
+  fi
+  exit "$rc"
+}
+trap terminar EXIT
+trap 'exit 130' INT TERM
 
 log "restaurando el último full en $BASE_PRUEBA"
+MOTIVO="no se pudo restaurar el último full (ver el log de restaurar)"
 restaurar "$BASE_PRUEBA" ultimo
+MOTIVO=""
 
 contar() {
   psql -v ON_ERROR_STOP=1 -t -A -d "$BASE_PRUEBA" -c "SELECT count(*) FROM $1"

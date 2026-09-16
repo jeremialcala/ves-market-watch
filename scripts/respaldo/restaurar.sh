@@ -17,7 +17,11 @@
 # estar y los chunks no quedan registrados. Es otro fallo que sale en verde.
 # ---------------------------------------------------------------------------
 
-set -eu
+# `pipefail`: sin él, `rclone lsf | sort | tail -1` sale en verde con rclone
+# caído y la lista vacía se lee como «no hay ningún full». Así lo contó la
+# verificación del 2026-09-13 teniendo cinco fulls en Drive: el que fallaba era
+# el token, y el mensaje mandaba a buscar el problema en otro sitio.
+set -euo pipefail
 
 DESTINO="${1:?uso: restaurar <base_destino> [etiqueta_full|ultimo] [hasta|todos]}"
 CUAL="${2:-ultimo}"
@@ -32,7 +36,8 @@ morir() { log "ERROR: $*"; exit 1; }
 # -- 1. el full --------------------------------------------------------------
 
 if [ "$CUAL" = "ultimo" ]; then
-  CUAL="$(rclone lsf "$REMOTO/full" --include '*.dump' | sort | tail -1)"
+  CUAL="$(rclone lsf "$REMOTO/full" --include '*.dump' | sort | tail -1)" \
+    || morir "rclone no pudo listar $REMOTO/full (¿token de Drive caducado? ver README)"
   [ -n "$CUAL" ] || morir "no hay ningún full en $REMOTO/full"
 fi
 log "full elegido: $CUAL"

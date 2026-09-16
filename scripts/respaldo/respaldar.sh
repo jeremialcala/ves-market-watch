@@ -20,19 +20,39 @@
 # ninguno se nota.
 # ---------------------------------------------------------------------------
 
-set -eu
+# `pipefail` no es opcional: sin él, una tubería sale con el código de su ÚLTIMO
+# comando. `rclone size ... | sed` salía en verde con rclone caído, y los
+# `echo ... | while` que vuelcan cada tabla podían fallar por dentro sin cortar
+# el script. busybox ash lo soporta (comprobado en esta imagen).
+set -euo pipefail
 
 MODO="${1:-}"
 REMOTO="${RCLONE_REMOTE:?definir RCLONE_REMOTE, p. ej. criterio-cifrado:criterio}"
 TRABAJO="$(mktemp -d)"
-trap 'rm -rf "$TRABAJO"' EXIT INT TERM
 
 # Tamaño mínimo creíble por archivo comprimido. Por debajo de esto, algo falló
 # aunque el comando saliera en verde (la trampa de arriba).
 MINIMO_BYTES="${RESPALDO_MINIMO_BYTES:-256}"
 
+MOTIVO=""
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S %Z') respaldo[$MODO] $*"; }
-morir() { log "ERROR: $*"; exit 1; }
+morir() { MOTIVO="$*"; log "ERROR: $*"; exit 1; }
+
+# Todo final pasa por aquí, también el de `set -e`: el trap EXIT recibe el
+# código real. Un fallo avisa (ver aviso.sh) y un éxito deja el sello que lee
+# el healthcheck. Un respaldo que falla en silencio es un respaldo que no existe.
+terminar() {
+  rc=$?
+  rm -rf "$TRABAJO"
+  if [ "$rc" -eq 0 ]; then
+    aviso ok "respaldo-$MODO"
+  else
+    aviso fallo "respaldo-$MODO" "respaldar $MODO: ${MOTIVO:-salió con código $rc}"
+  fi
+  exit "$rc"
+}
+trap terminar EXIT
+trap 'exit 130' INT TERM
 
 # Tablas por ventana de tiempo, con su columna temporal.
 POR_VENTANA="indicators:as_of
@@ -162,7 +182,11 @@ case "$MODO" in
     ;;
 
   *)
-    morir "uso: respaldar {incremental|full|agregados}"
+    # Un error de uso a mano no es un respaldo caído: sin trap, no avisa.
+    trap - EXIT
+    rm -rf "$TRABAJO"
+    log "uso: respaldar {incremental|full|agregados}"
+    exit 1
     ;;
 esac
 
