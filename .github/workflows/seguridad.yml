@@ -5,6 +5,10 @@
 # repos públicos secret scanning, Dependabot y CodeQL, pero esos avisan sin
 # detener nada, y un gate pide justo eso: algo que impida seguir. Las funciones
 # nativas se dejan encendidas como red de seguridad; lo que decide es esto.
+#
+# Romper el build solo sirve si hay alguien mirando. En la pasada del cron no lo
+# hay, así que esa —y solo esa— manda un push a ntfy: el trabajo `aviso` del
+# final.
 name: Seguridad
 
 on:
@@ -15,6 +19,14 @@ on:
     # Una pasada semanal: una dependencia no cambia, pero lo que se SABE de ella
     # sí. Un repo sin commits puede volverse vulnerable un martes cualquiera.
     - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      probar_aviso:
+        description: >-
+          Mandar el push aunque los gates vayan verdes, para comprobar que el
+          canal de aviso funciona sin esperar a que algo se rompa.
+        type: boolean
+        default: false
 
 concurrency:
   group: seguridad-${{ github.ref }}
@@ -259,3 +271,84 @@ jobs:
       - name: Logs del gateway si algo falló
         if: failure()
         run: docker compose logs --no-color --tail 200
+
+  aviso:
+    name: Avisar si la pasada del cron falló
+    # Existe por lo que pasó del 2026-09-14 al 09-21: `T8 · SCA (npm)` se puso
+    # roja en la pasada semanal de `main` —apareció GHSA-2883-xcg3-v3hh en
+    # `js-yaml`, sin que lo tocara ningún commit— y estuvo una semana así hasta
+    # que se descubrió de rebote, revisando otro PR. Un gate que rompe el build
+    # solo detiene a quien está esperando el build; el cron no tiene a nadie
+    # delante.
+    #
+    # Mismo agujero, y mismo canal, que `scripts/respaldo/aviso.sh`: ntfy en el
+    # teléfono. En un push o en un PR no se avisa a propósito —la marca roja sale
+    # en el PR y en el commit, con su autor delante— y duplicarlo por el teléfono
+    # es el camino corto a que se silencie el tema.
+    needs: [secretos, dependencias, sast, dast]
+    if: >-
+      always() && (github.event_name == 'schedule'
+      || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    steps:
+      # Corre AUNQUE todo vaya verde: es la comprobación semanal de que el canal
+      # sigue en pie. Si no, un secreto borrado o renombrado se descubre el día
+      # que hace falta avisar, que es exactamente el día en que no se puede.
+      - name: Comprobar que el canal de aviso existe
+        env:
+          AVISO_URL: ${{ secrets.AVISO_URL }}
+        run: |
+          if [ -z "$AVISO_URL" ]; then
+            echo "::error::Falta el secreto AVISO_URL (Settings → Secrets → Actions): esta pasada no podría avisar de nada."
+            exit 1
+          fi
+          echo "Canal de aviso configurado."
+
+      # `failure` y no `cancelled`: la concurrencia de este archivo cancela la
+      # pasada del cron si alguien empuja a la misma rama mientras corre, y
+      # avisar de una pasada que se repitió sola es ruido.
+      - name: Empujar el aviso
+        if: contains(needs.*.result, 'failure') || inputs.probar_aviso
+        env:
+          AVISO_URL: ${{ secrets.AVISO_URL }}
+          T6: ${{ needs.secretos.result }}
+          T8: ${{ needs.dependencias.result }}
+          T9: ${{ needs.sast.result }}
+          DAST: ${{ needs.dast.result }}
+          CORRIDA: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          rotos=""
+          anotar() { [ "$2" = "success" ] || rotos="${rotos}${rotos:+, }$1 ($2)"; }
+          anotar "T6 secretos" "$T6"
+          anotar "T8 dependencias" "$T8"
+          anotar "T9 SAST" "$T9"
+          anotar "DAST" "$DAST"
+
+          if [ -z "$rotos" ]; then
+            titulo="ves-market-watch: prueba del canal de aviso"
+            prioridad="default"
+            etiquetas="white_check_mark,lock"
+            cuerpo="Prueba manual del canal: los gates de seguridad van en verde. Corrida: ${CORRIDA}"
+          else
+            titulo="ves-market-watch: gates de seguridad en rojo"
+            prioridad="high"
+            etiquetas="warning,lock"
+            cuerpo="La pasada de seguridad falló en: ${rotos}. Detalle: ${CORRIDA}"
+          fi
+          echo "$cuerpo"
+
+          # Título y etiquetas van en cabeceras HTTP y por eso en ASCII: una
+          # cabecera con UTF-8 es de las cosas que un servidor acepta hoy y
+          # rechaza mañana. El cuerpo sí lleva tildes.
+          #
+          # `-f` para que un ntfy que rechaza el push deje ESTE trabajo en rojo.
+          # Al contrario que en `aviso.sh` —donde un push fallido no puede tapar
+          # el código de salida del respaldo— aquí avisar es el único cometido
+          # del trabajo, y un aviso que no sale es el fallo entero.
+          curl -fsS --retry 3 --retry-all-errors --max-time 20 \
+            -H "Title: $titulo" \
+            -H "Priority: $prioridad" \
+            -H "Tags: $etiquetas" \
+            --data-raw "$cuerpo" \
+            "$AVISO_URL" > /dev/null
+          echo "Aviso enviado."

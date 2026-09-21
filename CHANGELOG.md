@@ -17,6 +17,24 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **La pasada semanal de seguridad avisa cuando falla.** `T8 · SCA (npm)` se
+  puso roja en el cron de `main` del **2026-09-14** —apareció
+  GHSA-2883-xcg3-v3hh en `js-yaml`, sin que lo tocara ningún commit— y siguió
+  así una semana, hasta que se vio de rebote revisando otro PR. Un gate que
+  rompe el build solo detiene a quien está esperando el build.
+  - Trabajo `aviso` en `seguridad.yml`: push a ntfy (`AVISO_URL`, secreto de
+    Actions) nombrando qué gates cayeron y enlazando la corrida. Mismo canal que
+    `scripts/respaldo/aviso.sh`.
+  - Solo en la pasada del cron: en un push o un PR la marca roja ya sale con su
+    autor delante, y duplicarla por el teléfono es el camino corto a que se
+    silencie el tema.
+  - El canal se comprueba **en cada pasada, también en verde**: un `AVISO_URL`
+    borrado o renombrado se descubriría si no el día que hace falta avisar.
+  - `workflow_dispatch` con `probar_aviso` para ejercitar el push sin esperar a
+    que algo se rompa.
+
 ### Security
 
 - **`js-yaml` 4.3.1 → 4.3.2 en el web-spa (T8).** GHSA-2883-xcg3-v3hh, *high*:

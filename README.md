@@ -111,7 +111,13 @@ Tres workflows en `.github/workflows/`:
   —el borde de autenticación sin token y los handlers de verdad con un token
   M2M—, con triaje que rompe el build ante cualquier Medium/High y ante cualquier
   Low no declarada. En cada push y cada PR, más una pasada semanal: una
-  dependencia no cambia, pero lo que se sabe de ella sí.
+  dependencia no cambia, pero lo que se sabe de ella sí. Esa pasada semanal
+  **avisa por ntfy si algo se pone rojo** —requiere `AVISO_URL` como secreto de
+  Actions—: romper el build solo detiene a quien espera el build, y el cron de
+  los lunes no tiene a nadie delante. El trabajo `aviso` comprueba que el canal
+  existe **en cada pasada**, verde o roja, para que un secreto borrado no se
+  descubra el día que hace falta. Para probar el canal sin esperar a un fallo,
+  `Run workflow` con `probar_aviso` marcado.
 - **`e2e-vivo.yml`** — el gateway de verdad, levantado con compose en el propio
   runner. Los **rechazos** (401 del REST, cierre 4401 del WSS) prueban código y
   van en cada PR; el **camino feliz** con el client M2M prueba la configuración
