@@ -17,6 +17,19 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-09-21
+
+Versión de mantenimiento: **ningún cambio en el producto**. Lo que trae es que
+los dos procesos desatendidos del proyecto ya avisan cuando fallan —la pasada
+semanal de seguridad y el respaldo cifrado a Drive—, por el mismo canal de ntfy y
+por la misma razón: los dos estuvieron rotos en silencio durante una semana, del
+2026-09-07 al 09-14, y se descubrieron de rebote. Más la subida de `js-yaml` que
+devuelve a verde `T8 · SCA (npm)` y dos arreglos de infraestructura que ya mordían
+al CI.
+
+Patch por la convención de este archivo: correcciones e instrumentación, sin
+funcionalidad nueva de producto y sin gate cerrado.
+
 ### Added
 
 - **La pasada semanal de seguridad avisa cuando falla.** `T8 · SCA (npm)` se
@@ -3101,7 +3114,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.3.0...v0.3.1
