@@ -17,6 +17,19 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-09-21
+
+Versión de mantenimiento: **ningún cambio en el producto**. Lo que trae es que
+los dos procesos desatendidos del proyecto ya avisan cuando fallan —la pasada
+semanal de seguridad y el respaldo cifrado a Drive—, por el mismo canal de ntfy y
+por la misma razón: los dos estuvieron rotos en silencio durante una semana, del
+2026-09-07 al 09-14, y se descubrieron de rebote. Más la subida de `js-yaml` que
+devuelve a verde `T8 · SCA (npm)` y dos arreglos de infraestructura que ya mordían
+al CI.
+
+Patch por la convención de este archivo: correcciones e instrumentación, sin
+funcionalidad nueva de producto y sin gate cerrado.
+
 ### Added
 
 - **La pasada semanal de seguridad avisa cuando falla.** `T8 · SCA (npm)` se
@@ -35,6 +48,31 @@ Convención de mantenimiento (inventario por ejecución):
   - `workflow_dispatch` con `probar_aviso` para ejercitar el push sin esperar a
     que algo se rompa.
 
+- **El respaldo avisa cuando falla (2026-09-14).** Del 2026-09-07 al 09-14
+  falló 160 veces seguidas —el refresh token de Drive caducó a los 7 días con
+  la app OAuth en «Testing»— y nadie lo supo en una semana.
+  - `aviso`: push a ntfy (`AVISO_URL`) en el primer fallo, repetido cada 6 h
+    mientras dure, y uno solo al recuperarse.
+  - `estado` como healthcheck del contenedor: `unhealthy` si el último intento
+    falló o no hay un respaldo bueno reciente. Antes el contenedor no tenía
+    healthcheck y un `crond` vivo pasaba por sano.
+
+### Fixed
+
+- **Los scripts de respaldo corren con `pipefail`.** Sin él, `rclone lsf | sort
+  | tail -1` salía en verde con rclone caído y la verificación del 2026-09-13
+  informó «no hay ningún full» con cinco fulls en Drive; el fallo real era el
+  token.
+
+- **El healthcheck de la DB daba un falso positivo durante `initdb`.**
+  `pg_isready` sin `-h` consulta el socket UNIX, y con volumen nuevo el
+  entrypoint de Postgres levanta ahí un servidor TEMPORAL para correr los
+  scripts de init: compose marcaba «healthy» contra ése y arrancaba el gateway,
+  que va por TCP, justo en la ventana en la que TCP no existe. Medido dentro del
+  contenedor: a 1 s no hay nada, a 2 s responde el socket pero no TCP, a 3 s los
+  dos. Rompía el e2e en vivo. `-h 127.0.0.1` cierra la carrera; mismo arreglo en
+  el healthcheck de `timescaledb` en `ci.yml`.
+
 ### Security
 
 - **`js-yaml` 4.3.1 → 4.3.2 en el web-spa (T8).** GHSA-2883-xcg3-v3hh, *high*:
@@ -44,6 +82,16 @@ Convención de mantenimiento (inventario por ejecución):
   sí solo no podía resolverlo—. Entra en el `^1.34.6` que pide
   `openapi-typescript`, de modo que solo cambia `package-lock.json`. La prueba
   T8 · SCA (npm) llevaba roja desde el cron del 2026-09-14.
+
+- **La caja de respaldo se fija por digest (T8).** Era el único `FROM` del
+  repo en un tag móvil (`alpine:3.22`): el control de supply chain se verifica
+  servicio por servicio y éste no encajaba en ninguna categoría —sin
+  dependencias Python ni npm, ningún auditor lo miraba—, justo en el
+  contenedor con `pg_dump` sobre toda la base y las credenciales de Drive.
+
+- **`init: true` en el servicio de respaldo.** El PID 1 era `crond`, que no
+  cosecha a los hijos que adopta, y el `wget` de busybox deja un ayudante
+  `ssl_client` por cada push: seis zombis en 19 horas.
 
 ## [0.5.0] - 2026-09-08
 
@@ -3066,7 +3114,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.3.0...v0.3.1
