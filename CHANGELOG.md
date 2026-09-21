@@ -17,6 +17,16 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Security
+
+- **`js-yaml` 4.3.1 → 4.3.2 en el web-spa (T8).** GHSA-2883-xcg3-v3hh, *high*:
+  `maxTotalMergeKeys` no limita el CPU cuando las fuentes del merge están
+  vacías. Se sube `@redocly/openapi-core` a 1.34.20, la primera que fija la
+  versión parcheada —fijaba `js-yaml` en la versión exacta, así que el lock por
+  sí solo no podía resolverlo—. Entra en el `^1.34.6` que pide
+  `openapi-typescript`, de modo que solo cambia `package-lock.json`. La prueba
+  T8 · SCA (npm) llevaba roja desde el cron del 2026-09-14.
+
 ## [0.5.0] - 2026-09-08
 
 **Gates 2 y 3 aprobados HITL**, con lo que cierran las fases 03-implementation y
