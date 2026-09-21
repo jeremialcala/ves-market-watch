@@ -1,10 +1,10 @@
 # Historial de implementación — Criterio
 
 * **Estado:** review (documentación viva — regenerada por script, no editar a mano)
-* **Fecha:** 2026-09-06
+* **Fecha:** 2026-09-07
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
-* **Versión:** 0.4.0
+* **Versión:** 0.5.0
 * **Gate:** 2
 * **Rama principal:** main
 * **Estrategia de branching:** GitFlow (main + develop + ramas feature)
@@ -73,6 +73,10 @@ gitGraph
     commit id: "0d80bd6"
     checkout main
     merge develop tag: "v0.4.0"
+    checkout develop
+    commit id: "b29be3b"
+    checkout main
+    merge develop
     checkout develop
     commit id: "38abe5e"
     commit id: "a230666"
@@ -307,14 +311,45 @@ gitGraph
     commit id: "5f8509c" type: HIGHLIGHT
     commit id: "d9a0bcc"
     commit id: "2dfe2f6" type: HIGHLIGHT
+    commit id: "d8c0755"
+    commit id: "5c4d0fa"
+    commit id: "ce02088" type: HIGHLIGHT
+    commit id: "d63bbda" type: HIGHLIGHT
+    commit id: "49aa798" type: HIGHLIGHT
+    commit id: "3712289"
+    commit id: "c685a1c" type: HIGHLIGHT
+    commit id: "9c2a911"
+    commit id: "69e847c" type: HIGHLIGHT
+    commit id: "417efb5"
+    commit id: "0fb1410" type: HIGHLIGHT
+    commit id: "df714f6"
+    commit id: "3fcf200" type: HIGHLIGHT
+    commit id: "3fccd45"
+    commit id: "54bd33c" type: HIGHLIGHT
+    commit id: "b6be6df"
+    commit id: "7372248" type: HIGHLIGHT
+    commit id: "0f03023"
+    commit id: "3511047" type: HIGHLIGHT
+    commit id: "d50f23c"
+    commit id: "c1b7627" type: HIGHLIGHT
+    commit id: "698e808"
+    commit id: "78cb283"
+    commit id: "5c38c0a"
+    commit id: "860c67c" type: HIGHLIGHT
+    commit id: "c7e5c36"
+    commit id: "109ccfb"
+    commit id: "ef04e46"
+    commit id: "23ce20d"
+    checkout main
+    merge develop tag: "v0.5.0"
 ```
 
 ### Estado actual de las ramas
 
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
-| `main` | `779231f` | 2026-07-26 | 6 |
-| `develop` | `2dfe2f6` | 2026-09-06 | 273 |
+| `main` | `d12a351` | 2026-09-07 | 8 |
+| `develop` | `d12a351` | 2026-09-07 | 303 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -325,11 +360,43 @@ gitGraph
 | v0.3.0 | `2ec16da` | 2026-07-26 | 0.3.0 | ADR-0013…0015; ingestor-historico; engine fase 2 (microestructura P2P) + motor de señales RF-4/RF-5; OpenAPI del gateway | Cierre funcional del pipeline de datos; api-gateway aún sin código |
 | v0.3.1 | `461d4dc` | 2026-07-26 | 0.3.1 | Barrido de coherencia documental post-0.3.0; threat model T13/T14; trazabilidad tag↔ADR restaurada; design.md del ingestor-historico | Patch solo de docs, sin cambios funcionales |
 | v0.4.0 | `779231f` | 2026-07-26 | 0.4.0 | ADR-0016; api-gateway implementado (REST /api/v1 + WSS /ws/v1, Resource Server Auth0, 78 tests); AsyncAPI del WSS; OpenAPI ajustada | Los 5 servicios con código; pipeline completo fuente → bus → REST/WSS operativo. Pendiente HITL: SPA + client M2M de prueba |
+| v0.5.0 | `d12a351` | 2026-09-07 | 0.5.0 | ADR-0025/0026; riesgos y análisis como dato servido; SLOs medidos; T8 cerrada (lockfiles con hashes + imágenes por digest) | Gates 2 y 3 aprobados HITL (2026-09-08): cierran 03-implementation y 04-testing. Sin bloques `demo · sin fuente` en el producto |
 
 ### Bitácora de cambios (fiel al repo)
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `d12a351` | merge | v0.5.0 | Jeremi J. Alcalá M. | 2026-09-07 | Merge pull request #42 from jeremialcala/develop |
+| `23ce20d` | commit | — | Jeremi J. Alcalá M. | 2026-09-07 | Potential fix for pull request finding 'CodeQL / Statement has no effect' |
+| `ef04e46` | commit | — | Jeremi J. Alcalá M. | 2026-09-07 | Potential fix for pull request finding 'CodeQL / Statement has no effect' |
+| `109ccfb` | commit | — | Jeremi J. Alcalá M. | 2026-09-07 | Potential fix for pull request finding 'CodeQL / Statement has no effect' |
+| `c7e5c36` | commit | — | Jeremi J. Alcalá M. | 2026-09-07 | Potential fix for pull request finding 'CodeQL / Statement has no effect' |
+| `860c67c` | merge | — | Jeremi J. Alcalá M. | 2026-09-07 | Merge pull request #41 from jeremialcala/feat-t8-lockfiles-digests |
+| `5c38c0a` | commit | — | Jeremi Alcala | 2026-09-07 | fix(ci): el salto de línea del paso de SCA quedó como `\n` literal |
+| `78cb283` | commit | — | Jeremi Alcala | 2026-09-07 | docs(gates): firmar Gates 2 y 3 y cortar la versión 0.5.0 |
+| `698e808` | commit | — | Jeremi Alcala | 2026-09-07 | feat(t8): lockfiles con hashes e imágenes por digest — cierra la deuda del Gate 2 |
+| `c1b7627` | merge | — | Jeremi J. Alcalá M. | 2026-09-07 | Merge pull request #40 from jeremialcala/feat-quitar-cronologia-senales |
+| `d50f23c` | commit | — | Jeremi Alcala | 2026-09-07 | feat(spa): retirar la Cronología de señales del dashboard |
+| `3511047` | merge | — | Jeremi J. Alcalá M. | 2026-09-07 | Merge pull request #39 from jeremialcala/feat-tope-por-filas |
+| `0f03023` | commit | — | Jeremi Alcala | 2026-09-07 | fix(api): acotar el histórico por filas y no por días de calendario |
+| `7372248` | merge | — | Jeremi J. Alcalá M. | 2026-09-07 | Merge pull request #38 from jeremialcala/feat-disolver-analisis |
+| `b6be6df` | commit | — | Jeremi Alcala | 2026-09-07 | feat(spa): disolver la vista de Análisis; su contenido pasa al dashboard |
+| `54bd33c` | merge | — | Jeremi J. Alcalá M. | 2026-09-07 | Merge pull request #37 from jeremialcala/feat-retirar-escenarios |
+| `3fccd45` | commit | — | Jeremi Alcala | 2026-09-07 | feat(analisis): retirar los escenarios; el producto se queda sin sellos demo |
+| `3fcf200` | merge | — | Jeremi J. Alcalá M. | 2026-09-07 | Merge pull request #36 from jeremialcala/feat-vista-riesgos |
+| `df714f6` | commit | — | Jeremi Alcala | 2026-09-07 | feat(analisis): los riesgos dejan de ser redacción |
+| `103736e` | merge | — | Jeremi J. Alcalá M. | 2026-09-07 | Merge pull request #35 from jeremialcala/ci/build-api-gateway |
+| `0fb1410` | merge | — | Jeremi J. Alcalá M. | 2026-09-07 | Merge pull request #34 from jeremialcala/feat-cortes-riesgos |
+| `b29be3b` | commit | — | Jeremi Alcala | 2026-09-07 | ci: publicar la imagen de api-gateway en GHCR |
+| `417efb5` | commit | — | Jeremi Alcala | 2026-09-07 | feat(riesgos): los niveles salen de config versionada, no del componente |
+| `69e847c` | merge | — | Jeremi J. Alcalá M. | 2026-09-07 | Merge pull request #33 from jeremialcala/req-analisis-comprensivo |
+| `9c2a911` | commit | — | Jeremi Alcala | 2026-09-06 | docs(analisis): qué dato hace falta para retirar los dos sellos demo |
+| `c685a1c` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #32 from jeremialcala/docs-cifras-spa |
+| `3712289` | commit | — | Jeremi Alcala | 2026-09-06 | docs(cifras): el SPA tras el componente único de serie |
+| `49aa798` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #31 from jeremialcala/docs-coherencia |
+| `d63bbda` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge branch 'develop' into docs-coherencia |
+| `ce02088` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #30 from jeremialcala/refactor-serie-temporal |
+| `d8c0755` | commit | — | Jeremi Alcala | 2026-09-06 | docs(coherencia): cifras reales de la pipeline y lo que el README se contradecía |
 | `5c4d0fa` | commit | — | Jeremi Alcala | 2026-09-06 | refactor(graficos): un solo componente de serie temporal para todo Criterio |
 | `2dfe2f6` | merge | — | Jeremi J. Alcalá M. | 2026-09-06 | Merge pull request #29 from jeremialcala/feat-ritmo-historico |
 | `d9a0bcc` | commit | — | Jeremi Alcala | 2026-09-06 | fix(historico): el hueco de 22 px no se aplicaba, y normalizar el ritmo |

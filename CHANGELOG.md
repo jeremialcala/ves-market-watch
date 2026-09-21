@@ -17,6 +17,34 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **La pasada semanal de seguridad avisa cuando falla.** `T8 · SCA (npm)` se
+  puso roja en el cron de `main` del **2026-09-14** —apareció
+  GHSA-2883-xcg3-v3hh en `js-yaml`, sin que lo tocara ningún commit— y siguió
+  así una semana, hasta que se vio de rebote revisando otro PR. Un gate que
+  rompe el build solo detiene a quien está esperando el build.
+  - Trabajo `aviso` en `seguridad.yml`: push a ntfy (`AVISO_URL`, secreto de
+    Actions) nombrando qué gates cayeron y enlazando la corrida. Mismo canal que
+    `scripts/respaldo/aviso.sh`.
+  - Solo en la pasada del cron: en un push o un PR la marca roja ya sale con su
+    autor delante, y duplicarla por el teléfono es el camino corto a que se
+    silencie el tema.
+  - El canal se comprueba **en cada pasada, también en verde**: un `AVISO_URL`
+    borrado o renombrado se descubriría si no el día que hace falta avisar.
+  - `workflow_dispatch` con `probar_aviso` para ejercitar el push sin esperar a
+    que algo se rompa.
+
+### Security
+
+- **`js-yaml` 4.3.1 → 4.3.2 en el web-spa (T8).** GHSA-2883-xcg3-v3hh, *high*:
+  `maxTotalMergeKeys` no limita el CPU cuando las fuentes del merge están
+  vacías. Se sube `@redocly/openapi-core` a 1.34.20, la primera que fija la
+  versión parcheada —fijaba `js-yaml` en la versión exacta, así que el lock por
+  sí solo no podía resolverlo—. Entra en el `^1.34.6` que pide
+  `openapi-typescript`, de modo que solo cambia `package-lock.json`. La prueba
+  T8 · SCA (npm) llevaba roja desde el cron del 2026-09-14.
+
 ## [0.5.0] - 2026-09-08
 
 **Gates 2 y 3 aprobados HITL**, con lo que cierran las fases 03-implementation y
