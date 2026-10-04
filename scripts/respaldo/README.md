@@ -148,6 +148,14 @@ pantalla de consentimiento (ver ADR-0027).
 - **Lifecycle Settings** → *Keep prior versions for this number of days* →
   **14**. Es la regla que borra de verdad lo que la poda oculta (ver
   *Inmutabilidad*). Sin ella, lo oculto se guarda —y se paga— para siempre.
+- **Caps & Alerts**: el tope diario de **descarga** tiene que dejar pasar la
+  verificación del domingo, que baja el full entero (**4,9 GB** el
+  2026-10-04), con margen para que crezca. El 2026-10-04 la primera
+  verificación agotó el tope y B2 devolvió 403 a toda la API de descarga hasta
+  el reinicio diario (00:00 UTC). Con eso falla la verificación, y también falló
+  el incremental: el script hacía un HEAD antes de subir. Ya no lo hace (ver
+  `subir` en `respaldar.sh`), así que subir no depende de este tope, pero la
+  verificación sí.
 
 ### 2. La clave, por la CLI y no por la web
 

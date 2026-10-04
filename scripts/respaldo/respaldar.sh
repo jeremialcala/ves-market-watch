@@ -85,9 +85,16 @@ subir() {
   bytes=$(stat -c %s "$archivo")
   [ "$bytes" -ge "$MINIMO_BYTES" ] || morir "$(basename "$archivo") pesa $bytes bytes; se esperaban >= $MINIMO_BYTES"
 
-  rclone copyto "$archivo" "$REMOTO/$carpeta/$(basename "$archivo")" --retries 3
+  # Subir NO puede depender de la cuota de DESCARGA. En B2, `copyto` hace un
+  # HEAD por la API de descarga para ver si el destino existe, y `rclone size`
+  # sobre un archivo suelto, otro. El 2026-10-04 la verificación bajó 4,9 GB,
+  # la cuenta agotó su tope diario de descarga y desde ese momento todo HEAD
+  # devolvió 403: el incremental de las 14:00 falló sin haber intentado subir.
+  # `--no-check-dest` se salta el HEAD (los nombres llevan sello, no se pisa
+  # nada) y el tamaño se relee LISTANDO la carpeta, que va por otra API.
+  rclone copyto "$archivo" "$REMOTO/$carpeta/$(basename "$archivo")" --no-check-dest --retries 3
   # No basta con que `rclone` salga en verde: se relee el tamaño del destino.
-  remoto_bytes=$(rclone size "$REMOTO/$carpeta/$(basename "$archivo")" --json | sed 's/.*"bytes":\([0-9]*\).*/\1/')
+  remoto_bytes=$(rclone size "$REMOTO/$carpeta" --include "/$(basename "$archivo")" --json | sed 's/.*"bytes":\([0-9]*\).*/\1/')
   [ "$remoto_bytes" = "$bytes" ] || morir "subido $remoto_bytes bytes, en local hay $bytes"
   log "subido $carpeta/$(basename "$archivo") ($bytes bytes)"
 }
