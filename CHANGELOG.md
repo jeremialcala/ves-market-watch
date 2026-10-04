@@ -48,6 +48,26 @@ Convención de mantenimiento (inventario por ejecución):
   (`b2_hide_file`) y una regla de lifecycle borra a los 14 días. Quien robe la
   máquina puede ocultarlo todo, no hacerlo desaparecer; la verificación del
   domingo lo detecta, y lo oculto se restaura con `RCLONE_B2_VERSION_AT`.
+### Security
+
+- **`T8 · SCA` vuelve a verde: `pyjwt` 2.15.1, `undici` 8.11.2 y
+  `brace-expansion` 2.1.7.** Aparecieron advisories nuevos sin que los tocara
+  ningún commit, y los dos jobs se pusieron rojos en los PR del 2026-10-04.
+  - **`pyjwt` 2.13.0 → 2.15.1 (`api-gateway`), el que importa:** valida en
+    producción los tokens de Auth0. De sus 13 PYSEC, varios dan sobre lo que
+    usa el gateway con entrada **sin autenticar**: `PyJWKClient` amplifica
+    peticiones JWKS ante un `kid` desconocido y sigue redirecciones, y un
+    header anidado tumba `jwt.decode()` por recursión. El suelo del
+    `pyproject.toml` sube a `>=2.15` para que no pueda volver atrás. Se re-lockeó
+    solo `pyjwt` (`--upgrade-package`), no el árbol entero.
+  - PYSEC-2026-4146 sale «sin versión arreglada» en pip-audit porque OSV lo
+    marca con `last_affected: 2.13.0`; 2.14 en adelante no está afectado. Y el
+    gateway tampoco lo dispara: construye `options` en cada llamada y nunca usa
+    `verify_signature=False`.
+  - **`undici` y `brace-expansion` (`web-spa`) son solo de desarrollo**
+    (`jsdom` para los tests, `openapi-typescript` para generar tipos);
+    `npm ls --omit=dev` sale vacío. Se suben igual, con `npm audit fix` sin
+    `--force`. Quedan `moderate` en `vitest`, por debajo del umbral.
 
 ## [0.5.1] - 2026-09-21
 
