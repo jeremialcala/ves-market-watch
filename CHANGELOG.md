@@ -26,6 +26,37 @@ Convención de mantenimiento (inventario por ejecución):
   «vuelve a funcionar» no salió y el último push decía que seguía fallando. El
   healthcheck, además, olvidó el full de esa tarde. Ahora es el volumen con
   nombre `respaldo_estado`.
+### Changed
+
+- **El respaldo pasa de Google Drive a Backblaze B2 (ADR-0027).** El token OAuth
+  de Drive volvió a caducar (`invalid_grant`) el **2026-09-23**, y no hubo
+  respaldo en **11 días**, hasta el 2026-10-04. Esta vez ntfy avisó desde la
+  primera hora, pero reparar el token pide un navegador y una persona. Una clave
+  de aplicación de B2 no caduca.
+  - Mismo remoto `crypt`, repuntado con `rclone config update`: scripts,
+    cadencias, verificación y `.env` no cambian. El histórico de Drive se copia
+    cifrado, sin descifrar.
+  - `RETENCION_FULL_DIAS` pasa de 90 a **76**: en B2 lo podado queda oculto
+    otros 14 días, y 76 + 14 = los 90 de la clasificación de datos.
+  - **rclone sale de la imagen oficial 1.75.0, por digest, y no del `apk`.**
+    El de Alpine 3.22 (1.69.3) autoriza contra B2 con la API v1, que B2 ya
+    rechaza (`400 bad_request`); con la misma clave, la 1.75.0 entra.
+  - **Subir ya no depende de la cuota de descarga.** `copyto` hacía un HEAD
+    por la API de descarga para mirar el destino, y la relectura del tamaño,
+    otro. Tras la primera verificación (4,9 GB bajados) la cuenta agotó su tope
+    diario y todo HEAD devolvió 403: el incremental de las 14:00 falló sin
+    llegar a subir. Ahora `--no-check-dest` y el tamaño se relee listando la
+    carpeta.
+  - `scripts/respaldo/README.md` reescribe la puesta en marcha para B2 y
+    documenta la copia del histórico y la retirada de Drive.
+
+### Security
+
+- **La credencial del contenedor de respaldo ya no puede destruir el
+  respaldo.** La clave de B2 no tiene `deleteFiles`: la poda oculta
+  (`b2_hide_file`) y una regla de lifecycle borra a los 14 días. Quien robe la
+  máquina puede ocultarlo todo, no hacerlo desaparecer; la verificación del
+  domingo lo detecta, y lo oculto se restaura con `RCLONE_B2_VERSION_AT`.
 ### Security
 
 - **`T8 · SCA` vuelve a verde: `pyjwt` 2.15.1, `undici` 8.11.2 y
