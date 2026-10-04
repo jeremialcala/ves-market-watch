@@ -259,8 +259,8 @@ services:
     restart: unless-stopped
 
   respaldo:
-    # Respaldo a Google Drive: incremental cada hora, full cada 24 h y una
-    # restauración de verdad cada domingo. El detalle está en
+    # Respaldo a Backblaze B2 (Drive hasta 2026-10, ver ADR-0027): incremental
+    # cada hora, full cada 24 h y una restauración de verdad cada domingo. El detalle está en
     # `scripts/respaldo/README.md`; lo que hay que saber aquí es por qué existe.
     #
     # El 2026-08-23 un `docker compose up` recreó los contenedores y se llevó la
@@ -287,7 +287,7 @@ services:
       PGUSER: postgres
       PGPASSWORD: postgres
       PGDATABASE: ves_market
-      # Remoto `crypt` de rclone: Drive guarda contenido que no puede leer. La
+      # Remoto `crypt` de rclone: B2 guarda contenido que no puede leer. La
       # base tiene datos Interno y la clasificación no dice nada sobre sacarlos
       # a un tercero, así que se cifra en cliente y la pregunta no se plantea.
       #
@@ -303,7 +303,7 @@ services:
       # muestra la variable, igual que el token del túnel, así que no protege
       # frente a quien ya tiene la máquina. Lo que sí cierra es que el volumen
       # por separado —una copia suelta, un mount mal puesto— no sirva de nada:
-      # el token de Drive va cifrado dentro del archivo.
+      # la clave de B2 va cifrada dentro del archivo.
       #
       # Sin `:?` por la misma razón que `RCLONE_REMOTE`: el compose interpola el
       # archivo entero aunque el servicio no se levante.
@@ -323,8 +323,8 @@ services:
       retries: 1
       start_period: 75m
     volumes:
-      # La autorización de Google vive aquí: se hace una vez con `rclone config`
-      # y persiste. Contiene credenciales, así que es un volumen con nombre y no
+      # La clave de aplicación de B2 vive aquí: se configura una vez con
+      # `rclone config` y persiste. Contiene credenciales, así que es un volumen con nombre y no
       # un bind al repositorio.
       - rclone_config:/config/rclone
     depends_on:

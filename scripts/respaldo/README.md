@@ -1,6 +1,10 @@
-# Respaldo a Google Drive
+# Respaldo a Backblaze B2
 
-Incremental cada hora, full cada 24 h, restauración probada cada semana.
+Incremental cada hora, full cada 24 h, restauración probada cada semana. Cifrado
+en cliente y con una clave que no puede borrar.
+
+Hasta octubre de 2026 el destino fue Google Drive. Por qué se dejó está en
+*Puesta en marcha* y en ADR-0027.
 
 Nace de haber perdido la base el 2026-08-23: `timescaledb` no declaraba volumen
 en el compose, un `docker compose up` recreó los contenedores y el volumen
@@ -14,11 +18,14 @@ Medido **ejecutando el respaldo**, no estimado:
 | Pieza | Cadencia | Tamaño | Duración | Retención |
 |---|---|---|---|---|
 | `incremental/<hora>.tar.gz` | cada hora | **2,9 MB** | segundos | 14 días |
-| `full/ves_market-<sello>.dump` | cada 24 h (03:30 VET) | **2,3 GB** | **~12 min** | **90 días** |
+| `full/ves_market-<sello>.dump` | cada 24 h (03:30 VET) | **2,3 GB** | **~12 min** | **76 + 14 días** |
 | `agregados/<mes>.dump` | cada mes | *sin medir* | — | 24 meses |
 
-Régimen estable en Drive: **unos 208 GB** —207 de fulls y algo menos de 1 de
-incrementales—. Cabe de sobra en un plan de 2 TB, que es donde está.
+Régimen estable: **unos 208 GB** —207 de fulls, contando los 14 días que pasa
+oculto cada full podado (ver *Inmutabilidad*), y algo menos de 1 de
+incrementales—. En B2 se paga por GB almacenado, y la descarga es gratis hasta
+el triple de lo almacenado al mes según la política de B2 al escribir esto: la
+verificación semanal baja 2,3 GB.
 
 El incremental es diminuto porque casi todo el volumen son los snapshots crudos
 —4.631 MB de 5.126— y en una hora solo entran 64.
@@ -37,7 +44,7 @@ El incremental es diminuto porque casi todo el volumen son los snapshots crudos
 > que no comprueba el código de salida de lo que midió no es una medición.*
 >
 > No es cosmético: con 326 MB, 90 días de retención parecían 30 GB; con 2,3 GB
-> son **207**. La cadencia se mantiene porque el destino tiene 2 TB, pero la
+> son **207**. La cadencia se mantuvo porque Drive tenía 2 TB, pero la
 > decisión se tomó con el número correcto.
 
 **La verificación semanal tarda ~18 min** y crea una base desechable de unos
@@ -57,7 +64,7 @@ Los **402 chunks registrados** son el dato que de verdad cierra el círculo: es 
 que distingue una restauración buena de una hecha sin `timescaledb_pre_restore()`,
 donde las filas se cuentan igual y las hipertablas quedan descolgadas.
 
-**Con 2 TB el límite no es el espacio, es la subida.** Son 2,3 GB cada noche: a
+**El límite práctico no es el espacio, es la subida.** Son 2,3 GB cada noche: a
 20 Mbps de subida, unos 16 minutos; a 5 Mbps, cerca de una hora. Si eso llegara a
 estorbar, la salida no es recortar la retención sino **espaciar los fulls**: los
 incrementales cubren *cada hora*, así que un full semanal más los incrementales
@@ -82,92 +89,196 @@ anunciantes no se persisten desde ADR-0011 y la identidad de usuarios vive en
 Auth0.
 
 Aun así, **la clasificación de datos no dice nada sobre sacar «Interno» a un
-tercero**, y Google Drive es un tercero. En vez de interpretar el silencio, el
-esquema sube **cifrado en cliente** con un remoto `crypt` de rclone: Drive
-guarda nombres y contenidos que no puede leer. Así la pregunta deja de depender
-de cómo se lea la política.
+tercero**, y Backblaze es un tercero —como lo era Google Drive—. En vez de
+interpretar el silencio, el esquema sube **cifrado en cliente** con un remoto
+`crypt` de rclone: B2 guarda nombres y contenidos que no puede leer. Así la
+pregunta deja de depender de cómo se lea la política.
 
-Si el proyecto decide algún día que quiere respaldos legibles desde Drive, es
+Si el proyecto decide algún día que quiere respaldos legibles desde B2, es
 cambiar el remoto — pero entonces la decisión hay que escribirla en la
 clasificación de datos, no darla por hecha.
 
+## Inmutabilidad: una clave que no puede borrar
+
+El contenedor es el que más valor concentra —`pg_dump` sobre toda la base— y por
+eso es también la credencial que más vale robar. Con una clave que puede
+borrar, quien se haga con la máquina se lleva la base **y** el respaldo de una
+vez.
+
+Así que la clave de aplicación del contenedor tiene `listBuckets`, `listFiles`,
+`readFiles` y `writeFiles`, **y no `deleteFiles`**. La poda sigue funcionando
+porque en B2 un borrado de rclone (`hard_delete=false`, el valor por defecto) no
+borra: **oculta** el archivo con `b2_hide_file`, que solo pide `writeFiles`. Lo
+oculto lo borra de verdad la regla de lifecycle del bucket, **14 días después**.
+
+Lo que esto compra, dicho con precisión: no es que nadie pueda tocar el
+respaldo. Quien tenga la clave puede ocultarlo todo. Lo que **no** puede es
+hacerlo desaparecer antes de 14 días, y la verificación del domingo falla en
+cuanto falta el último full —con push a ntfy—. Los 14 días son dos domingos:
+margen para enterarse y recuperar.
+
+Dos consecuencias que hay que tener presentes:
+
+- **La retención del full es 76 días, no 90.** Un full podado vive otros 14
+  días oculto, y la clasificación de datos fija «snapshots crudos 90 días».
+  76 + 14 = 90. Si se cambia el lifecycle, se cambia `RETENCION_FULL_DIAS` con
+  él.
+- **La antigüedad se mide por el modtime que rclone guarda en el objeto**, no
+  por la fecha de subida. Por eso los fulls copiados desde Drive se podan por
+  su edad real y no viven 76 días más desde el día de la copia.
+
+Recuperar lo ocultado: la misma clave lee versiones viejas, así que se restaura
+**tal como estaba el bucket en una fecha**, sin tocar nada:
+
+```sh
+docker compose exec -e RCLONE_B2_VERSION_AT=2026-10-01 respaldo restaurar ves_market_prueba
+```
+
 ## Puesta en marcha
 
-Hace falta `rclone` autorizado contra tu Drive **una vez**. El consentimiento de
-Google abre el navegador, así que **ese paso lo tienes que hacer tú**.
+Destino: un bucket **privado** de Backblaze B2. B2 llega en octubre de 2026
+porque Drive falló **dos veces** por lo mismo, el token OAuth: `invalid_grant`
+del 2026-09-07 al 09-14 y otra vez desde el 2026-09-23. Once días sin
+respaldo la segunda. Una clave de aplicación de B2 no caduca ni depende de una
+pantalla de consentimiento (ver ADR-0027).
 
-**Hazlo en el host, no en un contenedor.** rclone escucha el callback del OAuth
-en `127.0.0.1:53682`; publicar ese puerto con `-p` no sirve, porque Docker
-reenvía a la IP del contenedor y no a su loopback. El consentimiento se
-completa, el redirect se pierde y rclone guarda el remoto **con el token
-vacío** — sin error visible. Se perdió una tarde así el 2026-08-31.
+### 1. El bucket, en la web de B2
 
-```powershell
-winget install Rclone.Rclone
-```
+- **Create a Bucket**: privado (`allPrivate`), sin Object Lock.
+- **Lifecycle Settings** → *Keep prior versions for this number of days* →
+  **14**. Es la regla que borra de verdad lo que la poda oculta (ver
+  *Inmutabilidad*). Sin ella, lo oculto se guarda —y se paga— para siempre.
 
-### 1. Antes de tocar rclone: la pantalla de consentimiento
+### 2. La clave, por la CLI y no por la web
 
-En Google Cloud Console, sobre el proyecto que tenga el cliente OAuth:
-
-- **Publica la app** (*Pantalla de consentimiento → Estado de publicación → Publicar*).
-  Dejarla en *Testing* parece funcionar y **caduca el refresh token a los 7 días**:
-  el respaldo correría una semana y luego fallaría solo. **Pasó**: autorizado el
-  2026-08-31, el último respaldo bueno fue el 2026-09-07 a las 21:00 y luego
-  hubo 160 fallos seguidos con `invalid_grant` antes de que alguien lo viera.
-  Publicar **no dispara
-  verificación de Google** porque el único scope es `drive.file`, que no es
-  sensible ni restringido.
-- Habilita la **Google Drive API** en ese proyecto.
-
-### 2. Los dos remotos, por comandos y no por asistente
-
-El asistente interactivo pregunta *«Edit advanced config?»* y ahí vive
-`service_account_file`. Contestar que sí y rellenarlo hace que rclone **ni
-intente el OAuth**: da por hecho que usas una cuenta de servicio. El remoto
-queda creado, sin token, y el fallo aparece mucho después. Con `config create`
-y `clave=valor` esa pregunta no existe:
+La web solo ofrece *Read and Write*, que **incluye `deleteFiles`**. Una clave
+sin borrado solo se crea por la CLI o la API:
 
 ```powershell
-$rc = "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\Rclone.Rclone_Microsoft.Winget.Source_8wekyb3d8bbwe\rclone-v1.75.0-windows-amd64\rclone.exe"
-
-# Drive. Único paso que abre el navegador.
-& $rc config create drive drive scope=drive.file client_id=TU_ID client_secret=TU_SECRET
-
-# Comprobar el token ANTES de seguir: si esto falla, el resto no tiene sentido.
-& $rc about drive:
-
-# El crypt encima. Sin navegador.
-$p = Read-Host "Password del crypt" -AsSecureString
-$plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($p))
-& $rc config create criterio-cifrado crypt remote=drive:criterio-respaldos filename_encryption=standard directory_name_encryption=true password=$plain --obscure
-$plain = $null
-
-& $rc listremotes   # tienen que salir DOS
+pip install b2
+b2 account authorize        # con la master key; pide los datos por teclado
+b2 key create --bucket TU_BUCKET respaldo-ves listBuckets,listFiles,readFiles,writeFiles
 ```
 
-`scope=drive.file` es deliberado: limita a rclone a los archivos que él mismo
-crea. Efecto lateral que no es un fallo: `rclone lsd drive:` sale vacío, porque
-no puede listar lo que no creó. Para ver los respaldos, `rclone lsl
-criterio-cifrado:full`.
+Saca el `keyID` y la `applicationKey`. La segunda **solo se muestra esa vez**:
+va directo al paso 3 y a tu gestor. La master key no va a ningún sitio de esta
+máquina.
 
-**La contraseña del `crypt` va a tu gestor.** Sin ella los respaldos son ruido
-irrecuperable, y no la tiene nadie más.
+### 3. El remoto `b2` en el volumen del contenedor
 
-### 3. Llevar el config al volumen del compose
+Interactivo y no con `config create ... key=...`: un argumento se ve en `ps`.
+El `rclone.conf` del volumen está cifrado y el contenedor ya tiene
+`RCLONE_CONFIG_PASS`, así que rclone lo abre y lo vuelve a guardar cifrado:
 
-El contenedor lee el config de un volumen con nombre, **`ves-market-watch_rclone_config`**
-(el `rclone_config` del compose, con el prefijo del proyecto). No es el mismo
-sitio donde `rclone` del host escribe:
-
-```powershell
-docker run -d --name rclone-copia -v ves-market-watch_rclone_config:/config/rclone alpine:3 sleep 120
-docker cp "$env:APPDATA\rclone\rclone.conf" rclone-copia:/config/rclone/rclone.conf
-docker exec rclone-copia chmod 600 /config/rclone/rclone.conf
-docker rm -f rclone-copia
+```sh
+docker compose exec -it respaldo rclone config
+#   n → nombre: b2 → tipo: b2 → account: <keyID> → key: <applicationKey>
+#   hard_delete: false (Enter) → Edit advanced config: n
 ```
 
-### 4. El `.env` de la raíz
+**Comprobar la clave antes de seguir**, las dos mitades:
+
+```sh
+docker compose exec respaldo sh -c '
+  echo prueba | rclone rcat b2:TU_BUCKET/prueba.txt &&
+  rclone deletefile b2:TU_BUCKET/prueba.txt &&
+  echo "OK: ocultar funciona"
+  echo prueba | rclone rcat b2:TU_BUCKET/prueba2.txt
+  rclone deletefile b2:TU_BUCKET/prueba2.txt --b2-hard-delete \
+    && echo "MAL: la clave PUEDE borrar" || echo "OK: la clave no puede borrar"'
+```
+
+Si sale `MAL`, la clave tiene `deleteFiles` y todo lo de *Inmutabilidad* es
+falso: se borra y se crea otra.
+
+### 4. El corte: apuntar el `crypt` a B2
+
+El remoto cifrado conserva **nombre y contraseñas**; solo cambia lo que tiene
+debajo. Por eso el `.env` no se toca (`RCLONE_REMOTE=criterio-cifrado:` sigue
+valiendo) y los nombres cifrados en B2 son idénticos a los de Drive, que es lo
+que permite copiar el histórico sin descifrarlo (paso 6):
+
+```sh
+docker compose exec respaldo rclone config update criterio-cifrado remote=b2:TU_BUCKET/criterio-respaldos
+docker compose --profile respaldo build respaldo
+docker compose --profile respaldo up -d --no-deps respaldo
+```
+
+El `--no-deps` no es cosmético: `up` sin él evalúa también `timescaledb`, y una
+recreación de ese contenedor es justo lo que borró la base el 2026-08-23.
+
+### 5. Comprobar con un respaldo y una restauración de verdad
+
+```sh
+docker compose exec respaldo respaldar incremental
+docker compose exec respaldo respaldar full        # ~12 min + la subida
+docker compose exec respaldo verificar             # ~18 min
+docker compose exec respaldo estado
+```
+
+Hasta que `verificar` no salga en `OK`, el corte no está hecho.
+
+### 6. El histórico de Drive: copiar los blobs cifrados
+
+Se copian **sin descifrar**: de `drive:criterio-respaldos` a
+`b2:TU_BUCKET/criterio-respaldos`, ciphertext a ciphertext. Va **en el host**,
+que es donde se puede reautorizar Drive —el OAuth necesita el navegador, y
+`127.0.0.1:53682` no se publica desde un contenedor: se perdió una tarde así el
+2026-08-31—.
+
+1. Reautorizar Drive en el host: `rclone config reconnect drive:` y luego
+   `rclone about drive:`. Si el token vuelve a caducar en días, es que la app
+   OAuth volvió a *Testing*: hay que publicarla (*Pantalla de consentimiento →
+   Publicar*); con el scope `drive.file` no dispara verificación de Google.
+2. Crear el mismo remoto `b2` en el host, también con `rclone config`
+   interactivo.
+3. Copiar, primero en seco:
+
+   ```powershell
+   rclone copy drive:criterio-respaldos b2:TU_BUCKET/criterio-respaldos --dry-run
+   rclone copy drive:criterio-respaldos b2:TU_BUCKET/criterio-respaldos --transfers 4 --progress
+   rclone check drive:criterio-respaldos b2:TU_BUCKET/criterio-respaldos --one-way
+   ```
+
+   `check` compara tamaños: Drive da MD5 y B2 SHA-1, no hay hash común. La
+   prueba de contenido es el paso siguiente.
+4. Desde el contenedor, ver el histórico **descifrado** y con sus fechas:
+   `docker compose exec respaldo rclone lsl criterio-cifrado:full`. Que salgan
+   los nombres en claro es la prueba de que la contraseña del `crypt` casa. Y
+   para restaurar uno de los copiados, no solo el último:
+   `docker compose exec respaldo restaurar ves_market_prueba ves_market-<sello>.dump`.
+
+La copia nunca borra nada en B2 —la clave no puede— y en Drive solo lee.
+
+### 7. Retirar Drive
+
+Cuando el paso 6 esté verificado: borrar `criterio-respaldos` de Drive, quitar
+el remoto (`rclone config delete drive`, en el host y en el contenedor) y
+revocar el acceso de la app en la cuenta de Google. Hasta entonces Drive es una
+segunda copia del histórico, no un destino: nadie escribe ahí.
+
+**La contraseña del `crypt` sigue en tu gestor, y sigue siendo la única llave**:
+B2 tampoco puede leer lo que guarda.
+
+### Desde cero, sin histórico que traer
+
+Pasos 1 a 3 igual. En vez del 4, el `crypt` se crea en vez de actualizarse, otra
+vez interactivo para que la contraseña no pase por `ps`:
+
+```sh
+docker compose exec -it respaldo rclone config
+#   n → nombre: criterio-cifrado → tipo: crypt
+#   remote: b2:TU_BUCKET/criterio-respaldos
+#   filename_encryption: standard → directory_name_encryption: true
+#   password: y (la tecleas) → password2: g (genera la sal) → guárdala también
+```
+
+**Las dos contraseñas van a tu gestor.** Sin ellas los respaldos son ruido
+irrecuperable, y no las tiene nadie más. Y el `rclone.conf` se cifra con
+`rclone config` → `s` (*Set configuration password*), que es la que va a
+`RCLONE_CONFIG_PASS`.
+
+### El `.env` de la raíz
 
 ```
 RCLONE_REMOTE=criterio-cifrado:
@@ -183,16 +294,6 @@ nada de `ves-respaldo`.
 de rclone, que es lo recomendable. El cron corre desatendido: sin esta variable,
 cada ejecución se quedaría esperando una contraseña que nadie va a teclear. Ver
 el comentario del servicio en el compose sobre qué protege y qué no.
-
-### 5. A correr
-
-```sh
-docker compose --profile respaldo up -d --no-deps respaldo
-docker compose exec respaldo respaldar incremental   # comprobar de entrada
-```
-
-El `--no-deps` no es cosmético: `up` sin él evalúa también `timescaledb`, y una
-recreación de ese contenedor es justo lo que borró la base el 2026-08-23.
 
 ## Operación
 
@@ -244,8 +345,9 @@ docker compose exec respaldo aviso ok prueba   # manda el «vuelve a funcionar»
 
 - **No es PITR.** Un fallo a las 10:59 pierde hasta 59 minutos. La reposición
   continua de PostgreSQL exige archivado de WAL, y eso quiere un destino que
-  hable S3/GCS; Drive no lo hace. Si esa hora llega a importar, el paso
-  siguiente es `pgBackRest` contra almacenamiento de objetos, no ajustar esto.
+  hable S3. Drive no lo hablaba; **B2 sí**, por su endpoint compatible. Si esa
+  hora llega a importar, el paso siguiente es `pgBackRest` contra ese endpoint,
+  no ajustar esto. Quedó fuera de la migración a propósito (ADR-0027).
 - **No captura borrados** entre horas. Los incrementales son filas nuevas por
   ventana; una fila borrada sigue apareciendo hasta el siguiente full. Para
   estas tablas —series temporales que solo crecen— es correcto, y por eso

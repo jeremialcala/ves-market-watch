@@ -17,6 +17,29 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Changed
+
+- **El respaldo pasa de Google Drive a Backblaze B2 (ADR-0027).** El token OAuth
+  de Drive volvió a caducar (`invalid_grant`) el **2026-09-23**, y no hubo
+  respaldo en **11 días**, hasta el 2026-10-04. Esta vez ntfy avisó desde la
+  primera hora, pero reparar el token pide un navegador y una persona. Una clave
+  de aplicación de B2 no caduca.
+  - Mismo remoto `crypt`, repuntado con `rclone config update`: scripts,
+    cadencias, verificación y `.env` no cambian. El histórico de Drive se copia
+    cifrado, sin descifrar.
+  - `RETENCION_FULL_DIAS` pasa de 90 a **76**: en B2 lo podado queda oculto
+    otros 14 días, y 76 + 14 = los 90 de la clasificación de datos.
+  - `scripts/respaldo/README.md` reescribe la puesta en marcha para B2 y
+    documenta la copia del histórico y la retirada de Drive.
+
+### Security
+
+- **La credencial del contenedor de respaldo ya no puede destruir el
+  respaldo.** La clave de B2 no tiene `deleteFiles`: la poda oculta
+  (`b2_hide_file`) y una regla de lifecycle borra a los 14 días. Quien robe la
+  máquina puede ocultarlo todo, no hacerlo desaparecer; la verificación del
+  domingo lo detecta, y lo oculto se restaura con `RCLONE_B2_VERSION_AT`.
+
 ## [0.5.1] - 2026-09-21
 
 Versión de mantenimiento: **ningún cambio en el producto**. Lo que trae es que

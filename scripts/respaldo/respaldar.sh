@@ -1,9 +1,9 @@
 #!/bin/sh
 #
-# Respaldo de `ves_market` a Google Drive: incremental cada hora, full cada 24 h.
+# Respaldo de `ves_market` a Backblaze B2: incremental cada hora, full cada 24 h.
 #
-#   respaldar incremental   ventana de una hora, ~2,5 MB
-#   respaldar full          pg_dump completo, ~326 MB
+#   respaldar incremental   ventana de una hora, ~2,9 MB
+#   respaldar full          pg_dump completo, ~2,3 GB
 #   respaldar agregados     todo MENOS los snapshots crudos, para retención larga
 #
 # ---------------------------------------------------------------------------
@@ -92,6 +92,14 @@ subir() {
   log "subido $carpeta/$(basename "$archivo") ($bytes bytes)"
 }
 
+# En B2 esto NO borra: oculta. La clave del contenedor no tiene `deleteFiles`
+# —quien se haga con la máquina no puede vaciar el bucket— y rclone, con
+# `hard_delete=false`, convierte el borrado en un `b2_hide_file`, que solo pide
+# `writeFiles`. Lo oculto lo borra de verdad la regla de lifecycle del bucket
+# a los N días (README, «Inmutabilidad»): ese margen es la ventana para
+# recuperar lo que alguien ocultó a mala fe. La antigüedad sale del modtime que
+# rclone guarda en el objeto, no de la fecha de subida, así que los respaldos
+# copiados desde Drive se podan por su edad real.
 podar() {
   carpeta="$1"
   dias="$2"
@@ -158,13 +166,17 @@ case "$MODO" in
     ETIQUETA="$(date -u '+%Y-%m-%dT%H%M')"
     ARCHIVO="$TRABAJO/ves_market-$ETIQUETA.dump"
     # `-Fc` (custom) y no SQL plano: permite restaurar tablas sueltas y ya viene
-    # comprimido. 326 MB medidos sobre la base real.
+    # comprimido. 2,3 GB medidos sobre la base real (2026-08-24).
     pg_dump -Fc -Z6 --no-tablespaces -f "$ARCHIVO"
     subir "$ARCHIVO" full
     # 90 días y no más: la clasificación de datos fija «snapshots crudos 90
     # días», y un full los lleva dentro. Guardar fulls un año sería guardar los
     # crudos un año.
-    podar full "${RETENCION_FULL_DIAS:-90}"
+    #
+    # Y por eso 76 y no 90: en B2 lo podado queda OCULTO otros 14 días antes
+    # de que el lifecycle lo borre (ver `podar`). 76 + 14 = 90. Si se cambia el
+    # lifecycle del bucket, se cambia esto con él.
+    podar full "${RETENCION_FULL_DIAS:-76}"
     ;;
 
   agregados)
