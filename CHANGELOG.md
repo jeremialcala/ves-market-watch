@@ -17,6 +17,15 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Fixed
+
+- **El estado del respaldo sobrevive a una recreación del contenedor.**
+  `/var/lib/respaldo` —último bueno, último fallo y fallo ya avisado, que leen
+  el healthcheck y `aviso`— vivía en la capa del contenedor. El 2026-10-04 una
+  recreación para desplegar un arreglo borró el `.avisado` del incremental: el
+  «vuelve a funcionar» no salió y el último push decía que seguía fallando. El
+  healthcheck, además, olvidó el full de esa tarde. Ahora es el volumen con
+  nombre `respaldo_estado`.
 ### Changed
 
 - **El respaldo pasa de Google Drive a Backblaze B2 (ADR-0027).** El token OAuth
