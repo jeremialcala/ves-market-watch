@@ -29,6 +29,9 @@ Convención de mantenimiento (inventario por ejecución):
     cifrado, sin descifrar.
   - `RETENCION_FULL_DIAS` pasa de 90 a **76**: en B2 lo podado queda oculto
     otros 14 días, y 76 + 14 = los 90 de la clasificación de datos.
+  - **rclone sale de la imagen oficial 1.75.0, por digest, y no del `apk`.**
+    El de Alpine 3.22 (1.69.3) autoriza contra B2 con la API v1, que B2 ya
+    rechaza (`400 bad_request`); con la misma clave, la 1.75.0 entra.
   - `scripts/respaldo/README.md` reescribe la puesta en marcha para B2 y
     documenta la copia del histórico y la retirada de Drive.
 
