@@ -158,11 +158,16 @@ sin borrado solo se crea por la CLI o la API:
 pip install b2
 b2 account authorize        # con la master key; pide los datos por teclado
 b2 key create --bucket TU_BUCKET respaldo-ves listBuckets,listFiles,readFiles,writeFiles
+b2 account clear            # borra la master key que authorize dejó en disco
 ```
 
 Saca el `keyID` y la `applicationKey`. La segunda **solo se muestra esa vez**:
-va directo al paso 3 y a tu gestor. La master key no va a ningún sitio de esta
-máquina.
+va directo al paso 3 y a tu gestor.
+
+**El `b2 account clear` no es opcional.** `authorize` guarda la master key en
+`~/.b2_account_info` y ahí se queda: sin el `clear`, la credencial que sí puede
+borrar el bucket acaba viviendo en la misma máquina que la que no puede, y la
+*Inmutabilidad* de arriba deja de proteger nada.
 
 ### 3. El remoto `b2` en el volumen del contenedor
 
