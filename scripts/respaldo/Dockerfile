@@ -19,11 +19,20 @@ FROM alpine:3.22@sha256:7c8cb692ae09657cbc4a3f3cbd0e8d5a2690ba38386aaaf252dbb060
 # que el servidor no restaura.
 RUN apk add --no-cache \
       postgresql16-client \
-      rclone \
       tzdata \
       gzip \
       tar \
       coreutils
+
+# rclone NO sale del `apk`: el de Alpine 3.22 es la 1.69.3, que autoriza contra
+# B2 con la API v1, y B2 ya la rechaza —«This request is not currently
+# supported on API version number 1 (400 bad_request)»—. Se comprobó el
+# 2026-10-04 con la misma clave: la 1.69.3 falla y la 1.75.0 entra. El binario
+# oficial es Go estático, así que funciona tal cual sobre Alpine. Mismo criterio
+# de T8 que la base: por digest. Para actualizarlo:
+#   docker buildx imagetools inspect rclone/rclone:<versión>
+COPY --from=rclone/rclone:1.75.0@sha256:b06aed988cf5967de7c25be5925240983981c757f4ed1ac9d2fa659d51d60548 \
+     /usr/local/bin/rclone /usr/local/bin/rclone
 
 ENV TZ=America/Caracas
 
