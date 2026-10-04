@@ -327,6 +327,15 @@ services:
       # y persiste. Contiene credenciales, así que es un volumen con nombre y no
       # un bind al repositorio.
       - rclone_config:/config/rclone
+      # El estado de los trabajos —último bueno, último fallo, fallo ya avisado—
+      # que leen `estado` (el healthcheck) y `aviso`. Antes vivía en la capa del
+      # contenedor y cada recreación lo borraba. El 2026-10-04 eso costó un
+      # aviso: se recreó el contenedor para desplegar un arreglo, se perdió el
+      # `.avisado` del incremental y el «vuelve a funcionar» no salió; el último
+      # push que llegó decía que fallaba algo que ya funcionaba. Y el
+      # healthcheck quedó ciego: no sabía del full de esa tarde, así que un
+      # fallo del siguiente no se habría visto hasta pasado el umbral de 28 h.
+      - respaldo_estado:/var/lib/respaldo
     depends_on:
       timescaledb:
         condition: service_healthy
@@ -337,3 +346,4 @@ volumes:
   # volumen anónimo y una recreación de contenedores se los llevó.
   ves_market_datos:
   rclone_config:
+  respaldo_estado:
