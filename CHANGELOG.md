@@ -17,15 +17,6 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
-### Fixed
-
-- **El estado del respaldo sobrevive a una recreación del contenedor.**
-  `/var/lib/respaldo` —último bueno, último fallo y fallo ya avisado, que leen
-  el healthcheck y `aviso`— vivía en la capa del contenedor. El 2026-10-04 una
-  recreación para desplegar un arreglo borró el `.avisado` del incremental: el
-  «vuelve a funcionar» no salió y el último push decía que seguía fallando. El
-  healthcheck, además, olvidó el full de esa tarde. Ahora es el volumen con
-  nombre `respaldo_estado`.
 ### Changed
 
 - **El respaldo pasa de Google Drive a Backblaze B2 (ADR-0027).** El token OAuth
@@ -34,8 +25,8 @@ Convención de mantenimiento (inventario por ejecución):
   primera hora, pero reparar el token pide un navegador y una persona. Una clave
   de aplicación de B2 no caduca.
   - Mismo remoto `crypt`, repuntado con `rclone config update`: scripts,
-    cadencias, verificación y `.env` no cambian. El histórico de Drive se copia
-    cifrado, sin descifrar.
+    cadencias, verificación y `.env` no cambian. El histórico de Drive se puede
+    copiar cifrado, sin descifrar (pendiente: pide reautorizar Drive).
   - `RETENCION_FULL_DIAS` pasa de 90 a **76**: en B2 lo podado queda oculto
     otros 14 días, y 76 + 14 = los 90 de la clasificación de datos.
   - **rclone sale de la imagen oficial 1.75.0, por digest, y no del `apk`.**
@@ -50,6 +41,26 @@ Convención de mantenimiento (inventario por ejecución):
   - `scripts/respaldo/README.md` reescribe la puesta en marcha para B2 y
     documenta la copia del histórico y la retirada de Drive.
 
+### Fixed
+
+- **El estado del respaldo sobrevive a una recreación del contenedor.**
+  `/var/lib/respaldo` —último bueno, último fallo y fallo ya avisado, que leen
+  el healthcheck y `aviso`— vivía en la capa del contenedor. El 2026-10-04 una
+  recreación para desplegar un arreglo borró el `.avisado` del incremental: el
+  «vuelve a funcionar» no salió y el último push decía que seguía fallando. El
+  healthcheck, además, olvidó el full de esa tarde. Ahora es el volumen con
+  nombre `respaldo_estado`.
+- **La documentación del respaldo, con las cifras del día del corte.** README,
+  ADR-0027 y `respaldar.sh` describían la base de agosto: full de 2,3 GB, unos
+  208 GB en régimen y 18 min de verificación. El 2026-10-04 el full pesó
+  **4,9 GB** —la base se duplicó en seis semanas—, el régimen pasa a unos
+  **440 GB** y la verificación tarda ~28 min.
+- **Dos afirmaciones falsas sobre el `apk` de la caja de respaldo**, en su
+  Dockerfile y en la fila T8 del threat model: decían que el digest de la base
+  congela el índice de paquetes. No lo congela —un rebuild del 2026-10-04 pasó
+  `pg_dump` de 16.14 a 16.15—. T8 cuenta además la imagen de rclone fijada por
+  digest.
+
 ### Security
 
 - **La credencial del contenedor de respaldo ya no puede destruir el
@@ -57,8 +68,6 @@ Convención de mantenimiento (inventario por ejecución):
   (`b2_hide_file`) y una regla de lifecycle borra a los 14 días. Quien robe la
   máquina puede ocultarlo todo, no hacerlo desaparecer; la verificación del
   domingo lo detecta, y lo oculto se restaura con `RCLONE_B2_VERSION_AT`.
-### Security
-
 - **`T8 · SCA` vuelve a verde: `pyjwt` 2.15.1, `undici` 8.11.2 y
   `brace-expansion` 2.1.7.** Aparecieron advisories nuevos sin que los tocara
   ningún commit, y los dos jobs se pusieron rojos en los PR del 2026-10-04.

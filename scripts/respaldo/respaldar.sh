@@ -2,8 +2,8 @@
 #
 # Respaldo de `ves_market` a Backblaze B2: incremental cada hora, full cada 24 h.
 #
-#   respaldar incremental   ventana de una hora, ~2,9 MB
-#   respaldar full          pg_dump completo, ~2,3 GB
+#   respaldar incremental   ventana de una hora, ~3,2 MB (2026-10-04)
+#   respaldar full          pg_dump completo, ~4,9 GB (2026-10-04)
 #   respaldar agregados     todo MENOS los snapshots crudos, para retención larga
 #
 # ---------------------------------------------------------------------------
@@ -173,7 +173,8 @@ case "$MODO" in
     ETIQUETA="$(date -u '+%Y-%m-%dT%H%M')"
     ARCHIVO="$TRABAJO/ves_market-$ETIQUETA.dump"
     # `-Fc` (custom) y no SQL plano: permite restaurar tablas sueltas y ya viene
-    # comprimido. 2,3 GB medidos sobre la base real (2026-08-24).
+    # comprimido. 2,3 GB medidos sobre la base real el 2026-08-24, 4,9 GB el
+    # 2026-10-04.
     pg_dump -Fc -Z6 --no-tablespaces -f "$ARCHIVO"
     subir "$ARCHIVO" full
     # 90 días y no más: la clasificación de datos fija «snapshots crudos 90

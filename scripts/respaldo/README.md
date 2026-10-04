@@ -17,15 +17,19 @@ Medido **ejecutando el respaldo**, no estimado:
 
 | Pieza | Cadencia | Tamaño | Duración | Retención |
 |---|---|---|---|---|
-| `incremental/<hora>.tar.gz` | cada hora | **2,9 MB** | segundos | 14 días |
-| `full/ves_market-<sello>.dump` | cada 24 h (03:30 VET) | **2,3 GB** | **~12 min** | **76 + 14 días** |
+| `incremental/<hora>.tar.gz` | cada hora | **3,2 MB** | segundos | 14 + 14 días |
+| `full/ves_market-<sello>.dump` | cada 24 h (03:30 VET) | **4,9 GB** | **~27 min** con la subida | **76 + 14 días** |
 | `agregados/<mes>.dump` | cada mes | *sin medir* | — | 24 meses |
 
-Régimen estable: **unos 208 GB** —207 de fulls, contando los 14 días que pasa
-oculto cada full podado (ver *Inmutabilidad*), y algo menos de 1 de
+Cifras del **2026-10-04**, el primer día en B2. En agosto el full pesaba 2,3 GB:
+**la base se duplicó en seis semanas**, así que estas cifras caducan rápido —se
+releen del log de `respaldar`, que imprime los bytes subidos—.
+
+Régimen estable: **unos 440 GB** —4,9 GB por 90 días de fulls, contando los 14
+que pasa oculto cada full podado (ver *Inmutabilidad*), y unos 2 de
 incrementales—. En B2 se paga por GB almacenado, y la descarga es gratis hasta
 el triple de lo almacenado al mes según la política de B2 al escribir esto: la
-verificación semanal baja 2,3 GB.
+verificación semanal baja el full entero, 4,9 GB.
 
 El incremental es diminuto porque casi todo el volumen son los snapshots crudos
 —4.631 MB de 5.126— y en una hora solo entran 64.
@@ -47,25 +51,27 @@ El incremental es diminuto porque casi todo el volumen son los snapshots crudos
 > son **207**. La cadencia se mantuvo porque Drive tenía 2 TB, pero la
 > decisión se tomó con el número correcto.
 
-**La verificación semanal tarda ~18 min** y crea una base desechable de unos
-5 GB en el mismo servidor, que borra al terminar. No es gratis: si el domingo a
-las 05:00 hubiera algo más corriendo, se notaría. Medido de punta a punta el
-2026-08-24, con este resultado:
+**La verificación semanal tarda ~28 min** y crea una base desechable del tamaño
+de la real en el mismo servidor, que borra al terminar. No es gratis: si el
+domingo a las 05:00 hubiera algo más corriendo, se notaría. Medido de punta a
+punta el 2026-10-04, ya contra B2, con este resultado:
 
 ```
 timescaledb_post_restore → t
-indicators=1038498  official_rates=41214  p2p_snapshots_raw=107040
-chunks registrados=402
+indicators=2277951  official_rates=50484  p2p_snapshots_raw=210600  indicator_analysis=160666
+chunks registrados=431
 antigüedad del dato más nuevo: 0 días
 OK: el respaldo restaura y contiene lo que dice
 ```
 
-Los **402 chunks registrados** son el dato que de verdad cierra el círculo: es lo
+(El 2026-08-24, contra Drive: ~18 min y 402 chunks.)
+
+Los **431 chunks registrados** son el dato que de verdad cierra el círculo: es lo
 que distingue una restauración buena de una hecha sin `timescaledb_pre_restore()`,
 donde las filas se cuentan igual y las hipertablas quedan descolgadas.
 
-**El límite práctico no es el espacio, es la subida.** Son 2,3 GB cada noche: a
-20 Mbps de subida, unos 16 minutos; a 5 Mbps, cerca de una hora. Si eso llegara a
+**El límite práctico no es el espacio, es la subida.** Son 4,9 GB cada noche: a
+20 Mbps de subida, unos 33 minutos; a 5 Mbps, más de dos horas. Si eso llegara a
 estorbar, la salida no es recortar la retención sino **espaciar los fulls**: los
 incrementales cubren *cada hora*, así que un full semanal más los incrementales
 posteriores ya es una cadena de recuperación completa. Los fulls diarios solo
@@ -224,8 +230,8 @@ recreación de ese contenedor es justo lo que borró la base el 2026-08-23.
 
 ```sh
 docker compose exec respaldo respaldar incremental
-docker compose exec respaldo respaldar full        # ~12 min + la subida
-docker compose exec respaldo verificar             # ~18 min
+docker compose exec respaldo respaldar full        # ~27 min con la subida
+docker compose exec respaldo verificar             # ~28 min
 docker compose exec respaldo estado
 ```
 
@@ -346,6 +352,11 @@ sabe que algo va mal. Desde entonces un fallo se **empuja**:
   intento de cualquier trabajo falló, si no hay un incremental bueno en 2 h 30
   min, o si el último full bueno pasa de 28 h. Se ve en `docker compose ps` y
   no depende de la red ni de ntfy.
+
+Los dos leen el mismo estado —último bueno, último fallo, fallo ya avisado— de
+`/var/lib/respaldo`, que es el volumen con nombre `respaldo_estado`. Hasta el
+2026-10-04 vivía en la capa del contenedor, y recrearlo para desplegar un
+arreglo se llevó un «vuelve a funcionar» y la memoria del último full.
 
 Probar el aviso sin romper nada:
 

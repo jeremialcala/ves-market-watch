@@ -77,8 +77,14 @@ El destino pasa a ser un bucket privado de **Backblaze B2**, por el backend
 - **Positivas:** una clave de aplicación no caduca ni depende de una pantalla
   de consentimiento. Quien robe la credencial del contenedor no puede destruir
   el respaldo antes de 14 días. Se abre la puerta a PITR.
-- **Negativas / deuda asumida:** el respaldo pasa a tener coste por GB (unos
-  208 GB en régimen). Un full podado sigue existiendo 14 días, oculto: la
+- **Negativas / deuda asumida:** el respaldo pasa a tener coste por GB: unos
+  **440 GB** en régimen con el full de 4,9 GB medido el día del corte —se
+  escribió 208 con la cifra de agosto, y la base se había duplicado—.
+  B2 exige **rclone ≥ 1.75** en la práctica: el 1.69.3 de Alpine autoriza con
+  la API v1, que B2 ya rechaza, así que rclone va por digest desde su imagen
+  oficial y no del `apk`. Los topes diarios de la cuenta (*Caps & Alerts*)
+  pasan a ser configuración del respaldo: la primera verificación agotó el de
+  descarga. Un full podado sigue existiendo 14 días, oculto: la
   clasificación se cumple por la suma 76 + 14, y **si alguien toca el lifecycle
   sin tocar `RETENCION_FULL_DIAS`, deja de cumplirse sin aviso**. La clave sin
   borrado no impide ocultarlo todo: la protección es la ventana, no la
