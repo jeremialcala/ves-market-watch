@@ -35,8 +35,11 @@ El propio chat del diseño lo marca, y la revisión del repo añade lo demás:
   `apps/api-gateway/docs/openapi.yaml`.
 - **Estado**: disponibilidades e incidentes de ejemplo. No hay nada que los mida.
 - **Alta por email**: simulada. Falta todo el flujo.
-- **Tasa BCV en cinco monedas** (USD, EUR, CNY, TRY, RUB): **el ingestor solo
-  captura USD** (`ingestor-bcv/adapters/bcv/parser.py`).
+- ~~**Tasa BCV en cinco monedas**: el ingestor solo captura USD.~~ **Falso,
+  corregido el 2026-10-04.** El parser descubre las monedas dinámicamente
+  (`ingestor-bcv/adapters/bcv/parser.py`), y `official_rates` tiene USD, EUR,
+  CNY, TRY y RUB al día. Se leyó solo el ejemplo del docstring del parser, no la
+  base. El diseño acertaba.
 - **«Alertas por API»** y **«Vigilar esta regla»**: no existen alertas de
   usuario. ADR-0021 las dejó fuera de alcance y el botón del SPA está
   deshabilitado a propósito.
@@ -101,7 +104,7 @@ Es la página más grande y la que más se parece a lo que ya existe.
 | Mapa de calor 14 d × 24 h | `indicators/history?interval=1h` | componente nuevo |
 | Referencia P2P buy/sell | `rates/p2p/current?side=` | — |
 | Calidad y procedencia | `indicators` metadata, `official_stale` | quitar «Cuota API» o darle sentido |
-| **Tasa oficial en 5 monedas** | solo USD | **ingesta de EUR, CNY, TRY, RUB** en `ingestor-bcv` + `currency` en la API |
+| Tasa oficial en 5 monedas | **las cinco ya se capturan** (USD, EUR, CNY, TRY, RUB) y `/rates/official/current` acepta `currency` | que el snapshot las incluya |
 | Cronología de señales 30 d | `/signals` | agrupar por regla y «efecto» (ya en `historialReglas.ts`) |
 | Profundidad P2P | `/market/depth`; `DepthChart` | — |
 | Barra superior «WSS conectado · último evento» | `StreamClient`, `ConnectionStatus` | canal **público** de push (D2) |
@@ -111,8 +114,7 @@ Es la página más grande y la que más se parece a lo que ya existe.
 
 - Lectura anónima de todo lo anterior (D1), sin abrir `/api/v1` a cualquiera.
 - Push anónimo para el «en vivo» (D2).
-- Ingesta de las cuatro monedas que faltan. Es la única pieza de **datos**
-  nuevos del Dashboard.
+- Ningún dato nuevo: las cinco monedas de la tasa oficial ya se capturan.
 
 ### 3. Intradía (nivel Comunidad)
 
@@ -396,7 +398,7 @@ Cada fase se puede desplegar sola y deja algo que funciona.
 | **3. Páginas sin datos propios** | Producto completa, Precios, APIs (catálogo generado de los YAML y playground con CORS) | CORS, URL | ✔ | M |
 | **4. En vivo** | sondeo del snapshot (D2): visibilidad, retroceso ante 429, barra «actualizado hace N s»; *Cache Rule* de Cloudflare para `/portal/v1` | — | ✔ | S |
 | **5. Acceso Comunidad** | spike (Turnstile: Auth0 o endpoint propio; enlace o código); Auth0 Passwordless + Resend con SPF/DKIM/DMARC + Turnstile en servidor; rol `comunidad` y Action versionada; Intradía e Histórico detrás del acceso; aviso de privacidad | ✔ | ✔ | L |
-| **6. Monedas BCV** | EUR, CNY, TRY, RUB en `ingestor-bcv`; `currency` en la API y el snapshot | ✔ | ✔ | M |
+| ~~**6. Monedas BCV**~~ | **Eliminada el 2026-10-04:** las cinco monedas ya se capturan. Lo único que queda, incluirlas en el snapshot, entra en la fase 2 | — | — | — |
 | **7. Estado** | `apps/estado` (sondeo por minuto, esquema `estado`, agregado diario, `/estado/v1` fuera del gateway), incidentes en YAML validados en CI, sondeo externo con aviso por ntfy; página | ✔ | ✔ | L |
 | **8. Empresa** | cuota por claim (`rate_limit_per_min`) y *Action* de credentials exchange versionada; medición de uso por cliente; guía de alta para el cliente (reutilizar el token 24 h); URL de producción en el openapi; verificar el límite M2M del tenant | ✔ | — | M |
 | **8b. Backoffice** | `apps/backoffice` + `apps/backoffice-api` tras Cloudflare Access + rol `admin` con MFA (D9); esquema `backoffice` (D10); clientes, pagos, habilitación M2M y auditoría; cupo por mes calendario con avisos al 80/85/90/95 %, alerta «fuera de fecha» y **corte en la emisión** al 100 % (cuota nativa de Auth0 o Action con *fail-open*), conciliación horaria con los logs de Auth0 (D11, ADR-0033) | ✔ | ✔ | L |
@@ -404,8 +406,8 @@ Cada fase se puede desplegar sola y deja algo que funciona.
 
 Orden razonable: 0 → 1 → 2 → 3 da un portal público útil sin tocar la
 autenticación. La fase 5 es la de más riesgo (emails, abuso, privacidad) y no
-debería mezclarse con nada más. La 6 y la 7 son independientes y pueden ir en
-paralelo con la 5. La **8 y la 8b van juntas antes del primer cliente
+debería mezclarse con nada más. La 7 es independiente y puede ir en paralelo
+con la 5. La **8 y la 8b van juntas antes del primer cliente
 Empresa**: sin medición ni backoffice, el alta manual se hace en la consola de
 Auth0 y nadie ve el consumo del cupo de 34 tokens.
 
@@ -415,7 +417,7 @@ Auth0 y nadie ve el consumo del cupo de 34 tokens.
   riesgo de negocio principal del diseño.
 - **Abuso del alta por email**: listas, enumeración, envíos masivos a terceros
   con nuestro dominio. Turnstile y límites desde el primer día.
-- **Promesas del portal que el backend no cumple**: cinco monedas, alertas,
+- **Promesas del portal que el backend no cumple**: alertas y
   disponibilidades. Lo que no exista al publicar se quita del diseño; no se pinta
   con datos de ejemplo.
 - **Retención**: la ventana de 90 días del portal coincide con la retención de
@@ -437,7 +439,7 @@ hay que llevarle estos cambios, para no construir lo que ya se decidió quitar:
 | Intradía, Histórico | «te enviamos un enlace» | pendiente del spike: enlace o código | ADR-0029 §5 |
 | Intradía | botón «Vigilar esta regla» | quitarlo | D6 |
 | Dashboard y **landing** (panel «Calidad y procedencia») | «Cuota API (ventana) 116 / 120» | quitar la fila | un visitante anónimo no tiene cuota que mostrar; en la landing es la primera promesa («Procedencia») y enseña un dato que no es suyo |
-| Dashboard y landing (tasa oficial) | cinco monedas | solo las que capture `ingestor-bcv` al publicar | hoy solo USD (fase 6) |
+| ~~Dashboard y landing (tasa oficial)~~ | ~~cinco monedas~~ | **revertida el 2026-10-04: el diseño debe volver a las cinco** | la corrección partía de un dato falso (ver «Lo que el diseño inventó») |
 | Precios | «REST /api/v1 completo: 9 endpoints» | «8 endpoints de datos» | `/health` es público |
 | Estado | latencia «p50 de la API» | «latencia de /health» | ADR-0032 §1 |
 | Estado | barras de 60 días todas pintadas | con el estado «sin datos» en gris | ADR-0032 §2 |
@@ -497,3 +499,11 @@ decisiones.**
   reglas salen como «hipótesis», correcto con menos de 6 casos.
 
 No queda ninguna corrección pendiente en el diseño.
+
+**Cuarta revisión (2026-10-05): las cinco monedas, de vuelta en el diseño.**
+El Dashboard vuelve a mostrar USD, EUR, CNY, TRY y RUB. USD coincide al
+decimal con la base (871,3689, fecha-valor 2026-10-05). Las otras cuatro son
+cifras de ejemplo cercanas a las reales: EUR 1.002,17 frente a 981,18, TRY
+18,34 frente a 17,73, RUB 11,00 frente a 10,40, CNY 129,08 frente a 129,98.
+En producción el portal pinta el dato en vivo, así que no hace falta
+corregirlas.
