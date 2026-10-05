@@ -463,7 +463,7 @@ diseño:
 - **Vista Acceso:** el diseño quitó por su cuenta la casilla con la key de
   ejemplo. Es coherente con el acceso Comunidad.
 
-Quedan **tres correcciones nuevas**:
+Quedan **cuatro correcciones nuevas**:
 
 | Dónde | El diseño dice | Debe decir | Por qué |
 |---|---|---|---|
