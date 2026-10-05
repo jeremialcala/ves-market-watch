@@ -143,7 +143,7 @@ comando.
 | Sistema | Ubuntu 24.04.5, kernel 6.8, Docker 29.8 |
 | CPU | **Intel Core i3-3240** (2012), 2 núcleos y 4 hilos a 3,4 GHz |
 | Memoria | **7,5 GiB** (2,0 en uso por otras cargas, 5,5 disponibles) y 4 GiB de swap |
-| Disco | **un HDD mecánico de portátil de 500 GB** (`ST500LT012`), 408 GB libres. Sin `smartctl` instalado: su salud no está verificada |
+| Disco | **un HDD mecánico de portátil de 500 GB** (`ST500LT012`, 5400 rpm), 408 GB libres. **Fallando según SMART** (ver abajo) |
 | Comparte con | Bragi (Jellyfin, 1,1 GiB), el stack de monitoreo Yggdrasil (Prometheus, Grafana, Alertmanager, Node-RED, Mosquitto), Transmission, túneles |
 | **Ya corre** | **un despliegue parcial de Criterio del 2026-09-07** en `/srv/infra/ves-market`: TimescaleDB con 102 MiB, prácticamente vacía; RabbitMQ; y el gateway `sha-d12a351`. Sin ingestores ni motor |
 
@@ -182,6 +182,32 @@ medirla allí, sin dar por buenos los 28 minutos de desarrollo.
   (`unless-stopped`), así que puede haber unos segundos en los que un ingestor
   escriba con fecha de julio, o el gateway rechace tokens por `exp`.
 
+### Salud del disco (SMART, 2026-10-05, tras instalar smartmontools)
+
+El veredicto global dice `PASSED`, pero solo mira los umbrales del fabricante.
+Los atributos dicen otra cosa:
+
+| Atributo | Valor | Lectura |
+|---|---|---|
+| Current_Pending_Sector / Offline_Uncorrectable | **8 / 8** | sectores que el disco **no puede leer** |
+| Reported_Uncorrect | **1.375** (normalizado en 1, el mínimo) | errores de lectura no corregidos; 1.376 errores ATA en el registro |
+| Load_Cycle_Count | **609.732** (normalizado en 1) | aparcamientos de cabezal, **por encima de la vida nominal**. El APM estaba en 128 |
+| UDMA_CRC_Error_Count | 229.963 | errores del **cable o conector SATA** |
+| Power_On_Hours | 37.726 | ~4,3 años de uso |
+
+El test corto pasa, pero solo lee una fracción de la superficie. El largo
+queda programado los sábados.
+
+**Aplicado el mismo día:**
+- APM a 254, persistido en `/etc/hdparm.conf`, para que deje de aparcar
+  cabezales: menos latencia y menos desgaste;
+- `smartd` con test corto diario y largo semanal;
+- alertas por ntfy: las dos de sectores llegaron.
+
+**Esto convierte la condición 4 de abajo en obligatoria:** el disco hay que
+cambiarlo por un SSD, junto con el cable SATA, **antes** de poner producción.
+Y lo que ya corre allí (Bragi, Yggdrasil y el sistema) está en riesgo.
+
 ### Veredicto
 
 **Factible en performance. No recomendable como producción con SLA en su
@@ -196,9 +222,9 @@ medir.
 2. **Cambiar la pila CMOS** (CR2032) para que el reloj no vuelva a julio.
 3. **Que Docker arranque después de la sincronización de hora**:
    `systemd-time-wait-sync` y `After=time-sync.target` en `docker.service`.
-4. **SMART del disco** (`smartmontools`). Si hay sectores reasignados o
-   pendientes, cambiarlo por un **SSD**, que de paso multiplica el TPS por
-   diez.
+4. **Cambiar el disco por un SSD, y el cable SATA.** Ya no es condicional: el
+   SMART del 2026-10-05 da 8 sectores ilegibles y errores de cable (sección
+   anterior). De paso, el TPS sube unas diez veces.
 5. **Medir la verificación semanal allí** y limitar el ancho de banda de
    Transmission, o sacarlo, para que no compita con la subida de los
    respaldos.
