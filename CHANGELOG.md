@@ -19,6 +19,15 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **PRD del portal público** (`docs/01-requirements/portal-publico-prd.md`,
+  draft para aprobación HITL). Tiene:
+  - 13 requisitos funcionales y 7 no funcionales con criterios verificables;
+  - escenarios de abuso A1–A12 enlazados a T16–T25;
+  - la tabla ASVS;
+  - C4 Context, journey y requirementDiagram (Mermaid validado: 3 ok).
+
+  Las métricas de producto quedan con `<TODO: objetivo>` para decisión humana,
+  y abierta la forma de medirlas sin cookies de seguimiento.
 - **Plan del portal público y sus decisiones (fase 0, solo documentación).** El
   diseño «Criterio Público» abre el producto sin login: Dashboard en vivo,
   acceso Comunidad por email para Intradía e Histórico, y la API como nivel

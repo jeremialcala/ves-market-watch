@@ -390,7 +390,7 @@ Cada fase se puede desplegar sola y deja algo que funciona.
 
 | Fase | Contenido | Backend | Frontend | Talla |
 |---|---|---|---|---|
-| **0. Decisiones** | D1–D11 cerradas; ADR-0028 (D1 y D2), ADR-0029 (D3), ADR-0030 (D4), ADR-0031 (D5), ADR-0032 (D7), ADR-0033 (D9 a D11); threat model 0.5.0 con T16–T25 ✔ (2026-10-04, DREAD ratificado HITL); PRD pendiente | — | — | S |
+| **0. Decisiones** | D1–D11 cerradas; ADR-0028 (D1 y D2), ADR-0029 (D3), ADR-0030 (D4), ADR-0031 (D5), ADR-0032 (D7), ADR-0033 (D9 a D11); threat model 0.5.0 con T16–T25 ✔ (2026-10-04, DREAD ratificado HITL); PRD en `portal-publico-prd.md` (draft, pendiente de aprobación HITL) | — | — | S |
 | **1. Esqueleto** | primero, solo: workspace npm raíz con CI, Dockerfile y auditor de npm ajustados (ADR-0031 §3); después `apps/portal` con router, prerender, layout, barra, pie, ES/EN, tema, y `packages/criterio-ui` con el DS; imagen; ruta en el túnel de desarrollo | — | ✔ | M |
 | **2. Lectura pública** | `/portal/v1/snapshot` y `/portal/v1/series` con caché y límite por IP; Dashboard y hero de Producto | ✔ | ✔ | L |
 | **3. Páginas sin datos propios** | Producto completa, Precios, APIs (catálogo generado de los YAML y playground con CORS) | CORS, URL | ✔ | M |
