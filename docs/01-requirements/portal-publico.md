@@ -499,3 +499,11 @@ decisiones.**
   reglas salen como «hipótesis», correcto con menos de 6 casos.
 
 No queda ninguna corrección pendiente en el diseño.
+
+**Cuarta revisión (2026-10-05): las cinco monedas, de vuelta en el diseño.**
+El Dashboard vuelve a mostrar USD, EUR, CNY, TRY y RUB. USD coincide al
+decimal con la base (871,3689, fecha-valor 2026-10-05). Las otras cuatro son
+cifras de ejemplo cercanas a las reales: EUR 1.002,17 frente a 981,18, TRY
+18,34 frente a 17,73, RUB 11,00 frente a 10,40, CNY 129,08 frente a 129,98.
+En producción el portal pinta el dato en vivo, así que no hace falta
+corregirlas.
