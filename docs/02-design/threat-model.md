@@ -1,11 +1,11 @@
 # Threat Model — Criterio (sistema completo)
 
 - **Estado:** approved (Gate 1, HITL 2026-07-11)
-- **Fecha:** 2026-07-26
+- **Fecha:** 2026-07-26 (adenda del portal público: 2026-10-04)
 - **Decisores:** Jeremi Alcalá
 - **Fase AI-DLC:** 02-design
-- **Versión:** 0.4.1
-- **Alcance:** sistema completo (5 servicios + web-spa + RabbitMQ + TimescaleDB)
+- **Versión:** 0.5.0
+- **Alcance:** sistema completo (5 servicios + web-spa + RabbitMQ + TimescaleDB); desde la adenda 2026-10-04, también el portal público, el acceso Comunidad, el nivel Empresa, el servicio de estado y el backoffice (**planificados**, ADR-0028 a ADR-0033)
 - **Metodología:** STRIDE + DREAD
 - **Clasificación de datos:** ver `docs/00-project/data-classification.md`
 
@@ -48,6 +48,32 @@
 > configuración— y porque 10 u 11 caen en la misma banda de prioridad y no cambian el
 > tratamiento. Queda escrito para que la próxima recalibración lo mire.
 
+> Adenda 2026-10-04 (portal público, **planificado**; sin cambio del veredicto del
+> Gate 1): el alcance se amplía a lo que deciden las ADR-0028 a ADR-0033:
+>
+> - el portal público sin login, que lee por `/portal/v1` y se mantiene al día
+>   por sondeo;
+> - el acceso Comunidad, por email sin contraseña;
+> - el nivel Empresa, con credenciales M2M por cliente;
+> - el servicio de estado `apps/estado`;
+> - el backoffice, con su API.
+>
+> Nada de eso está construido. Las amenazas **T16–T25** entran ahora para que los
+> controles se diseñen con ellas y no se añadan después. Su estado en *Controles*
+> es «planificado», con la fase del plan (`docs/01-requirements/portal-publico.md`)
+> que las cubre.
+>
+> **Cambio de fondo.** Hasta hoy, todo dato salía con un bearer: la primera línea
+> de T15 era que «no hay autoridad ambiental que secuestrar». Con el portal hay,
+> por primera vez, **superficie sin autenticar que sirve datos**: `/portal/v1` y
+> `/estado/v1`. T4 deja de ser la única amenaza de DoS sobre la API. Y la
+> clasificación de datos se movió: lo que sirve el portal pasó de Interno a
+> Público (ADR-0028).
+>
+> **Puntuaciones DREAD de T16–T25: propuesta, pendiente de ratificación HITL.**
+> Siguen el criterio de T11 y T15 (Discoverability 2 para fallos de
+> configuración que se revelan con una petición) y la escala 1–3 del resto.
+
 ## Diagrama de flujo de datos
 
 ```mermaid
@@ -75,6 +101,46 @@ flowchart LR
 
 *Eje comportamiento — fase 02 / Gate 1: DFD con trust boundaries que alimenta el STRIDE de abajo. Los actores grises son externos (no confiables o fuera de nuestro control). Estructura complementaria en `docs/architecture/c4-container.md`.*
 
+### Portal público, acceso Comunidad, nivel Empresa y backoffice (planificado, ADR-0028 a ADR-0033)
+
+```mermaid
+flowchart LR
+    ANON([Visitante anonimo]):::ext -->|HTML prerenderizado| CF[Cloudflare tunel y cache]
+    ANON -->|sondeo del snapshot cada 10 s| CF
+    COM([Usuario Comunidad]):::ext -->|email y token Turnstile| TS([Cloudflare Turnstile]):::ext
+    COM -->|passwordless email| AUTH0([Auth0 OP]):::ext
+    AUTH0 -->|correo de acceso via SMTP| RES([Resend]):::ext
+    RES -->|enlace o codigo| COM
+    EMP([Sistema cliente Empresa]):::ext -->|client credentials| AUTH0
+    EMP -->|REST y WSS con token M2M| CF
+    OPE([Operador admin con MFA]):::ext -->|Cloudflare Access| ACC[Cloudflare Access]
+    GHA([Cron GitHub Actions]):::ext -->|sondeo externo| CF
+    GHA -->|aviso de caida| NTFY([ntfy]):::ext
+    AUTH0 -->|Action de emision via service token| ACC
+    subgraph TBP [Trust boundary: plataforma VMW]
+      CF -->|portal v1 sin token, IP real por CF-Connecting-IP| GW[api-gateway]
+      CF -->|api v1 con bearer| GW
+      CF -->|estado v1 sin token| EST[estado]
+      CF -->|estaticos| POR[portal]
+      ACC -->|identidad aprobada| BO[backoffice y backoffice-api]
+      GW -->|solo lectura| DB[(TimescaleDB)]
+      EST -->|frescura de tablas y esquema estado| DB
+      EST -->|health y WSS sin token| GW
+      BO -->|esquema backoffice| DB
+    end
+    BO -->|Management API permisos minimos| AUTH0
+    BO -->|avisos de cupo al cliente| RES
+    BO -->|alertas al operador| NTFY
+    GW -->|valida RS256 via JWKS| AUTH0
+    classDef ext fill:#999999,color:#ffffff
+```
+
+*Eje comportamiento — adenda 2026-10-04: lo que añade el portal público sobre el
+DFD de arriba. Los únicos caminos sin token que llegan a la plataforma son
+`/portal/v1`, `/estado/v1` y los estáticos del portal. La Action de Auth0 y el
+operador entran al backoffice **por Cloudflare Access**, no por el hostname
+público.*
+
 ## Análisis STRIDE
 | Componente | Spoofing | Tampering | Repudiation | Info Disclosure | DoS | Elevation |
 |---|---|---|---|---|---|---|
@@ -87,6 +153,12 @@ flowchart LR
 | api-gateway | Tokens falsificados; ID token / token de otra audiencia usado como bearer | Manipulación de parámetros de consulta | Accesos sin log | Errores verbosos; PII de usuario en logs | Flood REST/WSS; scraping histórico | Usuario accede a scopes/permisos ajenos |
 | Auth0 (OP externo) | Ataques al login (credential stuffing, breached passwords); phishing de callback | Config del tenant alterada (audiencia, `redirect_uri`) | — | Enumeración de usuarios en login | Abuso del endpoint de login | Roles/permisos mal asignados en RBAC |
 | TimescaleDB | Conexión con rol ajeno | SQL injection vía parámetros | Cambios sin auditoría | Dump de credenciales de clientes | Consultas de histórico sin límites | Rol de servicio con privilegios amplios |
+| portal (browser, sin login) — *planificado* | Sitio falso imita el portal y su alta Comunidad | Dependencia npm comprometida en `packages/criterio-ui` llega a las dos apps (T8) | — | Snapshot con campos internos (T18) | — (estáticos y caché en el borde) | — |
+| api-gateway `/portal/v1` (sin token) — *planificado* | IP falsificada por cabecera para evadir la cuota (T17) | — (solo GET, sin parámetros libres) | — | Campos internos o por anunciante en el snapshot (T18) | Raspado y flood sin autenticar; estampida al caducar la caché; memoria del limitador por IP (T16) | Token Comunidad usado contra `/api/v1` (T20) |
+| Alta Comunidad (Auth0 Passwordless + Turnstile + Resend) — *planificado* | Correo que imita el de acceso (T21) | — | — | Enumeración de cuentas por la respuesta del alta | Alta automatizada; bombardeo de correos a terceros con nuestro dominio (T19) | — |
+| Clientes Empresa (M2M) — *planificado* | Secreto de un cliente robado o filtrado (T22) | — | Consumo sin atribuir a un cliente | — | Un cliente agota el cupo M2M del tenant y deja sin token a los demás (T23) | — |
+| estado (`/estado/v1`) — *planificado* | — | — | — | — (solo agregados de disponibilidad) | Flood sin autenticar (T16) | Rol de base del sondeo con más que lectura |
+| backoffice y backoffice-api — *planificado* | Action o petición que suplanta a Auth0 ante el contador (T25) | Contador de tokens manipulado (T25) | Acción administrativa sin registro | Contactos y pagos de clientes | — | Compromiso de la herramienta que crea credenciales de la API de pago (T24) |
 
 ## Amenazas priorizadas (DREAD)
 Escala 1–3 por factor (Damage, Reproducibility, Exploitability, Affected users, Discoverability). Score = suma.
@@ -109,11 +181,21 @@ Escala 1–3 por factor (Damage, Reproducibility, Exploitability, Affected users
 | T13 | Ruleset de señales manipulado (YAML) → señales arbitrarias a consumidores | 3 | 3 | 1 | 3 | 1 | 11 | Ruleset versionado en repo (cambio = commit auditable), carga estricta al arranque (mal formado ⇒ aborta), no editable en runtime, regla `<type>@v<n>` en la evidencia — ADR-0015, A02/A08, ASVS V14 |
 | T14 | Export CSV malicioso envenena el histórico (varianza/backtests sesgados) | 2 | 2 | 2 | 1 | 2 | 9 | Parseo adaptativo con rechazo completo sin columna de precio y descarte contado por fila; histórico inmutable e idempotente (PK + ON CONFLICT DO NOTHING); sin publicación al bus (no dispara el pipeline reactivo) — ADR-0013, A05/A08 |
 | T15 | Página web de un origen no autorizado consume la API desde el browser de un usuario | 2 | 2 | 2 | 2 | 2 | 10 | **Primera línea: no hay autoridad ambiental.** Todo endpoint pide bearer; sin cookie hacia la API (`allow_credentials` no se activa) y con el token solo en memoria del SPA (T12), un origen ajeno no puede autenticarse. **Segunda línea:** CORS por allowlist (`ALLOWED_ORIGINS`, `allow_methods=["GET"]`) — ADR-0017, A01/A05. El WSS queda fuera de CORS por diseño del browser, pero exige el token en la query (mitiga CSWSH); validar `Origin` en el handshake es hardening en profundidad, no un hueco. **Ratificada HITL 2026-08-04** |
+| T16 | DoS o raspado sobre la superficie sin token (`/portal/v1`, `/estado/v1`) | 2 | 3 | 3 | 3 | 3 | 14 | Caché con *single-flight* (TTL 5 s), cuota por IP real (600/min), *Cache Rule* de Cloudflare, poda del limitador, sin parámetros libres — ADR-0028, ADR-0032, A04 · *propuesta* |
+| T17 | IP falsificada en `CF-Connecting-IP` para evadir la cuota, o cuota única para todos si no llega la IP real | 2 | 3 | 2 | 2 | 2 | 11 | La cabecera solo se acepta desde `TRUSTED_PROXIES`; vigilancia de la tasa de 429 — ADR-0028 §3, A05 · *propuesta* |
+| T18 | El snapshot público filtra campos Internos (`merchant_ref`, cifras por anunciante) | 2 | 2 | 1 | 3 | 3 | 11 | Lista blanca campo a campo, contrato con `additionalProperties: false` y test — ADR-0028 §6, A01 · *propuesta* |
+| T19 | Alta Comunidad automatizada; bombardeo de correos a terceros con nuestro dominio | 2 | 3 | 3 | 2 | 3 | 13 | Turnstile validado en servidor, 3/h por email y 10/h por IP, respuesta uniforme, subdominio de envío dedicado — ADR-0029 §3–4, A04 · *propuesta* |
+| T20 | Un token Comunidad accede a la API de pago | 3 | 1 | 1 | 3 | 2 | 10 | Permisos disjuntos: `read:portal-comunidad` no abre ninguna ruta de `/api/v1` (403) — ADR-0029 §2, A01 · *propuesta* |
+| T21 | Phishing que imita el correo de acceso Comunidad | 2 | 2 | 2 | 2 | 2 | 10 | SPF, DKIM y DMARC en el subdominio de envío; remitente único; código en vez de enlace si el spike lo confirma — ADR-0029 §3 y §5 · *propuesta* |
+| T22 | Robo o filtración del secreto M2M de un cliente Empresa | 2 | 2 | 2 | 1 | 1 | 8 | Entrega de un solo uso, rotación desde el backoffice, una aplicación por cliente, cuota de 200/min y de 34 tokens/mes — ADR-0030, A07 · *propuesta* |
+| T23 | Un cliente agota el cupo M2M del tenant (1.000/mes) y deja sin token a los demás | 3 | 3 | 2 | 3 | 2 | 13 | Corte **en la emisión** al token 35 (cuota nativa de Auth0 o Action con *fail-open*), ciclo por mes calendario, conciliación horaria — ADR-0033 §3, §5–6, A04 · *propuesta* |
+| T24 | Compromiso del backoffice: emisión de credenciales de la API de pago | 3 | 1 | 1 | 3 | 1 | 9 | Cloudflare Access + rol `admin` con MFA, servicio aparte del gateway, Management API con permisos mínimos, auditoría de solo inserción — ADR-0033 §1, ADR-0030 §5, A01 · *propuesta* |
+| T25 | Suplantación de la Action ante `backoffice-api` o manipulación del contador de tokens | 2 | 1 | 1 | 3 | 1 | 8 | *Service token* de Access, rol de base propio para el esquema `backoffice`, conciliación con los logs de Auth0 — ADR-0033 §5–6, A08 · *propuesta* |
 
 
 ```mermaid
 quadrantChart
-    title Amenazas DREAD T1-T15 por probabilidad e impacto
+    title Amenazas DREAD T1-T25 por probabilidad e impacto
     x-axis Baja probabilidad --> Alta probabilidad
     y-axis Bajo impacto --> Alto impacto
     quadrant-1 Atender ya
@@ -135,6 +217,16 @@ quadrantChart
     T13 Ruleset manipulado: [0.48, 0.97]
     T14 CSV historico malicioso: [0.70, 0.48]
     T15 Origen web no autorizado: [0.71, 0.66]
+    T16 DoS superficie publica: [0.97, 0.83]
+    T17 IP falsificada: [0.80, 0.69]
+    T18 Snapshot filtra internos: [0.63, 0.84]
+    T19 Abuso del alta: [0.94, 0.71]
+    T20 Token Comunidad a API: [0.42, 0.98]
+    T21 Phishing del acceso: [0.60, 0.61]
+    T22 Secreto M2M robado: [0.52, 0.50]
+    T23 Cupo M2M agotado: [0.82, 0.96]
+    T24 Backoffice comprometido: [0.30, 0.94]
+    T25 Contador manipulado: [0.37, 0.82]
 ```
 
 *Eje trazabilidad — fase 02 / Gate 1: probabilidad ≈ (R+E+D)/9, impacto ≈ (D+A)/6 de la tabla DREAD, con separación mínima para legibilidad. La tabla es la fuente de verdad; el cuadrante es la vista de priorización.*
@@ -157,3 +249,13 @@ quadrantChart
 | T15 | ADR-0017 (CORS allowlist del gateway) | ✔ Cubierto: `tests/unit/test_cors.py` del gateway (origen permitido con ACAO, ajeno sin ACAO, errores problem+json con ACAO); verificado en vivo 2026-07-27 |
 | T13 | ADR-0015 (ruleset versionado, carga estricta, ASVS V14) | Test de arranque con ruleset mal formado (aborta, ya en la suite); revisión obligatoria de todo commit al YAML |
 | T14 | ADR-0013; parseo adaptativo del PRD ingesta-historica | Tests de parser con CSV corrupto/sin precio (rechazo/descarte); recarga idempotente verificada en vivo (0/1.064 duplicados) |
+| T16 | ADR-0028 §2–3; ADR-0032 §3 | **Planificado — fases 2 y 7.** N peticiones concurrentes con la caché fría → una consulta a la base; ráfaga de IPs distintas → el limitador vuelve a su tamaño tras una ventana; `?from=` → 422 |
+| T17 | ADR-0028 §3 | **Planificado — fase 2.** Con `TRUSTED_PROXIES` vacío, una `CF-Connecting-IP` falsificada cuenta contra la IP del socket; dos clientes tras el conector con IPs distintas tienen cuotas independientes |
+| T18 | ADR-0028 §6; `data-classification.md` (fila de la lectura pública) | **Planificado — fase 2.** Test de contrato contra `portal-openapi.yaml` con `additionalProperties: false`; ningún campo fuera de la lista blanca |
+| T19 | ADR-0029 §3–4 | **Planificado — fase 5.** Sin token de Turnstile o con uno inválido no sale correo y la respuesta es idéntica; el cuarto envío en una hora al mismo email no sale, desde IPs distintas |
+| T20 | ADR-0029 §2 | **Planificado — fase 5.** Test de integración: un token Comunidad contra cada ruta de `/api/v1` → 403 |
+| T21 | ADR-0029 §3 y §5 | **Planificado — fase 5.** Cabeceras de un correo real con DKIM y SPF en `pass` y DMARC alineado |
+| T22 | ADR-0030 §1–2 | **Planificado — fases 8 y 8b.** La rotación desde el backoffice invalida el secreto anterior; el secreto no aparece en logs ni en la auditoría |
+| T23 | ADR-0033 §3, §5–6 | **Planificado — fase 8b.** El token 35 del mes no se emite (`access_denied`) y el contador del tenant no sube; con `backoffice-api` parado hay *fail-open* con alerta, y la conciliación detecta la diferencia |
+| T24 | ADR-0033 §1; ADR-0030 §5 | **Planificado — fase 8b.** Sin pasar por Access ninguna ruta responde; con Access y sin rol `admin`, 403; cada acción deja fila en la auditoría |
+| T25 | ADR-0033 §5–6 | **Planificado — fase 8b.** La ruta del contador rechaza peticiones sin el *service token*; el rol del esquema `backoffice` no tiene permisos fuera de él |
