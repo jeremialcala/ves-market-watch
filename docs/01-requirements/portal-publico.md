@@ -449,3 +449,25 @@ implementación da igual**: el portal pinta datos en vivo y los ejemplos de APIs
 salen de los contratos. **Decidido el 2026-10-04: octubre**, la más cercana a
 lo que el portal mostrará al lanzar. Se lleva al diseño en el mismo mensaje que
 las correcciones de arriba.
+
+### Revisión del diseño tras aplicar las correcciones (2026-10-04)
+
+Revisado página por página en la presentación, no en el resumen del chat del
+diseño:
+
+- **Las 12 correcciones están aplicadas.** Son las diez de la tabla, más las
+  cifras de octubre y la portada fija en Producto.
+- **Parámetros de APIs:** contrastados contra `openapi.yaml` y correctos
+  (`from`/`to` obligatorios, `interval` con `1h` por defecto, tope de 26.000
+  buckets, `side` obligatorio, `currency=VES` en `analysis`).
+- **Vista Acceso:** el diseño quitó por su cuenta la casilla con la key de
+  ejemplo. Es coherente con el acceso Comunidad.
+
+Quedan **tres correcciones nuevas**:
+
+| Dónde | El diseño dice | Debe decir | Por qué |
+|---|---|---|---|
+| Dashboard, cronología de señales | «3 de 3 movieron la brecha >1 pt», «1 de 1 · anticipó el flush» | el último efecto observado de cada regla, sin «N de M» ni veredicto | El contrato (`openapi.yaml`, efecto de la señal) y el PRD del motor prohíben el contador agregado: un «N de M» se lee como tasa de acierto. Lo detectó el propio diseño y preguntó |
+| Histórico, historial de las reglas | columna **«Aciertos»** | columnas **Casos · Con resultado · Efecto medio · Muestra**, como `HistorialReglas` del `web-spa` | Ídem. «Con resultado» cuenta los casos con la ventana cumplida, que es un hecho de completitud y no un juicio. La nota del `web-spa` ya tiene el texto: «el efecto medio es historia observada, no una medida de acierto» |
+| Precios y APIs | «WSS /ws/v1 con **4** canales» | **5 tópicos**: `rates.official`, `p2p.snapshot`, `indicators`, `signals`, `analysis` | `asyncapi.yaml` y `ws.py` aceptan cinco; el diseño omite `analysis` |
+| Intradía, lectura de la sesión | texto y chip «la liquidez de asks cayó **63 %**» | el mismo valor que la tarjeta (**−70,76 %**) | Al pasar a las cifras de octubre se actualizó la tarjeta pero no el texto |
