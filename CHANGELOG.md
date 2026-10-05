@@ -19,6 +19,19 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Plan de implementación del portal público**
+  (`docs/03-implementation/portal-publico-implementacion.md`, draft para
+  aprobación HITL). Cada fase se descompone en PRs con su prueba de cierre y su
+  talla, en cuatro hitos (M1 portal anónimo, M2 estado, M3 Comunidad, M4
+  Empresa), con un gantt validado. Parte de dos hechos confirmados el
+  2026-10-05:
+  - **no hay producción todavía:** ponerla en pie en `hgtech001`, restaurando
+    el último full de B2 como simulacro de recuperación, entra en el camino de
+    M1;
+  - **el portal se sirve desde Cloudflare Workers** (ADR-0034 pendiente, con
+    precios verificados).
+
+
 - **PRD del portal público** (`docs/01-requirements/portal-publico-prd.md`,
   draft para aprobación HITL). Tiene:
   - 13 requisitos funcionales y 7 no funcionales con criterios verificables;
@@ -53,15 +66,6 @@ Convención de mantenimiento (inventario por ejecución):
   (`docs/legal/`), pendiente de revisión. Bloquea la salida a producción del
   alta, no su desarrollo.
 
-### Fixed
-
-- **El estado del respaldo sobrevive a una recreación del contenedor.**
-  `/var/lib/respaldo` —último bueno, último fallo y fallo ya avisado, que leen
-  el healthcheck y `aviso`— vivía en la capa del contenedor. El 2026-10-04 una
-  recreación para desplegar un arreglo borró el `.avisado` del incremental: el
-  «vuelve a funcionar» no salió y el último push decía que seguía fallando. El
-  healthcheck, además, olvidó el full de esa tarde. Ahora es el volumen con
-  nombre `respaldo_estado`.
 ### Changed
 
 - **El respaldo pasa de Google Drive a Backblaze B2 (ADR-0027).** El token OAuth
@@ -87,6 +91,14 @@ Convención de mantenimiento (inventario por ejecución):
     documenta la copia del histórico y la retirada de Drive.
 
 ### Fixed
+
+- **El estado del respaldo sobrevive a una recreación del contenedor.**
+  `/var/lib/respaldo` —último bueno, último fallo y fallo ya avisado, que leen
+  el healthcheck y `aviso`— vivía en la capa del contenedor. El 2026-10-04 una
+  recreación para desplegar un arreglo borró el `.avisado` del incremental: el
+  «vuelve a funcionar» no salió y el último push decía que seguía fallando. El
+  healthcheck, además, olvidó el full de esa tarde. Ahora es el volumen con
+  nombre `respaldo_estado`.
 
 - **El estado del respaldo sobrevive a una recreación del contenedor.**
   `/var/lib/respaldo` —último bueno, último fallo y fallo ya avisado, que leen
