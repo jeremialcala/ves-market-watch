@@ -124,8 +124,9 @@ confirma alguno, el portal pide el código, y el texto del diseño pasa de
   para el envío), para qué, y cómo pedir el borrado.
 - **Borrado:** se borra el usuario en Auth0; no hay otra copia del email en el
   sistema. Runbook de una línea en la fase 5.
-- **Pendiente:** quién redacta el texto del aviso. Es un bloqueante de la
-  salida a producción, no del desarrollo.
+- **Texto del aviso:** borrador en
+  `docs/legal/aviso-de-privacidad-acceso-comunidad.md` (2026-10-04), pendiente
+  de revisión. Es un bloqueante de la salida a producción, no del desarrollo.
 
 ## Alternativas consideradas
 

@@ -37,10 +37,12 @@ Convención de mantenimiento (inventario por ejecución):
   - **ADR-0033:** backoffice con app y API propias, y corte del cupo de tokens
     en la emisión.
 - **Threat model 0.5.0:** amenazas T16–T25 de la superficie pública nueva,
-  con DFD propio. Puntuaciones DREAD propuestas, pendientes de ratificación
-  HITL.
+  con DFD propio. Puntuaciones DREAD ratificadas HITL el 2026-10-04.
 - **Clasificación de datos:** lo que sirve `/portal/v1` pasa de Interno a
   Público (ADR-0028). Fila nueva para las claves del acceso Comunidad.
+- **Borrador del aviso de privacidad del acceso Comunidad**
+  (`docs/legal/`), pendiente de revisión. Bloquea la salida a producción del
+  alta, no su desarrollo.
 
 ### Fixed
 

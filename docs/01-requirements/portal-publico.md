@@ -275,7 +275,10 @@ Quedan dos cosas para un spike al empezar la fase 5:
 - **Enlace o código de 6 dígitos:** los escáneres de correo corporativo
   consumen los enlaces de un solo uso.
 
-**Pendiente:** quién redacta el **aviso de privacidad**. Bloquea la salida a
+**Aviso de privacidad:** borrador en
+`docs/legal/aviso-de-privacidad-acceso-comunidad.md` (2026-10-04), pendiente de
+revisión de Jeremi Alcalá y de completar los campos entre corchetes (razón
+social, jurisdicción, retención de cuentas inactivas). Bloquea la salida a
 producción, no el desarrollo.
 
 **D4. Cómo se emiten las credenciales Empresa y su cuota.** ✔ **Decidida el
@@ -387,7 +390,7 @@ Cada fase se puede desplegar sola y deja algo que funciona.
 
 | Fase | Contenido | Backend | Frontend | Talla |
 |---|---|---|---|---|
-| **0. Decisiones** | D1–D11 cerradas; ADR-0028 (D1 y D2), ADR-0029 (D3), ADR-0030 (D4), ADR-0031 (D5), ADR-0032 (D7), ADR-0033 (D9 a D11); threat model 0.5.0 con T16–T25 ✔ (2026-10-04, DREAD pendiente de ratificar); PRD pendiente | — | — | S |
+| **0. Decisiones** | D1–D11 cerradas; ADR-0028 (D1 y D2), ADR-0029 (D3), ADR-0030 (D4), ADR-0031 (D5), ADR-0032 (D7), ADR-0033 (D9 a D11); threat model 0.5.0 con T16–T25 ✔ (2026-10-04, DREAD ratificado HITL); PRD pendiente | — | — | S |
 | **1. Esqueleto** | primero, solo: workspace npm raíz con CI, Dockerfile y auditor de npm ajustados (ADR-0031 §3); después `apps/portal` con router, prerender, layout, barra, pie, ES/EN, tema, y `packages/criterio-ui` con el DS; imagen; ruta en el túnel de desarrollo | — | ✔ | M |
 | **2. Lectura pública** | `/portal/v1/snapshot` y `/portal/v1/series` con caché y límite por IP; Dashboard y hero de Producto | ✔ | ✔ | L |
 | **3. Páginas sin datos propios** | Producto completa, Precios, APIs (catálogo generado de los YAML y playground con CORS) | CORS, URL | ✔ | M |
@@ -443,5 +446,6 @@ hay que llevarle estos cambios, para no construir lo que ya se decidió quitar:
 El propio diseño deja abierta una pregunta: los ejemplos de APIs usan cifras de
 octubre (871,37) y el Dashboard las de agosto (748,79). **Para la
 implementación da igual**: el portal pinta datos en vivo y los ejemplos de APIs
-salen de los contratos. Basta con que el diseño use una sola fecha para que sus
-capturas sean coherentes.
+salen de los contratos. **Decidido el 2026-10-04: octubre**, la más cercana a
+lo que el portal mostrará al lanzar. Se lleva al diseño en el mismo mensaje que
+las correcciones de arriba.

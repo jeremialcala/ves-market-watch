@@ -70,9 +70,10 @@
 > clasificación de datos se movió: lo que sirve el portal pasó de Interno a
 > Público (ADR-0028).
 >
-> **Puntuaciones DREAD de T16–T25: propuesta, pendiente de ratificación HITL.**
-> Siguen el criterio de T11 y T15 (Discoverability 2 para fallos de
-> configuración que se revelan con una petición) y la escala 1–3 del resto.
+> **Puntuaciones DREAD de T16–T25 ratificadas HITL el 2026-10-04 (Jeremi
+> Alcalá), tal como se propusieron.** Siguen el criterio de T11 y T15
+> (Discoverability 2 para fallos de configuración que se revelan con una
+> petición) y la escala 1–3 del resto.
 
 ## Diagrama de flujo de datos
 
@@ -181,16 +182,16 @@ Escala 1–3 por factor (Damage, Reproducibility, Exploitability, Affected users
 | T13 | Ruleset de señales manipulado (YAML) → señales arbitrarias a consumidores | 3 | 3 | 1 | 3 | 1 | 11 | Ruleset versionado en repo (cambio = commit auditable), carga estricta al arranque (mal formado ⇒ aborta), no editable en runtime, regla `<type>@v<n>` en la evidencia — ADR-0015, A02/A08, ASVS V14 |
 | T14 | Export CSV malicioso envenena el histórico (varianza/backtests sesgados) | 2 | 2 | 2 | 1 | 2 | 9 | Parseo adaptativo con rechazo completo sin columna de precio y descarte contado por fila; histórico inmutable e idempotente (PK + ON CONFLICT DO NOTHING); sin publicación al bus (no dispara el pipeline reactivo) — ADR-0013, A05/A08 |
 | T15 | Página web de un origen no autorizado consume la API desde el browser de un usuario | 2 | 2 | 2 | 2 | 2 | 10 | **Primera línea: no hay autoridad ambiental.** Todo endpoint pide bearer; sin cookie hacia la API (`allow_credentials` no se activa) y con el token solo en memoria del SPA (T12), un origen ajeno no puede autenticarse. **Segunda línea:** CORS por allowlist (`ALLOWED_ORIGINS`, `allow_methods=["GET"]`) — ADR-0017, A01/A05. El WSS queda fuera de CORS por diseño del browser, pero exige el token en la query (mitiga CSWSH); validar `Origin` en el handshake es hardening en profundidad, no un hueco. **Ratificada HITL 2026-08-04** |
-| T16 | DoS o raspado sobre la superficie sin token (`/portal/v1`, `/estado/v1`) | 2 | 3 | 3 | 3 | 3 | 14 | Caché con *single-flight* (TTL 5 s), cuota por IP real (600/min), *Cache Rule* de Cloudflare, poda del limitador, sin parámetros libres — ADR-0028, ADR-0032, A04 · *propuesta* |
-| T17 | IP falsificada en `CF-Connecting-IP` para evadir la cuota, o cuota única para todos si no llega la IP real | 2 | 3 | 2 | 2 | 2 | 11 | La cabecera solo se acepta desde `TRUSTED_PROXIES`; vigilancia de la tasa de 429 — ADR-0028 §3, A05 · *propuesta* |
-| T18 | El snapshot público filtra campos Internos (`merchant_ref`, cifras por anunciante) | 2 | 2 | 1 | 3 | 3 | 11 | Lista blanca campo a campo, contrato con `additionalProperties: false` y test — ADR-0028 §6, A01 · *propuesta* |
-| T19 | Alta Comunidad automatizada; bombardeo de correos a terceros con nuestro dominio | 2 | 3 | 3 | 2 | 3 | 13 | Turnstile validado en servidor, 3/h por email y 10/h por IP, respuesta uniforme, subdominio de envío dedicado — ADR-0029 §3–4, A04 · *propuesta* |
-| T20 | Un token Comunidad accede a la API de pago | 3 | 1 | 1 | 3 | 2 | 10 | Permisos disjuntos: `read:portal-comunidad` no abre ninguna ruta de `/api/v1` (403) — ADR-0029 §2, A01 · *propuesta* |
-| T21 | Phishing que imita el correo de acceso Comunidad | 2 | 2 | 2 | 2 | 2 | 10 | SPF, DKIM y DMARC en el subdominio de envío; remitente único; código en vez de enlace si el spike lo confirma — ADR-0029 §3 y §5 · *propuesta* |
-| T22 | Robo o filtración del secreto M2M de un cliente Empresa | 2 | 2 | 2 | 1 | 1 | 8 | Entrega de un solo uso, rotación desde el backoffice, una aplicación por cliente, cuota de 200/min y de 34 tokens/mes — ADR-0030, A07 · *propuesta* |
-| T23 | Un cliente agota el cupo M2M del tenant (1.000/mes) y deja sin token a los demás | 3 | 3 | 2 | 3 | 2 | 13 | Corte **en la emisión** al token 35 (cuota nativa de Auth0 o Action con *fail-open*), ciclo por mes calendario, conciliación horaria — ADR-0033 §3, §5–6, A04 · *propuesta* |
-| T24 | Compromiso del backoffice: emisión de credenciales de la API de pago | 3 | 1 | 1 | 3 | 1 | 9 | Cloudflare Access + rol `admin` con MFA, servicio aparte del gateway, Management API con permisos mínimos, auditoría de solo inserción — ADR-0033 §1, ADR-0030 §5, A01 · *propuesta* |
-| T25 | Suplantación de la Action ante `backoffice-api` o manipulación del contador de tokens | 2 | 1 | 1 | 3 | 1 | 8 | *Service token* de Access, rol de base propio para el esquema `backoffice`, conciliación con los logs de Auth0 — ADR-0033 §5–6, A08 · *propuesta* |
+| T16 | DoS o raspado sobre la superficie sin token (`/portal/v1`, `/estado/v1`) | 2 | 3 | 3 | 3 | 3 | 14 | Caché con *single-flight* (TTL 5 s), cuota por IP real (600/min), *Cache Rule* de Cloudflare, poda del limitador, sin parámetros libres — ADR-0028, ADR-0032, A04 |
+| T17 | IP falsificada en `CF-Connecting-IP` para evadir la cuota, o cuota única para todos si no llega la IP real | 2 | 3 | 2 | 2 | 2 | 11 | La cabecera solo se acepta desde `TRUSTED_PROXIES`; vigilancia de la tasa de 429 — ADR-0028 §3, A05 |
+| T18 | El snapshot público filtra campos Internos (`merchant_ref`, cifras por anunciante) | 2 | 2 | 1 | 3 | 3 | 11 | Lista blanca campo a campo, contrato con `additionalProperties: false` y test — ADR-0028 §6, A01 |
+| T19 | Alta Comunidad automatizada; bombardeo de correos a terceros con nuestro dominio | 2 | 3 | 3 | 2 | 3 | 13 | Turnstile validado en servidor, 3/h por email y 10/h por IP, respuesta uniforme, subdominio de envío dedicado — ADR-0029 §3–4, A04 |
+| T20 | Un token Comunidad accede a la API de pago | 3 | 1 | 1 | 3 | 2 | 10 | Permisos disjuntos: `read:portal-comunidad` no abre ninguna ruta de `/api/v1` (403) — ADR-0029 §2, A01 |
+| T21 | Phishing que imita el correo de acceso Comunidad | 2 | 2 | 2 | 2 | 2 | 10 | SPF, DKIM y DMARC en el subdominio de envío; remitente único; código en vez de enlace si el spike lo confirma — ADR-0029 §3 y §5 |
+| T22 | Robo o filtración del secreto M2M de un cliente Empresa | 2 | 2 | 2 | 1 | 1 | 8 | Entrega de un solo uso, rotación desde el backoffice, una aplicación por cliente, cuota de 200/min y de 34 tokens/mes — ADR-0030, A07 |
+| T23 | Un cliente agota el cupo M2M del tenant (1.000/mes) y deja sin token a los demás | 3 | 3 | 2 | 3 | 2 | 13 | Corte **en la emisión** al token 35 (cuota nativa de Auth0 o Action con *fail-open*), ciclo por mes calendario, conciliación horaria — ADR-0033 §3, §5–6, A04 |
+| T24 | Compromiso del backoffice: emisión de credenciales de la API de pago | 3 | 1 | 1 | 3 | 1 | 9 | Cloudflare Access + rol `admin` con MFA, servicio aparte del gateway, Management API con permisos mínimos, auditoría de solo inserción — ADR-0033 §1, ADR-0030 §5, A01 |
+| T25 | Suplantación de la Action ante `backoffice-api` o manipulación del contador de tokens | 2 | 1 | 1 | 3 | 1 | 8 | *Service token* de Access, rol de base propio para el esquema `backoffice`, conciliación con los logs de Auth0 — ADR-0033 §5–6, A08 |
 
 
 ```mermaid
