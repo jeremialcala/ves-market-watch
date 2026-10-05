@@ -488,3 +488,12 @@ Quedan dos detalles menores, que no bloquean la implementación:
 |---|---|---|---|
 | APIs, `/ws/v1` | «Contrato AsyncAPI en preparación» | enlazar el contrato | `apps/api-gateway/docs/asyncapi.yaml` ya existe |
 | Histórico, columna «Muestra» | «muestra corta», «muestra insuficiente» | «sin casos», «hipótesis», «indicativa» (6 casos como mínimo) | Es el vocabulario de `lib/historialReglas.ts`. El portal reutiliza ese componente (ADR-0031), así que pintará esas etiquetas; el diseño debería coincidir |
+
+**Tercera revisión (2026-10-04): el diseño queda alineado con las
+decisiones.**
+- APIs ya no dice «AsyncAPI en preparación», y el contrato aparece enlazado en
+  el playground.
+- La columna «Muestra» usa el vocabulario de `lib/historialReglas.ts`: las tres
+  reglas salen como «hipótesis», correcto con menos de 6 casos.
+
+No queda ninguna corrección pendiente en el diseño.
