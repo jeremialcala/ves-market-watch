@@ -17,6 +17,42 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **Plan del portal público y sus decisiones (fase 0, solo documentación).** El
+  diseño «Criterio Público» abre el producto sin login: Dashboard en vivo,
+  acceso Comunidad por email para Intradía e Histórico, y la API como nivel
+  Empresa de pago. El plan página por página está en
+  `docs/01-requirements/portal-publico.md`, con las 11 decisiones cerradas:
+  - **ADR-0028:** el portal lee por `/portal/v1` con caché *single-flight* y
+    cuota por IP real, y se mantiene al día por sondeo, no por WebSocket.
+  - **ADR-0029:** acceso Comunidad con Auth0 Passwordless, Resend y Turnstile
+    validado en servidor.
+  - **ADR-0030:** nivel Empresa con una aplicación M2M por cliente, 34 tokens al
+    mes y 200 peticiones por minuto.
+  - **ADR-0031:** el portal es una app nueva con un paquete de UI compartido en
+    un workspace de npm.
+  - **ADR-0032:** página de estado alimentada por un sondeo propio, fuera del
+    gateway.
+  - **ADR-0033:** backoffice con app y API propias, y corte del cupo de tokens
+    en la emisión.
+- **Threat model 0.5.0:** amenazas T16–T25 de la superficie pública nueva,
+  con DFD propio. Puntuaciones DREAD ratificadas HITL el 2026-10-04.
+- **Clasificación de datos:** lo que sirve `/portal/v1` pasa de Interno a
+  Público (ADR-0028). Fila nueva para las claves del acceso Comunidad.
+- **Borrador del aviso de privacidad del acceso Comunidad**
+  (`docs/legal/`), pendiente de revisión. Bloquea la salida a producción del
+  alta, no su desarrollo.
+
+### Fixed
+
+- **El estado del respaldo sobrevive a una recreación del contenedor.**
+  `/var/lib/respaldo` —último bueno, último fallo y fallo ya avisado, que leen
+  el healthcheck y `aviso`— vivía en la capa del contenedor. El 2026-10-04 una
+  recreación para desplegar un arreglo borró el `.avisado` del incremental: el
+  «vuelve a funcionar» no salió y el último push decía que seguía fallando. El
+  healthcheck, además, olvidó el full de esa tarde. Ahora es el volumen con
+  nombre `respaldo_estado`.
 ### Changed
 
 - **El respaldo pasa de Google Drive a Backblaze B2 (ADR-0027).** El token OAuth
