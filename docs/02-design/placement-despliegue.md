@@ -130,6 +130,85 @@ costo bajo y performance alta. **S2 con ahorro es la que más se le acerca**:
 S1 compra performance a más del doble de precio, y S3 cuesta lo mismo que S2
 rindiendo menos.*
 
+## Verificación de `hgtech001` (medida el 2026-10-05)
+
+Medido por SSH en la propia máquina: inventario y `sysstat`, que no cargan, más
+pruebas breves sobre una base desechable que se creó y se borró en el mismo
+comando.
+
+### Máquina
+
+| | |
+|---|---|
+| Sistema | Ubuntu 24.04.5, kernel 6.8, Docker 29.8 |
+| CPU | **Intel Core i3-3240** (2012), 2 núcleos y 4 hilos a 3,4 GHz |
+| Memoria | **7,5 GiB** (2,0 en uso por otras cargas, 5,5 disponibles) y 4 GiB de swap |
+| Disco | **un HDD mecánico de portátil de 500 GB** (`ST500LT012`), 408 GB libres. Sin `smartctl` instalado: su salud no está verificada |
+| Comparte con | Bragi (Jellyfin, 1,1 GiB), el stack de monitoreo Yggdrasil (Prometheus, Grafana, Alertmanager, Node-RED, Mosquitto), Transmission, túneles |
+| **Ya corre** | **un despliegue parcial de Criterio del 2026-09-07** en `/srv/infra/ves-market`: TimescaleDB con 102 MiB, prácticamente vacía; RabbitMQ; y el gateway `sha-d12a351`. Sin ingestores ni motor |
+
+### Performance: suficiente, y con holgura
+
+| Prueba | `hgtech001` | Desarrollo (referencia) | Carga real de Criterio |
+|---|---|---|---|
+| `pgbench` (escala 20, 4 clientes, 60 s, lectura y escritura) | **148 TPS**, 27 ms | 1.740 TPS, 2,3 ms | **2,9 transacciones/s** (medido en 60 s sobre la base de desarrollo) |
+| Disco secuencial, directo | 94 MB/s escritura, 99 MB/s lectura | — | `pg_dump` de ~10 GB y full de ~5 GB al día |
+| Subida | **~182 Mbps** | — | ~5 GB al día a B2, más servir la API |
+| Bajada | 1,2 Mbps (**anómalo**; Transmission estaba activo, hay que repetir la medida con él en pausa) | — | poca: Binance y BCV |
+| Latencia a Cloudflare (1.1.1.1) | 35 ms | — | |
+| CPU histórica (`sysstat`, 7 días) | 89–94 % libre, iowait diario de 0,6 % | — | |
+
+**El disco mecánico es 12 veces más lento que el de desarrollo, pero la carga
+de Criterio usa el 2 % de lo que da:** unas 50 veces de holgura. La memoria
+alcanza: la base en desarrollo usa 4,2 GiB, casi todo caché, y en
+`hgtech001` quedan 5,5 GiB disponibles. Lo que sí será lento es la
+verificación semanal, que restaura un full entero en el mismo disco: hay que
+medirla allí, sin dar por buenos los 28 minutos de desarrollo.
+
+### Disponibilidad: el problema real
+
+- **Apagados abruptos.** **10 arranques en 19 días** (del 2026-09-16 al
+  10-05) y **solo 3 apagados ordenados** registrados por `last -x`, así que
+  unos 7 fueron cortes. En cinco de esos arranques, el reloj de arranque está
+  en **2026-07-28 15:04:49**. Ese patrón aparece cuando la máquina arranca en
+  frío con el reloj de la BIOS reseteado: típicamente tras perder la corriente
+  del todo, con la pila CMOS agotada.
+- **Sin UPS.** No hay servicio de UPS (NUT o apcupsd) que apague la máquina con
+  orden.
+- **El 09-28** coincide con dos arranques en frío y con un **iowait medio del
+  28,8 %** ese día.
+- **El reloj se corrige por NTP al arrancar**
+  (`Initial clock synchronization`). Pero los contenedores arrancan solos
+  (`unless-stopped`), así que puede haber unos segundos en los que un ingestor
+  escriba con fecha de julio, o el gateway rechace tokens por `exp`.
+
+### Veredicto
+
+**Factible en performance. No recomendable como producción con SLA en su
+estado actual.** El cuello no es la CPU ni el disco: es la energía. Encaja con
+la puntuación de 1 sobre 5 en disponibilidad que la matriz le dio a S4 sin
+medir.
+
+**Condiciones para usarla en M1–M3** (sin SLA), en orden de impacto:
+
+1. **UPS con NUT** que apague la máquina con orden antes de agotarse. Es lo que
+   convierte un corte de luz en un reinicio limpio.
+2. **Cambiar la pila CMOS** (CR2032) para que el reloj no vuelva a julio.
+3. **Que Docker arranque después de la sincronización de hora**:
+   `systemd-time-wait-sync` y `After=time-sync.target` en `docker.service`.
+4. **SMART del disco** (`smartmontools`). Si hay sectores reasignados o
+   pendientes, cambiarlo por un **SSD**, que de paso multiplica el TPS por
+   diez.
+5. **Medir la verificación semanal allí** y limitar el ancho de banda de
+   Transmission, o sacarlo, para que no compita con la subida de los
+   respaldos.
+6. **Decidir qué hacer con el despliegue parcial del 2026-09-07:** reemplazarlo
+   por el de la fase 9, o borrarlo.
+
+Con esto, `hgtech001` es una base razonable para M1–M3. **Para M4, que vende
+SLA, la recomendación de AWS se mantiene:** una UPS mejora el apagado, pero no
+la disponibilidad de la red eléctrica ni la del enlace de una casa.
+
 ## Por qué no «todo en Cloudflare»
 
 No es una preferencia: son límites de la plataforma, verificados en su
