@@ -471,3 +471,20 @@ Quedan **cuatro correcciones nuevas**:
 | Histórico, historial de las reglas | columna **«Aciertos»** | columnas **Casos · Con resultado · Efecto medio · Muestra**, como `HistorialReglas` del `web-spa` | Ídem. «Con resultado» cuenta los casos con la ventana cumplida, que es un hecho de completitud y no un juicio. La nota del `web-spa` ya tiene el texto: «el efecto medio es historia observada, no una medida de acierto» |
 | Precios y APIs | «WSS /ws/v1 con **4** canales» | **5 tópicos**: `rates.official`, `p2p.snapshot`, `indicators`, `signals`, `analysis` | `asyncapi.yaml` y `ws.py` aceptan cinco; el diseño omite `analysis` |
 | Intradía, lectura de la sesión | texto y chip «la liquidez de asks cayó **63 %**» | el mismo valor que la tarjeta (**−70,76 %**) | Al pasar a las cifras de octubre se actualizó la tarjeta pero no el texto |
+
+**Segunda revisión (2026-10-04): las cuatro correcciones están aplicadas.**
+
+- **Cronología de señales:** número de disparos y efecto observado del último
+  disparo, sin «N de M». El detalle desplegable de cada disparo tampoco tiene
+  veredicto.
+- **Historial de las reglas:** columnas Casos · Con resultado · Efecto medio ·
+  Muestra, con la nota del `web-spa`.
+- **WSS:** 5 tópicos en Precios (tarjeta y tabla) y en APIs.
+- **Intradía:** 70,76 % en el texto, el chip y la tarjeta.
+
+Quedan dos detalles menores, que no bloquean la implementación:
+
+| Dónde | El diseño dice | Debe decir | Por qué |
+|---|---|---|---|
+| APIs, `/ws/v1` | «Contrato AsyncAPI en preparación» | enlazar el contrato | `apps/api-gateway/docs/asyncapi.yaml` ya existe |
+| Histórico, columna «Muestra» | «muestra corta», «muestra insuficiente» | «sin casos», «hipótesis», «indicativa» (6 casos como mínimo) | Es el vocabulario de `lib/historialReglas.ts`. El portal reutiliza ese componente (ADR-0031), así que pintará esas etiquetas; el diseño debería coincidir |
