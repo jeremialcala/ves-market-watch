@@ -388,6 +388,12 @@ La revisión técnica añadió tres cosas para que la regla funcione:
 
 ## Fases
 
+> **Detalle de implementación PR a PR, con orden y tallas:**
+> `docs/03-implementation/portal-publico-implementacion.md` (2026-10-05). Ese plan
+> ordena las fases en cuatro hitos (M1–M4) y adelanta la **fase 9
+> (producción)** al camino de M1: el 2026-10-05 se confirmó que **no hay
+> producción todavía**, y que el portal se sirve desde **Cloudflare Workers**.
+
 Cada fase se puede desplegar sola y deja algo que funciona.
 
 | Fase | Contenido | Backend | Frontend | Talla |
