@@ -19,6 +19,16 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Análisis de placement del despliegue completo, AWS frente a Cloudflare**
+  (`docs/02-design/placement-despliegue.md`). Mide la carga real: la base se
+  estabiliza en ~10 GB porque la retención de 90 días ya está llena. Usa
+  precios oficiales verificados el 2026-10-05.
+  - **Cloudflare no puede alojar TimescaleDB ni RabbitMQ:** sus Containers no
+    tienen disco persistente. Gana el borde.
+  - **Para el núcleo,** el mejor PxD en la nube es una sola EC2 `t4g.large`
+    con el compose: $62,76 al mes, o $44,51 con ahorro a un año. Duplica el
+    PxD de la versión troceada en Fargate ($149,53).
+  - Queda para decisión HITL **cuándo pasa el núcleo** de `hgtech001` a AWS.
 - **Plan de implementación del portal público**
   (`docs/03-implementation/portal-publico-implementacion.md`, draft para
   aprobación HITL). Cada fase se descompone en PRs con su prueba de cierre y su
