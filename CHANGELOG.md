@@ -17,6 +17,25 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-10-12
+
+Versión de mantenimiento: **ningún cambio en el producto**. Trae tres cosas:
+
+- **El respaldo sale de Google Drive y pasa a Backblaze B2.** El token OAuth de
+  Drive caducó dos veces en seis semanas, la segunda con 11 días sin respaldo.
+  En B2 la credencial del contenedor ya no puede borrar lo que sube.
+- **`T8 · SCA` vuelve a verde en `main`,** con las dependencias de cinco
+  advisories al día: `pyjwt`, `undici`, `brace-expansion`, `multidict` y
+  `source-map-js`. La pasada semanal llevaba dos lunes en rojo porque los
+  arreglos estaban en `develop` y no habían llegado a `main`.
+- **La fase 0 del portal público, solo documentación:** plan por página, PRD,
+  ADR-0028 a ADR-0033, threat model 0.5.0, plan de implementación y análisis de
+  placement. **No hay código del portal todavía.**
+
+Patch por la convención de este archivo: correcciones, infraestructura y
+documentación, sin funcionalidad nueva de producto y sin gate cerrado. El PRD
+del portal sigue en borrador, pendiente de aprobación HITL.
+
 ### Added
 
 - **Análisis de placement del despliegue completo, AWS frente a Cloudflare**
@@ -28,6 +47,9 @@ Convención de mantenimiento (inventario por ejecución):
   - **Para el núcleo,** el mejor PxD en la nube es una sola EC2 `t4g.large`
     con el compose: $62,76 al mes, o $44,51 con ahorro a un año. Duplica el
     PxD de la versión troceada en Fargate ($149,53).
+  - **Verificación de `hgtech001`** por SSH: performance suficiente (148 TPS
+    frente a 2,9 de carga real), pero el disco falla según SMART (8 sectores
+    ilegibles) y hay unos 7 apagados abruptos en 19 días, sin UPS.
   - Queda para decisión HITL **cuándo pasa el núcleo** de `hgtech001` a AWS.
 - **Plan de implementación del portal público**
   (`docs/03-implementation/portal-publico-implementacion.md`, draft para
@@ -110,13 +132,6 @@ Convención de mantenimiento (inventario por ejecución):
   healthcheck, además, olvidó el full de esa tarde. Ahora es el volumen con
   nombre `respaldo_estado`.
 
-- **El estado del respaldo sobrevive a una recreación del contenedor.**
-  `/var/lib/respaldo` —último bueno, último fallo y fallo ya avisado, que leen
-  el healthcheck y `aviso`— vivía en la capa del contenedor. El 2026-10-04 una
-  recreación para desplegar un arreglo borró el `.avisado` del incremental: el
-  «vuelve a funcionar» no salió y el último push decía que seguía fallando. El
-  healthcheck, además, olvidó el full de esa tarde. Ahora es el volumen con
-  nombre `respaldo_estado`.
 - **La documentación del respaldo, con las cifras del día del corte.** README,
   ADR-0027 y `respaldar.sh` describían la base de agosto: full de 2,3 GB, unos
   208 GB en régimen y 18 min de verificación. El 2026-10-04 el full pesó
@@ -140,9 +155,10 @@ Convención de mantenimiento (inventario por ejecución):
     versión mayor en cuatro servicios no se justifica por este riesgo.
   - **`source-map-js` 1.2.1 → 1.2.2** en `web-spa` (GHSA-68fv-2mgg-jv7q), solo
     de desarrollo (`vitest`, `jsdom`, `vite`).
-  - **La pasada del cron seguirá roja en `main` hasta el próximo release.**
-    `main` tampoco tiene el arreglo de `pyjwt`, `undici` y `brace-expansion`
-    del 2026-10-04, que está en `develop`.
+  - **La pasada del cron estuvo roja en `main` el 2026-10-05 y el 10-12.**
+    `main` no tenía el arreglo de `pyjwt`, `undici` y `brace-expansion` del
+    2026-10-04, que solo estaba en `develop`. Este release lo lleva a `main`
+    junto con los dos de arriba.
 - **La credencial del contenedor de respaldo ya no puede destruir el
   respaldo.** La clave de B2 no tiene `deleteFiles`: la poda oculta
   (`b2_hide_file`) y una regla de lifecycle borra a los 14 días. Quien robe la
@@ -3264,7 +3280,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.3.1...v0.4.0
