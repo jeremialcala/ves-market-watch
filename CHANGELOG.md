@@ -130,6 +130,19 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Security
 
+- **`T8 · SCA`: `multidict` 6.9.1 y `source-map-js` 1.2.2.** La pasada semanal
+  del 2026-10-12 sobre `main` cayó por dos advisories nuevos.
+  - **`multidict` 6.7.1 → 6.9.1** en `api-gateway`, `indicator-engine`,
+    `ingestor-bcv` e `ingestor-binance` (CVE-2026-104874): fuga de referencias
+    en dos operaciones de la extensión C, con crecimiento de memoria. Ningún
+    servicio usa `multidict` directamente: entra como dependencia transitiva.
+    Se fijó **6.9.1 y no la 7.1.0** que resolvía por defecto: un salto de
+    versión mayor en cuatro servicios no se justifica por este riesgo.
+  - **`source-map-js` 1.2.1 → 1.2.2** en `web-spa` (GHSA-68fv-2mgg-jv7q), solo
+    de desarrollo (`vitest`, `jsdom`, `vite`).
+  - **La pasada del cron seguirá roja en `main` hasta el próximo release.**
+    `main` tampoco tiene el arreglo de `pyjwt`, `undici` y `brace-expansion`
+    del 2026-10-04, que está en `develop`.
 - **La credencial del contenedor de respaldo ya no puede destruir el
   respaldo.** La clave de B2 no tiene `deleteFiles`: la poda oculta
   (`b2_hide_file`) y una regla de lifecycle borra a los 14 días. Quien robe la
