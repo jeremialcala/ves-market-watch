@@ -17,6 +17,172 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-10-12
+
+Versión de mantenimiento: **ningún cambio en el producto**. Trae tres cosas:
+
+- **El respaldo sale de Google Drive y pasa a Backblaze B2.** El token OAuth de
+  Drive caducó dos veces en seis semanas, la segunda con 11 días sin respaldo.
+  En B2 la credencial del contenedor ya no puede borrar lo que sube.
+- **`T8 · SCA` vuelve a verde en `main`,** con las dependencias de cinco
+  advisories al día: `pyjwt`, `undici`, `brace-expansion`, `multidict` y
+  `source-map-js`. La pasada semanal llevaba dos lunes en rojo porque los
+  arreglos estaban en `develop` y no habían llegado a `main`.
+- **La fase 0 del portal público, solo documentación:** plan por página, PRD,
+  ADR-0028 a ADR-0033, threat model 0.5.0, plan de implementación y análisis de
+  placement. **No hay código del portal todavía.**
+
+Patch por la convención de este archivo: correcciones, infraestructura y
+documentación, sin funcionalidad nueva de producto y sin gate cerrado. El PRD
+del portal sigue en borrador, pendiente de aprobación HITL.
+
+### Added
+
+- **Análisis de placement del despliegue completo, AWS frente a Cloudflare**
+  (`docs/02-design/placement-despliegue.md`). Mide la carga real: la base se
+  estabiliza en ~10 GB porque la retención de 90 días ya está llena. Usa
+  precios oficiales verificados el 2026-10-05.
+  - **Cloudflare no puede alojar TimescaleDB ni RabbitMQ:** sus Containers no
+    tienen disco persistente. Gana el borde.
+  - **Para el núcleo,** el mejor PxD en la nube es una sola EC2 `t4g.large`
+    con el compose: $62,76 al mes, o $44,51 con ahorro a un año. Duplica el
+    PxD de la versión troceada en Fargate ($149,53).
+  - **Verificación de `hgtech001`** por SSH: performance suficiente (148 TPS
+    frente a 2,9 de carga real), pero el disco falla según SMART (8 sectores
+    ilegibles) y hay unos 7 apagados abruptos en 19 días, sin UPS.
+  - Queda para decisión HITL **cuándo pasa el núcleo** de `hgtech001` a AWS.
+- **Plan de implementación del portal público**
+  (`docs/03-implementation/portal-publico-implementacion.md`, draft para
+  aprobación HITL). Cada fase se descompone en PRs con su prueba de cierre y su
+  talla, en cuatro hitos (M1 portal anónimo, M2 estado, M3 Comunidad, M4
+  Empresa), con un gantt validado. Parte de dos hechos confirmados el
+  2026-10-05:
+  - **no hay producción todavía:** ponerla en pie en `hgtech001`, restaurando
+    el último full de B2 como simulacro de recuperación, entra en el camino de
+    M1;
+  - **el portal se sirve desde Cloudflare Workers** (ADR-0034 pendiente, con
+    precios verificados).
+
+
+- **PRD del portal público** (`docs/01-requirements/portal-publico-prd.md`,
+  draft para aprobación HITL). Tiene:
+  - 13 requisitos funcionales y 7 no funcionales con criterios verificables;
+  - escenarios de abuso A1–A12 enlazados a T16–T25;
+  - la tabla ASVS;
+  - C4 Context, journey y requirementDiagram (Mermaid validado: 3 ok).
+
+  Las métricas de producto quedan con `<TODO: objetivo>` para decisión humana,
+  y abierta la forma de medirlas sin cookies de seguimiento.
+- **Plan del portal público y sus decisiones (fase 0, solo documentación).** El
+  diseño «Criterio Público» abre el producto sin login: Dashboard en vivo,
+  acceso Comunidad por email para Intradía e Histórico, y la API como nivel
+  Empresa de pago. El plan página por página está en
+  `docs/01-requirements/portal-publico.md`, con las 11 decisiones cerradas:
+  - **ADR-0028:** el portal lee por `/portal/v1` con caché *single-flight* y
+    cuota por IP real, y se mantiene al día por sondeo, no por WebSocket.
+  - **ADR-0029:** acceso Comunidad con Auth0 Passwordless, Resend y Turnstile
+    validado en servidor.
+  - **ADR-0030:** nivel Empresa con una aplicación M2M por cliente, 34 tokens al
+    mes y 200 peticiones por minuto.
+  - **ADR-0031:** el portal es una app nueva con un paquete de UI compartido en
+    un workspace de npm.
+  - **ADR-0032:** página de estado alimentada por un sondeo propio, fuera del
+    gateway.
+  - **ADR-0033:** backoffice con app y API propias, y corte del cupo de tokens
+    en la emisión.
+- **Threat model 0.5.0:** amenazas T16–T25 de la superficie pública nueva,
+  con DFD propio. Puntuaciones DREAD ratificadas HITL el 2026-10-04.
+- **Clasificación de datos:** lo que sirve `/portal/v1` pasa de Interno a
+  Público (ADR-0028). Fila nueva para las claves del acceso Comunidad.
+- **Borrador del aviso de privacidad del acceso Comunidad**
+  (`docs/legal/`), pendiente de revisión. Bloquea la salida a producción del
+  alta, no su desarrollo.
+
+### Changed
+
+- **El respaldo pasa de Google Drive a Backblaze B2 (ADR-0027).** El token OAuth
+  de Drive volvió a caducar (`invalid_grant`) el **2026-09-23**, y no hubo
+  respaldo en **11 días**, hasta el 2026-10-04. Esta vez ntfy avisó desde la
+  primera hora, pero reparar el token pide un navegador y una persona. Una clave
+  de aplicación de B2 no caduca.
+  - Mismo remoto `crypt`, repuntado con `rclone config update`: scripts,
+    cadencias, verificación y `.env` no cambian. El histórico de Drive se puede
+    copiar cifrado, sin descifrar (pendiente: pide reautorizar Drive).
+  - `RETENCION_FULL_DIAS` pasa de 90 a **76**: en B2 lo podado queda oculto
+    otros 14 días, y 76 + 14 = los 90 de la clasificación de datos.
+  - **rclone sale de la imagen oficial 1.75.0, por digest, y no del `apk`.**
+    El de Alpine 3.22 (1.69.3) autoriza contra B2 con la API v1, que B2 ya
+    rechaza (`400 bad_request`); con la misma clave, la 1.75.0 entra.
+  - **Subir ya no depende de la cuota de descarga.** `copyto` hacía un HEAD
+    por la API de descarga para mirar el destino, y la relectura del tamaño,
+    otro. Tras la primera verificación (4,9 GB bajados) la cuenta agotó su tope
+    diario y todo HEAD devolvió 403: el incremental de las 14:00 falló sin
+    llegar a subir. Ahora `--no-check-dest` y el tamaño se relee listando la
+    carpeta.
+  - `scripts/respaldo/README.md` reescribe la puesta en marcha para B2 y
+    documenta la copia del histórico y la retirada de Drive.
+
+### Fixed
+
+- **El estado del respaldo sobrevive a una recreación del contenedor.**
+  `/var/lib/respaldo` —último bueno, último fallo y fallo ya avisado, que leen
+  el healthcheck y `aviso`— vivía en la capa del contenedor. El 2026-10-04 una
+  recreación para desplegar un arreglo borró el `.avisado` del incremental: el
+  «vuelve a funcionar» no salió y el último push decía que seguía fallando. El
+  healthcheck, además, olvidó el full de esa tarde. Ahora es el volumen con
+  nombre `respaldo_estado`.
+
+- **La documentación del respaldo, con las cifras del día del corte.** README,
+  ADR-0027 y `respaldar.sh` describían la base de agosto: full de 2,3 GB, unos
+  208 GB en régimen y 18 min de verificación. El 2026-10-04 el full pesó
+  **4,9 GB** —la base se duplicó en seis semanas—, el régimen pasa a unos
+  **440 GB** y la verificación tarda ~28 min.
+- **Dos afirmaciones falsas sobre el `apk` de la caja de respaldo**, en su
+  Dockerfile y en la fila T8 del threat model: decían que el digest de la base
+  congela el índice de paquetes. No lo congela —un rebuild del 2026-10-04 pasó
+  `pg_dump` de 16.14 a 16.15—. T8 cuenta además la imagen de rclone fijada por
+  digest.
+
+### Security
+
+- **`T8 · SCA`: `multidict` 6.9.1 y `source-map-js` 1.2.2.** La pasada semanal
+  del 2026-10-12 sobre `main` cayó por dos advisories nuevos.
+  - **`multidict` 6.7.1 → 6.9.1** en `api-gateway`, `indicator-engine`,
+    `ingestor-bcv` e `ingestor-binance` (CVE-2026-104874): fuga de referencias
+    en dos operaciones de la extensión C, con crecimiento de memoria. Ningún
+    servicio usa `multidict` directamente: entra como dependencia transitiva.
+    Se fijó **6.9.1 y no la 7.1.0** que resolvía por defecto: un salto de
+    versión mayor en cuatro servicios no se justifica por este riesgo.
+  - **`source-map-js` 1.2.1 → 1.2.2** en `web-spa` (GHSA-68fv-2mgg-jv7q), solo
+    de desarrollo (`vitest`, `jsdom`, `vite`).
+  - **La pasada del cron estuvo roja en `main` el 2026-10-05 y el 10-12.**
+    `main` no tenía el arreglo de `pyjwt`, `undici` y `brace-expansion` del
+    2026-10-04, que solo estaba en `develop`. Este release lo lleva a `main`
+    junto con los dos de arriba.
+- **La credencial del contenedor de respaldo ya no puede destruir el
+  respaldo.** La clave de B2 no tiene `deleteFiles`: la poda oculta
+  (`b2_hide_file`) y una regla de lifecycle borra a los 14 días. Quien robe la
+  máquina puede ocultarlo todo, no hacerlo desaparecer; la verificación del
+  domingo lo detecta, y lo oculto se restaura con `RCLONE_B2_VERSION_AT`.
+- **`T8 · SCA` vuelve a verde: `pyjwt` 2.15.1, `undici` 8.11.2 y
+  `brace-expansion` 2.1.7.** Aparecieron advisories nuevos sin que los tocara
+  ningún commit, y los dos jobs se pusieron rojos en los PR del 2026-10-04.
+  - **`pyjwt` 2.13.0 → 2.15.1 (`api-gateway`), el que importa:** valida en
+    producción los tokens de Auth0. De sus 13 PYSEC, varios dan sobre lo que
+    usa el gateway con entrada **sin autenticar**: `PyJWKClient` amplifica
+    peticiones JWKS ante un `kid` desconocido y sigue redirecciones, y un
+    header anidado tumba `jwt.decode()` por recursión. El suelo del
+    `pyproject.toml` sube a `>=2.15` para que no pueda volver atrás. Se re-lockeó
+    solo `pyjwt` (`--upgrade-package`), no el árbol entero.
+  - PYSEC-2026-4146 sale «sin versión arreglada» en pip-audit porque OSV lo
+    marca con `last_affected: 2.13.0`; 2.14 en adelante no está afectado. Y el
+    gateway tampoco lo dispara: construye `options` en cada llamada y nunca usa
+    `verify_signature=False`.
+  - **`undici` y `brace-expansion` (`web-spa`) son solo de desarrollo**
+    (`jsdom` para los tests, `openapi-typescript` para generar tipos);
+    `npm ls --omit=dev` sale vacío. Se suben igual, con `npm audit fix` sin
+    `--force`. Quedan `moderate` en `vitest`, por debajo del umbral.
+
 ## [0.5.1] - 2026-09-21
 
 Versión de mantenimiento: **ningún cambio en el producto**. Lo que trae es que
@@ -3114,7 +3280,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.3.1...v0.4.0

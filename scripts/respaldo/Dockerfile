@@ -7,9 +7,16 @@
 # caja se quedó fuera del pinneo del 2026-09-08 porque no tiene dependencias
 # Python ni npm y no encajaba en ninguna de las dos categorías del control
 # —siendo el contenedor que más valor concentra: `pg_dump` sobre toda la base
-# y las credenciales de Drive—. El digest congela además el índice de paquetes
-# del `apk` de abajo, que no se pueden fijar uno a uno: Alpine no guarda las
-# versiones viejas y el build se rompería solo en unas semanas.
+# y las credenciales del destino—.
+#
+# Lo que el digest NO congela: los paquetes del `apk` de abajo. `apk add` baja
+# el índice VIVO del repositorio de la rama 3.22, así que cada build trae el
+# último parche publicado —el rebuild del 2026-10-04 pasó `pg_dump` de 16.14 a
+# 16.15 sin tocar este archivo—. Lo que sí queda fijo es la rama (3.22) y la
+# mayor (`postgresql16-client`), y en una rama estable de Alpine solo entran
+# parches y arreglos de seguridad. No se fijan uno a uno a propósito: Alpine no
+# guarda las versiones viejas y el build se rompería solo en unas semanas. Lo
+# que necesita una versión exacta —rclone— va por digest, más abajo.
 # Para actualizarlo:
 #   docker manifest inspect -v alpine:3.22 | jq -r '.[0].Descriptor.digest'
 FROM alpine:3.22@sha256:7c8cb692ae09657cbc4a3f3cbd0e8d5a2690ba38386aaaf252dbb060bf5eb2e6
@@ -19,11 +26,20 @@ FROM alpine:3.22@sha256:7c8cb692ae09657cbc4a3f3cbd0e8d5a2690ba38386aaaf252dbb060
 # que el servidor no restaura.
 RUN apk add --no-cache \
       postgresql16-client \
-      rclone \
       tzdata \
       gzip \
       tar \
       coreutils
+
+# rclone NO sale del `apk`: el de Alpine 3.22 es la 1.69.3, que autoriza contra
+# B2 con la API v1, y B2 ya la rechaza —«This request is not currently
+# supported on API version number 1 (400 bad_request)»—. Se comprobó el
+# 2026-10-04 con la misma clave: la 1.69.3 falla y la 1.75.0 entra. El binario
+# oficial es Go estático, así que funciona tal cual sobre Alpine. Mismo criterio
+# de T8 que la base: por digest. Para actualizarlo:
+#   docker buildx imagetools inspect rclone/rclone:<versión>
+COPY --from=rclone/rclone:1.75.0@sha256:b06aed988cf5967de7c25be5925240983981c757f4ed1ac9d2fa659d51d60548 \
+     /usr/local/bin/rclone /usr/local/bin/rclone
 
 ENV TZ=America/Caracas
 

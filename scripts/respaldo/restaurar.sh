@@ -37,7 +37,7 @@ morir() { log "ERROR: $*"; exit 1; }
 
 if [ "$CUAL" = "ultimo" ]; then
   CUAL="$(rclone lsf "$REMOTO/full" --include '*.dump' | sort | tail -1)" \
-    || morir "rclone no pudo listar $REMOTO/full (¿token de Drive caducado? ver README)"
+    || morir "rclone no pudo listar $REMOTO/full (¿credenciales del remoto? ver README)"
   [ -n "$CUAL" ] || morir "no hay ningún full en $REMOTO/full"
 fi
 log "full elegido: $CUAL"

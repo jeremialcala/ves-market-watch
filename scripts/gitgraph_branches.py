@@ -46,6 +46,14 @@ TAG_NOTES = {
         "Gates 2 y 3 aprobados HITL (2026-09-08): cierran 03-implementation y "
         "04-testing. Sin bloques `demo · sin fuente` en el producto",
     ),
+    "v0.5.1": (
+        "Avisos por ntfy del cron de seguridad (`seguridad.yml`) y del respaldo "
+        "(`aviso.sh` + healthcheck `estado`); js-yaml 4.3.2 (GHSA-2883-xcg3-v3hh); "
+        "caja de respaldo por digest e `init: true`",
+        "Patch de correcciones e instrumentación (2026-09-21): los dos procesos "
+        "desatendidos ya avisan cuando fallan. Sin gate cerrado; Gate 4 "
+        "(05-deployment) sin iniciar",
+    ),
     "v0.4.0": (
         "ADR-0016; api-gateway implementado (REST /api/v1 + WSS /ws/v1, Resource "
         "Server Auth0, 78 tests); AsyncAPI del WSS; OpenAPI ajustada",

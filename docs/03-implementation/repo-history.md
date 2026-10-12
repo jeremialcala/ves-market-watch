@@ -1,10 +1,10 @@
 # Historial de implementación — Criterio
 
 * **Estado:** review (documentación viva — regenerada por script, no editar a mano)
-* **Fecha:** 2026-09-07
+* **Fecha:** 2026-09-21
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
-* **Versión:** 0.5.0
+* **Versión:** 0.5.1
 * **Gate:** 2
 * **Rama principal:** main
 * **Estrategia de branching:** GitFlow (main + develop + ramas feature)
@@ -342,14 +342,34 @@ gitGraph
     commit id: "23ce20d"
     checkout main
     merge develop tag: "v0.5.0"
+    checkout develop
+    commit id: "82ac974"
+    commit id: "bd60a12"
+    commit id: "d9f2709" type: HIGHLIGHT
+    commit id: "f99af22"
+    commit id: "e16018a"
+    commit id: "1120f9f"
+    commit id: "32ee6dd" type: HIGHLIGHT
+    commit id: "2d3c697" type: HIGHLIGHT
+    commit id: "7f6b5b6" type: HIGHLIGHT
+    commit id: "3ce4697"
+    commit id: "a51b2f6" type: HIGHLIGHT
+    checkout main
+    merge develop
+    checkout develop
+    commit id: "3be6a2b"
+    commit id: "3a822aa"
+    commit id: "ba16f6f" type: HIGHLIGHT
+    checkout main
+    merge develop tag: "v0.5.1"
 ```
 
 ### Estado actual de las ramas
 
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
-| `main` | `d12a351` | 2026-09-07 | 8 |
-| `develop` | `d12a351` | 2026-09-07 | 303 |
+| `main` | `d585124` | 2026-09-21 | 10 |
+| `develop` | `ba16f6f` | 2026-09-21 | 317 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -361,11 +381,28 @@ gitGraph
 | v0.3.1 | `461d4dc` | 2026-07-26 | 0.3.1 | Barrido de coherencia documental post-0.3.0; threat model T13/T14; trazabilidad tag↔ADR restaurada; design.md del ingestor-historico | Patch solo de docs, sin cambios funcionales |
 | v0.4.0 | `779231f` | 2026-07-26 | 0.4.0 | ADR-0016; api-gateway implementado (REST /api/v1 + WSS /ws/v1, Resource Server Auth0, 78 tests); AsyncAPI del WSS; OpenAPI ajustada | Los 5 servicios con código; pipeline completo fuente → bus → REST/WSS operativo. Pendiente HITL: SPA + client M2M de prueba |
 | v0.5.0 | `d12a351` | 2026-09-07 | 0.5.0 | ADR-0025/0026; riesgos y análisis como dato servido; SLOs medidos; T8 cerrada (lockfiles con hashes + imágenes por digest) | Gates 2 y 3 aprobados HITL (2026-09-08): cierran 03-implementation y 04-testing. Sin bloques `demo · sin fuente` en el producto |
+| v0.5.1 | `d585124` | 2026-09-21 | 0.5.1 | Avisos por ntfy del cron de seguridad (`seguridad.yml`) y del respaldo (`aviso.sh` + healthcheck `estado`); js-yaml 4.3.2 (GHSA-2883-xcg3-v3hh); caja de respaldo por digest e `init: true` | Patch de correcciones e instrumentación (2026-09-21): los dos procesos desatendidos ya avisan cuando fallan. Sin gate cerrado; Gate 4 (05-deployment) sin iniciar |
 
 ### Bitácora de cambios (fiel al repo)
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `d585124` | merge | v0.5.1 | Jeremi J. Alcalá M. | 2026-09-21 | Merge pull request #49 from jeremialcala/develop |
+| `ba16f6f` | merge | — | Jeremi J. Alcalá M. | 2026-09-21 | Merge pull request #48 from jeremialcala/release-0.5.1 |
+| `3a822aa` | commit | — | Jeremi Alcala | 2026-09-21 | docs(changelog): cortar la versión 0.5.1 |
+| `3be6a2b` | commit | — | Jeremi Alcala | 2026-09-21 | docs(changelog): restaurar las entradas que se perdieron en un merge |
+| `8efe216` | merge | — | Jeremi J. Alcalá M. | 2026-09-21 | Merge pull request #47 from jeremialcala/develop |
+| `a51b2f6` | merge | — | Jeremi J. Alcalá M. | 2026-09-21 | Merge pull request #46 from jeremialcala/ci-aviso-cron-seguridad |
+| `3ce4697` | commit | — | Jeremi Alcala | 2026-09-20 | ci(seguridad): que la pasada del cron avise por ntfy cuando un gate se pone rojo |
+| `7f6b5b6` | merge | — | Jeremi J. Alcalá M. | 2026-09-20 | Merge pull request #44 from jeremialcala/fix-respaldo-aviso |
+| `2d3c697` | merge | — | Jeremi J. Alcalá M. | 2026-09-20 | Merge branch 'develop' into fix-respaldo-aviso |
+| `32ee6dd` | merge | — | Jeremi J. Alcalá M. | 2026-09-20 | Merge pull request #45 from jeremialcala/security-js-yaml-4-3-2 |
+| `1120f9f` | commit | — | Jeremi Alcala | 2026-09-20 | security(deps): subir js-yaml a 4.3.2 y poner verde la prueba T8 del web-spa |
+| `e16018a` | commit | — | Jeremi Alcala | 2026-09-16 | fix(respaldo): cerrar el hueco de T8 y los zombis que dejaba el aviso |
+| `f99af22` | commit | — | Jeremi Alcala | 2026-09-16 | feat(respaldo): avisar cuando el respaldo falla, y un healthcheck que lo note |
+| `d9f2709` | merge | — | Jeremi J. Alcalá M. | 2026-09-08 | Merge pull request #43 from jeremialcala/docs-historial-050 |
+| `bd60a12` | commit | — | Jeremi Alcala | 2026-09-07 | fix(compose): el healthcheck de la DB daba un falso positivo durante initdb |
+| `82ac974` | commit | — | Jeremi Alcala | 2026-09-07 | docs(historial): regenerar repo-history tras el corte 0.5.0 |
 | `d12a351` | merge | v0.5.0 | Jeremi J. Alcalá M. | 2026-09-07 | Merge pull request #42 from jeremialcala/develop |
 | `23ce20d` | commit | — | Jeremi J. Alcalá M. | 2026-09-07 | Potential fix for pull request finding 'CodeQL / Statement has no effect' |
 | `ef04e46` | commit | — | Jeremi J. Alcalá M. | 2026-09-07 | Potential fix for pull request finding 'CodeQL / Statement has no effect' |
