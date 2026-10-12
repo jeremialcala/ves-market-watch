@@ -46,6 +46,15 @@ TAG_NOTES = {
         "Gates 2 y 3 aprobados HITL (2026-09-08): cierran 03-implementation y "
         "04-testing. Sin bloques `demo · sin fuente` en el producto",
     ),
+    "v0.5.2": (
+        "ADR-0027 (respaldo en Backblaze B2, clave sin borrado); ADR-0028…0033 y "
+        "threat model 0.5.0 (T16–T25) del portal público; `pyjwt` 2.15.1, "
+        "`multidict` 6.9.1, `undici` 8.11.2, `brace-expansion` 2.1.7 y "
+        "`source-map-js` 1.2.2",
+        "Patch de mantenimiento (2026-10-12): el respaldo sale de Google Drive, "
+        "`T8 · SCA` vuelve a verde en `main` y entra la fase 0 del portal público, "
+        "solo documentación. Sin gate cerrado: el PRD del portal sigue en borrador",
+    ),
     "v0.5.1": (
         "Avisos por ntfy del cron de seguridad (`seguridad.yml`) y del respaldo "
         "(`aviso.sh` + healthcheck `estado`); js-yaml 4.3.2 (GHSA-2883-xcg3-v3hh); "
