@@ -229,11 +229,34 @@ medir.
    Transmission, o sacarlo, para que no compita con la subida de los
    respaldos.
 6. **Decidir qué hacer con el despliegue parcial del 2026-09-07:** reemplazarlo
-   por el de la fase 9, o borrarlo.
+   por el de la fase 9, o borrarlo. **Resuelto el 2026-10-13:** lo reemplazó el
+   entorno de captura completo (sección siguiente).
 
 Con esto, `hgtech001` es una base razonable para M1–M3. **Para M4, que vende
 SLA, la recomendación de AWS se mantiene:** una UPS mejora el apagado, pero no
 la disponibilidad de la red eléctrica ni la del enlace de una casa.
+
+## Traslado del entorno de captura (2026-10-13)
+
+Ocho días después de esta verificación, el entorno de captura entero pasó a
+`hgtech001`. No fue por este análisis: la máquina de desarrollo llevaba cuatro
+pantallazos azules en tres días y cada uno era un hueco en la serie. El detalle
+y las medidas están en la ADR-0034; los compose, en `deploy/midgard/`.
+
+Lo que cambia para este documento:
+
+- **S4 deja de ser una hipótesis.** La carga real de Criterio ya corre allí,
+  así que el costo y el comportamiento se pueden medir en vez de suponer.
+- **El disco empeoró:** de 8 sectores pendientes el 2026-10-05 a **16** el
+  2026-10-13. La condición 4 de arriba (cambiarlo por un SSD) pasa de
+  recomendable a urgente, porque ahora los datos están en él.
+- **La consulta más pesada del motor rozó su límite:** las distribuciones
+  agotaron sus 5 s en el primer ciclo, con la caché fría, y pasaron en el
+  siguiente. Es la primera medida real de lo que la tabla de performance
+  anticipaba como «lento en frío».
+- **D15 sigue abierta.** Trasladar el entorno de desarrollo no es elegir
+  anfitrión de producción: los secretos son los de desarrollo y la
+  disponibilidad es la que esta sección ya midió.
 
 ## Por qué no «todo en Cloudflare»
 
@@ -259,7 +282,7 @@ documentación el 2026-10-05.
 1. **Borde en Cloudflare, ya decidido y confirmado por PxD.** Portal, `web-spa`
    y UI del backoffice como estáticos en Workers, a $0 (las peticiones a
    estáticos son gratis e ilimitadas). Túnel, caché del borde, Access y
-   Turnstile. Va en la ADR-0034 (fase 0.1 del plan).
+   Turnstile. Va en la ADR-0035 (fase 0.1 del plan).
 2. **Núcleo en AWS con una sola EC2 `t4g.large`** (S2), corriendo el mismo
    `docker compose` detrás de Cloudflare Tunnel. Sin ALB, sin NAT y sin puertos
    abiertos.
@@ -282,7 +305,7 @@ documentación el 2026-10-05.
 |---|---|---|
 | D15 | **¿Dónde vive el núcleo en producción?** | (a) AWS EC2 `t4g.large` desde el principio (recomendado); (b) `hgtech001` para M1–M3 y migración a AWS antes de M4; (c) `hgtech001` sin fecha de migración |
 
-La respuesta reescribe la **ADR-0035** (puesta en producción, fase 0.2 del
+La respuesta reescribe la **ADR-0036** (puesta en producción, fase 0.2 del
 plan) y la fase 9: dónde se restaura el full de arranque y dónde corre el CD.
 
 ## Condiciones de revisión

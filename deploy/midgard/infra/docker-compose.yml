@@ -1,0 +1,129 @@
+# Infraestructura con estado de Criterio en midgard (`hgtech001`): la base y el
+# bus. Vive en `/srv/infra/ves-market`.
+#
+# Deliberadamente FUERA del ciclo de despliegue continuo: el receptor despliega
+# servicios sin estado, no esto. Una base de datos no es algo que quieras
+# recrear en cada push, y el rollback del receptor restaura contenedores, nunca
+# datos.
+#
+# Diferencias con el docker-compose.yml de desarrollo de la raíz:
+#   * credenciales generadas en la máquina, no postgres/postgres ni guest/guest
+#   * sin publicar puertos a la LAN; los servicios entran por la red `ves-market`
+#   * la UI de RabbitMQ solo en loopback, para el operador por túnel SSH
+#   * límites de memoria: la máquina es también el router de la casa
+#
+# Requiere `.env` (root, 600) con POSTGRES_PASSWORD y RABBITMQ_PASSWORD, la red
+# `ves-market` y el volumen `ves_market_datos` creados de antemano. Ver
+# `deploy/midgard/README.md`.
+
+name: ves-market-infra
+
+services:
+  rabbitmq:
+    # Por digest (T8): el que ya corría en midgard desde el 2026-09-07. Tiene
+    # estado en disco, así que actualizarlo es una migración, no un pin.
+    image: rabbitmq:4-management@sha256:ffd1b50c522ad20172ffd6716a2f41db375c7269560c8f3fb9a694e210ef0852
+    container_name: ves-rabbitmq
+    # Fijo, y no por estética: RabbitMQ guarda su estado bajo el nombre del
+    # nodo, `rabbit@<hostname>`. Sin esto el hostname es el id del contenedor,
+    # cada recreación arranca un nodo nuevo y vacío, y la cola durable del
+    # motor —con lo que tuviera pendiente— se queda huérfana en el volumen.
+    hostname: ves-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ves
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?falta RABBITMQ_PASSWORD en .env}
+    ports:
+      # Solo la UI de gestión, y solo en loopback: ssh -L 15672:127.0.0.1:15672
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    mem_limit: 512m
+    networks: [ves-market]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+  timescaledb:
+    # EL MISMO digest que el compose de desarrollo, y no es una preferencia.
+    #
+    # Los datos llegaron aquí el 2026-10-13 como réplica física de la base de
+    # desarrollo (ADR-0034): el directorio de datos es una copia byte a byte, y
+    # solo lo abre un binario de la misma versión mayor con la misma
+    # `timescaledb-2.28.2.so`. Hasta ese día este servicio usaba el tag móvil
+    # `latest-pg16`, que en midgard había resuelto a PG 16.15 con TimescaleDB
+    # 2.29.2: una versión por delante de los datos que iba a recibir.
+    #
+    # Subir de versión es `ALTER EXTENSION timescaledb UPDATE` con respaldo
+    # recién verificado, no cambiar esta línea.
+    image: timescale/timescaledb:latest-pg16@sha256:ba149561ad4ddff5940d6eb0a0df60aefd1355cee1a450928f271267038fc888
+    container_name: ves-timescaledb
+    restart: unless-stopped
+    # El `postgresql.conf` vino dentro de la copia y está afinado para la
+    # máquina de desarrollo: 12 hilos, 12 GiB y SSD. Aquí hay 4 hilos, 7,5 GiB
+    # compartidos con el resto del appliance y un disco mecánico. Lo que va por
+    # línea de órdenes gana al archivo y queda versionado, sin editar nada
+    # dentro del directorio de datos.
+    #
+    # `autovacuum_work_mem` porque sin él cada uno de los 10 workers de
+    # autovacuum puede pedir `maintenance_work_mem` entero.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=1GB
+      - -c
+      - effective_cache_size=3GB
+      - -c
+      - maintenance_work_mem=256MB
+      - -c
+      - autovacuum_work_mem=64MB
+      - -c
+      - max_parallel_workers=4
+      - -c
+      - max_parallel_workers_per_gather=2
+      - -c
+      - random_page_cost=4
+      - -c
+      - effective_io_concurrency=2
+    # Las consultas en paralelo reparten memoria por /dev/shm
+    # (`dynamic_shared_memory_type=posix`) y Docker da 64 MiB por defecto.
+    shm_size: 256m
+    mem_limit: 3g
+    environment:
+      # Solo cuentan al inicializar un volumen VACÍO. Con datos presentes la
+      # imagen los ignora: los roles son los que traiga el directorio.
+      POSTGRES_USER: ves
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: ves_market
+    volumes:
+      - datos:/var/lib/postgresql/data
+    healthcheck:
+      # `-h 127.0.0.1` por lo mismo que en desarrollo: por el socket UNIX,
+      # `pg_isready` da un falso positivo durante `initdb`.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ves -d ves_market"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [ves-market]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+volumes:
+  rabbitmq-data:
+  # `external` a propósito: este compose ni crea ni borra el volumen de datos.
+  # Un `docker compose down -v` se lleva el del bus, no este. El proyecto ya
+  # perdió la base una vez por un volumen que un `up` podía recrear
+  # (2026-08-23), y aquí además no hay segunda copia en la máquina.
+  datos:
+    name: ves_market_datos
+    external: true
+
+networks:
+  ves-market:
+    external: true
