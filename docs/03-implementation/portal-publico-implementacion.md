@@ -15,11 +15,22 @@ los cita.
 
 Lo que el plan da por cierto, verificado en el código y en la base:
 
-- **No hay producción.** `hgtech001` tiene montado el receptor de despliegue
-  continuo del gateway (`higerotech/despliegue-continuo`), pero hoy todo corre
-  en la máquina de desarrollo, detrás del túnel `criterio-dev`.
-  **Poner producción en pie es parte de este plan** (fase 9). No es un paso
-  final de «subir a producción».
+- **No hay producción.** Hoy todo corre en la máquina de desarrollo, detrás
+  del túnel `criterio-dev`. **Poner producción en pie es parte de este plan**
+  (fase 9). No es un paso final de «subir a producción».
+- **Dónde vive el núcleo en producción está sin decidir (D15).** Este plan se
+  escribió dando por hecho `hgtech001`. El análisis de placement
+  (`docs/02-design/placement-despliegue.md`, del mismo día) lo midió después y
+  encontró tres cosas:
+  - **su disco falla** según SMART: 8 sectores ilegibles;
+  - **unos 7 apagados abruptos en 19 días**, sin UPS;
+  - **ya corre allí un despliegue parcial de Criterio del 2026-09-07**: base
+    casi vacía, RabbitMQ y un gateway antiguo, desplegado por el receptor de
+    `higerotech/despliegue-continuo`.
+
+  La recomendación del análisis es una EC2 `t4g.large` en AWS. **La fase 9 vale
+  para cualquiera de los dos anfitriones; donde dice `hgtech001`, léase «el
+  anfitrión que decida D15».**
 - **El portal se sirve desde Cloudflare Workers** (decisión del 2026-10-05). Sus
   páginas sobreviven a una caída de `hgtech001`, que sigue sirviendo la API, el
   estado y el backoffice.
@@ -131,7 +142,7 @@ despliegan sobre ella.
 
 | PR / tarea | Contenido | Prueba que lo cierra | Talla |
 |---|---|---|---|
-| 9.1 | **`hgtech001` en pie con el compose completo**, con secretos nuevos para producción (no los de desarrollo). | Todos los servicios `healthy` | M |
+| 9.1 | **El anfitrión de producción (D15) en pie con el compose completo**, con secretos nuevos para producción (no los de desarrollo). Si es `hgtech001`, antes se retira el despliegue parcial del 2026-09-07. | Todos los servicios `healthy` | M |
 | 9.2 | **Datos de arranque restaurados del último full en B2** con `restaurar`. Es el **simulacro de recuperación**: se mide el tiempo de punta a punta. | Mismas comprobaciones que `verificar` (chunks, `post_restore`, edad del dato); tiempo anotado en la ADR-0035 | M |
 | 9.3 | **CD por servicio**: imágenes a GHCR para ingestores, motor, `estado` y `backoffice-api`, y el receptor ampliado. | Un merge a `main` despliega y el receptor publica `current_tag` | M |
 | 9.4 | **Dominios y borde:** `criterio.higerotech.com` en Workers, `api.` y `estado.` por el túnel de producción, *Cache Rule* para `/portal/v1/*` y el backoffice tras Access. | `curl` a cada hostname; respuesta servida desde la caché del borde en `/portal/v1/snapshot` | M |
@@ -235,6 +246,7 @@ como compromiso de fechas.*
 | D12 | **Dominio de producción.** `criterio.higerotech.com` es el que inventó el diseño. | 9.4 | Confirmarlo, con `api.` y `estado.` como subdominios |
 | D13 | **¿El respaldo de producción comparte el bucket `ves-market-watch` o usa uno propio?** | 9.5 | Bucket propio: separa el cupo de descarga y la retención de desarrollo |
 | D14 | **Cómo se miden las métricas de producto sin cookies** (PRD, «Métricas de éxito») | Nada antes de M1 | Logs del borde de Cloudflare: no exigen código en el portal |
+| D15 | **Dónde vive el núcleo en producción:** AWS EC2 o `hgtech001` (`placement-despliegue.md`) | 0.2 y toda la fase 9 | AWS EC2 `t4g.large` desde el principio. Si se usa `hgtech001` para M1–M3, antes hay que cambiar el disco por un SSD y poner una UPS |
 | — | **Cuota nativa de tokens en Auth0**, y si los tokens de usuario cuentan contra los 1.000 | 8.3 y 8b.4 | Verificarlo en el tenant antes de empezar la fase 8 |
 | — | **Objetivos de las métricas de producto** | Nada antes de M1 | Fijarlos con un mes de datos de M1 |
 

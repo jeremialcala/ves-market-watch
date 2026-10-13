@@ -17,6 +17,24 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Changed
+
+- **`repo-history.md` regenerado tras el corte 0.5.2**, con la entrada de
+  `TAG_NOTES` para v0.5.2. El grafo pasa de 320 a 359 commits y cierra en
+  `merge develop tag: "v0.5.2"`. Hubo que poner al día el `main` local antes:
+  el generador lee las ramas locales, y estaba en el merge de 0.5.1.
+
+### Fixed
+
+- **Dos contradicciones entre documentos del portal,** encontradas al revisar
+  la coherencia tras el release:
+  - `portal-publico.md` seguía describiendo el «en vivo» como un canal de push
+    en tres sitios. D2 decidió sondeo (ADR-0028 §5).
+  - El plan de implementación daba por hecho `hgtech001` como anfitrión de
+    producción, y no recogía la decisión D15 (AWS o `hgtech001`) ni lo que
+    encontró el análisis de placement: disco fallando, apagados abruptos y un
+    despliegue parcial del 2026-09-07 que ya corre allí.
+
 ## [0.5.2] - 2026-10-12
 
 Versión de mantenimiento: **ningún cambio en el producto**. Trae tres cosas:
