@@ -1,0 +1,33 @@
+# api-gateway de ves-market-watch, desplegado por el receptor de webhooks.
+#
+# La infraestructura con estado (RabbitMQ + TimescaleDB) NO vive aqui: es un
+# stack aparte en /srv/infra/ves-market, fuera del ciclo de despliegue. Este
+# compose solo describe el servicio sin estado que si se redespliega en cada
+# release, y por eso el rollback del receptor es seguro: este contenedor no
+# toca el esquema de la base.
+#
+# Se comunica con la infraestructura por la red externa `ves-market`, no por
+# puertos del host.
+
+name: ves-api-gateway
+
+services:
+  api-gateway:
+    image: ghcr.io/jeremialcala/ves-market-watch/api-gateway:${IMAGE_TAG:?IMAGE_TAG es obligatorio}
+    container_name: ves-api-gateway
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      HTTP_HOST: 0.0.0.0
+    ports:
+      # Solo loopback: quien lo publique hacia fuera sera un tunel, no este fichero.
+      - "127.0.0.1:8800:8000"
+    networks: [ves-market]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+networks:
+  ves-market:
+    external: true

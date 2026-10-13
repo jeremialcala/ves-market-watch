@@ -11,3 +11,9 @@
 *.sh            text eol=lf
 **/Dockerfile   text eol=lf
 scripts/respaldo/crontab text eol=lf
+
+# Lo que se copia a midgard tal cual (`scp` desde un checkout de Windows): un
+# `.service` con CR deja a systemd buscando un ejecutable llamado
+# `ves-market-arranque.sh\r`, y un `.env` de ejemplo con CR mete el CR en cada
+# valor que alguien rellene sobre él.
+deploy/midgard/** text eol=lf

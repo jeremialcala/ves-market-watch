@@ -1,0 +1,15 @@
+# /etc/systemd/system/ves-market-arranque.service
+[Unit]
+Description=Criterio: levanta base, bus y servicios tras el arranque del appliance
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/ves-market-arranque.sh
+TimeoutStartSec=600
+
+[Install]
+WantedBy=multi-user.target

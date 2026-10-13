@@ -316,6 +316,12 @@ el comentario del servicio en el compose sobre qué protege y qué no.
 
 ## Operación
 
+Desde el 2026-10-13 el respaldo corre en midgard, junto a la base (ADR-0034).
+Allí el contenedor se llama `ves-respaldo` y las mismas órdenes van con
+`docker exec ves-respaldo …` en vez de `docker compose exec respaldo …`. El de
+la máquina de desarrollo queda parado, y así debe seguir: dos respaldos contra
+el mismo bucket se podan uno al otro.
+
 ```sh
 # a mano, sin esperar al cron
 docker compose exec respaldo respaldar incremental

@@ -17,7 +17,30 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **`deploy/midgard/`: los compose con que Criterio corre en midgard,** que
+  hasta hoy vivían solo en el disco de la máquina. Tres proyectos —base y bus,
+  gateway, y el resto de servicios—, la unidad de arranque que los levanta tras
+  un corte de luz y un README de operación.
+- **ADR-0034, el entorno de captura sale de la máquina de desarrollo y pasa a
+  midgard.** La máquina de desarrollo tuvo cuatro pantallazos azules en tres
+  días, y cada uno era un hueco en una serie que no se puede volver a capturar.
+
 ### Changed
+
+- **Toda la captura corre en midgard desde el 2026-10-13:** base, bus,
+  ingestores, motor, gateway, panel, túnel y respaldo. La base viajó como
+  réplica física y se promovió en el corte: **no se perdió ningún ciclo**, con
+  62 s entre el último snapshot de un lado y el primero del otro. El acceso
+  público no se interrumpió ni cambió de nombre. **No decide D15:** sigue
+  siendo el entorno `criterio-dev`.
+- **El compose de la raíz queda para desarrollar.** Su cabecera avisa de que
+  `up` captura una serie paralela a la de midgard, y de que los perfiles
+  `tunel` y `respaldo` no se levantan aquí mientras corran allí.
+- **Las dos ADR previstas del portal se renumeran:** el placement en Workers
+  pasa a ser la 0035 y la puesta en producción, la 0036. La 0034 la ocupó el
+  traslado.
 
 - **`repo-history.md` regenerado tras el corte 0.5.2**, con la entrada de
   `TAG_NOTES` para v0.5.2. El grafo pasa de 320 a 359 commits y cierra en
@@ -34,6 +57,17 @@ Convención de mantenimiento (inventario por ejecución):
     producción, y no recogía la decisión D15 (AWS o `hgtech001`) ni lo que
     encontró el análisis de placement: disco fallando, apagados abruptos y un
     despliegue parcial del 2026-09-07 que ya corre allí.
+
+### Security
+
+- **Retroceso de T8 en midgard, abierto y anotado en el threat model.** Cinco
+  imágenes propias corren allí copiadas de la máquina de desarrollo, sin digest
+  ni registro, y son anteriores a 0.5.2: no llevan los parches de `multidict`
+  ni el resto de dependencias de esa versión. Las de terceros sí van por
+  digest. Se cierra cuando el CI las publique en GHCR.
+- **La base ya no escucha en la LAN con `postgres/postgres`.** En midgard no
+  publica puertos, los servicios entran con el rol `ves` y `postgres` quedó sin
+  contraseña: solo sirve desde el socket del contenedor.
 
 ## [0.5.2] - 2026-10-12
 
