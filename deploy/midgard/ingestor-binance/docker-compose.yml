@@ -1,0 +1,41 @@
+# ingestor-binance de ves-market-watch, desplegado por el receptor de webhooks.
+# Vive en `/srv/apps/ves-ingestor-binance`.
+#
+# Lo redespliega el workflow `build-ingestor-binance` en cada release a `main`
+# que toque su código; a los demás servicios no los mueve. El nombre del
+# proyecto compose tiene que ser el `name` de la app en el inventario del
+# receptor, que llama a compose con `-p ves-ingestor-binance`.
+#
+# Sin `health_url` en el inventario: no expone HTTP. El receptor da el
+# despliegue por bueno en cuanto el contenedor arranca, y no hay rollback
+# automático. Tras un release, mirar `docker logs ves-ingestor-binance`.
+#
+# La base y el bus viven en `/srv/infra/ves-market`; se llega a ellos por la
+# red externa `ves-market`, no por puertos del host.
+
+name: ves-ingestor-binance
+
+services:
+  ingestor-binance:
+    image: ghcr.io/jeremialcala/ves-market-watch/ingestor-binance:${IMAGE_TAG:?IMAGE_TAG es obligatorio}
+    container_name: ves-ingestor-binance
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?falta DATABASE_URL en .env}
+      AMQP_URL: ${AMQP_URL:?falta AMQP_URL en .env}
+      # La MISMA clave que tuvo siempre (ADR-0011). Otra distinta no falla:
+      # produce otros `merchant_ref` y parte en dos la serie de cada comerciante.
+      MERCHANT_HMAC_KEY: ${MERCHANT_HMAC_KEY:?falta MERCHANT_HMAC_KEY en .env}
+      TOP_K: "200"
+      FETCH_INTERVAL_SECONDS: "60"
+      REQUEST_BUDGET_PER_MIN: "40"
+      PAGINAS_EN_PARALELO: "4"
+    mem_limit: 256m
+    networks: [ves-market]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+networks:
+  ves-market:
+    external: true

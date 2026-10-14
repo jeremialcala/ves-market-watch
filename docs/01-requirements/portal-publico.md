@@ -107,13 +107,13 @@ Es la página más grande y la que más se parece a lo que ya existe.
 | Tasa oficial en 5 monedas | **las cinco ya se capturan** (USD, EUR, CNY, TRY, RUB) y `/rates/official/current` acepta `currency` | que el snapshot las incluya |
 | Cronología de señales 30 d | `/signals` | agrupar por regla y «efecto» (ya en `historialReglas.ts`) |
 | Profundidad P2P | `/market/depth`; `DepthChart` | — |
-| Barra superior «WSS conectado · último evento» | `StreamClient`, `ConnectionStatus` | canal **público** de push (D2) |
+| Barra superior «En vivo · actualizado hace N s» | `ConnectionStatus`, `FreshnessBadge` | sondeo del snapshot cada 10 s, sin WebSocket anónimo (D2, ADR-0028 §5) |
 | «Exportar por API», «Alertas por API» | — | modales con código de ejemplo + CTA Empresa; las alertas no existen (D6) |
 
 **Backend nuevo:**
 
 - Lectura anónima de todo lo anterior (D1), sin abrir `/api/v1` a cualquiera.
-- Push anónimo para el «en vivo» (D2).
+- Nada para el «en vivo»: es sondeo del snapshot (D2), no un canal de push.
 - Ningún dato nuevo: las cinco monedas de la tasa oficial ya se capturan.
 
 ### 3. Intradía (nivel Comunidad)
@@ -222,8 +222,9 @@ Primera entrega:
 
 ### Transversal a todas
 
-- Barra superior: «WSS conectado», último evento, «datos públicos, sin cuenta»,
-  fecha de los datos.
+- Barra superior: «En vivo · actualizado hace N s», «datos públicos, sin
+  cuenta» y fecha de los datos. El diseño original decía «WSS conectado»; se
+  cambió con D2.
 - Navegación, ES/EN, claro/oscuro, «Acceso gratis» → alta, y el email cuando hay
   sesión.
 - Pie con contacto y WhatsApp.
@@ -388,11 +389,17 @@ La revisión técnica añadió tres cosas para que la regla funcione:
 
 ## Fases
 
+> **Detalle de implementación PR a PR, con orden y tallas:**
+> `docs/03-implementation/portal-publico-implementacion.md` (2026-10-05). Ese plan
+> ordena las fases en cuatro hitos (M1–M4) y adelanta la **fase 9
+> (producción)** al camino de M1: el 2026-10-05 se confirmó que **no hay
+> producción todavía**, y que el portal se sirve desde **Cloudflare Workers**.
+
 Cada fase se puede desplegar sola y deja algo que funciona.
 
 | Fase | Contenido | Backend | Frontend | Talla |
 |---|---|---|---|---|
-| **0. Decisiones** | D1–D11 cerradas; ADR-0028 (D1 y D2), ADR-0029 (D3), ADR-0030 (D4), ADR-0031 (D5), ADR-0032 (D7), ADR-0033 (D9 a D11); threat model 0.5.0 con T16–T25 ✔ (2026-10-04, DREAD ratificado HITL); PRD pendiente | — | — | S |
+| **0. Decisiones** | D1–D11 cerradas; ADR-0028 (D1 y D2), ADR-0029 (D3), ADR-0030 (D4), ADR-0031 (D5), ADR-0032 (D7), ADR-0033 (D9 a D11); threat model 0.5.0 con T16–T25 ✔ (2026-10-04, DREAD ratificado HITL); PRD en `portal-publico-prd.md` (draft, pendiente de aprobación HITL) | — | — | S |
 | **1. Esqueleto** | primero, solo: workspace npm raíz con CI, Dockerfile y auditor de npm ajustados (ADR-0031 §3); después `apps/portal` con router, prerender, layout, barra, pie, ES/EN, tema, y `packages/criterio-ui` con el DS; imagen; ruta en el túnel de desarrollo | — | ✔ | M |
 | **2. Lectura pública** | `/portal/v1/snapshot` y `/portal/v1/series` con caché y límite por IP; Dashboard y hero de Producto | ✔ | ✔ | L |
 | **3. Páginas sin datos propios** | Producto completa, Precios, APIs (catálogo generado de los YAML y playground con CORS) | CORS, URL | ✔ | M |
@@ -499,3 +506,11 @@ decisiones.**
   reglas salen como «hipótesis», correcto con menos de 6 casos.
 
 No queda ninguna corrección pendiente en el diseño.
+
+**Cuarta revisión (2026-10-05): las cinco monedas, de vuelta en el diseño.**
+El Dashboard vuelve a mostrar USD, EUR, CNY, TRY y RUB. USD coincide al
+decimal con la base (871,3689, fecha-valor 2026-10-05). Las otras cuatro son
+cifras de ejemplo cercanas a las reales: EUR 1.002,17 frente a 981,18, TRY
+18,34 frente a 17,73, RUB 11,00 frente a 10,40, CNY 129,08 frente a 129,98.
+En producción el portal pinta el dato en vivo, así que no hace falta
+corregirlas.

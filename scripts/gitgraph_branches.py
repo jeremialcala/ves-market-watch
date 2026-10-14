@@ -46,6 +46,39 @@ TAG_NOTES = {
         "Gates 2 y 3 aprobados HITL (2026-09-08): cierran 03-implementation y "
         "04-testing. Sin bloques `demo · sin fuente` en el producto",
     ),
+    "v0.5.2": (
+        "ADR-0027 (respaldo en Backblaze B2, clave sin borrado); ADR-0028…0033 y "
+        "threat model 0.5.0 (T16–T25) del portal público; `pyjwt` 2.15.1, "
+        "`multidict` 6.9.1, `undici` 8.11.2, `brace-expansion` 2.1.7 y "
+        "`source-map-js` 1.2.2",
+        "Patch de mantenimiento (2026-10-12): el respaldo sale de Google Drive, "
+        "`T8 · SCA` vuelve a verde en `main` y entra la fase 0 del portal público, "
+        "solo documentación. Sin gate cerrado: el PRD del portal sigue en borrador",
+    ),
+    "v0.5.3": (
+        "ADR-0034 (el entorno de captura pasa a midgard por réplica física); "
+        "`deploy/midgard/` con un proyecto compose por servicio; cinco workflows "
+        "`build-<servicio>` sobre `publicar-imagen.yml`",
+        "Patch de despliegue (2026-10-13): la captura sale de la máquina de "
+        "desarrollo sin perder un ciclo y los seis servicios quedan con despliegue "
+        "continuo. Sin cambios de producto ni gate cerrado; no decide D15",
+    ),
+    "v0.5.4": (
+        "`respaldar agregados` excluye el crudo chunk a chunk y lo comprueba en el "
+        "índice del volcado; `deploy/midgard/respaldo-nas/` (segunda copia, al NAS); "
+        "avisos por ntfy de despliegues fallidos",
+        "Patch de respaldos (2026-10-13): el volcado mensual llevaba dentro los "
+        "snapshots crudos que debía excluir. Primer despliegue automático por "
+        "servicio (`ves-respaldo`). Sin cambios de producto ni gate cerrado",
+    ),
+    "v0.5.5": (
+        "`deploy/midgard/vigia/` (vigía de operación: contenedores y sondas de "
+        "trabajo); `estado.sh` vigila la verificación semanal y los agregados "
+        "mensuales, con pruebas; trabajo `scripts de operación` en CI",
+        "Patch de operación (2026-10-13): un servicio caído o parado avisa por "
+        "ntfy en vez de descubrirse mirando. Sin cambios de producto ni gate "
+        "cerrado",
+    ),
     "v0.5.1": (
         "Avisos por ntfy del cron de seguridad (`seguridad.yml`) y del respaldo "
         "(`aviso.sh` + healthcheck `estado`); js-yaml 4.3.2 (GHSA-2883-xcg3-v3hh); "

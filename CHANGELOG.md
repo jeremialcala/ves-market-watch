@@ -19,6 +19,289 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Latido del vigía a Healthchecks.io.** Al final de cada pasada, el vigía de
+  midgard hace un ping a una comprobación de Healthchecks; si dejan de llegar,
+  avisa Healthchecks desde fuera. Cubre midgard apagado, midgard sin internet
+  y un vigía roto, que nadie de dentro puede avisar. Si el vigía no pudo
+  entregar un aviso por ntfy, el ping es de fallo y lleva el texto que no
+  salió. `ves-market-vigia.sh prueba-latido` lo comprueba de punta a punta.
+  La URL de ping es una credencial y vive solo en `/etc/ves-market-latido.env`.
+  Con 21 pruebas en CI.
+
+### Changed
+
+- **El sondeo externo pasa a ser un segundo punto de vista.** El cron de
+  GitHub no es fiable en este repositorio: el primer día corrió una vez en
+  siete horas y media. La alarma de un apagón es ahora el latido. Lo dicen el
+  README de midgard, el workflow y el script.
+
+## [0.5.6] - 2026-10-13
+
+Versión de operación: **ningún cambio en el producto**. Trae una cosa:
+
+- **Un sondeo desde fuera de la casa** que avisa cuando Criterio no responde.
+  Es lo único que cubre un corte de luz o de internet en midgard, que el vigía
+  de dentro no puede ver.
+
+Patch por la convención de este archivo: infraestructura, pruebas y
+documentación, sin funcionalidad nueva de producto y sin gate cerrado.
+
+No despliega nada en midgard: no cambia el código de ningún servicio. El
+sondeo empieza a correr al llegar a `main`, porque los cron de GitHub solo se
+ejecutan desde la rama por defecto.
+
+### Added
+
+- **Sondeo externo desde GitHub Actions** (`sondeo-externo.yml`). Cada diez
+  minutos comprueba, desde fuera de la casa, que el API y el panel responden,
+  y avisa por ntfy cuando dejan de hacerlo, cada 6 h mientras dure y al
+  volver. Cubre lo único que el vigía de midgard no puede ver: que midgard
+  esté apagado o sin internet. Avisa por transiciones, con el estado guardado
+  en la caché de Actions, y sale en verde aunque Criterio no responda para que
+  una caída no sean 144 correos de GitHub. Con 28 pruebas en CI.
+
+### Changed
+
+- **`repo-history.md` regenerado tras el corte 0.5.5**, con la entrada de
+  `TAG_NOTES` para v0.5.5.
+
+## [0.5.5] - 2026-10-13
+
+Versión de operación: **ningún cambio en el producto**. Trae dos cosas:
+
+- **Un vigía que avisa cuando Criterio deja de funcionar,** no solo cuando un
+  contenedor se cae: mira que haya snapshots recientes, que el motor vaya al
+  día, que el gateway esté sano y que el acceso público responda.
+- **El healthcheck del respaldo ve también lo que no llegó a correr:** la
+  verificación semanal y el volcado mensual.
+
+Patch por la convención de este archivo: infraestructura, pruebas y
+documentación, sin funcionalidad nueva de producto y sin gate cerrado.
+
+Al llegar a `main` se despliega `ves-respaldo`, solo: es el único servicio cuyo
+código cambia. El vigía ya está instalado en midgard.
+
+### Added
+
+- **Vigía de operación en midgard** (`deploy/midgard/vigia/`). Cada minuto
+  comprueba que los nueve contenedores estén en pie y, además, que hagan su
+  trabajo: que haya un snapshot reciente, que el motor no vaya por detrás, que
+  el BCV se esté capturando, que la cola del motor se consuma, que el gateway
+  esté sano y que el API y el panel respondan por el túnel. Avisa por ntfy a
+  la tercera pasada en fallo, lo recuerda cada 6 h y avisa al volver. Hasta
+  ahora un servicio caído solo se veía entrando a mirar.
+- **`estado`, el healthcheck del respaldo, vigila también la verificación
+  semanal y los agregados mensuales.** Un `.fallo` solo aparece si el trabajo
+  corre y falla; si a su hora el contenedor no estaba en pie, no quedaba
+  rastro. Así faltó el volcado de agregados de octubre. Con pruebas
+  (`scripts/respaldo/tests/prueba-estado.sh`), que corren en CI.
+
+### Changed
+
+- **CI: trabajo nuevo `scripts de operación`,** que comprueba la sintaxis de
+  los scripts de respaldo y de `deploy/midgard/` y corre las pruebas del
+  healthcheck. Ni pytest ni vitest los veían.
+- **`build-respaldo` ya no se dispara por un cambio que solo toque sus
+  pruebas:** no entran en la imagen.
+- **`repo-history.md` regenerado tras el corte 0.5.4**, con la entrada de
+  `TAG_NOTES` para v0.5.4.
+
+## [0.5.4] - 2026-10-13
+
+Versión de respaldos: **ningún cambio en el producto**. Trae tres cosas:
+
+- **El volcado mensual de `agregados` deja de llevar dentro los snapshots
+  crudos.** Existe para guardarse dos años sin ellos, y el patrón que debía
+  excluirlos no casaba con ningún chunk. Es el único cambio de código.
+- **Segunda copia de respaldo, al NAS de la casa,** independiente de la de B2 y
+  restaurable sin ninguna clave.
+- **Un despliegue que falla en midgard avisa por ntfy.**
+
+Patch por la convención de este archivo: una corrección, infraestructura y
+documentación, sin funcionalidad nueva de producto y sin gate cerrado.
+
+Al llegar a `main`, `build-respaldo` publica la imagen nueva y el receptor
+recrea `ves-respaldo`: es el primer despliegue automático de un servicio desde
+que cada uno tiene el suyo. Ningún otro contenedor se mueve.
+
+### Added
+
+- **Segunda copia de respaldo, al NAS de la casa** (`deploy/midgard/respaldo-nas/`).
+  Independiente de la de B2: otro volcado, otro destino y otro camino. Cada
+  noche deja el volcado completo **sin cifrar** —se restaura aunque se pierdan
+  las claves de B2—, los archivos no secretos del despliegue y los `.env` y el
+  `rclone.conf` cifrados con una frase. Avisa por ntfy si falla y un vigía
+  comprueba cada mañana que no esté atrasada. Primera copia verificada el
+  2026-10-14: 1,9 GiB, leída entera desde el NAS.
+
+- **Un despliegue que falla en midgard avisa por ntfy,** al mismo tema que el
+  respaldo y el disco. El receptor tenía los avisos apagados. ntfy necesita
+  una plantilla en la URL para leer el aviso; la receta quedó en el runbook de
+  `higerotech/despliegue-continuo`. Probado con un webhook firmado que pedía
+  un tag inexistente: el `pull` falló, el receptor revirtió y llegó el aviso.
+- **`agregados-2026-10.dump`, el volcado mensual de octubre, que no existía.**
+  El día 1 el respaldo estaba caído por el token de Drive.
+
+### Changed
+
+- **`repo-history.md` regenerado tras el corte 0.5.3**, con la entrada de
+  `TAG_NOTES` para v0.5.3.
+
+### Fixed
+
+- **El volcado de `agregados` llevaba dentro los snapshots crudos que existe
+  para dejar fuera.** El patrón de exclusión buscaba chunks con
+  `p2p_snapshots_raw` en el nombre, y los chunks de TimescaleDB se llaman
+  `_hyper_<id>_<n>_chunk`: no casaba con ninguno. `agregados-2026-09.dump`
+  pesa 2,9 GB porque es un full, y está guardado con retención de dos años,
+  cuando la clasificación de datos da 90 días al crudo. Ahora se excluye cada
+  chunk por su nombre y, antes de subir, se comprueba en el índice del volcado
+  que no quedó ninguno. El de octubre pesa 100 MB.
+
+### Security
+
+- **Cerrado el retroceso de T8 en midgard.** Ingestores, motor, panel y
+  respaldo corren desde el 2026-10-14 las imágenes que el CI publica en GHCR
+  (`sha-2934219`), desplegadas por el receptor, en lugar de las copiadas a mano
+  en el traslado. La migración fue servicio a servicio y no se perdió ningún
+  minuto de captura. Sigue abierto que esos servicios, salvo el panel, no
+  tienen comprobación de salud ni rollback automático.
+
+## [0.5.3] - 2026-10-13
+
+Versión de despliegue: **ningún cambio en el producto**. Trae dos cosas:
+
+- **Toda la captura corre en midgard**, fuera de la máquina de desarrollo, que
+  llevaba cuatro pantallazos azules en tres días. La base viajó como réplica
+  en caliente y no se perdió ningún ciclo.
+- **Despliegue continuo para los seis servicios.** Hasta ahora solo el gateway
+  tenía imagen publicada; ingestores, motor, panel y respaldo ganan la suya, y
+  el receptor de midgard despliega cada uno por separado.
+
+Patch por la convención de este archivo: infraestructura y documentación, sin
+funcionalidad nueva de producto y sin gate cerrado. **No decide D15:** midgard
+aloja el entorno `criterio-dev`, no producción.
+
+Al publicarse esta versión, midgard sigue con las cinco imágenes copiadas a
+mano en el traslado. Pasan a las de GHCR en la migración que viene justo
+después, y ahí se cierra el retroceso de T8 anotado abajo.
+
+### Added
+
+- **`deploy/midgard/`: los compose con que Criterio corre en midgard,** que
+  hasta hoy vivían solo en el disco de la máquina. Un proyecto por pieza —base
+  y bus, y uno por servicio—, la unidad de arranque que los levanta tras un
+  corte de luz y un README de operación.
+- **Despliegue continuo para ingestores, motor, panel y respaldo.** Cinco
+  workflows `build-<servicio>` publican cada imagen en GHCR con su `sha`, y el
+  receptor de midgard despliega solo el servicio cuyo workflow terminó. Hasta
+  ahora solo el gateway tenía imagen publicada; las otras cinco se copiaron a
+  mano en el traslado. Los cinco comparten `publicar-imagen.yml`, y cada uno
+  se dispara solo si el release tocó su código: un cambio en tests o en
+  documentación no reinicia la captura.
+- **ADR-0034, el entorno de captura sale de la máquina de desarrollo y pasa a
+  midgard.** La máquina de desarrollo tuvo cuatro pantallazos azules en tres
+  días, y cada uno era un hueco en una serie que no se puede volver a capturar.
+
+### Changed
+
+- **Toda la captura corre en midgard desde el 2026-10-13:** base, bus,
+  ingestores, motor, gateway, panel, túnel y respaldo. La base viajó como
+  réplica física y se promovió en el corte: **no se perdió ningún ciclo**, con
+  62 s entre el último snapshot de un lado y el primero del otro. El acceso
+  público no se interrumpió ni cambió de nombre. **No decide D15:** sigue
+  siendo el entorno `criterio-dev`.
+- **El compose de la raíz queda para desarrollar.** Su cabecera avisa de que
+  `up` captura una serie paralela a la de midgard, y de que los perfiles
+  `tunel` y `respaldo` no se levantan aquí mientras corran allí.
+- **Las dos ADR previstas del portal se renumeran:** el placement en Workers
+  pasa a ser la 0035 y la puesta en producción, la 0036. La 0034 la ocupó el
+  traslado.
+
+- **`repo-history.md` regenerado tras el corte 0.5.2**, con la entrada de
+  `TAG_NOTES` para v0.5.2. El grafo pasa de 320 a 359 commits y cierra en
+  `merge develop tag: "v0.5.2"`. Hubo que poner al día el `main` local antes:
+  el generador lee las ramas locales, y estaba en el merge de 0.5.1.
+
+### Fixed
+
+- **Dos contradicciones entre documentos del portal,** encontradas al revisar
+  la coherencia tras el release:
+  - `portal-publico.md` seguía describiendo el «en vivo» como un canal de push
+    en tres sitios. D2 decidió sondeo (ADR-0028 §5).
+  - El plan de implementación daba por hecho `hgtech001` como anfitrión de
+    producción, y no recogía la decisión D15 (AWS o `hgtech001`) ni lo que
+    encontró el análisis de placement: disco fallando, apagados abruptos y un
+    despliegue parcial del 2026-09-07 que ya corre allí.
+
+### Security
+
+- **Retroceso de T8 en midgard, abierto y anotado en el threat model.** Cinco
+  imágenes propias corren allí copiadas de la máquina de desarrollo, sin digest
+  ni registro, y son anteriores a 0.5.2: no llevan los parches de `multidict`
+  ni el resto de dependencias de esa versión. Las de terceros sí van por
+  digest. Se cierra cuando midgard pase a las imágenes que esta versión
+  empieza a publicar en GHCR.
+- **La base ya no escucha en la LAN con `postgres/postgres`.** En midgard no
+  publica puertos, los servicios entran con el rol `ves` y `postgres` quedó sin
+  contraseña: solo sirve desde el socket del contenedor.
+
+## [0.5.2] - 2026-10-12
+
+Versión de mantenimiento: **ningún cambio en el producto**. Trae tres cosas:
+
+- **El respaldo sale de Google Drive y pasa a Backblaze B2.** El token OAuth de
+  Drive caducó dos veces en seis semanas, la segunda con 11 días sin respaldo.
+  En B2 la credencial del contenedor ya no puede borrar lo que sube.
+- **`T8 · SCA` vuelve a verde en `main`,** con las dependencias de cinco
+  advisories al día: `pyjwt`, `undici`, `brace-expansion`, `multidict` y
+  `source-map-js`. La pasada semanal llevaba dos lunes en rojo porque los
+  arreglos estaban en `develop` y no habían llegado a `main`.
+- **La fase 0 del portal público, solo documentación:** plan por página, PRD,
+  ADR-0028 a ADR-0033, threat model 0.5.0, plan de implementación y análisis de
+  placement. **No hay código del portal todavía.**
+
+Patch por la convención de este archivo: correcciones, infraestructura y
+documentación, sin funcionalidad nueva de producto y sin gate cerrado. El PRD
+del portal sigue en borrador, pendiente de aprobación HITL.
+
+### Added
+
+- **Análisis de placement del despliegue completo, AWS frente a Cloudflare**
+  (`docs/02-design/placement-despliegue.md`). Mide la carga real: la base se
+  estabiliza en ~10 GB porque la retención de 90 días ya está llena. Usa
+  precios oficiales verificados el 2026-10-05.
+  - **Cloudflare no puede alojar TimescaleDB ni RabbitMQ:** sus Containers no
+    tienen disco persistente. Gana el borde.
+  - **Para el núcleo,** el mejor PxD en la nube es una sola EC2 `t4g.large`
+    con el compose: $62,76 al mes, o $44,51 con ahorro a un año. Duplica el
+    PxD de la versión troceada en Fargate ($149,53).
+  - **Verificación de `hgtech001`** por SSH: performance suficiente (148 TPS
+    frente a 2,9 de carga real), pero el disco falla según SMART (8 sectores
+    ilegibles) y hay unos 7 apagados abruptos en 19 días, sin UPS.
+  - Queda para decisión HITL **cuándo pasa el núcleo** de `hgtech001` a AWS.
+- **Plan de implementación del portal público**
+  (`docs/03-implementation/portal-publico-implementacion.md`, draft para
+  aprobación HITL). Cada fase se descompone en PRs con su prueba de cierre y su
+  talla, en cuatro hitos (M1 portal anónimo, M2 estado, M3 Comunidad, M4
+  Empresa), con un gantt validado. Parte de dos hechos confirmados el
+  2026-10-05:
+  - **no hay producción todavía:** ponerla en pie en `hgtech001`, restaurando
+    el último full de B2 como simulacro de recuperación, entra en el camino de
+    M1;
+  - **el portal se sirve desde Cloudflare Workers** (ADR-0034 pendiente, con
+    precios verificados).
+
+
+- **PRD del portal público** (`docs/01-requirements/portal-publico-prd.md`,
+  draft para aprobación HITL). Tiene:
+  - 13 requisitos funcionales y 7 no funcionales con criterios verificables;
+  - escenarios de abuso A1–A12 enlazados a T16–T25;
+  - la tabla ASVS;
+  - C4 Context, journey y requirementDiagram (Mermaid validado: 3 ok).
+
+  Las métricas de producto quedan con `<TODO: objetivo>` para decisión humana,
+  y abierta la forma de medirlas sin cookies de seguimiento.
 - **Plan del portal público y sus decisiones (fase 0, solo documentación).** El
   diseño «Criterio Público» abre el producto sin login: Dashboard en vivo,
   acceso Comunidad por email para Intradía e Histórico, y la API como nivel
@@ -44,15 +327,6 @@ Convención de mantenimiento (inventario por ejecución):
   (`docs/legal/`), pendiente de revisión. Bloquea la salida a producción del
   alta, no su desarrollo.
 
-### Fixed
-
-- **El estado del respaldo sobrevive a una recreación del contenedor.**
-  `/var/lib/respaldo` —último bueno, último fallo y fallo ya avisado, que leen
-  el healthcheck y `aviso`— vivía en la capa del contenedor. El 2026-10-04 una
-  recreación para desplegar un arreglo borró el `.avisado` del incremental: el
-  «vuelve a funcionar» no salió y el último push decía que seguía fallando. El
-  healthcheck, además, olvidó el full de esa tarde. Ahora es el volumen con
-  nombre `respaldo_estado`.
 ### Changed
 
 - **El respaldo pasa de Google Drive a Backblaze B2 (ADR-0027).** El token OAuth
@@ -61,8 +335,8 @@ Convención de mantenimiento (inventario por ejecución):
   primera hora, pero reparar el token pide un navegador y una persona. Una clave
   de aplicación de B2 no caduca.
   - Mismo remoto `crypt`, repuntado con `rclone config update`: scripts,
-    cadencias, verificación y `.env` no cambian. El histórico de Drive se copia
-    cifrado, sin descifrar.
+    cadencias, verificación y `.env` no cambian. El histórico de Drive se puede
+    copiar cifrado, sin descifrar (pendiente: pide reautorizar Drive).
   - `RETENCION_FULL_DIAS` pasa de 90 a **76**: en B2 lo podado queda oculto
     otros 14 días, y 76 + 14 = los 90 de la clasificación de datos.
   - **rclone sale de la imagen oficial 1.75.0, por digest, y no del `apk`.**
@@ -77,15 +351,48 @@ Convención de mantenimiento (inventario por ejecución):
   - `scripts/respaldo/README.md` reescribe la puesta en marcha para B2 y
     documenta la copia del histórico y la retirada de Drive.
 
+### Fixed
+
+- **El estado del respaldo sobrevive a una recreación del contenedor.**
+  `/var/lib/respaldo` —último bueno, último fallo y fallo ya avisado, que leen
+  el healthcheck y `aviso`— vivía en la capa del contenedor. El 2026-10-04 una
+  recreación para desplegar un arreglo borró el `.avisado` del incremental: el
+  «vuelve a funcionar» no salió y el último push decía que seguía fallando. El
+  healthcheck, además, olvidó el full de esa tarde. Ahora es el volumen con
+  nombre `respaldo_estado`.
+
+- **La documentación del respaldo, con las cifras del día del corte.** README,
+  ADR-0027 y `respaldar.sh` describían la base de agosto: full de 2,3 GB, unos
+  208 GB en régimen y 18 min de verificación. El 2026-10-04 el full pesó
+  **4,9 GB** —la base se duplicó en seis semanas—, el régimen pasa a unos
+  **440 GB** y la verificación tarda ~28 min.
+- **Dos afirmaciones falsas sobre el `apk` de la caja de respaldo**, en su
+  Dockerfile y en la fila T8 del threat model: decían que el digest de la base
+  congela el índice de paquetes. No lo congela —un rebuild del 2026-10-04 pasó
+  `pg_dump` de 16.14 a 16.15—. T8 cuenta además la imagen de rclone fijada por
+  digest.
+
 ### Security
 
+- **`T8 · SCA`: `multidict` 6.9.1 y `source-map-js` 1.2.2.** La pasada semanal
+  del 2026-10-12 sobre `main` cayó por dos advisories nuevos.
+  - **`multidict` 6.7.1 → 6.9.1** en `api-gateway`, `indicator-engine`,
+    `ingestor-bcv` e `ingestor-binance` (CVE-2026-104874): fuga de referencias
+    en dos operaciones de la extensión C, con crecimiento de memoria. Ningún
+    servicio usa `multidict` directamente: entra como dependencia transitiva.
+    Se fijó **6.9.1 y no la 7.1.0** que resolvía por defecto: un salto de
+    versión mayor en cuatro servicios no se justifica por este riesgo.
+  - **`source-map-js` 1.2.1 → 1.2.2** en `web-spa` (GHSA-68fv-2mgg-jv7q), solo
+    de desarrollo (`vitest`, `jsdom`, `vite`).
+  - **La pasada del cron estuvo roja en `main` el 2026-10-05 y el 10-12.**
+    `main` no tenía el arreglo de `pyjwt`, `undici` y `brace-expansion` del
+    2026-10-04, que solo estaba en `develop`. Este release lo lleva a `main`
+    junto con los dos de arriba.
 - **La credencial del contenedor de respaldo ya no puede destruir el
   respaldo.** La clave de B2 no tiene `deleteFiles`: la poda oculta
   (`b2_hide_file`) y una regla de lifecycle borra a los 14 días. Quien robe la
   máquina puede ocultarlo todo, no hacerlo desaparecer; la verificación del
   domingo lo detecta, y lo oculto se restaura con `RCLONE_B2_VERSION_AT`.
-### Security
-
 - **`T8 · SCA` vuelve a verde: `pyjwt` 2.15.1, `undici` 8.11.2 y
   `brace-expansion` 2.1.7.** Aparecieron advisories nuevos sin que los tocara
   ningún commit, y los dos jobs se pusieron rojos en los PR del 2026-10-04.
@@ -3202,7 +3509,12 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.6...HEAD
+[0.5.6]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.5...v0.5.6
+[0.5.5]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.4...v0.5.5
+[0.5.4]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.3...v0.5.4
+[0.5.3]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.2...v0.5.3
+[0.5.2]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.3.1...v0.4.0

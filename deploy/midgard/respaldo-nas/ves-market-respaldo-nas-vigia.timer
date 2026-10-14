@@ -1,0 +1,13 @@
+# /etc/systemd/system/ves-market-respaldo-nas-vigia.timer
+[Unit]
+Description=Criterio: vigía matutino del respaldo al NAS
+
+[Timer]
+# 08:10 hora de la casa: el respaldo de las 00:30 tiene ~8 h. Si anoche falló
+# o no corrió, el último éxito tiene ~32 h y supera el límite de 26 h: un aviso
+# por la mañana, a hora de leerlo. Cinco minutos después del vigía de Andvari.
+OnCalendar=*-*-* 08:10 America/Caracas
+Persistent=true
+
+[Install]
+WantedBy=timers.target

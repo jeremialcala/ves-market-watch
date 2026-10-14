@@ -17,15 +17,19 @@ Medido **ejecutando el respaldo**, no estimado:
 
 | Pieza | Cadencia | Tamaño | Duración | Retención |
 |---|---|---|---|---|
-| `incremental/<hora>.tar.gz` | cada hora | **2,9 MB** | segundos | 14 días |
-| `full/ves_market-<sello>.dump` | cada 24 h (03:30 VET) | **2,3 GB** | **~12 min** | **76 + 14 días** |
-| `agregados/<mes>.dump` | cada mes | *sin medir* | — | 24 meses |
+| `incremental/<hora>.tar.gz` | cada hora | **3,2 MB** | segundos | 14 + 14 días |
+| `full/ves_market-<sello>.dump` | cada 24 h (03:30 VET) | **4,9 GB** | **~27 min** con la subida | **76 + 14 días** |
+| `agregados/<mes>.dump` | cada mes | **100 MB** (2026-10-14, en midgard) | ~2 min | 24 meses |
 
-Régimen estable: **unos 208 GB** —207 de fulls, contando los 14 días que pasa
-oculto cada full podado (ver *Inmutabilidad*), y algo menos de 1 de
+Cifras del **2026-10-04**, el primer día en B2. En agosto el full pesaba 2,3 GB:
+**la base se duplicó en seis semanas**, así que estas cifras caducan rápido —se
+releen del log de `respaldar`, que imprime los bytes subidos—.
+
+Régimen estable: **unos 440 GB** —4,9 GB por 90 días de fulls, contando los 14
+que pasa oculto cada full podado (ver *Inmutabilidad*), y unos 2 de
 incrementales—. En B2 se paga por GB almacenado, y la descarga es gratis hasta
 el triple de lo almacenado al mes según la política de B2 al escribir esto: la
-verificación semanal baja 2,3 GB.
+verificación semanal baja el full entero, 4,9 GB.
 
 El incremental es diminuto porque casi todo el volumen son los snapshots crudos
 —4.631 MB de 5.126— y en una hora solo entran 64.
@@ -47,25 +51,27 @@ El incremental es diminuto porque casi todo el volumen son los snapshots crudos
 > son **207**. La cadencia se mantuvo porque Drive tenía 2 TB, pero la
 > decisión se tomó con el número correcto.
 
-**La verificación semanal tarda ~18 min** y crea una base desechable de unos
-5 GB en el mismo servidor, que borra al terminar. No es gratis: si el domingo a
-las 05:00 hubiera algo más corriendo, se notaría. Medido de punta a punta el
-2026-08-24, con este resultado:
+**La verificación semanal tarda ~28 min** y crea una base desechable del tamaño
+de la real en el mismo servidor, que borra al terminar. No es gratis: si el
+domingo a las 05:00 hubiera algo más corriendo, se notaría. Medido de punta a
+punta el 2026-10-04, ya contra B2, con este resultado:
 
 ```
 timescaledb_post_restore → t
-indicators=1038498  official_rates=41214  p2p_snapshots_raw=107040
-chunks registrados=402
+indicators=2277951  official_rates=50484  p2p_snapshots_raw=210600  indicator_analysis=160666
+chunks registrados=431
 antigüedad del dato más nuevo: 0 días
 OK: el respaldo restaura y contiene lo que dice
 ```
 
-Los **402 chunks registrados** son el dato que de verdad cierra el círculo: es lo
+(El 2026-08-24, contra Drive: ~18 min y 402 chunks.)
+
+Los **431 chunks registrados** son el dato que de verdad cierra el círculo: es lo
 que distingue una restauración buena de una hecha sin `timescaledb_pre_restore()`,
 donde las filas se cuentan igual y las hipertablas quedan descolgadas.
 
-**El límite práctico no es el espacio, es la subida.** Son 2,3 GB cada noche: a
-20 Mbps de subida, unos 16 minutos; a 5 Mbps, cerca de una hora. Si eso llegara a
+**El límite práctico no es el espacio, es la subida.** Son 4,9 GB cada noche: a
+20 Mbps de subida, unos 33 minutos; a 5 Mbps, más de dos horas. Si eso llegara a
 estorbar, la salida no es recortar la retención sino **espaciar los fulls**: los
 incrementales cubren *cada hora*, así que un full semanal más los incrementales
 posteriores ya es una cadena de recuperación completa. Los fulls diarios solo
@@ -80,6 +86,42 @@ año — incumpliendo la propia política del proyecto por la puerta de atrás.
 
 De ahí el tercer volcado: `agregados` es el mismo `pg_dump` **excluyendo los
 datos de `p2p_snapshots_raw`**, y ese sí puede vivir dos años.
+
+**Hasta el 2026-10-14 no los excluía.** Los datos de una hipertabla viven en
+sus chunks, que se llaman `_timescaledb_internal._hyper_<id>_<n>_chunk`, y el
+patrón de exclusión buscaba chunks con `p2p_snapshots_raw` en el nombre: no
+existe ninguno. El volcado salía en verde y con el crudo entero dentro.
+
+- **`agregados-2026-09.dump` es, en la práctica, un full**: 2,9 GB, con datos
+  de 9 chunks de crudo, guardado con retención de dos años. Es el único volcado
+  afectado; el de octubre no llegó a hacerse, porque el día 1 el respaldo
+  estaba caído.
+- **Cómo se vio:** pesaba lo mismo que un full, y nadie lo había comparado. La
+  columna de arriba decía «sin medir».
+- **Qué cambió:** `respaldar agregados` excluye cada chunk por su nombre, que
+  saca del catálogo, y después **lee el índice del volcado** (`pg_restore -l`).
+  Si queda un solo chunk de crudo, no sube nada y avisa.
+- El de octubre, ya corregido, pesa 100 MB y conserva las otras cinco
+  hipertablas enteras: los mismos chunks que el full de ese día, menos los 14
+  de crudo.
+
+Para mirar qué lleva un volcado sin bajarlo entero basta su cabecera:
+
+```sh
+docker exec ves-respaldo sh -c '
+  rclone cat --head 16000000 "$RCLONE_REMOTE/agregados/agregados-2026-10.dump" > /tmp/c.dump
+  pg_restore -l /tmp/c.dump | grep -c "TABLE DATA _timescaledb_internal _hyper_3_"
+  rm /tmp/c.dump'
+```
+
+`3` es el id de `p2p_snapshots_raw` en `_timescaledb_catalog.hypertable`. Tiene
+que dar 0.
+
+**Lo que no se vigilaba:** `estado` no miraba la edad del último `agregados`.
+Si el día 1 a las 04:00 el contenedor no está en pie, ese mes se queda sin
+volcado; así faltó el de octubre, y lo vio una persona mirando el listado. Desde
+el 2026-10-14 `estado` lo dice a los 33 días, y lo mismo con la verificación semanal
+a los 8.
 
 ## Cifrado, y una decisión que no estaba tomada
 
@@ -224,8 +266,8 @@ recreación de ese contenedor es justo lo que borró la base el 2026-08-23.
 
 ```sh
 docker compose exec respaldo respaldar incremental
-docker compose exec respaldo respaldar full        # ~12 min + la subida
-docker compose exec respaldo verificar             # ~18 min
+docker compose exec respaldo respaldar full        # ~27 min con la subida
+docker compose exec respaldo verificar             # ~28 min
 docker compose exec respaldo estado
 ```
 
@@ -310,6 +352,12 @@ el comentario del servicio en el compose sobre qué protege y qué no.
 
 ## Operación
 
+Desde el 2026-10-13 el respaldo corre en midgard, junto a la base (ADR-0034).
+Allí el contenedor se llama `ves-respaldo` y las mismas órdenes van con
+`docker exec ves-respaldo …` en vez de `docker compose exec respaldo …`. El de
+la máquina de desarrollo queda parado, y así debe seguir: dos respaldos contra
+el mismo bucket se podan uno al otro.
+
 ```sh
 # a mano, sin esperar al cron
 docker compose exec respaldo respaldar incremental
@@ -343,9 +391,20 @@ sabe que algo va mal. Desde entonces un fallo se **empuja**:
   salir bien, llega un único «vuelve a funcionar». Para recibirlos, suscríbete
   al tema en la app de ntfy.
 - **Healthcheck.** `estado` pone el contenedor en `unhealthy` si el último
-  intento de cualquier trabajo falló, si no hay un incremental bueno en 2 h 30
-  min, o si el último full bueno pasa de 28 h. Se ve en `docker compose ps` y
-  no depende de la red ni de ntfy.
+  intento de cualquier trabajo falló, o si el último bueno de alguno es
+  demasiado viejo: 2 h 30 min el incremental, 28 h el full, 8 días la
+  verificación y 33 días los agregados. Lo segundo cubre lo que un `.fallo` no
+  ve: un trabajo que no llegó a correr. Se ve en `docker compose ps` y no
+  depende de la red ni de ntfy. Sus pruebas están en `tests/prueba-estado.sh`.
+- **Quién mira el healthcheck.** En midgard, el vigía de operación
+  (`deploy/midgard/vigia/`): un `unhealthy` de `ves-respaldo` llega al teléfono
+  con lo que dijo `estado`. Sin él, `unhealthy` era un color en un listado que
+  nadie abría.
+
+Los dos leen el mismo estado —último bueno, último fallo, fallo ya avisado— de
+`/var/lib/respaldo`, que es el volumen con nombre `respaldo_estado`. Hasta el
+2026-10-04 vivía en la capa del contenedor, y recrearlo para desplegar un
+arreglo se llevó un «vuelve a funcionar» y la memoria del último full.
 
 Probar el aviso sin romper nada:
 

@@ -2,8 +2,8 @@
 #
 # Respaldo de `ves_market` a Backblaze B2: incremental cada hora, full cada 24 h.
 #
-#   respaldar incremental   ventana de una hora, ~2,9 MB
-#   respaldar full          pg_dump completo, ~2,3 GB
+#   respaldar incremental   ventana de una hora, ~3,2 MB (2026-10-04)
+#   respaldar full          pg_dump completo, ~4,9 GB (2026-10-04)
 #   respaldar agregados     todo MENOS los snapshots crudos, para retención larga
 #
 # ---------------------------------------------------------------------------
@@ -173,7 +173,8 @@ case "$MODO" in
     ETIQUETA="$(date -u '+%Y-%m-%dT%H%M')"
     ARCHIVO="$TRABAJO/ves_market-$ETIQUETA.dump"
     # `-Fc` (custom) y no SQL plano: permite restaurar tablas sueltas y ya viene
-    # comprimido. 2,3 GB medidos sobre la base real (2026-08-24).
+    # comprimido. 2,3 GB medidos sobre la base real el 2026-08-24, 4,9 GB el
+    # 2026-10-04.
     pg_dump -Fc -Z6 --no-tablespaces -f "$ARCHIVO"
     subir "$ARCHIVO" full
     # 90 días y no más: la clasificación de datos fija «snapshots crudos 90
@@ -192,10 +193,42 @@ case "$MODO" in
     # cumple sin arrastrar el crudo.
     ETIQUETA="$(date -u '+%Y-%m')"
     ARCHIVO="$TRABAJO/agregados-$ETIQUETA.dump"
-    pg_dump -Fc -Z6 --no-tablespaces \
-      --exclude-table-data='public.p2p_snapshots_raw' \
-      --exclude-table-data='_timescaledb_internal.*p2p_snapshots_raw*' \
-      -f "$ARCHIVO"
+    CRUDO='p2p_snapshots_raw'
+
+    # Los datos de una hipertabla no están en la tabla: están en sus chunks,
+    # que se llaman `_timescaledb_internal._hyper_<id>_<n>_chunk`. Excluir la
+    # tabla padre no excluye nada.
+    #
+    # Hasta el 2026-10-14 esto se hacía con el patrón `*p2p_snapshots_raw*`,
+    # que no casa con ningún chunk porque ninguno lleva el nombre de su
+    # hipertabla. El volcado salía en verde y con el crudo entero dentro: el
+    # de septiembre pesó lo mismo que un full y nadie lo comparó. Ahora se
+    # excluye cada chunk por su nombre, y abajo se COMPRUEBA.
+    psql -v ON_ERROR_STOP=1 --quiet -At -c \
+      "SELECT format('%I.%I', chunk_schema, chunk_name)
+         FROM timescaledb_information.chunks
+        WHERE hypertable_name = '$CRUDO'" > "$TRABAJO/chunks-crudo.txt"
+    [ -s "$TRABAJO/chunks-crudo.txt" ] \
+      || morir "no hay chunks de $CRUDO: no sé qué excluir del volcado de agregados"
+
+    set -- --exclude-table-data="public.$CRUDO"
+    while read -r chunk; do
+      set -- "$@" --exclude-table-data="$chunk"
+    done < "$TRABAJO/chunks-crudo.txt"
+    pg_dump -Fc -Z6 --no-tablespaces "$@" -f "$ARCHIVO"
+
+    # La comprobación mira el índice del propio volcado, no la lista de arriba:
+    # un chunk creado entre la consulta y el `pg_dump` no estaría en la lista y
+    # sí en el archivo. Si aparece uno solo, no se sube.
+    ID_CRUDO="$(psql -v ON_ERROR_STOP=1 --quiet -At -c \
+      "SELECT id FROM _timescaledb_catalog.hypertable WHERE table_name = '$CRUDO'")"
+    [ -n "$ID_CRUDO" ] || morir "no encuentro la hipertabla $CRUDO en el catálogo"
+    pg_restore -l "$ARCHIVO" > "$TRABAJO/indice.txt"
+    CON_CRUDO="$(grep -c "TABLE DATA _timescaledb_internal _hyper_${ID_CRUDO}_" "$TRABAJO/indice.txt" || true)"
+    [ "$CON_CRUDO" -eq 0 ] \
+      || morir "el volcado de agregados lleva datos de $CON_CRUDO chunk(s) de $CRUDO: no se sube"
+    log "sin crudo: $(wc -l < "$TRABAJO/chunks-crudo.txt") chunk(s) de $CRUDO excluidos, comprobado en el índice"
+
     subir "$ARCHIVO" agregados
     podar agregados "${RETENCION_AGREGADOS_DIAS:-760}"
     ;;

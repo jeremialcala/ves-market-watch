@@ -1,0 +1,35 @@
+# El panel (web-spa) de ves-market-watch, desplegado por el receptor de
+# webhooks. Vive en `/srv/apps/ves-web-spa`.
+#
+# Lo redespliega el workflow `build-web-spa` en cada release a `main` que toque
+# su código; a los demás servicios no los mueve. El nombre del proyecto compose
+# tiene que ser el `name` de la app en el inventario del receptor, que llama a
+# compose con `-p ves-web-spa`.
+#
+# No lleva `.env`: toda su configuración va horneada en la imagen (dominio de
+# Auth0 y URL del API, ver `build-web-spa.yml`). Cambiar de hostname es
+# reconstruir, no tocar nada aquí.
+
+name: ves-web-spa
+
+services:
+  # El NOMBRE DEL SERVICIO es contrato: el ingress del túnel de Cloudflare
+  # apunta a `http://web-spa:80`. Renombrarlo rompe el acceso público sin un
+  # solo error aquí.
+  web-spa:
+    image: ghcr.io/jeremialcala/ves-market-watch/web-spa:${IMAGE_TAG:?IMAGE_TAG es obligatorio}
+    container_name: ves-web-spa
+    restart: unless-stopped
+    ports:
+      # Solo loopback: es la `health_url` del receptor. Hacia fuera sale por el
+      # túnel, que lo alcanza por nombre.
+      - "127.0.0.1:8080:80"
+    mem_limit: 64m
+    networks: [ves-market]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+networks:
+  ves-market:
+    external: true

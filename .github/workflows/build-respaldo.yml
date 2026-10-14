@@ -1,0 +1,41 @@
+# Publica la imagen de respaldo en GHCR para el despliegue continuo en midgard
+# (receptor: github.com/higerotech/despliegue-continuo).
+#
+# El NOMBRE de este workflow es contrato: el receptor despliega la app
+# `ves-respaldo` cuando termina con éxito un workflow_run llamado exactamente
+# `build-respaldo` sobre `main`. Renombrarlo detiene los despliegues en silencio.
+#
+# La construcción en sí está en `publicar-imagen.yml`.
+name: build-respaldo
+
+on:
+  push:
+    branches: [main]
+    # El Dockerfile solo copia los scripts y el crontab de `scripts/respaldo/`.
+    # Ni el README ni las pruebas entran en la imagen.
+    paths:
+      - "scripts/respaldo/**"
+      - "!scripts/respaldo/README.md"
+      - "!scripts/respaldo/tests/**"
+      - ".github/workflows/build-respaldo.yml"
+      - ".github/workflows/publicar-imagen.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: build-respaldo-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  imagen:
+    uses: ./.github/workflows/publicar-imagen.yml
+    with:
+      servicio: respaldo
+      dockerfile: scripts/respaldo/Dockerfile
+
+# El despliegue NO se dispara desde aquí. Al completarse este workflow, GitHub
+# emite workflow_run hacia el webhook de midgard, que valida la firma, empareja
+# contra su inventario y despliega el tag sha-xxxxxxx.

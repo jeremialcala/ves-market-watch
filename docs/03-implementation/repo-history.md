@@ -1,10 +1,10 @@
 # Historial de implementación — Criterio
 
 * **Estado:** review (documentación viva — regenerada por script, no editar a mano)
-* **Fecha:** 2026-09-21
+* **Fecha:** 2026-10-13
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
-* **Versión:** 0.5.1
+* **Versión:** 0.5.5
 * **Gate:** 2
 * **Rama principal:** main
 * **Estrategia de branching:** GitFlow (main + develop + ramas feature)
@@ -362,14 +362,89 @@ gitGraph
     commit id: "ba16f6f" type: HIGHLIGHT
     checkout main
     merge develop tag: "v0.5.1"
+    checkout develop
+    commit id: "73a1136"
+    commit id: "bb81ef4" type: HIGHLIGHT
+    commit id: "f993162"
+    commit id: "1780857"
+    commit id: "0a789d8" type: HIGHLIGHT
+    commit id: "cb2f97e" type: HIGHLIGHT
+    commit id: "df82c18"
+    commit id: "1e4b5c4"
+    commit id: "176c742"
+    commit id: "1b8c953"
+    commit id: "3907045" type: HIGHLIGHT
+    commit id: "0bd5e2c" type: HIGHLIGHT
+    commit id: "6288c9b" type: HIGHLIGHT
+    commit id: "c2ff3b2" type: HIGHLIGHT
+    commit id: "1678164"
+    commit id: "49dc15c"
+    commit id: "b11fb26"
+    commit id: "e95c433"
+    commit id: "5732fb5"
+    commit id: "2d08952"
+    commit id: "d0c046c"
+    commit id: "e72130a" type: HIGHLIGHT
+    commit id: "a7d551a" type: HIGHLIGHT
+    commit id: "42b43b3" type: HIGHLIGHT
+    commit id: "09646bb"
+    commit id: "ed18c5c"
+    commit id: "2c9fbff" type: HIGHLIGHT
+    commit id: "b77f0f5"
+    commit id: "f3343ea" type: HIGHLIGHT
+    commit id: "d309671"
+    commit id: "b29edd8" type: HIGHLIGHT
+    commit id: "bef34f6"
+    commit id: "ade8c3f"
+    commit id: "1e1f53d"
+    commit id: "e4a8e00" type: HIGHLIGHT
+    commit id: "b8967b0"
+    commit id: "22d61f1" type: HIGHLIGHT
+    commit id: "a9ec842"
+    commit id: "4a364fa" type: HIGHLIGHT
+    checkout main
+    merge develop tag: "v0.5.2"
+    checkout develop
+    commit id: "9e8fd85"
+    commit id: "2ae9d21"
+    commit id: "8a5039a" type: HIGHLIGHT
+    commit id: "3e46bf1"
+    commit id: "28f8114" type: HIGHLIGHT
+    commit id: "ea0e402"
+    commit id: "162ff4f" type: HIGHLIGHT
+    commit id: "9b9e3b3"
+    commit id: "610cea8" type: HIGHLIGHT
+    checkout main
+    merge develop tag: "v0.5.3"
+    checkout develop
+    commit id: "85ee7b4"
+    commit id: "8aa55a9" type: HIGHLIGHT
+    commit id: "82f450e"
+    commit id: "f59ba58" type: HIGHLIGHT
+    commit id: "2b54b00"
+    commit id: "9b76a37" type: HIGHLIGHT
+    commit id: "99bf679"
+    commit id: "8619a5c" type: HIGHLIGHT
+    checkout main
+    merge develop tag: "v0.5.4"
+    checkout develop
+    commit id: "27f9de3"
+    commit id: "533c51e" type: HIGHLIGHT
+    commit id: "c8117ba"
+    commit id: "46eb537" type: HIGHLIGHT
+    checkout main
+    merge develop tag: "v0.5.5"
+    checkout develop
+    commit id: "f1c4c04"
+    commit id: "4580818" type: HIGHLIGHT
 ```
 
 ### Estado actual de las ramas
 
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
-| `main` | `d585124` | 2026-09-21 | 10 |
-| `develop` | `ba16f6f` | 2026-09-21 | 317 |
+| `main` | `5195cd7` | 2026-10-13 | 14 |
+| `develop` | `4580818` | 2026-10-13 | 379 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -382,11 +457,82 @@ gitGraph
 | v0.4.0 | `779231f` | 2026-07-26 | 0.4.0 | ADR-0016; api-gateway implementado (REST /api/v1 + WSS /ws/v1, Resource Server Auth0, 78 tests); AsyncAPI del WSS; OpenAPI ajustada | Los 5 servicios con código; pipeline completo fuente → bus → REST/WSS operativo. Pendiente HITL: SPA + client M2M de prueba |
 | v0.5.0 | `d12a351` | 2026-09-07 | 0.5.0 | ADR-0025/0026; riesgos y análisis como dato servido; SLOs medidos; T8 cerrada (lockfiles con hashes + imágenes por digest) | Gates 2 y 3 aprobados HITL (2026-09-08): cierran 03-implementation y 04-testing. Sin bloques `demo · sin fuente` en el producto |
 | v0.5.1 | `d585124` | 2026-09-21 | 0.5.1 | Avisos por ntfy del cron de seguridad (`seguridad.yml`) y del respaldo (`aviso.sh` + healthcheck `estado`); js-yaml 4.3.2 (GHSA-2883-xcg3-v3hh); caja de respaldo por digest e `init: true` | Patch de correcciones e instrumentación (2026-09-21): los dos procesos desatendidos ya avisan cuando fallan. Sin gate cerrado; Gate 4 (05-deployment) sin iniciar |
+| v0.5.2 | `36e1a2e` | 2026-10-12 | 0.5.2 | ADR-0027 (respaldo en Backblaze B2, clave sin borrado); ADR-0028…0033 y threat model 0.5.0 (T16–T25) del portal público; `pyjwt` 2.15.1, `multidict` 6.9.1, `undici` 8.11.2, `brace-expansion` 2.1.7 y `source-map-js` 1.2.2 | Patch de mantenimiento (2026-10-12): el respaldo sale de Google Drive, `T8 · SCA` vuelve a verde en `main` y entra la fase 0 del portal público, solo documentación. Sin gate cerrado: el PRD del portal sigue en borrador |
+| v0.5.3 | `2934219` | 2026-10-13 | 0.5.3 | ADR-0034 (el entorno de captura pasa a midgard por réplica física); `deploy/midgard/` con un proyecto compose por servicio; cinco workflows `build-<servicio>` sobre `publicar-imagen.yml` | Patch de despliegue (2026-10-13): la captura sale de la máquina de desarrollo sin perder un ciclo y los seis servicios quedan con despliegue continuo. Sin cambios de producto ni gate cerrado; no decide D15 |
+| v0.5.4 | `88d7f9b` | 2026-10-13 | 0.5.4 | `respaldar agregados` excluye el crudo chunk a chunk y lo comprueba en el índice del volcado; `deploy/midgard/respaldo-nas/` (segunda copia, al NAS); avisos por ntfy de despliegues fallidos | Patch de respaldos (2026-10-13): el volcado mensual llevaba dentro los snapshots crudos que debía excluir. Primer despliegue automático por servicio (`ves-respaldo`). Sin cambios de producto ni gate cerrado |
+| v0.5.5 | `5195cd7` | 2026-10-13 | 0.5.5 | `deploy/midgard/vigia/` (vigía de operación: contenedores y sondas de trabajo); `estado.sh` vigila la verificación semanal y los agregados mensuales, con pruebas; trabajo `scripts de operación` en CI | Patch de operación (2026-10-13): un servicio caído o parado avisa por ntfy en vez de descubrirse mirando. Sin cambios de producto ni gate cerrado |
 
 ### Bitácora de cambios (fiel al repo)
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `4580818` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #76 from jeremialcala/sondeo-externo |
+| `f1c4c04` | commit | — | Jeremi Alcala | 2026-10-13 | feat(operacion): sondeo externo desde GitHub Actions |
+| `5195cd7` | merge | v0.5.5 | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #75 from jeremialcala/develop |
+| `46eb537` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #74 from jeremialcala/release-0.5.5 |
+| `c8117ba` | commit | — | Jeremi Alcala | 2026-10-13 | docs(changelog): cortar la versión 0.5.5 |
+| `533c51e` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #73 from jeremialcala/salud-respaldo-y-vigia |
+| `27f9de3` | commit | — | Jeremi Alcala | 2026-10-13 | feat(operacion): vigia de operacion en midgard y salud del respaldo completa |
+| `88d7f9b` | merge | v0.5.4 | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #72 from jeremialcala/develop |
+| `8619a5c` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #71 from jeremialcala/release-0.5.4 |
+| `99bf679` | commit | — | Jeremi Alcala | 2026-10-13 | docs(changelog): cortar la versión 0.5.4 |
+| `9b76a37` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #70 from jeremialcala/respaldo-nas |
+| `2b54b00` | commit | — | Jeremi Alcala | 2026-10-13 | feat(respaldo): segunda copia diaria al NAS, independiente de la de B2 |
+| `f59ba58` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #69 from jeremialcala/avisos-receptor-y-agregados |
+| `82f450e` | commit | — | Jeremi Alcala | 2026-10-13 | fix(respaldo): el volcado de agregados llevaba dentro el crudo que debia excluir |
+| `8aa55a9` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #68 from jeremialcala/cierre-t8-cd |
+| `85ee7b4` | commit | — | Jeremi Alcala | 2026-10-13 | docs: cerrar el retroceso de T8 e historial tras el release 0.5.3 |
+| `2934219` | merge | v0.5.3 | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #67 from jeremialcala/develop |
+| `610cea8` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #66 from jeremialcala/release-0.5.3 |
+| `9b9e3b3` | commit | — | Jeremi Alcala | 2026-10-13 | docs(changelog): cortar la versión 0.5.3 |
+| `162ff4f` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #65 from jeremialcala/cd-cinco-imagenes |
+| `ea0e402` | commit | — | Jeremi Alcala | 2026-10-13 | feat(cd): despliegue continuo para ingestores, motor, panel y respaldo |
+| `28f8114` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #64 from jeremialcala/traslado-midgard |
+| `8a5039a` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #63 from jeremialcala/docs-coherencia-052 |
+| `3e46bf1` | commit | — | Jeremi Alcala | 2026-10-13 | feat(despliegue): el entorno de captura corre en midgard (ADR-0034) |
+| `2ae9d21` | commit | — | Jeremi Alcala | 2026-10-12 | docs(historial): regenerar repo-history tras el corte 0.5.2 |
+| `9e8fd85` | commit | — | Jeremi Alcala | 2026-10-12 | docs(portal): dos contradicciones entre documentos tras el release 0.5.2 |
+| `36e1a2e` | merge | v0.5.2 | Jeremi J. Alcalá M. | 2026-10-12 | Merge pull request #62 from jeremialcala/develop |
+| `4a364fa` | merge | — | Jeremi J. Alcalá M. | 2026-10-12 | Merge pull request #61 from jeremialcala/release-0.5.2 |
+| `a9ec842` | commit | — | Jeremi Alcala | 2026-10-12 | docs(changelog): cortar la versión 0.5.2 |
+| `22d61f1` | merge | — | Jeremi J. Alcalá M. | 2026-10-12 | Merge pull request #60 from jeremialcala/seguridad-sca-multidict-sourcemap |
+| `b8967b0` | commit | — | Jeremi Alcala | 2026-10-12 | fix(seguridad): multidict 6.9.1 y source-map-js 1.2.2 |
+| `e4a8e00` | merge | — | Jeremi J. Alcalá M. | 2026-10-05 | Merge pull request #59 from jeremialcala/placement-despliegue |
+| `1e1f53d` | commit | — | Jeremi Alcala | 2026-10-05 | docs(placement): el SMART de hgtech001 muestra el disco fallando |
+| `ade8c3f` | commit | — | Jeremi Alcala | 2026-10-05 | docs(placement): verificación de performance y disponibilidad de hgtech001 |
+| `bef34f6` | commit | — | Jeremi Alcala | 2026-10-05 | docs(placement): AWS frente a Cloudflare para el despliegue completo |
+| `b29edd8` | merge | — | Jeremi J. Alcalá M. | 2026-10-05 | Merge pull request #58 from jeremialcala/plan-implementacion-portal |
+| `d309671` | commit | — | Jeremi Alcala | 2026-10-05 | docs(portal): plan de implementación PR a PR |
+| `f3343ea` | merge | — | Jeremi J. Alcalá M. | 2026-10-04 | Merge pull request #57 from jeremialcala/prd-portal-publico |
+| `2c9fbff` | merge | — | Jeremi J. Alcalá M. | 2026-10-04 | Merge pull request #56 from jeremialcala/docs-portal-monedas-bcv |
+| `ed18c5c` | commit | — | Jeremi Alcala | 2026-10-05 | docs(portal): el diseño vuelve a mostrar las cinco monedas |
+| `b77f0f5` | commit | — | Jeremi Alcala | 2026-10-04 | docs(portal): PRD del portal público |
+| `09646bb` | commit | — | Jeremi Alcala | 2026-10-04 | docs(portal): el ingestor BCV sí captura las cinco monedas |
+| `8fcf818` | commit | — | Jeremi Alcala | 2026-10-04 | docs(portal): el ingestor BCV sí captura las cinco monedas |
+| `42b43b3` | merge | — | Jeremi J. Alcalá M. | 2026-10-04 | Merge pull request #55 from jeremialcala/portal-publico |
+| `a7d551a` | merge | — | Jeremi J. Alcalá M. | 2026-10-04 | Merge branch 'develop' into portal-publico |
+| `e72130a` | merge | — | Jeremi J. Alcalá M. | 2026-10-04 | Merge pull request #54 from jeremialcala/docs-coherencia-respaldo |
+| `2d08952` | commit | — | Jeremi Alcala | 2026-10-04 | docs(portal): tercera revisión, el diseño queda alineado con las decisiones |
+| `5732fb5` | commit | — | Jeremi Alcala | 2026-10-04 | docs(portal): segunda revisión del diseño, cuatro correcciones aplicadas |
+| `e95c433` | commit | — | Jeremi Alcala | 2026-10-04 | docs(portal): son cuatro las correcciones nuevas del diseño, no tres |
+| `b11fb26` | commit | — | Jeremi Alcala | 2026-10-04 | docs(portal): revisión del diseño con las 12 correcciones aplicadas |
+| `49dc15c` | commit | — | Jeremi Alcala | 2026-10-04 | docs(portal): DREAD de T16–T25 ratificado y borrador del aviso de privacidad |
+| `1678164` | commit | — | Jeremi Alcala | 2026-10-04 | docs(portal): plan del portal público, ADR-0028 a ADR-0033 y threat model 0.5.0 |
+| `d0c046c` | commit | — | Jeremi Alcala | 2026-10-04 | docs(respaldo): coherencia tras los merges de #51, #52 y #53 |
+| `c2ff3b2` | merge | — | Jeremi J. Alcalá M. | 2026-10-04 | Merge pull request #52 from jeremialcala/respaldo-estado-volumen |
+| `6288c9b` | merge | — | Jeremi J. Alcalá M. | 2026-10-04 | Merge branch 'develop' into respaldo-estado-volumen |
+| `0bd5e2c` | merge | — | Jeremi J. Alcalá M. | 2026-10-04 | Merge pull request #51 from jeremialcala/respaldo-b2 |
+| `3907045` | merge | — | Jeremi J. Alcalá M. | 2026-10-04 | Merge branch 'develop' into respaldo-b2 |
+| `cb2f97e` | merge | — | Jeremi J. Alcalá M. | 2026-10-04 | Merge branch 'develop' into respaldo-estado-volumen |
+| `0a789d8` | merge | — | Jeremi J. Alcalá M. | 2026-10-04 | Merge pull request #53 from jeremialcala/seguridad-sca-pyjwt-undici |
+| `1780857` | commit | — | Jeremi Alcala | 2026-10-04 | fix(seguridad): pyjwt 2.15.1, undici 8.11.2 y brace-expansion 2.1.7 |
+| `f993162` | commit | — | Jeremi Alcala | 2026-10-04 | fix(respaldo): el estado de los trabajos en un volumen con nombre |
+| `1b8c953` | commit | — | Jeremi Alcala | 2026-10-04 | fix(respaldo): que subir a B2 no dependa de la cuota de descarga |
+| `176c742` | commit | — | Jeremi Alcala | 2026-10-04 | fix(respaldo): rclone 1.75.0 desde la imagen oficial, por digest |
+| `1e4b5c4` | commit | — | Jeremi Alcala | 2026-10-04 | docs(respaldo): borrar la master key de B2 tras crear la clave |
+| `df82c18` | commit | — | Jeremi Alcala | 2026-10-04 | feat(respaldo): migrar el destino de Google Drive a Backblaze B2 |
+| `bb81ef4` | merge | — | Jeremi J. Alcalá M. | 2026-09-21 | Merge pull request #50 from jeremialcala/docs-historial-051 |
+| `73a1136` | commit | — | Jeremi Alcala | 2026-09-21 | docs(historial): regenerar repo-history tras el corte 0.5.1 |
 | `d585124` | merge | v0.5.1 | Jeremi J. Alcalá M. | 2026-09-21 | Merge pull request #49 from jeremialcala/develop |
 | `ba16f6f` | merge | — | Jeremi J. Alcalá M. | 2026-09-21 | Merge pull request #48 from jeremialcala/release-0.5.1 |
 | `3a822aa` | commit | — | Jeremi Alcala | 2026-09-21 | docs(changelog): cortar la versión 0.5.1 |

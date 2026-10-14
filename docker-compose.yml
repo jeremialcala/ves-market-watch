@@ -1,7 +1,17 @@
 # Infraestructura compartida de desarrollo/test (ADR-0002, ADR-0004) más los
-# servicios de la plataforma para captura continua local.
-# Efímera a propósito: sin volúmenes persistentes, credenciales por defecto
-# SOLO para localhost. Producción se define en fase 05-deployment.
+# servicios de la plataforma.
+# Credenciales por defecto SOLO para localhost. Producción se define en fase
+# 05-deployment.
+#
+# DESDE EL 2026-10-13 LA CAPTURA CONTINUA NO CORRE AQUÍ: vive en midgard
+# (ADR-0034, `deploy/midgard/`). Este compose queda para desarrollar. Dos cosas
+# que eso cambia:
+#   * `docker compose up` arranca los ingestores contra Binance y el BCV de
+#     verdad, y captura en ESTA base una serie paralela a la de midgard. Para
+#     trabajar en el gateway o en el panel, levanta solo lo que necesites.
+#   * los perfiles `tunel` y `respaldo` NO se levantan aquí mientras corran en
+#     midgard: un segundo conector reparte el tráfico público entre las dos
+#     máquinas, y un segundo respaldo poda en B2 lo que sube el primero.
 #
 #   docker compose up -d --wait --build
 #   docker compose down
