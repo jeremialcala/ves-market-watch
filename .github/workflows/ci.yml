@@ -188,7 +188,11 @@ jobs:
       - name: Sintaxis
         run: |
           for f in scripts/respaldo/*.sh scripts/respaldo/tests/*.sh; do sh -n "$f"; done
-          for f in deploy/midgard/*/*.sh; do bash -n "$f"; done
+          for f in deploy/midgard/*/*.sh scripts/sondeo/*.sh scripts/sondeo/tests/*.sh; do bash -n "$f"; done
 
       - name: Healthcheck del respaldo
         run: sh scripts/respaldo/tests/prueba-estado.sh
+
+      # Contra un servidor local que hace de Criterio y de ntfy: sin red.
+      - name: Sondeo externo
+        run: bash scripts/sondeo/tests/prueba-sondeo.sh
