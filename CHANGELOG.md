@@ -17,6 +17,85 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-10-13
+
+Versión de despliegue: **ningún cambio en el producto**. Trae dos cosas:
+
+- **Toda la captura corre en midgard**, fuera de la máquina de desarrollo, que
+  llevaba cuatro pantallazos azules en tres días. La base viajó como réplica
+  en caliente y no se perdió ningún ciclo.
+- **Despliegue continuo para los seis servicios.** Hasta ahora solo el gateway
+  tenía imagen publicada; ingestores, motor, panel y respaldo ganan la suya, y
+  el receptor de midgard despliega cada uno por separado.
+
+Patch por la convención de este archivo: infraestructura y documentación, sin
+funcionalidad nueva de producto y sin gate cerrado. **No decide D15:** midgard
+aloja el entorno `criterio-dev`, no producción.
+
+Al publicarse esta versión, midgard sigue con las cinco imágenes copiadas a
+mano en el traslado. Pasan a las de GHCR en la migración que viene justo
+después, y ahí se cierra el retroceso de T8 anotado abajo.
+
+### Added
+
+- **`deploy/midgard/`: los compose con que Criterio corre en midgard,** que
+  hasta hoy vivían solo en el disco de la máquina. Un proyecto por pieza —base
+  y bus, y uno por servicio—, la unidad de arranque que los levanta tras un
+  corte de luz y un README de operación.
+- **Despliegue continuo para ingestores, motor, panel y respaldo.** Cinco
+  workflows `build-<servicio>` publican cada imagen en GHCR con su `sha`, y el
+  receptor de midgard despliega solo el servicio cuyo workflow terminó. Hasta
+  ahora solo el gateway tenía imagen publicada; las otras cinco se copiaron a
+  mano en el traslado. Los cinco comparten `publicar-imagen.yml`, y cada uno
+  se dispara solo si el release tocó su código: un cambio en tests o en
+  documentación no reinicia la captura.
+- **ADR-0034, el entorno de captura sale de la máquina de desarrollo y pasa a
+  midgard.** La máquina de desarrollo tuvo cuatro pantallazos azules en tres
+  días, y cada uno era un hueco en una serie que no se puede volver a capturar.
+
+### Changed
+
+- **Toda la captura corre en midgard desde el 2026-10-13:** base, bus,
+  ingestores, motor, gateway, panel, túnel y respaldo. La base viajó como
+  réplica física y se promovió en el corte: **no se perdió ningún ciclo**, con
+  62 s entre el último snapshot de un lado y el primero del otro. El acceso
+  público no se interrumpió ni cambió de nombre. **No decide D15:** sigue
+  siendo el entorno `criterio-dev`.
+- **El compose de la raíz queda para desarrollar.** Su cabecera avisa de que
+  `up` captura una serie paralela a la de midgard, y de que los perfiles
+  `tunel` y `respaldo` no se levantan aquí mientras corran allí.
+- **Las dos ADR previstas del portal se renumeran:** el placement en Workers
+  pasa a ser la 0035 y la puesta en producción, la 0036. La 0034 la ocupó el
+  traslado.
+
+- **`repo-history.md` regenerado tras el corte 0.5.2**, con la entrada de
+  `TAG_NOTES` para v0.5.2. El grafo pasa de 320 a 359 commits y cierra en
+  `merge develop tag: "v0.5.2"`. Hubo que poner al día el `main` local antes:
+  el generador lee las ramas locales, y estaba en el merge de 0.5.1.
+
+### Fixed
+
+- **Dos contradicciones entre documentos del portal,** encontradas al revisar
+  la coherencia tras el release:
+  - `portal-publico.md` seguía describiendo el «en vivo» como un canal de push
+    en tres sitios. D2 decidió sondeo (ADR-0028 §5).
+  - El plan de implementación daba por hecho `hgtech001` como anfitrión de
+    producción, y no recogía la decisión D15 (AWS o `hgtech001`) ni lo que
+    encontró el análisis de placement: disco fallando, apagados abruptos y un
+    despliegue parcial del 2026-09-07 que ya corre allí.
+
+### Security
+
+- **Retroceso de T8 en midgard, abierto y anotado en el threat model.** Cinco
+  imágenes propias corren allí copiadas de la máquina de desarrollo, sin digest
+  ni registro, y son anteriores a 0.5.2: no llevan los parches de `multidict`
+  ni el resto de dependencias de esa versión. Las de terceros sí van por
+  digest. Se cierra cuando midgard pase a las imágenes que esta versión
+  empieza a publicar en GHCR.
+- **La base ya no escucha en la LAN con `postgres/postgres`.** En midgard no
+  publica puertos, los servicios entran con el rol `ves` y `postgres` quedó sin
+  contraseña: solo sirve desde el socket del contenedor.
+
 ## [0.5.2] - 2026-10-12
 
 Versión de mantenimiento: **ningún cambio en el producto**. Trae tres cosas:
@@ -3280,7 +3359,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.3...HEAD
+[0.5.3]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.4.0...v0.5.0

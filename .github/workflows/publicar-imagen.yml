@@ -1,0 +1,71 @@
+# Construye la imagen de UN servicio y la publica en GHCR. No se dispara solo:
+# lo llaman los `build-<servicio>.yml`, uno por servicio.
+#
+# Por qué un reutilizable y no cinco copias: el receptor de midgard decide qué
+# desplegar por el NOMBRE del workflow que terminó (ADR-0010 de
+# higerotech/despliegue-continuo), así que hace falta un workflow por servicio.
+# Lo que cambia entre ellos son tres valores; el resto es este archivo.
+#
+# El `workflow_run` que recibe el receptor lleva el nombre del workflow que
+# LLAMA, no el de este. Por eso este puede llamarse como sea y los otros no.
+#
+# El tag `type=sha` produce `sha-<7 hex>`, que es lo que el receptor espera en
+# su `tag_template`. Cambiar ese formato haría fallar cada despliegue con
+# `manifest unknown`.
+name: publicar-imagen
+
+on:
+  workflow_call:
+    inputs:
+      servicio:
+        description: Nombre de la imagen bajo ghcr.io/<repo>/
+        required: true
+        type: string
+      dockerfile:
+        description: Ruta del Dockerfile; el contexto es siempre la raíz
+        required: true
+        type: string
+      build-args:
+        description: Argumentos de build, uno por línea (CLAVE=valor)
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository }}/${{ inputs.servicio }}
+          tags: |
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ inputs.dockerfile }}
+          build-args: ${{ inputs.build-args }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Caché por servicio: sin `scope`, los cinco comparten una sola
+          # entrada y cada build desaloja la del anterior.
+          cache-from: type=gha,scope=${{ inputs.servicio }}
+          cache-to: type=gha,mode=max,scope=${{ inputs.servicio }}

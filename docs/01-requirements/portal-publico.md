@@ -107,13 +107,13 @@ Es la página más grande y la que más se parece a lo que ya existe.
 | Tasa oficial en 5 monedas | **las cinco ya se capturan** (USD, EUR, CNY, TRY, RUB) y `/rates/official/current` acepta `currency` | que el snapshot las incluya |
 | Cronología de señales 30 d | `/signals` | agrupar por regla y «efecto» (ya en `historialReglas.ts`) |
 | Profundidad P2P | `/market/depth`; `DepthChart` | — |
-| Barra superior «WSS conectado · último evento» | `StreamClient`, `ConnectionStatus` | canal **público** de push (D2) |
+| Barra superior «En vivo · actualizado hace N s» | `ConnectionStatus`, `FreshnessBadge` | sondeo del snapshot cada 10 s, sin WebSocket anónimo (D2, ADR-0028 §5) |
 | «Exportar por API», «Alertas por API» | — | modales con código de ejemplo + CTA Empresa; las alertas no existen (D6) |
 
 **Backend nuevo:**
 
 - Lectura anónima de todo lo anterior (D1), sin abrir `/api/v1` a cualquiera.
-- Push anónimo para el «en vivo» (D2).
+- Nada para el «en vivo»: es sondeo del snapshot (D2), no un canal de push.
 - Ningún dato nuevo: las cinco monedas de la tasa oficial ya se capturan.
 
 ### 3. Intradía (nivel Comunidad)
@@ -222,8 +222,9 @@ Primera entrega:
 
 ### Transversal a todas
 
-- Barra superior: «WSS conectado», último evento, «datos públicos, sin cuenta»,
-  fecha de los datos.
+- Barra superior: «En vivo · actualizado hace N s», «datos públicos, sin
+  cuenta» y fecha de los datos. El diseño original decía «WSS conectado»; se
+  cambió con D2.
 - Navegación, ES/EN, claro/oscuro, «Acceso gratis» → alta, y el email cuando hay
   sesión.
 - Pie con contacto y WhatsApp.

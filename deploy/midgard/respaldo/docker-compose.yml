@@ -1,0 +1,65 @@
+# El respaldo a Backblaze B2 de ves-market-watch, desplegado por el receptor de
+# webhooks. Vive en `/srv/apps/ves-respaldo`.
+#
+# Lo redespliega el workflow `build-respaldo` en cada release a `main` que
+# toque `scripts/respaldo/`; a los demás servicios no los mueve. El nombre del
+# proyecto compose tiene que ser el `name` de la app en el inventario del
+# receptor, que llama a compose con `-p ves-respaldo`.
+#
+# Sin `health_url` en el inventario: no expone HTTP. Su salud es el healthcheck
+# `estado` (hubo un respaldo bueno hace poco) y los avisos por ntfy.
+#
+# Un despliegue RECREA el contenedor y corta el trabajo que esté en curso. El
+# full corre a las 03:30 y la verificación los domingos a las 05:00, hora de
+# Caracas: no fusionar a `main` cambios de `scripts/respaldo/` a esas horas.
+
+name: ves-respaldo
+
+services:
+  respaldo:
+    image: ghcr.io/jeremialcala/ves-market-watch/respaldo:${IMAGE_TAG:?IMAGE_TAG es obligatorio}
+    container_name: ves-respaldo
+    restart: unless-stopped
+    # `tini` como PID 1, igual que en desarrollo: `crond` no cosecha zombis.
+    init: true
+    environment:
+      PGHOST: ves-timescaledb
+      PGPORT: "5432"
+      PGUSER: ves
+      PGPASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD en .env}
+      PGDATABASE: ves_market
+      RCLONE_REMOTE: ${RCLONE_REMOTE:?falta RCLONE_REMOTE en .env}
+      RCLONE_CONFIG: /config/rclone/rclone.conf
+      RCLONE_CONFIG_PASS: ${RCLONE_CONFIG_PASS:?falta RCLONE_CONFIG_PASS en .env}
+      AVISO_URL: ${AVISO_URL:-}
+    healthcheck:
+      test: ["CMD", "estado"]
+      interval: 5m
+      timeout: 10s
+      retries: 1
+      start_period: 75m
+    volumes:
+      - rclone_config:/config/rclone
+      - respaldo_estado:/var/lib/respaldo
+    # rclone sube a B2 en trozos de 96 MiB, cuatro a la vez, y los tiene en
+    # memoria: el full pide unos 400 MiB solo para eso.
+    mem_limit: 1g
+    networks: [ves-market]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+volumes:
+  # `external`: ni el receptor ni un `down -v` los crean o los borran.
+  # `rclone_config` lleva la clave de B2 cifrada con RCLONE_CONFIG_PASS, y
+  # `respaldo_estado` es lo que sabe el healthcheck del último respaldo bueno.
+  rclone_config:
+    name: ves_rclone_config
+    external: true
+  respaldo_estado:
+    name: ves_respaldo_estado
+    external: true
+
+networks:
+  ves-market:
+    external: true

@@ -15,11 +15,28 @@ los cita.
 
 Lo que el plan da por cierto, verificado en el código y en la base:
 
-- **No hay producción.** `hgtech001` tiene montado el receptor de despliegue
-  continuo del gateway (`higerotech/despliegue-continuo`), pero hoy todo corre
-  en la máquina de desarrollo, detrás del túnel `criterio-dev`.
-  **Poner producción en pie es parte de este plan** (fase 9). No es un paso
-  final de «subir a producción».
+- **No hay producción.** Hoy todo corre en la máquina de desarrollo, detrás
+  del túnel `criterio-dev`. **Poner producción en pie es parte de este plan**
+  (fase 9). No es un paso final de «subir a producción».
+- **Dónde vive el núcleo en producción está sin decidir (D15).** Este plan se
+  escribió dando por hecho `hgtech001`. El análisis de placement
+  (`docs/02-design/placement-despliegue.md`, del mismo día) lo midió después y
+  encontró tres cosas:
+  - **su disco falla** según SMART: 8 sectores ilegibles;
+  - **unos 7 apagados abruptos en 19 días**, sin UPS;
+  - **ya corre allí un despliegue parcial de Criterio del 2026-09-07**: base
+    casi vacía, RabbitMQ y un gateway antiguo, desplegado por el receptor de
+    `higerotech/despliegue-continuo`.
+
+  **Desde el 2026-10-13 ya no es parcial.** El entorno de captura entero se
+  trasladó allí desde la máquina de desarrollo, que se colgaba (ADR-0034): base
+  con toda la serie, ingestores, motor, panel, túnel y respaldo. Eso **no decide
+  D15**: sigue siendo el entorno `criterio-dev`, con los secretos de desarrollo
+  y sobre el mismo disco que falla.
+
+  La recomendación del análisis es una EC2 `t4g.large` en AWS. **La fase 9 vale
+  para cualquiera de los dos anfitriones; donde dice `hgtech001`, léase «el
+  anfitrión que decida D15».**
 - **El portal se sirve desde Cloudflare Workers** (decisión del 2026-10-05). Sus
   páginas sobreviven a una caída de `hgtech001`, que sigue sirviendo la API, el
   estado y el backoffice.
@@ -78,8 +95,8 @@ documentación.
 
 | PR | Contenido | Talla |
 |---|---|---|
-| 0.1 | **ADR-0034, placement del portal en Cloudflare Workers** (static assets). Plantilla de placement del AI-DLC con **precios verificados en la web, con fecha**, no de memoria. Incluye el CD: GitHub Actions + `wrangler deploy` tras el CI, porque el portal vive en un monorepo con tests. Cabeceras y CSP con `_headers`. | S |
-| 0.2 | **ADR-0035, puesta en producción en `hgtech001`.** Todo el compose en la máquina. CD por servicio extendiendo el receptor existente. **Datos de arranque restaurados del último full en B2**, que de paso es el simulacro de recuperación. Dominios. Cloudflare Access para el backoffice. | M |
+| 0.1 | **ADR-0035, placement del portal en Cloudflare Workers** (static assets). Plantilla de placement del AI-DLC con **precios verificados en la web, con fecha**, no de memoria. Incluye el CD: GitHub Actions + `wrangler deploy` tras el CI, porque el portal vive en un monorepo con tests. Cabeceras y CSP con `_headers`. | S |
+| 0.2 | **ADR-0036, puesta en producción en `hgtech001`.** Todo el compose en la máquina. CD por servicio extendiendo el receptor existente. **Datos de arranque restaurados del último full en B2**, que de paso es el simulacro de recuperación. Dominios. Cloudflare Access para el backoffice. | M |
 | 0.3 | `architecture.md` y C4 Container con `estado`, `backoffice`, `backoffice-api`, el portal en el borde y los caminos sin token. C4 Deployment de `hgtech001` y Cloudflare. | M |
 | 0.4 | **Contratos:** `portal-openapi.yaml` (snapshot, series y rutas Comunidad), `estado-openapi.yaml` y `admin-openapi.yaml`. Todos con `additionalProperties: false`. | M |
 
@@ -131,11 +148,11 @@ despliegan sobre ella.
 
 | PR / tarea | Contenido | Prueba que lo cierra | Talla |
 |---|---|---|---|
-| 9.1 | **`hgtech001` en pie con el compose completo**, con secretos nuevos para producción (no los de desarrollo). | Todos los servicios `healthy` | M |
-| 9.2 | **Datos de arranque restaurados del último full en B2** con `restaurar`. Es el **simulacro de recuperación**: se mide el tiempo de punta a punta. | Mismas comprobaciones que `verificar` (chunks, `post_restore`, edad del dato); tiempo anotado en la ADR-0035 | M |
-| 9.3 | **CD por servicio**: imágenes a GHCR para ingestores, motor, `estado` y `backoffice-api`, y el receptor ampliado. | Un merge a `main` despliega y el receptor publica `current_tag` | M |
+| 9.1 | **El anfitrión de producción (D15) en pie con el compose completo**, con secretos nuevos para producción (no los de desarrollo). Si es `hgtech001`, se parte del entorno de captura que ya corre allí desde el 2026-10-13 (ADR-0034), no de una máquina vacía. | Todos los servicios `healthy` | M |
+| 9.2 | **Datos de arranque restaurados del último full en B2** con `restaurar`. Es el **simulacro de recuperación**: se mide el tiempo de punta a punta. Si el anfitrión es otro que `hgtech001`, los datos vivos pueden llegar además por réplica física, como en el traslado del 2026-10-13: sin hueco de captura. El simulacro se hace igual. | Mismas comprobaciones que `verificar` (chunks, `post_restore`, edad del dato); tiempo anotado en la ADR-0036 | M |
+| 9.3 | **CD por servicio**: imágenes a GHCR para ingestores, motor, `estado` y `backoffice-api`, y el receptor ampliado. **Adelantado el 2026-10-14** para ingestores, motor, panel y respaldo, con un workflow `build-<servicio>` por imagen; el receptor acepta varias apps por repositorio desde su ADR-0010. Quedan `estado` y `backoffice-api`, que aún no existen. | Un merge a `main` despliega y el receptor publica `current_tag` | M |
 | 9.4 | **Dominios y borde:** `criterio.higerotech.com` en Workers, `api.` y `estado.` por el túnel de producción, *Cache Rule* para `/portal/v1/*` y el backoffice tras Access. | `curl` a cada hostname; respuesta servida desde la caché del borde en `/portal/v1/snapshot` | M |
-| 9.5 | **El respaldo pasa a correr en producción**, contra la base de producción, con el mismo bucket u otro prefijo (lo decide ADR-0035). El de desarrollo se apaga. | `verificar` en OK en producción | S |
+| 9.5 | **El respaldo pasa a correr en producción**, contra la base de producción, con el mismo bucket u otro prefijo (lo decide ADR-0036). El de desarrollo se apaga. | `verificar` en OK en producción | S |
 | 9.6 | **Corte de M1:** humo en producción. | Las métricas técnicas del PRD: frescura ≤ 15 s, ≤ 12 cómputos del snapshot por minuto | S |
 
 ## Fase 7 — Estado (M2)
@@ -235,6 +252,7 @@ como compromiso de fechas.*
 | D12 | **Dominio de producción.** `criterio.higerotech.com` es el que inventó el diseño. | 9.4 | Confirmarlo, con `api.` y `estado.` como subdominios |
 | D13 | **¿El respaldo de producción comparte el bucket `ves-market-watch` o usa uno propio?** | 9.5 | Bucket propio: separa el cupo de descarga y la retención de desarrollo |
 | D14 | **Cómo se miden las métricas de producto sin cookies** (PRD, «Métricas de éxito») | Nada antes de M1 | Logs del borde de Cloudflare: no exigen código en el portal |
+| D15 | **Dónde vive el núcleo en producción:** AWS EC2 o `hgtech001` (`placement-despliegue.md`) | 0.2 y toda la fase 9 | AWS EC2 `t4g.large` desde el principio. Si se usa `hgtech001` para M1–M3, antes hay que cambiar el disco por un SSD y poner una UPS |
 | — | **Cuota nativa de tokens en Auth0**, y si los tokens de usuario cuentan contra los 1.000 | 8.3 y 8b.4 | Verificarlo en el tenant antes de empezar la fase 8 |
 | — | **Objetivos de las métricas de producto** | Nada antes de M1 | Fijarlos con un mes de datos de M1 |
 
