@@ -17,6 +17,24 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **Latido del vigía a Healthchecks.io.** Al final de cada pasada, el vigía de
+  midgard hace un ping a una comprobación de Healthchecks; si dejan de llegar,
+  avisa Healthchecks desde fuera. Cubre midgard apagado, midgard sin internet
+  y un vigía roto, que nadie de dentro puede avisar. Si el vigía no pudo
+  entregar un aviso por ntfy, el ping es de fallo y lleva el texto que no
+  salió. `ves-market-vigia.sh prueba-latido` lo comprueba de punta a punta.
+  La URL de ping es una credencial y vive solo en `/etc/ves-market-latido.env`.
+  Con 21 pruebas en CI.
+
+### Changed
+
+- **El sondeo externo pasa a ser un segundo punto de vista.** El cron de
+  GitHub no es fiable en este repositorio: el primer día corrió una vez en
+  siete horas y media. La alarma de un apagón es ahora el latido. Lo dicen el
+  README de midgard, el workflow y el script.
+
 ## [0.5.6] - 2026-10-13
 
 Versión de operación: **ningún cambio en el producto**. Trae una cosa:
