@@ -1,0 +1,38 @@
+# indicator-engine de ves-market-watch, desplegado por el receptor de webhooks.
+# Vive en `/srv/apps/ves-indicator-engine`.
+#
+# Lo redespliega el workflow `build-indicator-engine` en cada release a `main`
+# que toque su código o los contratos de `schemas/`; a los demás servicios no
+# los mueve. El nombre del proyecto compose tiene que ser el `name` de la app
+# en el inventario del receptor, que llama a compose con
+# `-p ves-indicator-engine`.
+#
+# Sin `health_url` en el inventario: no expone HTTP. El receptor da el
+# despliegue por bueno en cuanto el contenedor arranca, y no hay rollback
+# automático. Tras un release, mirar `docker logs ves-indicator-engine`.
+#
+# Mientras se recrea, los eventos esperan en su cola durable del bus: no se
+# pierde ninguno, se procesan al volver.
+#
+# La base y el bus viven en `/srv/infra/ves-market`; se llega a ellos por la
+# red externa `ves-market`, no por puertos del host.
+
+name: ves-indicator-engine
+
+services:
+  indicator-engine:
+    image: ghcr.io/jeremialcala/ves-market-watch/indicator-engine:${IMAGE_TAG:?IMAGE_TAG es obligatorio}
+    container_name: ves-indicator-engine
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?falta DATABASE_URL en .env}
+      AMQP_URL: ${AMQP_URL:?falta AMQP_URL en .env}
+    mem_limit: 512m
+    networks: [ves-market]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+networks:
+  ves-market:
+    external: true
