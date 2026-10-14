@@ -17,6 +17,27 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **Un despliegue que falla en midgard avisa por ntfy,** al mismo tema que el
+  respaldo y el disco. El receptor tenía los avisos apagados. ntfy necesita
+  una plantilla en la URL para leer el aviso; la receta quedó en el runbook de
+  `higerotech/despliegue-continuo`. Probado con un webhook firmado que pedía
+  un tag inexistente: el `pull` falló, el receptor revirtió y llegó el aviso.
+- **`agregados-2026-10.dump`, el volcado mensual de octubre, que no existía.**
+  El día 1 el respaldo estaba caído por el token de Drive.
+
+### Fixed
+
+- **El volcado de `agregados` llevaba dentro los snapshots crudos que existe
+  para dejar fuera.** El patrón de exclusión buscaba chunks con
+  `p2p_snapshots_raw` en el nombre, y los chunks de TimescaleDB se llaman
+  `_hyper_<id>_<n>_chunk`: no casaba con ninguno. `agregados-2026-09.dump`
+  pesa 2,9 GB porque es un full, y está guardado con retención de dos años,
+  cuando la clasificación de datos da 90 días al crudo. Ahora se excluye cada
+  chunk por su nombre y, antes de subir, se comprueba en el índice del volcado
+  que no quedó ninguno. El de octubre pesa 100 MB.
+
 ### Changed
 
 - **`repo-history.md` regenerado tras el corte 0.5.3**, con la entrada de

@@ -57,6 +57,16 @@ Ingestores, motor y respaldo no exponen HTTP: el receptor da su despliegue por
 bueno en cuanto el contenedor arranca. Tras un release que los toque, hay que
 mirar sus logs.
 
+**Un despliegue que falla avisa por ntfy,** al mismo tema que el respaldo y el
+disco. Llega con el título «Despliegue `<app>` en `hgtech001`» y dice si el
+servicio se revirtió a la versión anterior o si pudo quedar caído. Los
+despliegues correctos no avisan. La URL vive en `NOTIFY_URL` de
+`/etc/cd-receiver/receiver.env`, con la plantilla que ntfy necesita; la receta
+está en el runbook de `higerotech/despliegue-continuo`.
+
+Lo que ese aviso **no** cubre: un servicio sin comprobación de salud que
+arranca y se cae después. Para el receptor, ese despliegue salió bien.
+
 ### Dar de alta un servicio nuevo
 
 1. Su `build-<servicio>.yml`, que llama a `publicar-imagen.yml`.
@@ -168,6 +178,13 @@ verificado con `verificar`.
 ## Pendiente
 
 - Disco nuevo y UPS. El disco actual tiene sectores pendientes y va a peor.
+- **Guardar fuera de estas dos máquinas lo que hace falta para leer los
+  respaldos:** el `rclone.conf` (volumen `ves_rclone_config`), su contraseña
+  `RCLONE_CONFIG_PASS` y `MERCHANT_HMAC_KEY`. En lo que cubre este
+  repositorio, solo están en midgard y en la máquina de desarrollo: una con el
+  disco fallando y otra que se cuelga. Sin los dos primeros, lo que hay en B2
+  no se puede descifrar; sin la tercera, la serie de comerciantes se parte en
+  dos.
 - Que el vigía de servicios de Yggdrasil vigile los contenedores `ves-*`.
 - Comprobación de salud para ingestores, motor y respaldo: hoy un despliegue
   roto de cualquiera de los tres no se revierte solo.
