@@ -17,6 +17,25 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-10-13
+
+Versión de despliegue: **ningún cambio en el producto**. Trae dos cosas:
+
+- **Toda la captura corre en midgard**, fuera de la máquina de desarrollo, que
+  llevaba cuatro pantallazos azules en tres días. La base viajó como réplica
+  en caliente y no se perdió ningún ciclo.
+- **Despliegue continuo para los seis servicios.** Hasta ahora solo el gateway
+  tenía imagen publicada; ingestores, motor, panel y respaldo ganan la suya, y
+  el receptor de midgard despliega cada uno por separado.
+
+Patch por la convención de este archivo: infraestructura y documentación, sin
+funcionalidad nueva de producto y sin gate cerrado. **No decide D15:** midgard
+aloja el entorno `criterio-dev`, no producción.
+
+Al publicarse esta versión, midgard sigue con las cinco imágenes copiadas a
+mano en el traslado. Pasan a las de GHCR en la migración que viene justo
+después, y ahí se cierra el retroceso de T8 anotado abajo.
+
 ### Added
 
 - **`deploy/midgard/`: los compose con que Criterio corre en midgard,** que
@@ -71,7 +90,8 @@ Convención de mantenimiento (inventario por ejecución):
   imágenes propias corren allí copiadas de la máquina de desarrollo, sin digest
   ni registro, y son anteriores a 0.5.2: no llevan los parches de `multidict`
   ni el resto de dependencias de esa versión. Las de terceros sí van por
-  digest. Se cierra cuando el CI las publique en GHCR.
+  digest. Se cierra cuando midgard pase a las imágenes que esta versión
+  empieza a publicar en GHCR.
 - **La base ya no escucha en la LAN con `postgres/postgres`.** En midgard no
   publica puertos, los servicios entran con el rol `ves` y `postgres` quedó sin
   contraseña: solo sirve desde el socket del contenedor.
@@ -3339,7 +3359,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.3...HEAD
+[0.5.3]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.4.0...v0.5.0
