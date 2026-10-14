@@ -4,7 +4,7 @@
 * **Fecha:** 2026-10-13
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
-* **Versión:** 0.5.3
+* **Versión:** 0.5.4
 * **Gate:** 2
 * **Rama principal:** main
 * **Estrategia de branching:** GitFlow (main + develop + ramas feature)
@@ -416,14 +416,28 @@ gitGraph
     commit id: "610cea8" type: HIGHLIGHT
     checkout main
     merge develop tag: "v0.5.3"
+    checkout develop
+    commit id: "85ee7b4"
+    commit id: "8aa55a9" type: HIGHLIGHT
+    commit id: "82f450e"
+    commit id: "f59ba58" type: HIGHLIGHT
+    commit id: "2b54b00"
+    commit id: "9b76a37" type: HIGHLIGHT
+    commit id: "99bf679"
+    commit id: "8619a5c" type: HIGHLIGHT
+    checkout main
+    merge develop tag: "v0.5.4"
+    checkout develop
+    commit id: "27f9de3"
+    commit id: "533c51e" type: HIGHLIGHT
 ```
 
 ### Estado actual de las ramas
 
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
-| `main` | `2934219` | 2026-10-13 | 12 |
-| `develop` | `610cea8` | 2026-10-13 | 365 |
+| `main` | `88d7f9b` | 2026-10-13 | 13 |
+| `develop` | `533c51e` | 2026-10-13 | 375 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -438,11 +452,23 @@ gitGraph
 | v0.5.1 | `d585124` | 2026-09-21 | 0.5.1 | Avisos por ntfy del cron de seguridad (`seguridad.yml`) y del respaldo (`aviso.sh` + healthcheck `estado`); js-yaml 4.3.2 (GHSA-2883-xcg3-v3hh); caja de respaldo por digest e `init: true` | Patch de correcciones e instrumentación (2026-09-21): los dos procesos desatendidos ya avisan cuando fallan. Sin gate cerrado; Gate 4 (05-deployment) sin iniciar |
 | v0.5.2 | `36e1a2e` | 2026-10-12 | 0.5.2 | ADR-0027 (respaldo en Backblaze B2, clave sin borrado); ADR-0028…0033 y threat model 0.5.0 (T16–T25) del portal público; `pyjwt` 2.15.1, `multidict` 6.9.1, `undici` 8.11.2, `brace-expansion` 2.1.7 y `source-map-js` 1.2.2 | Patch de mantenimiento (2026-10-12): el respaldo sale de Google Drive, `T8 · SCA` vuelve a verde en `main` y entra la fase 0 del portal público, solo documentación. Sin gate cerrado: el PRD del portal sigue en borrador |
 | v0.5.3 | `2934219` | 2026-10-13 | 0.5.3 | ADR-0034 (el entorno de captura pasa a midgard por réplica física); `deploy/midgard/` con un proyecto compose por servicio; cinco workflows `build-<servicio>` sobre `publicar-imagen.yml` | Patch de despliegue (2026-10-13): la captura sale de la máquina de desarrollo sin perder un ciclo y los seis servicios quedan con despliegue continuo. Sin cambios de producto ni gate cerrado; no decide D15 |
+| v0.5.4 | `88d7f9b` | 2026-10-13 | 0.5.4 | `respaldar agregados` excluye el crudo chunk a chunk y lo comprueba en el índice del volcado; `deploy/midgard/respaldo-nas/` (segunda copia, al NAS); avisos por ntfy de despliegues fallidos | Patch de respaldos (2026-10-13): el volcado mensual llevaba dentro los snapshots crudos que debía excluir. Primer despliegue automático por servicio (`ves-respaldo`). Sin cambios de producto ni gate cerrado |
 
 ### Bitácora de cambios (fiel al repo)
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `533c51e` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #73 from jeremialcala/salud-respaldo-y-vigia |
+| `27f9de3` | commit | — | Jeremi Alcala | 2026-10-13 | feat(operacion): vigia de operacion en midgard y salud del respaldo completa |
+| `88d7f9b` | merge | v0.5.4 | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #72 from jeremialcala/develop |
+| `8619a5c` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #71 from jeremialcala/release-0.5.4 |
+| `99bf679` | commit | — | Jeremi Alcala | 2026-10-13 | docs(changelog): cortar la versión 0.5.4 |
+| `9b76a37` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #70 from jeremialcala/respaldo-nas |
+| `2b54b00` | commit | — | Jeremi Alcala | 2026-10-13 | feat(respaldo): segunda copia diaria al NAS, independiente de la de B2 |
+| `f59ba58` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #69 from jeremialcala/avisos-receptor-y-agregados |
+| `82f450e` | commit | — | Jeremi Alcala | 2026-10-13 | fix(respaldo): el volcado de agregados llevaba dentro el crudo que debia excluir |
+| `8aa55a9` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #68 from jeremialcala/cierre-t8-cd |
+| `85ee7b4` | commit | — | Jeremi Alcala | 2026-10-13 | docs: cerrar el retroceso de T8 e historial tras el release 0.5.3 |
 | `2934219` | merge | v0.5.3 | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #67 from jeremialcala/develop |
 | `610cea8` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #66 from jeremialcala/release-0.5.3 |
 | `9b9e3b3` | commit | — | Jeremi Alcala | 2026-10-13 | docs(changelog): cortar la versión 0.5.3 |

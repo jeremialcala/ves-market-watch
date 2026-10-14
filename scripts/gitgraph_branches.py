@@ -63,6 +63,14 @@ TAG_NOTES = {
         "desarrollo sin perder un ciclo y los seis servicios quedan con despliegue "
         "continuo. Sin cambios de producto ni gate cerrado; no decide D15",
     ),
+    "v0.5.4": (
+        "`respaldar agregados` excluye el crudo chunk a chunk y lo comprueba en el "
+        "índice del volcado; `deploy/midgard/respaldo-nas/` (segunda copia, al NAS); "
+        "avisos por ntfy de despliegues fallidos",
+        "Patch de respaldos (2026-10-13): el volcado mensual llevaba dentro los "
+        "snapshots crudos que debía excluir. Primer despliegue automático por "
+        "servicio (`ves-respaldo`). Sin cambios de producto ni gate cerrado",
+    ),
     "v0.5.1": (
         "Avisos por ntfy del cron de seguridad (`seguridad.yml`) y del respaldo "
         "(`aviso.sh` + healthcheck `estado`); js-yaml 4.3.2 (GHSA-2883-xcg3-v3hh); "

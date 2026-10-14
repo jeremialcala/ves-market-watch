@@ -69,7 +69,8 @@ despliegues correctos no avisan. La URL vive en `NOTIFY_URL` de
 está en el runbook de `higerotech/despliegue-continuo`.
 
 Lo que ese aviso **no** cubre: un servicio sin comprobación de salud que
-arranca y se cae después. Para el receptor, ese despliegue salió bien.
+arranca y se cae después. Para el receptor, ese despliegue salió bien. Eso lo
+ve el vigía de operación, un par de minutos más tarde.
 
 ### Dar de alta un servicio nuevo
 
@@ -90,7 +91,9 @@ arranca y se cae después. Para el receptor, ese despliegue salió bien.
    de GHCR nacen privados aunque el repositorio sea público, y midgard hace
    `pull` anónimo. No hay API para cambiarlo: es en la web del paquete,
    *Package settings → Change visibility*.
-5. Añadirlo a `arranque/ves-market-arranque.sh`.
+5. Añadirlo a `arranque/ves-market-arranque.sh` y a `VIGIA_CONTENEDORES` en
+   `vigia/ves-market-vigia.sh`. Si no está en la segunda lista, nadie avisa
+   cuando se cae.
 
 ## Operación
 
@@ -139,6 +142,61 @@ instala en `/usr/local/sbin` y `/etc/systemd/system`.
   despliegue recrea el contenedor y corta el full de las 03:30 o la
   verificación del domingo a las 05:00, hora de Caracas.
 - **Levantar los perfiles `tunel` o `respaldo` en la máquina de desarrollo.**
+
+## Vigía de operación
+
+`ves-market-vigia.timer` corre cada minuto en el host y avisa por ntfy cuando
+algo deja de funcionar, y otra vez cuando vuelve. Mira dos cosas distintas,
+porque un contenedor en pie no es un servicio que funciona.
+
+**Que esté en pie:** los nueve contenedores (caído = no existe, parado o
+`unhealthy`) y los temporizadores del respaldo al NAS. El healthcheck de
+`ves-respaldo` es `estado`, así que por aquí llega también un respaldo
+atrasado, con lo que `estado` dijo.
+
+**Que haga su trabajo:**
+
+| Sonda | Falla si |
+|---|---|
+| Captura P2P | no hay un snapshot de hace menos de 5 min (el ciclo es de 60 s) |
+| Motor | los indicadores van más de 5 min por detrás de la captura |
+| Tasas oficiales | el ingestor del BCV no deja constancia desde hace 2 h (el ciclo es de 30 min) |
+| Cola del motor | no tiene consumidor, o acumula más de 50 eventos |
+| Cola de descartes | tiene algún evento: el motor no pudo procesarlo |
+| Gateway | `/api/v1/health` no da `ok` en base, bus y Auth0 |
+| Acceso público | el API o el panel no responden por el túnel, o el API devuelve algo que no es su JSON |
+| Disco | la raíz pasa del 90 % |
+
+Contra el ruido: avisa a la tercera pasada seguida en fallo, no comprueba nada
+en los diez minutos siguientes a un arranque, y no cuenta un fallo dos veces
+(con la base caída no sondea la captura; con el gateway caído, no sondea el
+acceso público). Manda un solo push con la lista, lo recuerda cada 6 h mientras
+dure y avisa al volver. Si el push no sale, lo reintenta en la pasada
+siguiente.
+
+```sh
+# qué está fallando ahora mismo (vacío = nada)
+sudo ls /var/lib/ves-market-vigia
+
+# una pasada a mano, y lo que dijo
+sudo systemctl start ves-market-vigia.service
+journalctl -u ves-market-vigia -n 10
+
+# comprobar el canal
+sudo /usr/local/sbin/ves-market-vigia.sh prueba
+```
+
+Los umbrales son variables `VIGIA_*` al principio del script; para cambiarlos
+en la máquina sin tocarlo, un `Environment=` en un *drop-in* de la unidad.
+
+**Lo que no ve:**
+
+- **Que midgard esté apagado o sin internet.** Sin máquina no hay vigía y sin
+  red no hay push. Con los cortes de luz de esta casa, es el fallo más
+  frecuente y el único que sigue sin avisar.
+- **Que el propio vigía se rompa.** Si el script falla, la unidad queda en
+  `failed` y nadie lo dice.
+- **Que los datos sean malos.** Mira que haya snapshots, no que sean correctos.
 
 ## Respaldos
 
@@ -284,8 +342,11 @@ verificado con `verificar`.
   disco de la casa más que en el de midgard.
 - Una restauración completa desde el volcado del NAS, para medirla y darla por
   probada.
-- Que el vigía de servicios de Yggdrasil vigile los contenedores `ves-*`.
-- Comprobación de salud para ingestores, motor y respaldo: hoy un despliegue
-  roto de cualquiera de los tres no se revierte solo.
+- **Un sondeo desde fuera de la casa** que avise cuando midgard no responde:
+  es lo único que cubre un corte de luz. El plan del portal ya lo prevé (fase
+  7.4, desde GitHub Actions).
+- Comprobación de salud para ingestores, motor y respaldo **en el receptor**:
+  un despliegue roto de cualquiera de los tres no se revierte solo. El vigía lo
+  avisa, pero no lo deshace.
 - Borrar el volumen vacío `ves-market-infra_timescale-data`, el de la base que
   hubo aquí hasta el traslado.

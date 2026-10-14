@@ -17,6 +17,47 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.5.5] - 2026-10-13
+
+Versión de operación: **ningún cambio en el producto**. Trae dos cosas:
+
+- **Un vigía que avisa cuando Criterio deja de funcionar,** no solo cuando un
+  contenedor se cae: mira que haya snapshots recientes, que el motor vaya al
+  día, que el gateway esté sano y que el acceso público responda.
+- **El healthcheck del respaldo ve también lo que no llegó a correr:** la
+  verificación semanal y el volcado mensual.
+
+Patch por la convención de este archivo: infraestructura, pruebas y
+documentación, sin funcionalidad nueva de producto y sin gate cerrado.
+
+Al llegar a `main` se despliega `ves-respaldo`, solo: es el único servicio cuyo
+código cambia. El vigía ya está instalado en midgard.
+
+### Added
+
+- **Vigía de operación en midgard** (`deploy/midgard/vigia/`). Cada minuto
+  comprueba que los nueve contenedores estén en pie y, además, que hagan su
+  trabajo: que haya un snapshot reciente, que el motor no vaya por detrás, que
+  el BCV se esté capturando, que la cola del motor se consuma, que el gateway
+  esté sano y que el API y el panel respondan por el túnel. Avisa por ntfy a
+  la tercera pasada en fallo, lo recuerda cada 6 h y avisa al volver. Hasta
+  ahora un servicio caído solo se veía entrando a mirar.
+- **`estado`, el healthcheck del respaldo, vigila también la verificación
+  semanal y los agregados mensuales.** Un `.fallo` solo aparece si el trabajo
+  corre y falla; si a su hora el contenedor no estaba en pie, no quedaba
+  rastro. Así faltó el volcado de agregados de octubre. Con pruebas
+  (`scripts/respaldo/tests/prueba-estado.sh`), que corren en CI.
+
+### Changed
+
+- **CI: trabajo nuevo `scripts de operación`,** que comprueba la sintaxis de
+  los scripts de respaldo y de `deploy/midgard/` y corre las pruebas del
+  healthcheck. Ni pytest ni vitest los veían.
+- **`build-respaldo` ya no se dispara por un cambio que solo toque sus
+  pruebas:** no entran en la imagen.
+- **`repo-history.md` regenerado tras el corte 0.5.4**, con la entrada de
+  `TAG_NOTES` para v0.5.4.
+
 ## [0.5.4] - 2026-10-13
 
 Versión de respaldos: **ningún cambio en el producto**. Trae tres cosas:
@@ -3420,7 +3461,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.4...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.5...HEAD
+[0.5.5]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.1...v0.5.2
