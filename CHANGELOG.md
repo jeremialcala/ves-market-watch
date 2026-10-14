@@ -17,6 +17,20 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Changed
+
+- **`repo-history.md` regenerado tras el corte 0.5.3**, con la entrada de
+  `TAG_NOTES` para v0.5.3.
+
+### Security
+
+- **Cerrado el retroceso de T8 en midgard.** Ingestores, motor, panel y
+  respaldo corren desde el 2026-10-14 las imágenes que el CI publica en GHCR
+  (`sha-2934219`), desplegadas por el receptor, en lugar de las copiadas a mano
+  en el traslado. La migración fue servicio a servicio y no se perdió ningún
+  minuto de captura. Sigue abierto que esos servicios, salvo el panel, no
+  tienen comprobación de salud ni rollback automático.
+
 ## [0.5.3] - 2026-10-13
 
 Versión de despliegue: **ningún cambio en el producto**. Trae dos cosas:
