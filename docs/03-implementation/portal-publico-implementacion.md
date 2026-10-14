@@ -162,7 +162,7 @@ despliegan sobre ella.
 | 7.1 | **`apps/estado`**: servicio, esquema `estado`, rol de base de solo lectura más su esquema, y migración de la hipertabla con retención de 90 días. | Migración idempotente; el rol no escribe fuera de `estado` | M |
 | 7.2 | **Sondas de los seis componentes** con los umbrales de ADR-0032 §1, y **agregado diario con «sin datos»**. | Las de ADR-0032: gateway parado → caído; sondeo parado → «sin datos» | M |
 | 7.3 | **`GET /estado/v1`** (caché de 30 s, IP real, lista blanca), en ruta de túnel propia. | Contrato; responde con el gateway parado | S |
-| 7.4 | **Incidentes en YAML** con esquema validado en CI. **Sondeo externo** en GitHub Actions con aviso por ntfy. | Un YAML mal formado rompe el CI; una caída del portal llega por ntfy | S |
+| 7.4 | **Incidentes en YAML** con esquema validado en CI. **Sondeo externo** en GitHub Actions con aviso por ntfy. **El sondeo se adelantó el 2026-10-14** (`sondeo-externo.yml`), contra el API y el panel de `criterio-dev`; aquí queda apuntarlo al portal y a `/estado/v1` cuando existan. | Un YAML mal formado rompe el CI; una caída del portal llega por ntfy | S |
 | 7.5 | **Página de Estado** del portal. Si `/estado/v1` no responde, lo dice: «no podemos medir: `hgtech001` sin respuesta». | Test de componente de los tres casos: operativo, sin datos y sin respuesta | M |
 
 ## Fase 5 — Acceso Comunidad (M3)
