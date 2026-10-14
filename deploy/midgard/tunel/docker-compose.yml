@@ -1,0 +1,32 @@
+# El conector del túnel de Cloudflare por el que sale el entorno. Vive en
+# `/srv/apps/ves-tunel`.
+#
+# Es el único servicio de aplicación que NO despliega el receptor: la imagen es
+# de un tercero y va fijada por digest, así que no hay build ni release que lo
+# mueva. Se actualiza a mano, cambiando el digest de este archivo.
+#
+# Requiere `.env` (root, 600) con CLOUDFLARE_TUNNEL_TOKEN.
+
+name: ves-tunel
+
+services:
+  cloudflared:
+    # El ingress del túnel está en el panel de Cloudflare y apunta a NOMBRES:
+    # `http://web-spa:80` y `http://api-gateway:8000`. Resuelven porque los dos
+    # servicios se llaman así en sus compose y están en esta red. Renombrar
+    # cualquiera de los dos rompe el acceso público sin un solo error aquí.
+    image: cloudflare/cloudflared:2026.6.0@sha256:55d8bb268e90b09d3bf05a9bb5d3bc6ddad1b0b69739e4f15daaa7e6676238b6
+    container_name: ves-tunel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?falta CLOUDFLARE_TUNNEL_TOKEN en .env}
+    mem_limit: 128m
+    networks: [ves-market]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+networks:
+  ves-market:
+    external: true

@@ -20,9 +20,16 @@ Convención de mantenimiento (inventario por ejecución):
 ### Added
 
 - **`deploy/midgard/`: los compose con que Criterio corre en midgard,** que
-  hasta hoy vivían solo en el disco de la máquina. Tres proyectos —base y bus,
-  gateway, y el resto de servicios—, la unidad de arranque que los levanta tras
-  un corte de luz y un README de operación.
+  hasta hoy vivían solo en el disco de la máquina. Un proyecto por pieza —base
+  y bus, y uno por servicio—, la unidad de arranque que los levanta tras un
+  corte de luz y un README de operación.
+- **Despliegue continuo para ingestores, motor, panel y respaldo.** Cinco
+  workflows `build-<servicio>` publican cada imagen en GHCR con su `sha`, y el
+  receptor de midgard despliega solo el servicio cuyo workflow terminó. Hasta
+  ahora solo el gateway tenía imagen publicada; las otras cinco se copiaron a
+  mano en el traslado. Los cinco comparten `publicar-imagen.yml`, y cada uno
+  se dispara solo si el release tocó su código: un cambio en tests o en
+  documentación no reinicia la captura.
 - **ADR-0034, el entorno de captura sale de la máquina de desarrollo y pasa a
   midgard.** La máquina de desarrollo tuvo cuatro pantallazos azules en tres
   días, y cada uno era un hueco en una serie que no se puede volver a capturar.
