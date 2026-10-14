@@ -17,6 +17,24 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-10-13
+
+Versión de respaldos: **ningún cambio en el producto**. Trae tres cosas:
+
+- **El volcado mensual de `agregados` deja de llevar dentro los snapshots
+  crudos.** Existe para guardarse dos años sin ellos, y el patrón que debía
+  excluirlos no casaba con ningún chunk. Es el único cambio de código.
+- **Segunda copia de respaldo, al NAS de la casa,** independiente de la de B2 y
+  restaurable sin ninguna clave.
+- **Un despliegue que falla en midgard avisa por ntfy.**
+
+Patch por la convención de este archivo: una corrección, infraestructura y
+documentación, sin funcionalidad nueva de producto y sin gate cerrado.
+
+Al llegar a `main`, `build-respaldo` publica la imagen nueva y el receptor
+recrea `ves-respaldo`: es el primer despliegue automático de un servicio desde
+que cada uno tiene el suyo. Ningún otro contenedor se mueve.
+
 ### Added
 
 - **Segunda copia de respaldo, al NAS de la casa** (`deploy/midgard/respaldo-nas/`).
@@ -35,6 +53,11 @@ Convención de mantenimiento (inventario por ejecución):
 - **`agregados-2026-10.dump`, el volcado mensual de octubre, que no existía.**
   El día 1 el respaldo estaba caído por el token de Drive.
 
+### Changed
+
+- **`repo-history.md` regenerado tras el corte 0.5.3**, con la entrada de
+  `TAG_NOTES` para v0.5.3.
+
 ### Fixed
 
 - **El volcado de `agregados` llevaba dentro los snapshots crudos que existe
@@ -45,11 +68,6 @@ Convención de mantenimiento (inventario por ejecución):
   cuando la clasificación de datos da 90 días al crudo. Ahora se excluye cada
   chunk por su nombre y, antes de subir, se comprueba en el índice del volcado
   que no quedó ninguno. El de octubre pesa 100 MB.
-
-### Changed
-
-- **`repo-history.md` regenerado tras el corte 0.5.3**, con la entrada de
-  `TAG_NOTES` para v0.5.3.
 
 ### Security
 
@@ -3402,7 +3420,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.3...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.4...HEAD
+[0.5.4]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.0...v0.5.1
