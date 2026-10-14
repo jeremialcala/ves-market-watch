@@ -27,7 +27,11 @@
 # que dependiera de ellos no lo entregaría nadie. Va directo a ntfy.
 #
 # Lo que NO ve: que midgard entero esté apagado o sin red. Sin máquina no hay
-# vigía, y sin internet no hay push.
+# vigía, y sin internet no hay push. Tampoco puede ver que él mismo se rompa.
+# Para eso está el LATIDO: al final de cada pasada hace un ping a
+# Healthchecks.io, y si los pings dejan de llegar, avisa Healthchecks desde
+# fuera. Si el vigía no pudo entregar un aviso por ntfy, el ping es de fallo,
+# y Healthchecks avisa por sus propios canales.
 #
 # Contra el ruido, como el vigía de Yggdrasil:
 #   - VIGIA_UMBRAL comprobaciones seguidas en fallo antes de avisar;
@@ -61,9 +65,29 @@ RECORDAR_S=$(( ${VIGIA_RECORDAR_H:-6} * 3600 ))
 UPTIME_S=${VIGIA_UPTIME_S:-$(cut -d. -f1 /proc/uptime)}
 AHORA=${VIGIA_AHORA:-$(date +%s)}
 HOST=$(hostname -s)
+LATIDO_ENV=${LATIDO_ENV:-/etc/ves-market-latido.env}
 
+# --- Latido ------------------------------------------------------------------
+# latir [fail] [mensaje]: un ping a Healthchecks.io. Sin el fichero no hay
+# latido y el vigía funciona igual. Un latido que no sale no tumba la pasada:
+# lo que cuenta es el que falta, y de eso avisa Healthchecks.
+#
+# La URL de ping es una credencial: quien la tenga puede hacerse pasar por
+# midgard. Se lee campo a campo, sin `source`.
+latir() {
+    local url
+    [ -r "$LATIDO_ENV" ] || return 0
+    url=$(sed -n 's|^LATIDO_URL=\([a-z]*://[^[:space:]]*\)$|\1|p' "$LATIDO_ENV" | head -1)
+    [ -n "$url" ] || { echo "vigia: $LATIDO_ENV no tiene LATIDO_URL"; return 0; }
+    curl -fsS -m 8 --retry 1 --retry-delay 2 -o /dev/null \
+        --data-raw "${2:-}" "$url${1:+/$1}" 2>/dev/null \
+        || echo "vigia: no se pudo dar el latido"
+}
+
+# Recién arrancado no se comprueba nada, pero se late: la máquina está viva.
 if [ "$UPTIME_S" -lt "$GRACIA_S" ]; then
     echo "vigia: arranque reciente (${UPTIME_S} s < ${GRACIA_S} s), no se comprueba"
+    latir "" "arranque reciente, sin comprobar"
     exit 0
 fi
 [ -r "$AVISO_ENV" ] || { echo "vigia: no puedo leer $AVISO_ENV"; exit 1; }
@@ -82,6 +106,15 @@ if [ "${1:-}" = prueba ]; then
     enviar "Prueba de aviso" default "white_check_mark" \
         "Canal de avisos del vigia de operacion de Criterio operativo."
     echo "vigia: prueba enviada"
+    exit 0
+fi
+
+# Un latido de fallo a mano, para comprobar que Healthchecks avisa. La pasada
+# siguiente, como mucho un minuto después, late bien y llega la recuperación.
+if [ "${1:-}" = prueba-latido ]; then
+    [ -r "$LATIDO_ENV" ] || { echo "vigia: no puedo leer $LATIDO_ENV"; exit 1; }
+    latir fail "Prueba del latido a mano, no es real. La pasada siguiente lo da por bueno."
+    echo "vigia: latido de prueba enviado"
     exit 0
 fi
 
@@ -303,6 +336,9 @@ marcar_avisados() {
 
 lista() { printf -- '- %s\n' "$@"; }
 
+# Lo que debía llegar por ntfy y no llegó: va en el latido de fallo.
+sin_entregar=""
+
 if [ ${#caidos[@]} -gt 0 ] || [ ${#recuerdos[@]} -gt 0 ]; then
     msg=""
     if [ ${#caidos[@]} -gt 0 ]; then msg+="Falla:"$'\n'"$(lista "${caidos[@]}")"$'\n'; fi
@@ -314,6 +350,7 @@ if [ ${#caidos[@]} -gt 0 ] || [ ${#recuerdos[@]} -gt 0 ]; then
         echo "vigia: aviso enviado: ${caidos[*]} ${recuerdos[*]}"
     else
         echo "vigia: no se pudo enviar el aviso; se reintenta en la siguiente pasada"
+        sin_entregar+="${msg%$'\n'}"$'\n'
     fi
 fi
 
@@ -322,6 +359,16 @@ if [ ${#recuperados[@]} -gt 0 ]; then
         echo "vigia: recuperados: ${recuperados[*]}"
     else
         echo "vigia: no se pudo enviar el aviso de recuperación"
+        sin_entregar+="De vuelta:"$'\n'"$(lista "${recuperados[@]}")"$'\n'
     fi
+fi
+
+# Con ntfy sin entregar, el latido es de fallo: Healthchecks pasa a «caído» y
+# avisa por sus canales. Mientras el aviso siga sin salir, cada pasada repite
+# el fallo; el primer latido bueno trae la recuperación.
+if [ -n "$sin_entregar" ]; then
+    latir fail "El vigia de $HOST no pudo avisar por ntfy:"$'\n'"${sin_entregar%$'\n'}"
+else
+    latir "" "pasada completa"
 fi
 exit 0

@@ -1,9 +1,10 @@
 # Comprueba desde fuera de la casa que Criterio responde, y avisa por ntfy
 # cuando deja de hacerlo y cuando vuelve.
 #
-# Existe por lo único que el vigía de midgard no puede ver: que midgard esté
-# apagado o sin internet. Sin máquina no hay vigía, y con los cortes de luz de
-# la casa ese es el fallo más frecuente. Este runner no vive allí.
+# Es un segundo punto de vista, visto como lo ve un cliente: pasa por
+# Cloudflare y por el túnel. La alarma de midgard apagado o sin internet es el
+# latido del vigía a Healthchecks.io (deploy/midgard/README.md), porque este
+# cron no es fiable: ver más abajo.
 #
 # Tres cosas que no son obvias:
 #
@@ -15,9 +16,10 @@
 #   última vez. Los runners no tienen memoria, así que el estado —tres líneas—
 #   viaja en la caché de Actions: se restaura la entrada más reciente y se
 #   guarda una nueva solo cuando algo cambió.
-# - **El cron de GitHub no es puntual.** Bajo carga se retrasa minutos, y a
-#   veces se salta una pasada. Una caída se avisa en diez o veinte minutos, no
-#   en uno. Para eso, por dentro, está el vigía.
+# - **El cron de GitHub no es puntual.** Bajo carga se retrasa y se salta
+#   pasadas. Aquí, el primer día corrió una vez en siete horas y media, y los
+#   otros cron del repositorio llegan con horas de retraso. Una caída puede
+#   avisarse horas tarde, o nunca si es corta.
 #
 # Los `schedule` solo corren desde la rama por defecto (`main`), y GitHub los
 # desactiva tras 60 días sin actividad en el repositorio.

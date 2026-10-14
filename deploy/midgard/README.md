@@ -184,6 +184,10 @@ journalctl -u ves-market-vigia -n 10
 
 # comprobar el canal
 sudo /usr/local/sbin/ves-market-vigia.sh prueba
+
+# comprobar el latido: Healthchecks pasa a «caído» y avisa; la pasada
+# siguiente, como mucho un minuto después, trae la recuperación
+sudo /usr/local/sbin/ves-market-vigia.sh prueba-latido
 ```
 
 Los umbrales son variables `VIGIA_*` al principio del script; para cambiarlos
@@ -191,12 +195,43 @@ en la máquina sin tocarlo, un `Environment=` en un *drop-in* de la unidad.
 
 **Lo que no ve:**
 
-- **Que midgard esté apagado o sin internet.** Sin máquina no hay vigía y sin
-  red no hay push. Con los cortes de luz de esta casa es el fallo más
-  frecuente; lo cubre el sondeo externo, más abajo.
-- **Que el propio vigía se rompa.** Si el script falla, la unidad queda en
-  `failed` y nadie lo dice.
+- **Que midgard esté apagado o sin internet, o que el propio vigía se
+  rompa.** Sin máquina no hay vigía y sin red no hay push. Con los cortes de
+  luz de esta casa es el fallo más frecuente. Lo cubre el latido, más abajo.
 - **Que los datos sean malos.** Mira que haya snapshots, no que sean correctos.
+
+## Latido (Healthchecks.io)
+
+Al final de cada pasada, el vigía hace un ping a una comprobación de
+[Healthchecks.io](https://healthchecks.io): es un «interruptor de hombre
+muerto». Si los pings dejan de llegar, avisa Healthchecks, desde fuera de la
+casa. Un solo mecanismo cubre tres fallos que nadie de dentro puede contar:
+midgard apagado, midgard sin internet y un vigía que se rompe o se cuelga.
+
+| Pasada | Ping |
+|---|---|
+| Completa, aunque haya fallos que avisó por ntfy | bueno: los fallos ya los contó el vigía |
+| Con un aviso de ntfy que no salió | **de fallo** (`/fail`), con el texto que no salió: Healthchecks pasa a «caído» al momento y avisa por sus canales. Lo repite cada pasada mientras ntfy no responda |
+| En los diez minutos tras un arranque | bueno, sin comprobar nada: la máquina está viva |
+| El script falla o se pasa de 75 s | ninguno: si se repite, avisa Healthchecks |
+
+En Healthchecks, la comprobación tiene un periodo de 1 min y una gracia de
+5 min, y avisa por la integración de ntfy al mismo tema que todo lo demás, y
+por correo. Una caída se avisa a los seis minutos, más o menos.
+
+La URL de ping **es una credencial**: quien la tenga puede latir por midgard y
+tapar una caída. Vive solo en `/etc/ves-market-latido.env` (600 root), como
+`LATIDO_URL=https://hc-ping.com/<uuid>`, fuera del repositorio. Sin ese
+fichero el vigía funciona igual, sin latido. Para cambiarla: crear otra
+comprobación en Healthchecks, reescribir el fichero y borrar la vieja.
+
+```sh
+sudo sh -c 'umask 077; echo "LATIDO_URL=<url de ping>" > /etc/ves-market-latido.env'
+```
+
+Las pruebas (`vigia/tests/prueba-latido.sh`, 21 casos, en CI) corren el vigía
+con un `systemctl` de mentira y un servidor local que hace de ntfy y de
+Healthchecks.
 
 ## Sondeo externo
 
@@ -204,14 +239,16 @@ El workflow `sondeo-externo.yml` comprueba cada diez minutos, desde un runner
 de GitHub, lo mismo que vería un cliente: que el API dé su JSON de salud con
 todo en `ok` y que el panel responda. Pasa por Cloudflare y por el túnel.
 
-Es lo único que avisa de **midgard apagado o sin internet**, que es justo lo
-que el vigía no puede ver.
+**Es un segundo punto de vista, no la alarma de un apagón.** Eso es el
+latido, porque el cron de GitHub no es fiable aquí: el primer día, con el cron
+cada diez minutos, corrió **una vez en siete horas y media**. En este
+repositorio, los otros cron llegan con cinco a ocho horas de retraso.
 
 - **Avisa por ntfy, al mismo tema,** cuando deja de responder, cada 6 h
   mientras dure, y al volver, con lo que duró. Reintenta tres veces antes de
   dar algo por caído.
-- **Es más lento que el vigía.** El cron de GitHub se retrasa minutos y a
-  veces se salta una pasada: una caída se avisa en diez o veinte minutos.
+- **No se sabe cuándo corre.** Puede avisar de una caída horas tarde, o no
+  avisar de una corta.
 - **El workflow sale en verde aunque Criterio no responda:** en rojo, GitHub
   mandaría un correo cada diez minutos. En rojo solo sale si no pudo enviar un
   aviso; ahí ese correo es el segundo canal.
@@ -227,8 +264,8 @@ gh run list --workflow sondeo-externo.yml --limit 5
 gh workflow run sondeo-externo.yml -f simular_fallo=true
 ```
 
-Con midgard encendido, una caída del gateway la avisan los dos: el vigía en
-tres minutos, con el motivo, y el sondeo algo después, visto desde fuera.
+Con midgard encendido, una caída del gateway la avisa el vigía en tres
+minutos, con el motivo, y el sondeo cuando le toque, visto desde fuera.
 
 **Lo que hay que saber:**
 
