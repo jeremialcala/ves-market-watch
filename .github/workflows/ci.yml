@@ -175,3 +175,20 @@ jobs:
           name: cobertura-web-spa
           path: apps/web-spa/coverage/
           if-no-files-found: warn
+
+  # Los scripts que corren en midgard no son de ningún servicio de arriba: ni
+  # pytest ni vitest los ven. Aquí se comprueba que se dejan interpretar y,
+  # del healthcheck del respaldo, que avisa de lo que tiene que avisar.
+  scripts:
+    name: scripts de operación
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Sintaxis
+        run: |
+          for f in scripts/respaldo/*.sh scripts/respaldo/tests/*.sh; do sh -n "$f"; done
+          for f in deploy/midgard/*/*.sh; do bash -n "$f"; done
+
+      - name: Healthcheck del respaldo
+        run: sh scripts/respaldo/tests/prueba-estado.sh

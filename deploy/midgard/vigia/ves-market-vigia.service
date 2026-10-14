@@ -1,0 +1,20 @@
+# /etc/systemd/system/ves-market-vigia.service
+[Unit]
+Description=Criterio: avisa por ntfy si la operación falla
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/ves-market-vigia.sh
+# Cada sonda lleva su propio tiempo máximo, y sumados son 55 s. Esto corta la
+# pasada si aun así se cuelga. Si una se alarga, el temporizador se salta la
+# siguiente en vez de lanzar dos a la vez.
+TimeoutStartSec=75
+# Necesita root: consulta docker y systemd, y lee el tema de ntfy.
+# ProtectSystem=full y no strict, como el vigía de Yggdrasil: deja /var
+# escribible para el estado y para el CLI de docker.
+StateDirectory=ves-market-vigia
+ProtectSystem=full
+PrivateTmp=yes
+NoNewPrivileges=yes

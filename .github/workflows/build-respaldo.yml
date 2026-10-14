@@ -12,9 +12,11 @@ on:
   push:
     branches: [main]
     # El Dockerfile solo copia los scripts y el crontab de `scripts/respaldo/`.
+    # Ni el README ni las pruebas entran en la imagen.
     paths:
       - "scripts/respaldo/**"
       - "!scripts/respaldo/README.md"
+      - "!scripts/respaldo/tests/**"
       - ".github/workflows/build-respaldo.yml"
       - ".github/workflows/publicar-imagen.yml"
   workflow_dispatch:

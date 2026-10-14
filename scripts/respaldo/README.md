@@ -117,9 +117,11 @@ docker exec ves-respaldo sh -c '
 `3` es el id de `p2p_snapshots_raw` en `_timescaledb_catalog.hypertable`. Tiene
 que dar 0.
 
-**Lo que sigue sin vigilarse:** `estado` no mira la edad del último
-`agregados`. Si el día 1 a las 04:00 el contenedor no está en pie, ese mes se
-queda sin volcado y nada lo dice; así faltó el de octubre.
+**Lo que no se vigilaba:** `estado` no miraba la edad del último `agregados`.
+Si el día 1 a las 04:00 el contenedor no está en pie, ese mes se queda sin
+volcado; así faltó el de octubre, y lo vio una persona mirando el listado. Desde
+el 2026-10-14 `estado` lo dice a los 33 días, y lo mismo con la verificación semanal
+a los 8.
 
 ## Cifrado, y una decisión que no estaba tomada
 
@@ -389,9 +391,15 @@ sabe que algo va mal. Desde entonces un fallo se **empuja**:
   salir bien, llega un único «vuelve a funcionar». Para recibirlos, suscríbete
   al tema en la app de ntfy.
 - **Healthcheck.** `estado` pone el contenedor en `unhealthy` si el último
-  intento de cualquier trabajo falló, si no hay un incremental bueno en 2 h 30
-  min, o si el último full bueno pasa de 28 h. Se ve en `docker compose ps` y
-  no depende de la red ni de ntfy.
+  intento de cualquier trabajo falló, o si el último bueno de alguno es
+  demasiado viejo: 2 h 30 min el incremental, 28 h el full, 8 días la
+  verificación y 33 días los agregados. Lo segundo cubre lo que un `.fallo` no
+  ve: un trabajo que no llegó a correr. Se ve en `docker compose ps` y no
+  depende de la red ni de ntfy. Sus pruebas están en `tests/prueba-estado.sh`.
+- **Quién mira el healthcheck.** En midgard, el vigía de operación
+  (`deploy/midgard/vigia/`): un `unhealthy` de `ves-respaldo` llega al teléfono
+  con lo que dijo `estado`. Sin él, `unhealthy` era un color en un listado que
+  nadie abría.
 
 Los dos leen el mismo estado —último bueno, último fallo, fallo ya avisado— de
 `/var/lib/respaldo`, que es el volumen con nombre `respaldo_estado`. Hasta el
