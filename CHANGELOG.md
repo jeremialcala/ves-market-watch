@@ -17,6 +17,29 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **Vigía de operación en midgard** (`deploy/midgard/vigia/`). Cada minuto
+  comprueba que los nueve contenedores estén en pie y, además, que hagan su
+  trabajo: que haya un snapshot reciente, que el motor no vaya por detrás, que
+  el BCV se esté capturando, que la cola del motor se consuma, que el gateway
+  esté sano y que el API y el panel respondan por el túnel. Avisa por ntfy a
+  la tercera pasada en fallo, lo recuerda cada 6 h y avisa al volver. Hasta
+  ahora un servicio caído solo se veía entrando a mirar.
+- **`estado`, el healthcheck del respaldo, vigila también la verificación
+  semanal y los agregados mensuales.** Un `.fallo` solo aparece si el trabajo
+  corre y falla; si a su hora el contenedor no estaba en pie, no quedaba
+  rastro. Así faltó el volcado de agregados de octubre. Con pruebas
+  (`scripts/respaldo/tests/prueba-estado.sh`), que corren en CI.
+
+### Changed
+
+- **CI: trabajo nuevo `scripts de operación`,** que comprueba la sintaxis de
+  los scripts de respaldo y de `deploy/midgard/` y corre las pruebas del
+  healthcheck. Ni pytest ni vitest los veían.
+- **`build-respaldo` ya no se dispara por un cambio que solo toque sus
+  pruebas:** no entran en la imagen.
+
 ## [0.5.4] - 2026-10-13
 
 Versión de respaldos: **ningún cambio en el producto**. Trae tres cosas:

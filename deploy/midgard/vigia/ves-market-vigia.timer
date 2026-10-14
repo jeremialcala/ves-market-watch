@@ -1,0 +1,12 @@
+# /etc/systemd/system/ves-market-vigia.timer
+[Unit]
+Description=Criterio: vigía de operación cada minuto
+
+[Timer]
+# En el segundo 40: el vigía de Yggdrasil corre en el 20, y los dos consultan
+# docker.
+OnCalendar=*-*-* *:*:40
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target
