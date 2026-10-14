@@ -1,10 +1,10 @@
 # Historial de implementación — Criterio
 
 * **Estado:** review (documentación viva — regenerada por script, no editar a mano)
-* **Fecha:** 2026-10-12
+* **Fecha:** 2026-10-13
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
-* **Versión:** 0.5.2
+* **Versión:** 0.5.3
 * **Gate:** 2
 * **Rama principal:** main
 * **Estrategia de branching:** GitFlow (main + develop + ramas feature)
@@ -404,14 +404,26 @@ gitGraph
     commit id: "4a364fa" type: HIGHLIGHT
     checkout main
     merge develop tag: "v0.5.2"
+    checkout develop
+    commit id: "9e8fd85"
+    commit id: "2ae9d21"
+    commit id: "8a5039a" type: HIGHLIGHT
+    commit id: "3e46bf1"
+    commit id: "28f8114" type: HIGHLIGHT
+    commit id: "ea0e402"
+    commit id: "162ff4f" type: HIGHLIGHT
+    commit id: "9b9e3b3"
+    commit id: "610cea8" type: HIGHLIGHT
+    checkout main
+    merge develop tag: "v0.5.3"
 ```
 
 ### Estado actual de las ramas
 
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
-| `main` | `36e1a2e` | 2026-10-12 | 11 |
-| `develop` | `4a364fa` | 2026-10-12 | 356 |
+| `main` | `2934219` | 2026-10-13 | 12 |
+| `develop` | `610cea8` | 2026-10-13 | 365 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -425,11 +437,22 @@ gitGraph
 | v0.5.0 | `d12a351` | 2026-09-07 | 0.5.0 | ADR-0025/0026; riesgos y análisis como dato servido; SLOs medidos; T8 cerrada (lockfiles con hashes + imágenes por digest) | Gates 2 y 3 aprobados HITL (2026-09-08): cierran 03-implementation y 04-testing. Sin bloques `demo · sin fuente` en el producto |
 | v0.5.1 | `d585124` | 2026-09-21 | 0.5.1 | Avisos por ntfy del cron de seguridad (`seguridad.yml`) y del respaldo (`aviso.sh` + healthcheck `estado`); js-yaml 4.3.2 (GHSA-2883-xcg3-v3hh); caja de respaldo por digest e `init: true` | Patch de correcciones e instrumentación (2026-09-21): los dos procesos desatendidos ya avisan cuando fallan. Sin gate cerrado; Gate 4 (05-deployment) sin iniciar |
 | v0.5.2 | `36e1a2e` | 2026-10-12 | 0.5.2 | ADR-0027 (respaldo en Backblaze B2, clave sin borrado); ADR-0028…0033 y threat model 0.5.0 (T16–T25) del portal público; `pyjwt` 2.15.1, `multidict` 6.9.1, `undici` 8.11.2, `brace-expansion` 2.1.7 y `source-map-js` 1.2.2 | Patch de mantenimiento (2026-10-12): el respaldo sale de Google Drive, `T8 · SCA` vuelve a verde en `main` y entra la fase 0 del portal público, solo documentación. Sin gate cerrado: el PRD del portal sigue en borrador |
+| v0.5.3 | `2934219` | 2026-10-13 | 0.5.3 | ADR-0034 (el entorno de captura pasa a midgard por réplica física); `deploy/midgard/` con un proyecto compose por servicio; cinco workflows `build-<servicio>` sobre `publicar-imagen.yml` | Patch de despliegue (2026-10-13): la captura sale de la máquina de desarrollo sin perder un ciclo y los seis servicios quedan con despliegue continuo. Sin cambios de producto ni gate cerrado; no decide D15 |
 
 ### Bitácora de cambios (fiel al repo)
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `2934219` | merge | v0.5.3 | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #67 from jeremialcala/develop |
+| `610cea8` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #66 from jeremialcala/release-0.5.3 |
+| `9b9e3b3` | commit | — | Jeremi Alcala | 2026-10-13 | docs(changelog): cortar la versión 0.5.3 |
+| `162ff4f` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #65 from jeremialcala/cd-cinco-imagenes |
+| `ea0e402` | commit | — | Jeremi Alcala | 2026-10-13 | feat(cd): despliegue continuo para ingestores, motor, panel y respaldo |
+| `28f8114` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #64 from jeremialcala/traslado-midgard |
+| `8a5039a` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #63 from jeremialcala/docs-coherencia-052 |
+| `3e46bf1` | commit | — | Jeremi Alcala | 2026-10-13 | feat(despliegue): el entorno de captura corre en midgard (ADR-0034) |
+| `2ae9d21` | commit | — | Jeremi Alcala | 2026-10-12 | docs(historial): regenerar repo-history tras el corte 0.5.2 |
+| `9e8fd85` | commit | — | Jeremi Alcala | 2026-10-12 | docs(portal): dos contradicciones entre documentos tras el release 0.5.2 |
 | `36e1a2e` | merge | v0.5.2 | Jeremi J. Alcalá M. | 2026-10-12 | Merge pull request #62 from jeremialcala/develop |
 | `4a364fa` | merge | — | Jeremi J. Alcalá M. | 2026-10-12 | Merge pull request #61 from jeremialcala/release-0.5.2 |
 | `a9ec842` | commit | — | Jeremi Alcala | 2026-10-12 | docs(changelog): cortar la versión 0.5.2 |

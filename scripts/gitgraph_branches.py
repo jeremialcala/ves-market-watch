@@ -55,6 +55,14 @@ TAG_NOTES = {
         "`T8 · SCA` vuelve a verde en `main` y entra la fase 0 del portal público, "
         "solo documentación. Sin gate cerrado: el PRD del portal sigue en borrador",
     ),
+    "v0.5.3": (
+        "ADR-0034 (el entorno de captura pasa a midgard por réplica física); "
+        "`deploy/midgard/` con un proyecto compose por servicio; cinco workflows "
+        "`build-<servicio>` sobre `publicar-imagen.yml`",
+        "Patch de despliegue (2026-10-13): la captura sale de la máquina de "
+        "desarrollo sin perder un ciclo y los seis servicios quedan con despliegue "
+        "continuo. Sin cambios de producto ni gate cerrado; no decide D15",
+    ),
     "v0.5.1": (
         "Avisos por ntfy del cron de seguridad (`seguridad.yml`) y del respaldo "
         "(`aviso.sh` + healthcheck `estado`); js-yaml 4.3.2 (GHSA-2883-xcg3-v3hh); "
