@@ -140,8 +140,13 @@ Medido el 2026-10-13, en UTC.
 
 ## Pendiente
 
-- Despliegue continuo para ingestores, motor, panel y respaldo: workflow de
-  build en GHCR y alta en el receptor. Cierra el retroceso de T8.
+- ~~Despliegue continuo para ingestores, motor, panel y respaldo: workflow de
+  build en GHCR y alta en el receptor. Cierra el retroceso de T8.~~ **Hecho el
+  2026-10-14** (0.5.3): un workflow y un proyecto compose por servicio, y el
+  receptor ampliado para varias apps por repositorio (su ADR-0010). Midgard
+  pasó a las imágenes de GHCR sin perder ningún minuto de captura. Lo que
+  sigue pendiente de ahí: esos servicios no tienen comprobación de salud ni
+  rollback automático.
 - Cambiar el disco de `midgard` y ponerle UPS. Sin eso no es producción.
 - Que el vigía de servicios de Yggdrasil vigile también los contenedores
   `ves-*`. Hoy solo avisa el respaldo.

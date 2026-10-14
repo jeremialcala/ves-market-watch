@@ -1,0 +1,17 @@
+# /etc/systemd/system/ves-market-respaldo-nas.service
+[Unit]
+Description=Criterio: respaldo diario de la base y el despliegue al NAS
+Requires=docker.service
+After=docker.service network-online.target remote-fs.target ves-market-arranque.service
+Wants=network-online.target
+# Push inmediato por ntfy si el script falla.
+OnFailure=ves-market-respaldo-nas-fallo.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/ves-market-respaldo-nas.sh
+Nice=10
+IOSchedulingClass=idle
+# El volcado tarda minutos, el script espera hasta 5 a que la base esté sana y
+# el montaje NFS es `hard`: si el NAS deja de responder a mitad, esto lo corta.
+TimeoutStartSec=3600

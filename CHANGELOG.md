@@ -17,6 +17,67 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-10-13
+
+Versión de respaldos: **ningún cambio en el producto**. Trae tres cosas:
+
+- **El volcado mensual de `agregados` deja de llevar dentro los snapshots
+  crudos.** Existe para guardarse dos años sin ellos, y el patrón que debía
+  excluirlos no casaba con ningún chunk. Es el único cambio de código.
+- **Segunda copia de respaldo, al NAS de la casa,** independiente de la de B2 y
+  restaurable sin ninguna clave.
+- **Un despliegue que falla en midgard avisa por ntfy.**
+
+Patch por la convención de este archivo: una corrección, infraestructura y
+documentación, sin funcionalidad nueva de producto y sin gate cerrado.
+
+Al llegar a `main`, `build-respaldo` publica la imagen nueva y el receptor
+recrea `ves-respaldo`: es el primer despliegue automático de un servicio desde
+que cada uno tiene el suyo. Ningún otro contenedor se mueve.
+
+### Added
+
+- **Segunda copia de respaldo, al NAS de la casa** (`deploy/midgard/respaldo-nas/`).
+  Independiente de la de B2: otro volcado, otro destino y otro camino. Cada
+  noche deja el volcado completo **sin cifrar** —se restaura aunque se pierdan
+  las claves de B2—, los archivos no secretos del despliegue y los `.env` y el
+  `rclone.conf` cifrados con una frase. Avisa por ntfy si falla y un vigía
+  comprueba cada mañana que no esté atrasada. Primera copia verificada el
+  2026-10-14: 1,9 GiB, leída entera desde el NAS.
+
+- **Un despliegue que falla en midgard avisa por ntfy,** al mismo tema que el
+  respaldo y el disco. El receptor tenía los avisos apagados. ntfy necesita
+  una plantilla en la URL para leer el aviso; la receta quedó en el runbook de
+  `higerotech/despliegue-continuo`. Probado con un webhook firmado que pedía
+  un tag inexistente: el `pull` falló, el receptor revirtió y llegó el aviso.
+- **`agregados-2026-10.dump`, el volcado mensual de octubre, que no existía.**
+  El día 1 el respaldo estaba caído por el token de Drive.
+
+### Changed
+
+- **`repo-history.md` regenerado tras el corte 0.5.3**, con la entrada de
+  `TAG_NOTES` para v0.5.3.
+
+### Fixed
+
+- **El volcado de `agregados` llevaba dentro los snapshots crudos que existe
+  para dejar fuera.** El patrón de exclusión buscaba chunks con
+  `p2p_snapshots_raw` en el nombre, y los chunks de TimescaleDB se llaman
+  `_hyper_<id>_<n>_chunk`: no casaba con ninguno. `agregados-2026-09.dump`
+  pesa 2,9 GB porque es un full, y está guardado con retención de dos años,
+  cuando la clasificación de datos da 90 días al crudo. Ahora se excluye cada
+  chunk por su nombre y, antes de subir, se comprueba en el índice del volcado
+  que no quedó ninguno. El de octubre pesa 100 MB.
+
+### Security
+
+- **Cerrado el retroceso de T8 en midgard.** Ingestores, motor, panel y
+  respaldo corren desde el 2026-10-14 las imágenes que el CI publica en GHCR
+  (`sha-2934219`), desplegadas por el receptor, en lugar de las copiadas a mano
+  en el traslado. La migración fue servicio a servicio y no se perdió ningún
+  minuto de captura. Sigue abierto que esos servicios, salvo el panel, no
+  tienen comprobación de salud ni rollback automático.
+
 ## [0.5.3] - 2026-10-13
 
 Versión de despliegue: **ningún cambio en el producto**. Trae dos cosas:
@@ -3359,7 +3420,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.3...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.4...HEAD
+[0.5.4]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.0...v0.5.1
