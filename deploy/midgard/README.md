@@ -192,11 +192,52 @@ en la máquina sin tocarlo, un `Environment=` en un *drop-in* de la unidad.
 **Lo que no ve:**
 
 - **Que midgard esté apagado o sin internet.** Sin máquina no hay vigía y sin
-  red no hay push. Con los cortes de luz de esta casa, es el fallo más
-  frecuente y el único que sigue sin avisar.
+  red no hay push. Con los cortes de luz de esta casa es el fallo más
+  frecuente; lo cubre el sondeo externo, más abajo.
 - **Que el propio vigía se rompa.** Si el script falla, la unidad queda en
   `failed` y nadie lo dice.
 - **Que los datos sean malos.** Mira que haya snapshots, no que sean correctos.
+
+## Sondeo externo
+
+El workflow `sondeo-externo.yml` comprueba cada diez minutos, desde un runner
+de GitHub, lo mismo que vería un cliente: que el API dé su JSON de salud con
+todo en `ok` y que el panel responda. Pasa por Cloudflare y por el túnel.
+
+Es lo único que avisa de **midgard apagado o sin internet**, que es justo lo
+que el vigía no puede ver.
+
+- **Avisa por ntfy, al mismo tema,** cuando deja de responder, cada 6 h
+  mientras dure, y al volver, con lo que duró. Reintenta tres veces antes de
+  dar algo por caído.
+- **Es más lento que el vigía.** El cron de GitHub se retrasa minutos y a
+  veces se salta una pasada: una caída se avisa en diez o veinte minutos.
+- **El workflow sale en verde aunque Criterio no responda:** en rojo, GitHub
+  mandaría un correo cada diez minutos. En rojo solo sale si no pudo enviar un
+  aviso; ahí ese correo es el segundo canal.
+- **El estado vive en la caché de Actions** (`sondeo-estado-…`). Borrarla solo
+  hace que la siguiente pasada no sepa cómo estaba antes.
+
+```sh
+# qué dijo la última pasada
+gh run list --workflow sondeo-externo.yml --limit 5
+
+# comprobar el aviso sin esperar a una caída: manda uno de prueba, que dice
+# que no es real, y la pasada siguiente manda el de recuperación
+gh workflow run sondeo-externo.yml -f simular_fallo=true
+```
+
+Con midgard encendido, una caída del gateway la avisan los dos: el vigía en
+tres minutos, con el motivo, y el sondeo algo después, visto desde fuera.
+
+**Lo que hay que saber:**
+
+- Mira los hostnames de `criterio-dev`. Con otro dominio (D12) hay que
+  cambiar las dos URL al principio de `scripts/sondeo/sondeo-externo.sh`.
+- GitHub **desactiva los cron tras 60 días sin actividad** en el repositorio,
+  y avisa por correo antes.
+- Cada pasada manda tres webhooks al receptor de midgard, que los ignora: son
+  unas 430 líneas `ignorado` al día en `journalctl -u cd-receiver`.
 
 ## Respaldos
 
@@ -342,9 +383,6 @@ verificado con `verificar`.
   disco de la casa más que en el de midgard.
 - Una restauración completa desde el volcado del NAS, para medirla y darla por
   probada.
-- **Un sondeo desde fuera de la casa** que avise cuando midgard no responde:
-  es lo único que cubre un corte de luz. El plan del portal ya lo prevé (fase
-  7.4, desde GitHub Actions).
 - Comprobación de salud para ingestores, motor y respaldo **en el receptor**:
   un despliegue roto de cualquiera de los tres no se revierte solo. El vigía lo
   avisa, pero no lo deshace.

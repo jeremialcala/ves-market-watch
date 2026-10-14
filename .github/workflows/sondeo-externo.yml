@@ -1,0 +1,82 @@
+# Comprueba desde fuera de la casa que Criterio responde, y avisa por ntfy
+# cuando deja de hacerlo y cuando vuelve.
+#
+# Existe por lo único que el vigía de midgard no puede ver: que midgard esté
+# apagado o sin internet. Sin máquina no hay vigía, y con los cortes de luz de
+# la casa ese es el fallo más frecuente. Este runner no vive allí.
+#
+# Tres cosas que no son obvias:
+#
+# - **El workflow sale en verde aunque Criterio no responda.** Que no responda
+#   es un resultado, no un fallo del sondeo. Si saliera en rojo, GitHub
+#   mandaría un correo cada diez minutos durante toda la caída. Solo sale en
+#   rojo si no pudo avisar de algo que debía: ahí el correo es el segundo canal.
+# - **Avisa por transiciones**, y para eso necesita recordar cómo estaba la
+#   última vez. Los runners no tienen memoria, así que el estado —tres líneas—
+#   viaja en la caché de Actions: se restaura la entrada más reciente y se
+#   guarda una nueva solo cuando algo cambió.
+# - **El cron de GitHub no es puntual.** Bajo carga se retrasa minutos, y a
+#   veces se salta una pasada. Una caída se avisa en diez o veinte minutos, no
+#   en uno. Para eso, por dentro, está el vigía.
+#
+# Los `schedule` solo corren desde la rama por defecto (`main`), y GitHub los
+# desactiva tras 60 días sin actividad en el repositorio.
+name: Sondeo externo
+
+on:
+  schedule:
+    # Cada diez minutos, fuera de los múltiplos de diez: en punto es cuando más
+    # se retrasa el cron de GitHub.
+    - cron: "7,17,27,37,47,57 * * * *"
+  workflow_dispatch:
+    inputs:
+      simular_fallo:
+        description: >-
+          Dar Criterio por caído sin sondearlo, para comprobar el aviso. La
+          siguiente pasada normal manda el de recuperación.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# De una en una: dos pasadas a la vez leerían el mismo estado y avisarían dos
+# veces de la misma transición.
+concurrency:
+  group: sondeo-externo
+  cancel-in-progress: false
+
+jobs:
+  sondeo:
+    name: Criterio responde desde fuera
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: scripts/sondeo
+
+      # La clave lleva el id de la corrida, así que nunca coincide: lo que se
+      # restaura es la entrada MÁS RECIENTE con ese prefijo.
+      - name: Recuperar el estado de la pasada anterior
+        uses: actions/cache/restore@v6
+        with:
+          path: .sondeo
+          key: sondeo-estado-${{ github.run_id }}
+          restore-keys: sondeo-estado-
+
+      - name: Sondear y avisar si cambió
+        id: sondeo
+        env:
+          AVISO_URL: ${{ secrets.AVISO_URL }}
+          SONDEO_SIMULAR: ${{ inputs.simular_fallo && 'fallo' || '' }}
+        run: bash scripts/sondeo/sondeo-externo.sh
+
+      # `always()` porque el estado hay que guardarlo también cuando el script
+      # sale con 1: es justo cuando apunta que quedó un aviso sin enviar.
+      - name: Guardar el estado si cambió
+        if: always() && steps.sondeo.outputs.cambio == 'si'
+        uses: actions/cache/save@v6
+        with:
+          path: .sondeo
+          key: sondeo-estado-${{ github.run_id }}

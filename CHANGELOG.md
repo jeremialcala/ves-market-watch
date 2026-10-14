@@ -17,6 +17,16 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **Sondeo externo desde GitHub Actions** (`sondeo-externo.yml`). Cada diez
+  minutos comprueba, desde fuera de la casa, que el API y el panel responden,
+  y avisa por ntfy cuando dejan de hacerlo, cada 6 h mientras dure y al
+  volver. Cubre lo único que el vigía de midgard no puede ver: que midgard
+  esté apagado o sin internet. Avisa por transiciones, con el estado guardado
+  en la caché de Actions, y sale en verde aunque Criterio no responda para que
+  una caída no sean 144 correos de GitHub. Con 28 pruebas en CI.
+
 ## [0.5.5] - 2026-10-13
 
 Versión de operación: **ningún cambio en el producto**. Trae dos cosas:
