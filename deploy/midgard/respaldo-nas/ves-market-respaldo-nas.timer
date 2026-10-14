@@ -1,0 +1,15 @@
+# /etc/systemd/system/ves-market-respaldo-nas.timer
+[Unit]
+Description=Criterio: respaldo diario al NAS
+
+[Timer]
+# Hora de la CASA (el host va en UTC): 00:30 = 04:30 UTC. Después de los
+# respaldos de Yggdrasil (22:30) y Andvari (23:00), y tres horas antes del full
+# a B2 (03:30): dos volcados a la vez se quitarían el disco el uno al otro.
+OnCalendar=*-*-* 00:30 America/Caracas
+RandomizedDelaySec=5min
+# Sin UPS: si un apagón se come la ventana, el respaldo corre al volver.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

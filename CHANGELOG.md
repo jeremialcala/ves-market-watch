@@ -19,6 +19,14 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Segunda copia de respaldo, al NAS de la casa** (`deploy/midgard/respaldo-nas/`).
+  Independiente de la de B2: otro volcado, otro destino y otro camino. Cada
+  noche deja el volcado completo **sin cifrar** —se restaura aunque se pierdan
+  las claves de B2—, los archivos no secretos del despliegue y los `.env` y el
+  `rclone.conf` cifrados con una frase. Avisa por ntfy si falla y un vigía
+  comprueba cada mañana que no esté atrasada. Primera copia verificada el
+  2026-10-14: 1,9 GiB, leída entera desde el NAS.
+
 - **Un despliegue que falla en midgard avisa por ntfy,** al mismo tema que el
   respaldo y el disco. El receptor tenía los avisos apagados. ntfy necesita
   una plantilla en la URL para leer el aviso; la receta quedó en el runbook de
