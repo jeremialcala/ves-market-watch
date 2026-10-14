@@ -71,6 +71,14 @@ TAG_NOTES = {
         "snapshots crudos que debía excluir. Primer despliegue automático por "
         "servicio (`ves-respaldo`). Sin cambios de producto ni gate cerrado",
     ),
+    "v0.5.5": (
+        "`deploy/midgard/vigia/` (vigía de operación: contenedores y sondas de "
+        "trabajo); `estado.sh` vigila la verificación semanal y los agregados "
+        "mensuales, con pruebas; trabajo `scripts de operación` en CI",
+        "Patch de operación (2026-10-13): un servicio caído o parado avisa por "
+        "ntfy en vez de descubrirse mirando. Sin cambios de producto ni gate "
+        "cerrado",
+    ),
     "v0.5.1": (
         "Avisos por ntfy del cron de seguridad (`seguridad.yml`) y del respaldo "
         "(`aviso.sh` + healthcheck `estado`); js-yaml 4.3.2 (GHSA-2883-xcg3-v3hh); "

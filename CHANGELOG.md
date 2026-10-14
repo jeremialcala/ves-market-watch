@@ -17,6 +17,21 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.5.6] - 2026-10-13
+
+Versión de operación: **ningún cambio en el producto**. Trae una cosa:
+
+- **Un sondeo desde fuera de la casa** que avisa cuando Criterio no responde.
+  Es lo único que cubre un corte de luz o de internet en midgard, que el vigía
+  de dentro no puede ver.
+
+Patch por la convención de este archivo: infraestructura, pruebas y
+documentación, sin funcionalidad nueva de producto y sin gate cerrado.
+
+No despliega nada en midgard: no cambia el código de ningún servicio. El
+sondeo empieza a correr al llegar a `main`, porque los cron de GitHub solo se
+ejecutan desde la rama por defecto.
+
 ### Added
 
 - **Sondeo externo desde GitHub Actions** (`sondeo-externo.yml`). Cada diez
@@ -26,6 +41,11 @@ Convención de mantenimiento (inventario por ejecución):
   esté apagado o sin internet. Avisa por transiciones, con el estado guardado
   en la caché de Actions, y sale en verde aunque Criterio no responda para que
   una caída no sean 144 correos de GitHub. Con 28 pruebas en CI.
+
+### Changed
+
+- **`repo-history.md` regenerado tras el corte 0.5.5**, con la entrada de
+  `TAG_NOTES` para v0.5.5.
 
 ## [0.5.5] - 2026-10-13
 
@@ -3471,7 +3491,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.5...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.6...HEAD
+[0.5.6]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.5...v0.5.6
 [0.5.5]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.2...v0.5.3
