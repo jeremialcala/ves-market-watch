@@ -1,0 +1,10 @@
+# /etc/systemd/system/ves-market-respaldo-nas-fallo.service
+[Unit]
+Description=Criterio: aviso por ntfy de un respaldo al NAS fallido
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/ves-market-respaldo-nas-aviso.sh fallo
+TimeoutStartSec=120

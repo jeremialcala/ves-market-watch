@@ -1,0 +1,14 @@
+# /etc/systemd/system/ves-market-respaldo-nas-vigia.service
+[Unit]
+Description=Criterio: comprueba que el respaldo diario al NAS no está atrasado
+After=network-online.target
+# Tras un apagón los dos temporizadores Persistent disparan a la vez al
+# arrancar: que el vigía espere al respaldo, o avisaría de un atraso que se
+# está resolviendo en ese momento.
+After=ves-market-respaldo-nas.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/ves-market-respaldo-nas-aviso.sh vigilar
+TimeoutStartSec=120

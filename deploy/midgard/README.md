@@ -35,6 +35,10 @@ El panel no tiene: todo lo suyo va horneado en la imagen.
 | `ves_rclone_config` | `rclone.conf`, cifrado, con la clave de B2. Externo |
 | `ves_respaldo_estado` | último respaldo bueno, último fallo y aviso enviado. Externo |
 
+Fuera de Docker: `/etc/ves-market-respaldo.frase` (la frase que cifra los
+secretos en el NAS) y `/var/lib/ves-market-respaldo-nas` (cuándo salió bien la
+última copia).
+
 El acceso público entra por el túnel de Cloudflare, cuyo ingress vive en el
 panel de Cloudflare y apunta a `http://web-spa:80` y `http://api-gateway:8000`.
 Ningún servicio publica puertos hacia la LAN: el gateway y el panel solo en
@@ -136,6 +140,100 @@ instala en `/usr/local/sbin` y `/etc/systemd/system`.
   verificación del domingo a las 05:00, hora de Caracas.
 - **Levantar los perfiles `tunel` o `respaldo` en la máquina de desarrollo.**
 
+## Respaldos
+
+Dos copias, independientes a propósito: otro volcado, otro destino y otro
+camino. Lo que rompa una no arrastra a la otra.
+
+| | A Backblaze B2 | Al NAS |
+|---|---|---|
+| Quién | contenedor `ves-respaldo` | `ves-market-respaldo-nas.timer`, en el host |
+| Qué | incremental cada hora, full diario, agregados mensuales | volcado completo diario, despliegue y secretos |
+| Cuándo | full a las 03:30 | 00:30 |
+| Cifrado | todo, en cliente | el volcado **no**; los secretos sí |
+| Para leerlo hace falta | `rclone.conf` y `RCLONE_CONFIG_PASS` | nada para la base; la frase para los secretos |
+| Retención | 76 + 14 días el full | las 7 últimas noches |
+| Si falla | push a ntfy y healthcheck `estado` | push a ntfy, y un vigía a las 08:10 |
+| Detalle | `scripts/respaldo/README.md` | `respaldo-nas/` |
+
+Horas de Caracas. La copia al NAS sigue el esquema de los respaldos de Andvari y
+Yggdrasil en esta misma máquina.
+
+### La copia al NAS
+
+Deja tres piezas por noche en `/mnt/nas/respaldos/ves-market`, con el mismo
+sello en el nombre, y un `<sello>.sha256` con las sumas de las tres:
+
+- **`ves_market-<sello>.dump`**: volcado completo, **sin cifrar**. Es para lo
+  que está: se restaura sin ninguna clave, aunque se hayan perdido las de B2.
+- **`despliegue-<sello>.tar.gz`**: lo no secreto. Los compose, el inventario
+  del receptor, los scripts y un manifiesto con versiones y los *nombres* de
+  las claves de cada `.env`.
+- **`secretos-<sello>.tar.gz.gpg`**: los siete `.env` y el `rclone.conf`,
+  cifrados con la frase de `/etc/ves-market-respaldo.frase`.
+
+Antes de dar la noche por buena comprueba que el volcado trae datos de tantos
+chunks como tenía la base, **lo lee entero** desde el NAS, y abre el paquete de
+secretos con la frase. Solo entonces borra el más antiguo.
+
+Medido el 2026-10-14: 1,9 GiB y 34 min. El volcado a B2, con gzip, pesa 5,4 GB;
+el tiempo es el mismo porque el cuello de botella es la base convirtiendo los
+snapshots a texto, no la compresión ni la red.
+
+**Mientras corre un volcado, las consultas pesadas del motor agotan su tiempo**
+(20 veces en esos 34 min). El motor sirve la escala que tenía en caché y lo
+declara en `scale.computed_at`; la captura no se ve afectada. Son dos ventanas
+por noche, a las 00:30 y a las 03:30. Si molesta, la copia al NAS puede pasar a
+semanal cambiando `OnCalendar` en el temporizador.
+
+```sh
+# a mano, sin esperar a la noche
+sudo systemctl start ves-market-respaldo-nas.service
+journalctl -u ves-market-respaldo-nas -n 20
+
+# qué hay y si está entero
+sudo ls -la /mnt/nas/respaldos/ves-market
+sudo sh -c 'cd /mnt/nas/respaldos/ves-market && sha256sum -c <sello>.sha256'
+
+# abrir el paquete de secretos (pide la frase)
+gpg -d secretos-<sello>.tar.gz.gpg | tar -xzf -
+```
+
+### La frase
+
+**Tiene que existir fuera de midgard y fuera del NAS.** Vive en
+`/etc/ves-market-respaldo.frase` (root, 600) para que el respaldo corra
+desatendido, pero si midgard se pierde, sin ella el paquete de secretos no lo
+abre nadie. Se copia una vez, a un gestor de contraseñas:
+
+```sh
+sudo cat /etc/ves-market-respaldo.frase
+```
+
+El manifiesto de cada noche lleva `frase_sha256`: sirve para comprobar que la
+frase guardada es la que cifró ese paquete, con `sha256sum` sobre un archivo
+que la contenga igual que el original, salto de línea final incluido.
+
+No se cambia a la ligera: los paquetes ya hechos solo se abren con la que
+tenían. `respaldo-nas/instalar.sh` la genera si falta y nunca la sustituye.
+
+### Restaurar desde el NAS
+
+En una base nueva, con la misma imagen de TimescaleDB que la del manifiesto
+(`imagen_base`). Es el mismo procedimiento que usa `restaurar` con lo de B2:
+
+```sh
+psql -c 'CREATE DATABASE ves_market_restaurada'
+psql -d ves_market_restaurada -c 'CREATE EXTENSION IF NOT EXISTS timescaledb'
+psql -d ves_market_restaurada -c 'SELECT timescaledb_pre_restore()'
+pg_restore --no-owner -d ves_market_restaurada ves_market-<sello>.dump
+psql -d ves_market_restaurada -c 'SELECT timescaledb_post_restore()'
+```
+
+**Esta restauración completa desde el NAS todavía no se ha hecho.** Lo
+comprobado es que el archivo está entero y es legible; el formato es el mismo
+que `verificar` restaura cada domingo desde B2.
+
 ## Instalar desde cero
 
 Para rehacer el entorno en una máquina vacía, o en esta tras cambiar el disco.
@@ -178,13 +276,14 @@ verificado con `verificar`.
 ## Pendiente
 
 - Disco nuevo y UPS. El disco actual tiene sectores pendientes y va a peor.
-- **Guardar fuera de estas dos máquinas lo que hace falta para leer los
-  respaldos:** el `rclone.conf` (volumen `ves_rclone_config`), su contraseña
-  `RCLONE_CONFIG_PASS` y `MERCHANT_HMAC_KEY`. En lo que cubre este
-  repositorio, solo están en midgard y en la máquina de desarrollo: una con el
-  disco fallando y otra que se cuelga. Sin los dos primeros, lo que hay en B2
-  no se puede descifrar; sin la tercera, la serie de comerciantes se parte en
-  dos.
+- **Guardar la frase del respaldo fuera de midgard y del NAS** (ver *La
+  frase*). Desde el 2026-10-14 los secretos van cada noche al NAS, cifrados:
+  el `rclone.conf` y `RCLONE_CONFIG_PASS`, sin los que lo de B2 no se puede
+  descifrar, y `MERCHANT_HMAC_KEY`, sin la que la serie de comerciantes se
+  parte en dos. Todo eso depende ahora de una sola cosa que no está en ningún
+  disco de la casa más que en el de midgard.
+- Una restauración completa desde el volcado del NAS, para medirla y darla por
+  probada.
 - Que el vigía de servicios de Yggdrasil vigile los contenedores `ves-*`.
 - Comprobación de salud para ingestores, motor y respaldo: hoy un despliegue
   roto de cualquiera de los tres no se revierte solo.
