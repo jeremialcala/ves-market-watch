@@ -17,6 +17,22 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.5.5] - 2026-10-13
+
+Versión de operación: **ningún cambio en el producto**. Trae dos cosas:
+
+- **Un vigía que avisa cuando Criterio deja de funcionar,** no solo cuando un
+  contenedor se cae: mira que haya snapshots recientes, que el motor vaya al
+  día, que el gateway esté sano y que el acceso público responda.
+- **El healthcheck del respaldo ve también lo que no llegó a correr:** la
+  verificación semanal y el volcado mensual.
+
+Patch por la convención de este archivo: infraestructura, pruebas y
+documentación, sin funcionalidad nueva de producto y sin gate cerrado.
+
+Al llegar a `main` se despliega `ves-respaldo`, solo: es el único servicio cuyo
+código cambia. El vigía ya está instalado en midgard.
+
 ### Added
 
 - **Vigía de operación en midgard** (`deploy/midgard/vigia/`). Cada minuto
@@ -39,6 +55,8 @@ Convención de mantenimiento (inventario por ejecución):
   healthcheck. Ni pytest ni vitest los veían.
 - **`build-respaldo` ya no se dispara por un cambio que solo toque sus
   pruebas:** no entran en la imagen.
+- **`repo-history.md` regenerado tras el corte 0.5.4**, con la entrada de
+  `TAG_NOTES` para v0.5.4.
 
 ## [0.5.4] - 2026-10-13
 
@@ -3443,7 +3461,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.4...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.5...HEAD
+[0.5.5]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.1...v0.5.2
