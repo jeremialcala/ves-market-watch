@@ -19,7 +19,7 @@ Medido **ejecutando el respaldo**, no estimado:
 |---|---|---|---|---|
 | `incremental/<hora>.tar.gz` | cada hora | **3,2 MB** | segundos | 14 + 14 días |
 | `full/ves_market-<sello>.dump` | cada 24 h (03:30 VET) | **4,9 GB** | **~27 min** con la subida | **76 + 14 días** |
-| `agregados/<mes>.dump` | cada mes | *sin medir* | — | 24 meses |
+| `agregados/<mes>.dump` | cada mes | **100 MB** (2026-10-14, en midgard) | ~2 min | 24 meses |
 
 Cifras del **2026-10-04**, el primer día en B2. En agosto el full pesaba 2,3 GB:
 **la base se duplicó en seis semanas**, así que estas cifras caducan rápido —se
@@ -86,6 +86,40 @@ año — incumpliendo la propia política del proyecto por la puerta de atrás.
 
 De ahí el tercer volcado: `agregados` es el mismo `pg_dump` **excluyendo los
 datos de `p2p_snapshots_raw`**, y ese sí puede vivir dos años.
+
+**Hasta el 2026-10-14 no los excluía.** Los datos de una hipertabla viven en
+sus chunks, que se llaman `_timescaledb_internal._hyper_<id>_<n>_chunk`, y el
+patrón de exclusión buscaba chunks con `p2p_snapshots_raw` en el nombre: no
+existe ninguno. El volcado salía en verde y con el crudo entero dentro.
+
+- **`agregados-2026-09.dump` es, en la práctica, un full**: 2,9 GB, con datos
+  de 9 chunks de crudo, guardado con retención de dos años. Es el único volcado
+  afectado; el de octubre no llegó a hacerse, porque el día 1 el respaldo
+  estaba caído.
+- **Cómo se vio:** pesaba lo mismo que un full, y nadie lo había comparado. La
+  columna de arriba decía «sin medir».
+- **Qué cambió:** `respaldar agregados` excluye cada chunk por su nombre, que
+  saca del catálogo, y después **lee el índice del volcado** (`pg_restore -l`).
+  Si queda un solo chunk de crudo, no sube nada y avisa.
+- El de octubre, ya corregido, pesa 100 MB y conserva las otras cinco
+  hipertablas enteras: los mismos chunks que el full de ese día, menos los 14
+  de crudo.
+
+Para mirar qué lleva un volcado sin bajarlo entero basta su cabecera:
+
+```sh
+docker exec ves-respaldo sh -c '
+  rclone cat --head 16000000 "$RCLONE_REMOTE/agregados/agregados-2026-10.dump" > /tmp/c.dump
+  pg_restore -l /tmp/c.dump | grep -c "TABLE DATA _timescaledb_internal _hyper_3_"
+  rm /tmp/c.dump'
+```
+
+`3` es el id de `p2p_snapshots_raw` en `_timescaledb_catalog.hypertable`. Tiene
+que dar 0.
+
+**Lo que sigue sin vigilarse:** `estado` no mira la edad del último
+`agregados`. Si el día 1 a las 04:00 el contenedor no está en pie, ese mes se
+queda sin volcado y nada lo dice; así faltó el de octubre.
 
 ## Cifrado, y una decisión que no estaba tomada
 
