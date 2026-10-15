@@ -17,7 +17,44 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **El Dashboard público del portal (`/dashboard`, RF-2; plan 3.2)**, sin
+  cuenta y en vivo, sobre el mismo snapshot y las mismas series que la
+  landing. Sigue el diseño `Criterio Público.dc.html`, en este orden:
+  - **Lectura de hoy:** el régimen y una frase por afirmación del motor, en
+    su orden. Lleva cuatro chips: frescura, reglas con todas sus condiciones,
+    medidores cerca de su umbral y confianza. Los fragmentos «Exportar por
+    API» y «Alertas por API» muestran las llamadas reales a
+    `/api/v1/indicators/history` y al tópico `signals` del WSS.
+  - **La brecha buy** con su sparkline de 24 h, mínimo y máximo, la distancia
+    al disparo, la brecha frente a su media de 30 días y la ratio
+    oferta/demanda frente a su mediana de 90 días.
+  - **Panel de instrumentos:** los seis medidores, primero los que ya cumplen
+    una condición y después por cercanía al umbral en la escala de 90 días.
+    Los outliers dibujan su escala fija con el corte de confianza del 30 %.
+  - **Descomposición** y **brecha de hoy frente a su historia**: medias de 7 y
+    30 días y máximo de 90, con la cobertura real («87 días con dato») y el
+    percentil de hoy.
+  - **Mapa de calor** de 14 días × 24 h en hora de Caracas, con los cortes p10
+    y p90 de la ventana; coral solo por encima del p90.
+  - **Referencia P2P** de los dos lados y **procedencia**, sin fila de cuota.
+  - **Tasa oficial** en las cinco monedas, con fecha-valor y vigencia.
+  - **Cronología de señales** de 30 días, agrupada por regla: cuántas veces
+    disparó y qué hizo la brecha después de cada disparo. Sin «N de M».
+  - **Profundidad P2P** por banda de precio, a los dos lados.
+
+  Los paneles son del portal y no los del `web-spa`, y el plan 3.1 se pospone:
+  los del panel interno leen `/api/v1` y su store (decisión de Jeremi,
+  2026-10-15). La tasa oficial va sin variación de 24 h porque el snapshot no
+  la trae. 53 pruebas nuevas (124 en total), 92,9 % de ramas.
+
 ### Fixed
+
+- **Los indicadores `…_pct_buy` y `…_pct_sell` se muestran con «%».** Antes
+  solo se reconocía el sufijo `_pct`, y el medidor de la brecha buy habría
+  dicho «15,34» en vez de «15,34 %». Los negativos llevan el signo menos
+  tipográfico («−0,51 %»), como en el diseño.
 
 - **La prueba de humo de `deploy-portal.yml` reintenta la batería entera**, no
   solo hasta el primer 200. En el primer despliegue (2026-10-15), con el

@@ -45,6 +45,12 @@ describe("cifras", () => {
   it("valorIndicador usa % solo para los _pct", () => {
     expect(valorIndicador("0.4955", "p2p_spread_pct", "es")).toBe("0,49 %");
     expect(valorIndicador("0.1689", "p2p_ratio_oferta_demanda", "es")).toBe("0,16");
+    // La unidad va antes del lado: `_pct_buy` también es porcentaje.
+    expect(valorIndicador("15.34228734", "p2p_brecha_pct_buy", "es")).toBe("15,34 %");
+    expect(valorIndicador("30", "p2p_outliers_pct_buy", "es")).toBe("30 %");
+    // Negativos con el signo menos tipográfico, no con el guion.
+    expect(valorIndicador("-0.5136", "p2p_momentum_bid_3h_pct", "es")).toBe("−0,51 %");
+    expect(valorIndicador("-34.02", "p2p_drenaje_oferta_6h_pct", "en")).toBe("−34.02 %");
   });
 
   it("conSigno marca el signo con el menos tipográfico", () => {

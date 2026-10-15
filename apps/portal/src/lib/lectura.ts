@@ -64,15 +64,22 @@ export function fechaVet(iso: string, idioma: Idioma): string {
 
 // -- cifras ---------------------------------------------------------------------
 
+/** `…_pct` y también `…_pct_buy` / `…_pct_sell`: la unidad va antes del lado. */
 export function esPorcentaje(indicador: string): boolean {
-  return indicador.endsWith("_pct");
+  return /_pct(_buy|_sell)?$/.test(indicador);
 }
 
 /** Un valor de indicador con su unidad: los `_pct` en %, el resto tal cual. */
 export function valorIndicador(valor: string, indicador: string, idioma: Idioma): string {
-  return esPorcentaje(indicador)
+  const texto = esPorcentaje(indicador)
     ? formatPct(valor, 2, idioma)
     : formatDecimal(valor, { maxDecimales: 2, idioma });
+  return menos(texto);
+}
+
+/** El signo menos tipográfico (−), no el guion: «−0,51 %», como en el diseño. */
+export function menos(texto: string): string {
+  return texto.startsWith("-") ? `−${texto.slice(1)}` : texto;
 }
 
 /** Con signo explícito: «+0,17» / «−1,34». */
@@ -81,7 +88,7 @@ export function conSigno(valor: string, idioma: Idioma, maxDecimales = 2): strin
   if (signo(valor) > 0) {
     return `+${texto}`;
   }
-  return texto.replace("-", "−");
+  return menos(texto);
 }
 
 export function absoluto(valor: string): string {
@@ -166,6 +173,11 @@ export interface VistaMedidor {
   zona: { izquierda: number; ancho: number } | null;
   cortes: { bajo: string | null; medio: string | null; alto: string | null };
   regla: { nombre: string; cumple: boolean; distancia: string } | null;
+  /**
+   * Un corte fijo del ruleset sin regla que lo use como disparador, como el
+   * 30 % de outliers por encima del cual se suprimen las señales.
+   */
+  guarda: { valor: string } | null;
 }
 
 const porcentaje = (posicion: string): number =>
@@ -180,6 +192,21 @@ export function vistaMedidor(m: Medidor): VistaMedidor {
     return compararDecimales(absoluto(a.distance), absoluto(b.distance));
   });
   const regla = reglas[0] ?? null;
+  // Escala fija del ruleset (`unscaled`): no hay percentiles de 90 días, sino
+  // un dominio y un corte. Se dibuja ese corte, con la zona mala por encima.
+  const corteFijo = m.scale.source === "ruleset" ? (m.scale.cuts[0] ?? null) : null;
+  if (regla === null && corteFijo !== null) {
+    const umbralFijo = porcentaje(corteFijo.position);
+    return {
+      marcador: m.position === null ? 0 : porcentaje(m.position),
+      percentil: null,
+      umbral: umbralFijo,
+      zona: { izquierda: umbralFijo, ancho: 100 - umbralFijo },
+      cortes: { bajo: m.scale.domain.min, medio: corteFijo.value, alto: m.scale.domain.max },
+      regla: null,
+      guarda: { valor: corteFijo.value },
+    };
+  }
   const umbral = regla === null ? null : porcentaje(regla.threshold_position);
   const zona =
     regla === null || umbral === null
@@ -201,6 +228,7 @@ export function vistaMedidor(m: Medidor): VistaMedidor {
       regla === null
         ? null
         : { nombre: regla.rule, cumple: regla.met, distancia: absoluto(regla.distance) },
+    guarda: null,
   };
 }
 
