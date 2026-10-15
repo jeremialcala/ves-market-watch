@@ -33,6 +33,8 @@ from api_gateway.application.consultas import (
     ConsultarSenales,
     ConsultarTasaOficialVigente,
 )
+from api_gateway.application.cache import CacheSingleFlight
+from api_gateway.application.portal import ConsultarSeriesPortal, ConsultarSnapshotPortal
 from api_gateway.application.ports import (
     AlertNotifier,
     LecturaRepository,
@@ -94,6 +96,12 @@ def create_app(
             senales=ConsultarSenales(repo),
             analisis=ConsultarAnalisisVigente(repo, frescura_p2p),
         )
+        # `/portal/v1` compone los casos de uso de arriba (ADR-0028).
+        app.state.consultas.snapshot_portal = ConsultarSnapshotPortal(
+            repo, app.state.consultas
+        )
+        app.state.consultas.series_portal = ConsultarSeriesPortal(repo)
+        app.state.cache_portal = CacheSingleFlight()
         app.state.consumidor = None
         if con_amqp:
             app.state.consumidor = ConsumidorPushWss(
