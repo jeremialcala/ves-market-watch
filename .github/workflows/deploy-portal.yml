@@ -1,0 +1,106 @@
+# Despliega el portal público (apps/portal) en Cloudflare Workers (ADR-0035).
+#
+# Solo assets estáticos: el HTML prerenderizado de cada ruta, el 404, el
+# bundle y `_headers`. No pasa por midgard ni por el receptor: Workers guarda
+# cada versión, y volver atrás es `wrangler rollback` o un clic en el panel.
+#
+# Necesita dos secretos del repositorio:
+#   CLOUDFLARE_API_TOKEN   token con la plantilla «Edit Cloudflare Workers»,
+#                          limitado a la cuenta y a la zona higerotech.com;
+#   CLOUDFLARE_ACCOUNT_ID  la cuenta donde vive el Worker.
+name: deploy-portal
+
+on:
+  push:
+    branches: [main]
+    # Lo que cambia el sitio publicado: el portal, el paquete compartido, los
+    # manifiestos del workspace y el wrangler fijado. Los tests no entran.
+    paths:
+      - "apps/portal/**"
+      - "!apps/portal/tests/**"
+      - "packages/criterio-ui/**"
+      - "!packages/criterio-ui/tests/**"
+      - "package.json"
+      - "package-lock.json"
+      - "deploy/portal/**"
+      - ".github/workflows/deploy-portal.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Un despliegue a la vez, y sin cancelar el que está subiendo.
+concurrency:
+  group: deploy-portal
+  cancel-in-progress: false
+
+env:
+  # El gateway del que lee el portal. Va HORNEADO en el bundle y alimenta la
+  # CSP de `_headers` desde el mismo valor (src/cabeceras.ts). Es el del
+  # entorno de midgard hasta que se decida D15; su ALLOWED_ORIGINS tiene que
+  # incluir PORTAL_URL.
+  PORTAL_API: https://criterio-api-dev.higerotech.com
+  PORTAL_URL: https://criterio.higerotech.com
+
+jobs:
+  desplegar:
+    name: desplegar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            deploy/portal/package-lock.json
+
+      - run: npm ci
+
+      # El prerender falla si una ruta sale vacía y escribe `dist/_headers`.
+      - name: Build y prerender
+        working-directory: apps/portal
+        env:
+          VITE_PORTAL_API: ${{ env.PORTAL_API }}
+        run: npm run build
+
+      - name: El bundle y la CSP apuntan al mismo gateway
+        working-directory: apps/portal/dist
+        run: |
+          grep -q "connect-src 'self' ${PORTAL_API};" _headers
+          grep -lq "${PORTAL_API}" assets/*.js
+
+      # Su propio lockfile, auditado por T8 (seguridad.yml). Sin scripts de
+      # instalación: desplegar assets no necesita ni esbuild ni workerd.
+      - name: Wrangler fijado
+        working-directory: deploy/portal
+        run: npm ci --ignore-scripts
+
+      - name: Desplegar en Workers
+        working-directory: apps/portal
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: "false"
+        run: ../../deploy/portal/node_modules/.bin/wrangler deploy --tag "sha-${GITHUB_SHA::7}" --message "${GITHUB_SHA}"
+
+      # La primera vez, Workers crea el registro DNS y el certificado del
+      # dominio: puede tardar unos minutos. De ahí los reintentos (como mucho
+      # unos 5 min).
+      - name: Humo
+        run: |
+          for i in $(seq 1 20); do
+            r=$(curl -s -o /dev/null -w "%{http_code}" "${PORTAL_URL}/" || true)
+            [ "$r" = 200 ] && break
+            echo "aún no responde (${r}), reintento"; sleep 15
+          done
+          curl -fsS "${PORTAL_URL}/" | grep -q "<main"
+          curl -fsS -D - -o /dev/null "${PORTAL_URL}/" \
+            | grep -i "^content-security-policy:" | grep -q "connect-src 'self' ${PORTAL_API};"
+          test "$(curl -s -o /dev/null -w "%{http_code}" "${PORTAL_URL}/precios")" = 200
+          test "$(curl -s -o /dev/null -w "%{http_code}" "${PORTAL_URL}/no-existe")" = 404
+          # El navegador del portal puede leer el snapshot: el gateway acepta el origen.
+          curl -fsS -D - -o /dev/null -H "Origin: ${PORTAL_URL}" "${PORTAL_API}/portal/v1/snapshot" \
+            | grep -qi "^access-control-allow-origin: ${PORTAL_URL}"

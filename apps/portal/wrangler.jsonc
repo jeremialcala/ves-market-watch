@@ -1,0 +1,27 @@
+// El portal en Cloudflare Workers (ADR-0035): solo assets estáticos, sin
+// script. Sin `main` no se ejecuta código en el borde, cada petición es a un
+// asset (gratis e ilimitado) y `_headers` se aplica a todas las respuestas.
+//
+// Lo despliega `.github/workflows/deploy-portal.yml` con el wrangler de
+// `deploy/portal` (versión fijada por lockfile y auditada por T8).
+{
+  "name": "criterio-portal",
+  "compatibility_date": "2026-09-29",
+  "assets": {
+    // Lo genera `npm run build`: el HTML prerenderizado de cada ruta, el 404,
+    // `_headers` y el bundle.
+    "directory": "./dist",
+    // `/precios` sirve `dist/precios/index.html` y `/precios/` redirige a
+    // `/precios`: las URLs coinciden con las del router y con los enlaces.
+    "html_handling": "drop-trailing-slash",
+    // Cualquier otra ruta recibe `dist/404.html` con estado 404.
+    "not_found_handling": "404-page"
+  },
+  // D12 (2026-10-14): el dominio del diseño. Workers crea el registro DNS y el
+  // certificado; falla si el nombre ya tiene un CNAME.
+  "routes": [{ "pattern": "criterio.higerotech.com", "custom_domain": true }],
+  // Solo el dominio propio: ni `*.workers.dev` ni URLs de preview, que serían
+  // orígenes que el gateway no acepta en CORS.
+  "workers_dev": false,
+  "preview_urls": false
+}

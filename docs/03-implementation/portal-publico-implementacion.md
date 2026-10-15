@@ -29,8 +29,19 @@ Diferencias con lo planeado:
   que irán con el Dashboard (3.1), cuando se adopten.
 - **3.3 no espera a 3.1.** Los paneles de la landing son propios del portal y
   leen del snapshot, no los componentes del `web-spa`.
-- **Pendiente:** 2.5 (el origen del portal en `ALLOWED_ORIGINS`) y el
-  despliegue (0.1 y 1.4). Los dos dependen del dominio (D12).
+
+Salieron en el release 0.6.0. El 2026-10-15 se añadió el despliegue:
+
+| PR | Plan | Qué |
+|---|---|---|
+| (este) | 0.1, 1.4, 2.5 | ADR-0035, `wrangler.jsonc`, `_headers` desde `VITE_PORTAL_API`, la página 404, `deploy-portal.yml` y el origen del portal en `ALLOWED_ORIGINS` |
+
+- **D12 decidida (2026-10-14):** `criterio.higerotech.com`. Hasta D15, el
+  portal lee del gateway de midgard (`criterio-api-dev`).
+- **Sin previews por PR** (1.3 y 1.4): cada una sería un origen distinto en
+  `workers.dev` que el gateway tendría que aceptar por patrón. En su lugar, el
+  CI hace `wrangler deploy --dry-run` en cada PR.
+- **2.5 sin el playground:** el CORS del playground llega con APIs (3.4).
 
 ## Punto de partida (2026-10-05)
 
@@ -270,7 +281,7 @@ como compromiso de fechas.*
 
 | # | Decisión | Bloquea | Recomendación |
 |---|---|---|---|
-| D12 | **Dominio de producción.** `criterio.higerotech.com` es el que inventó el diseño. | 9.4 | Confirmarlo, con `api.` y `estado.` como subdominios |
+| ~~D12~~ | **Decidida el 2026-10-14:** el portal en `criterio.higerotech.com` (ADR-0035). Los nombres de `api.` y `estado.` se fijan con D15 | — | — |
 | D13 | **¿El respaldo de producción comparte el bucket `ves-market-watch` o usa uno propio?** | 9.5 | Bucket propio: separa el cupo de descarga y la retención de desarrollo |
 | D14 | **Cómo se miden las métricas de producto sin cookies** (PRD, «Métricas de éxito») | Nada antes de M1 | Logs del borde de Cloudflare: no exigen código en el portal |
 | D15 | **Dónde vive el núcleo en producción:** AWS EC2 o `hgtech001` (`placement-despliegue.md`) | 0.2 y toda la fase 9 | AWS EC2 `t4g.large` desde el principio. Si se usa `hgtech001` para M1–M3, antes hay que cambiar el disco por un SSD y poner una UPS |

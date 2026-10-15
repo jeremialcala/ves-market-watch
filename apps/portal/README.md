@@ -58,8 +58,36 @@ PORTAL_API_PROXY=http://localhost:8800 npm run dev
 En producción, `VITE_PORTAL_API` en el build da el origen del gateway, y ese
 origen tiene que estar en `ALLOWED_ORIGINS` del gateway.
 
+## Despliegue
+
+En `https://criterio.higerotech.com`, como assets estáticos de Cloudflare
+Workers, sin script (ADR-0035):
+
+- **Quién despliega:** `.github/workflows/deploy-portal.yml`, en cada push a
+  `main` que toque el portal, `@criterio/ui`, el workspace o `deploy/portal/`.
+  También se lanza a mano: `gh workflow run deploy-portal.yml --ref main`.
+  Termina con una prueba de humo contra el dominio.
+- **Configuración:** `wrangler.jsonc`. `/precios/` redirige a `/precios`, y
+  cualquier ruta desconocida recibe `dist/404.html` con estado 404.
+- **Cabeceras:** el prerender escribe `dist/_headers` desde `src/cabeceras.ts`
+  con el mismo `VITE_PORTAL_API` del bundle. La CSP no puede apuntar a otro
+  gateway que el código.
+- **Wrangler:** versión exacta en `deploy/portal/`, con su lockfile, fuera del
+  workspace y auditada por T8.
+- **Volver atrás:** `wrangler rollback` (desde `apps/portal`, con el wrangler
+  de `deploy/portal`) o el panel de Cloudflare: Workers guarda cada versión,
+  etiquetada `sha-xxxxxxx`.
+
+Para probar el sitio tal como lo sirve Workers, con cabeceras y 404, contra el
+gateway de midgard (que acepta `http://localhost:8080` en CORS):
+
+```bash
+npm ci --prefix ../../deploy/portal                     # una vez
+VITE_PORTAL_API=https://criterio-api-dev.higerotech.com npm run build
+../../deploy/portal/node_modules/.bin/wrangler dev --port 8080
+```
+
 ## Lo que falta
 
-- **Despliegue** en Cloudflare Workers (plan 0.1 y 1.4) y el dominio (D12).
 - El resto de páginas: Dashboard (3.1, 3.2), APIs (3.4), Precios (3.5),
   Estado (fase 7), Intradía e Histórico (fase 5).
