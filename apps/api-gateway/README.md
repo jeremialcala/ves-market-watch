@@ -37,6 +37,12 @@ SPA se mueven juntos o son 401 en todo): `AUTH0_ISSUER`, `AUTH0_AUDIENCE`, `JWKS
 `DATABASE_URL`, `AMQP_URL`, `HTTP_HOST`/`HTTP_PORT`, `RATE_LIMIT_PER_MIN`,
 `P2P_FRESCURA_MIN`, `WSS_MAX_CONEXIONES`/`WSS_MAX_SUSCRIPCIONES`.
 
+Lectura pública `/portal/v1` (ADR-0028): `TRUSTED_PROXIES` (CIDR o IP del
+conector de Cloudflare, separados por coma; **solo** desde ahí se cree
+`CF-Connecting-IP`, y vacío la ignora siempre), `PORTAL_RATE_LIMIT_PER_MIN`
+(600 por IP) y `PORTAL_MAX_CLAVES_IP` (50 000 IPs en memoria por ventana; las
+que lleguen con el tope lleno pasan sin contar).
+
 ## Estructura
 ```
 src/api_gateway/

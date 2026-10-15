@@ -19,6 +19,17 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **IP real y cuota por IP para la lectura pública `/portal/v1`** (plan del
+  portal 2.1, RF-13, ADR-0028 §3). El gateway lee la IP del visitante de
+  `CF-Connecting-IP` **solo** cuando la petición llega desde
+  `TRUSTED_PROXIES` (en midgard, la red `ves-market` del conector); fuera de
+  ahí cuenta la del socket y la cabecera se ignora, así que falsificarla no da
+  cuota nueva. Cuota de 600 por minuto e IP, con las cabeceras `X-RateLimit-*`
+  y el 429 de siempre. El limitador **poda** las claves de ventanas vencidas y
+  tiene un tope de 50 000 IPs por ventana: las que llegan con el tope lleno
+  pasan sin contar, y se cuentan como desbordes. Las IPs no salen de la
+  memoria del proceso. Todavía no hay rutas públicas: llegan con el snapshot.
+
 - **Latido del vigía a Healthchecks.io.** Al final de cada pasada, el vigía de
   midgard hace un ping a una comprobación de Healthchecks; si dejan de llegar,
   avisa Healthchecks desde fuera. Cubre midgard apagado, midgard sin internet

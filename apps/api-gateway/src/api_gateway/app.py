@@ -19,7 +19,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from api_gateway.adapters.alertas import LoggingAlertNotifier
 from api_gateway.adapters.amqp.consumer import ConsumidorPushWss
 from api_gateway.adapters.auth.jwks import ValidadorTokenAuth0
-from api_gateway.adapters.http import rest, ws
+from api_gateway.adapters.http import portal, rest, ws
+from api_gateway.adapters.http.ip_cliente import redes_de_confianza
 from api_gateway.adapters.http.problem import registrar_manejadores
 from api_gateway.adapters.timescale.repository import TimescaleLecturaRepository
 from api_gateway.application.consultas import (
@@ -67,6 +68,12 @@ def create_app(
             settings.database_url
         )
         app.state.limitador = LimitadorVentanaFija(settings.rate_limit_per_min)
+        # `/portal/v1`: por IP, con tope de claves, porque las IPs anónimas no
+        # están acotadas como los tokens (ADR-0028 §3).
+        app.state.limitador_portal = LimitadorVentanaFija(
+            settings.portal_rate_limit_per_min,
+            max_claves=settings.portal_max_claves_ip,
+        )
         app.state.gestor = GestorSuscripciones(
             max_conexiones=settings.wss_max_conexiones,
             max_suscripciones=settings.wss_max_suscripciones,
@@ -107,6 +114,10 @@ def create_app(
             if repo_propio:
                 await app.state.repositorio.close()
 
+    # Fuera del lifespan a propósito: un TRUSTED_PROXIES mal escrito tiene que
+    # impedir el arranque, no aparecer en la primera petición.
+    redes = redes_de_confianza(settings.trusted_proxies)
+
     app = FastAPI(
         title="Criterio API",
         lifespan=lifespan,
@@ -130,7 +141,9 @@ def create_app(
         ],
         max_age=600,
     )
+    app.state.redes_confianza = redes
     registrar_manejadores(app)
     app.include_router(rest.router)
+    app.include_router(portal.router)
     app.include_router(ws.router)
     return app

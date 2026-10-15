@@ -20,6 +20,11 @@ services:
       - .env
     environment:
       HTTP_HOST: 0.0.0.0
+      # La red `ves-market`, donde vive `ves-tunel`: solo desde ella se cree
+      # `CF-Connecting-IP` para la cuota por IP de `/portal/v1` (ADR-0028 §3).
+      # Es la subred que Docker le dio al crearla (`docker network inspect
+      # ves-market`); si se recrea, comprobar que sigue siendo esta.
+      TRUSTED_PROXIES: 172.22.0.0/16
     ports:
       # Solo loopback: quien lo publique hacia fuera sera un tunel, no este fichero.
       - "127.0.0.1:8800:8000"
