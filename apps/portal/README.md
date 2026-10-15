@@ -11,9 +11,25 @@ Plan: `docs/03-implementation/portal-publico-implementacion.md`.
 - **Landing de Producto (`/`, RF-1):** hero con la lectura de hoy, las cuatro
   promesas (Procedencia, Anticipación, Contexto y Explicación) con su panel en
   vivo, los casos de uso y el CTA.
-- **Las demás rutas** (`/dashboard`, `/intradia`, `/historico`, `/apis`,
-  `/precios`, `/estado`) existen con su título y su descripción, y dicen que
-  están en construcción. No fingen datos.
+- **Dashboard público (`/dashboard`, RF-2), sin cuenta y en vivo:**
+  - la lectura de hoy: régimen, prosa del motor y chips, más los fragmentos
+    «Exportar por API» y «Alertas por API»;
+  - la brecha buy con su sparkline de 24 h, la distancia al disparo y la
+    brecha frente a 30 días;
+  - los seis medidores sobre su escala de 90 días, primero el más cerca de su
+    umbral;
+  - la descomposición y la brecha de hoy frente a su historia;
+  - el mapa de calor de 14 días × 24 h VET;
+  - la referencia P2P de los dos lados y la procedencia, sin fila de cuota;
+  - la tasa oficial en las cinco monedas;
+  - la cronología de señales de 30 días, agrupada por regla, sin «N de M»;
+  - la profundidad P2P.
+
+  Los paneles son del portal (`src/componentes/dashboard.tsx`, con la lógica
+  en `src/lib/dashboard.ts`), no los del `web-spa`, que leen `/api/v1`.
+- **Las demás rutas** (`/intradia`, `/historico`, `/apis`, `/precios`,
+  `/estado`) existen con su título y su descripción, y dicen que están en
+  construcción. No fingen datos.
 - **Barra «en vivo»** con la edad del dato (`as_of` del snapshot, no la de la
   petición), navegación, ES/EN y tema claro/oscuro. Pie con contacto y
   WhatsApp.
@@ -89,5 +105,5 @@ VITE_PORTAL_API=https://criterio-api-dev.higerotech.com npm run build
 
 ## Lo que falta
 
-- El resto de páginas: Dashboard (3.1, 3.2), APIs (3.4), Precios (3.5),
+- El resto de páginas: APIs (3.4), Precios (3.5),
   Estado (fase 7), Intradía e Histórico (fase 5).

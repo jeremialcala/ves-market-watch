@@ -43,6 +43,26 @@ Salieron en el release 0.6.0. El 2026-10-15 se añadió el despliegue:
   CI hace `wrangler deploy --dry-run` en cada PR.
 - **2.5 sin el playground:** el CORS del playground llega con APIs (3.4).
 
+Salió en el release 0.6.1. El 2026-10-15 llegó el Dashboard, publicado con el release 0.7.0:
+
+| PR | Plan | Qué |
+|---|---|---|
+| #91 | 3.2 | El Dashboard público sobre el snapshot y las series (RF-2) |
+
+- **3.1 se pospone** (decisión de Jeremi, 2026-10-15). Los 18 componentes del
+  `web-spa` leen `/api/v1` y el `marketStore`, no el snapshot público. El
+  Dashboard se arma con paneles del portal y amplía los de la landing; el
+  `web-spa` no se toca. Queda duplicación visual entre los dos, a cambio de
+  no arriesgar el panel interno.
+- **La tasa oficial va sin variación de 24 h** (decisión del mismo día): el
+  snapshot solo trae la vigente. RF-2 pide las cinco monedas, no la variación.
+- **El mapa de calor es del lado sell**, porque es la serie de 14 días ×
+  1 h que define el contrato (`gap_sell_14d`).
+- **Las cifras que el snapshot no trae no se inventan.** La descomposición
+  usa las piernas de 6 h del motor (`gap_legs`), no las de 30 días del diseño.
+  La cronología dice cuántas veces disparó cada regla y qué hizo la brecha
+  después, sin las entradas de cada disparo.
+
 ## Punto de partida (2026-10-05)
 
 Lo que el plan da por cierto, verificado en el código y en la base:

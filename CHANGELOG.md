@@ -17,6 +17,68 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-15
+
+**El Dashboard público** llega a `https://criterio.higerotech.com/dashboard`:
+la lectura de hoy, la brecha y la distancia al disparo, los seis medidores,
+la descomposición, el mapa de calor, la referencia P2P, la tasa oficial en
+cinco monedas, la cronología de señales y la profundidad, sin cuenta y en
+vivo. Es la segunda página del portal con datos, sobre el mismo snapshot que
+la landing.
+
+Minor por la convención de este archivo: funcionalidad nueva de producto. Sin
+gate cerrado.
+
+Al fusionar en `main` solo corre `deploy-portal.yml`, que publica el portal en
+Workers con la prueba de humo nueva, la que reintenta todas las
+comprobaciones. El gateway, el panel y los servicios de midgard no cambian.
+
+### Added
+
+- **El Dashboard público del portal (`/dashboard`, RF-2; plan 3.2)**, sin
+  cuenta y en vivo, sobre el mismo snapshot y las mismas series que la
+  landing. Sigue el diseño `Criterio Público.dc.html`, en este orden:
+  - **Lectura de hoy:** el régimen y una frase por afirmación del motor, en
+    su orden. Lleva cuatro chips: frescura, reglas con todas sus condiciones,
+    medidores cerca de su umbral y confianza. Los fragmentos «Exportar por
+    API» y «Alertas por API» muestran las llamadas reales a
+    `/api/v1/indicators/history` y al tópico `signals` del WSS.
+  - **La brecha buy** con su sparkline de 24 h, mínimo y máximo, la distancia
+    al disparo, la brecha frente a su media de 30 días y la ratio
+    oferta/demanda frente a su mediana de 90 días.
+  - **Panel de instrumentos:** los seis medidores, primero los que ya cumplen
+    una condición y después por cercanía al umbral en la escala de 90 días.
+    Los outliers dibujan su escala fija con el corte de confianza del 30 %.
+  - **Descomposición** y **brecha de hoy frente a su historia**: medias de 7 y
+    30 días y máximo de 90, con la cobertura real («87 días con dato») y el
+    percentil de hoy.
+  - **Mapa de calor** de 14 días × 24 h en hora de Caracas, con los cortes p10
+    y p90 de la ventana; coral solo por encima del p90.
+  - **Referencia P2P** de los dos lados y **procedencia**, sin fila de cuota.
+  - **Tasa oficial** en las cinco monedas, con fecha-valor y vigencia.
+  - **Cronología de señales** de 30 días, agrupada por regla: cuántas veces
+    disparó y qué hizo la brecha después de cada disparo. Sin «N de M».
+  - **Profundidad P2P** por banda de precio, a los dos lados.
+
+  Los paneles son del portal y no los del `web-spa`, y el plan 3.1 se pospone:
+  los del panel interno leen `/api/v1` y su store (decisión de Jeremi,
+  2026-10-15). La tasa oficial va sin variación de 24 h porque el snapshot no
+  la trae. 53 pruebas nuevas (124 en total), 92,9 % de ramas.
+
+### Fixed
+
+- **Los indicadores `…_pct_buy` y `…_pct_sell` se muestran con «%».** Antes
+  solo se reconocía el sufijo `_pct`, y el medidor de la brecha buy habría
+  dicho «15,34» en vez de «15,34 %». Los negativos llevan el signo menos
+  tipográfico («−0,51 %»), como en el diseño.
+
+- **La prueba de humo de `deploy-portal.yml` reintenta la batería entera**, no
+  solo hasta el primer 200. En el primer despliegue (2026-10-15), con el
+  dominio recién creado, el borde dio un 200 y justo después un 500 durante
+  unos segundos, y el workflow quedó en rojo con el portal bien publicado.
+  Ahora repite todas las comprobaciones hasta unos 5 min y, si no pasan, las
+  vuelve a correr con traza para que el log diga cuál falla.
+
 ## [0.6.1] - 2026-10-15
 
 **El portal público se publica** en `https://criterio.higerotech.com`, servido
@@ -3650,7 +3712,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.6...v0.6.0
 [0.5.6]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.5...v0.5.6

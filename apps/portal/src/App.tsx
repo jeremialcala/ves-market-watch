@@ -12,6 +12,7 @@ import { BarraSuperior } from "./componentes/BarraSuperior";
 import { Pie } from "./componentes/Pie";
 import { useT } from "./i18n/contexto";
 import { DICCIONARIOS } from "./i18n/dict";
+import { Dashboard } from "./paginas/Dashboard";
 import { NoEncontrada, Pronto } from "./paginas/Pronto";
 import { Producto } from "./paginas/Producto";
 import { RouterProvider } from "./router";
@@ -37,6 +38,9 @@ function Pagina() {
   }
   if (actual.ruta === "/") {
     return <Producto />;
+  }
+  if (actual.ruta === "/dashboard") {
+    return <Dashboard />;
   }
   return <Pronto ruta={actual} />;
 }

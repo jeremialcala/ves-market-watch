@@ -105,6 +105,13 @@ TAG_NOTES = {
         "criterio.higerotech.com (D12) leyendo del gateway de midgard. Sin "
         "gate cerrado",
     ),
+    "v0.7.0": (
+        "Plan del portal 3.2: Dashboard público sobre el snapshot (RF-2), con "
+        "paneles del portal (3.1 pospuesto); prueba de humo de "
+        "`deploy-portal.yml` con reintento de toda la batería",
+        "Minor (2026-10-15): segunda página del portal con datos, publicada en "
+        "Workers. Sin cambios en midgard ni gate cerrado",
+    ),
     "v0.5.1": (
         "Avisos por ntfy del cron de seguridad (`seguridad.yml`) y del respaldo "
         "(`aviso.sh` + healthcheck `estado`); js-yaml 4.3.2 (GHSA-2883-xcg3-v3hh); "
