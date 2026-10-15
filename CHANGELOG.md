@@ -17,6 +17,32 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-14
+
+Primera versión del **portal público**. Trae tres cosas:
+
+- **Una lectura pública sin token**, `/portal/v1`, con lo que pinta el
+  Dashboard ahora mismo. Va campo a campo por lista blanca y tiene cuota por
+  IP real y caché: la carga de la base no crece con los visitantes.
+- **La landing del portal** (`apps/portal`), con sus paneles leyendo esos
+  datos en vivo, y el paquete `@criterio/ui` que comparte con el `web-spa`.
+- **El latido del vigía a Healthchecks.io**, que avisa desde fuera si midgard
+  se apaga, se queda sin internet o el vigía se rompe.
+
+Minor por la convención de este archivo: funcionalidad nueva de producto. Sin
+gate cerrado.
+
+**El portal no se publica con esta versión**: falta desplegarlo en Cloudflare
+Workers (plan 0.1 y 1.4) y decidir su dominio (D12). Lo que sí llega a
+midgard al fusionar en `main`:
+
+- `build-api-gateway` despliega el gateway con `/portal/v1`. **Antes**, el
+  compose de `deploy/midgard/api-gateway/` se copia a mano a
+  `/srv/apps/ves-api-gateway/`: gana `TRUSTED_PROXIES`, y el receptor solo
+  cambia la imagen.
+- `build-web-spa` reconstruye el `web-spa` sobre el workspace y el paquete
+  compartido, sin cambios de comportamiento.
+
 ### Added
 
 - **El portal público, con su landing en vivo** (`apps/portal`, plan del
