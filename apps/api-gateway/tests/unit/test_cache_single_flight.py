@@ -83,7 +83,7 @@ async def test_si_el_primero_se_cancela_los_demas_reciben_el_resultado():
     await asyncio.sleep(0.01)
     segundo = asyncio.create_task(cache.obtener("k", 5, _calculo_lento(contador)))
     primero.cancel()
-    with pytest.raises(asyncio.CancelledError):
-        await primero
+    resultado_primero = (await asyncio.gather(primero, return_exceptions=True))[0]
+    assert isinstance(resultado_primero, asyncio.CancelledError)
     assert await segundo == "dato"
     assert len(contador) == 1
