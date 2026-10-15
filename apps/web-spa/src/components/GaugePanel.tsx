@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from "react";
 
-import { Icon } from "../ds/components";
+import { Icon } from "@criterio/ui";
 
 import type { Banda, LecturaMedidor } from "../api/endpoints";
 import type { Clave } from "../i18n/dict";

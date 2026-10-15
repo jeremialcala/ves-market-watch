@@ -31,8 +31,11 @@ ENV VITE_AUTH0_DOMAIN=$VITE_AUTH0_DOMAIN \
 # mientras no cambien las dependencias, y `-w` instala solo lo de esta app.
 WORKDIR /opt/ves
 COPY package.json package-lock.json ./
+COPY packages/criterio-ui/package.json packages/criterio-ui/
 COPY apps/web-spa/package.json apps/web-spa/
 RUN npm ci -w apps/web-spa --no-fund --no-audit
+# El paquete compartido se consume como fuente (ADR-0031): entra en el build.
+COPY packages/criterio-ui/ packages/criterio-ui/
 COPY apps/web-spa/ apps/web-spa/
 RUN npm run build -w apps/web-spa
 

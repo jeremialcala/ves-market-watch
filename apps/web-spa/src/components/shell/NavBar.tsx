@@ -1,8 +1,8 @@
 import { useState } from "react";
 
-import isotipoOscuro from "../../ds/assets/isotipo.svg";
-import isotipoClaro from "../../ds/assets/isotipo_charcoal.svg";
-import { Button, Icon } from "../../ds/components";
+import isotipoOscuro from "@criterio/ui/assets/isotipo.svg";
+import isotipoClaro from "@criterio/ui/assets/isotipo_charcoal.svg";
+import { Button, Icon } from "@criterio/ui";
 import type { Clave } from "../../i18n/dict";
 import { useI18n } from "../../i18n/contexto";
 import { IDIOMAS } from "../../i18n/idioma";

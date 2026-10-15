@@ -1,4 +1,4 @@
-import { Pill } from "../ds/components";
+import { Pill } from "@criterio/ui";
 import { useI18n } from "../i18n/contexto";
 import { formatDecimal, formatPct, restarDecimales, signo } from "../lib/decimal";
 import { relativo } from "../lib/freshness";

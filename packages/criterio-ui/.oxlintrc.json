@@ -1,0 +1,19 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["**/api", "**/api/**", "**/state", "**/state/**", "**/ws", "**/ws/**", "**/auth", "**/auth/**"],
+            "message": "ADR-0031: el paquete no pide datos ni conoce sesiones. Los componentes reciben props; cada app los alimenta desde su contrato."
+          }
+        ]
+      }
+    ]
+  }
+}

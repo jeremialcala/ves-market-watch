@@ -12,7 +12,7 @@
  * teal para compra, coral para venta, salvia para lo que no tiene lado.
  */
 
-@import url("./ds/styles.css");
+@import "@criterio/ui/styles.css";
 
 /* -- colores de DATO (no de interfaz) --------------------------------------
  * Los acentos de marca visten el cromo; las marcas de dato llevan slots
