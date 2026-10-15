@@ -43,7 +43,7 @@ Salieron en el release 0.6.0. El 2026-10-15 se añadió el despliegue:
   CI hace `wrangler deploy --dry-run` en cada PR.
 - **2.5 sin el playground:** el CORS del playground llega con APIs (3.4).
 
-Salió en el release 0.6.1. El 2026-10-15 llegó el Dashboard:
+Salió en el release 0.6.1. El 2026-10-15 llegó el Dashboard, publicado con el release 0.7.0:
 
 | PR | Plan | Qué |
 |---|---|---|

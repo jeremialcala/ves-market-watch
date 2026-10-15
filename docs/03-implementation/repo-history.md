@@ -4,7 +4,7 @@
 * **Fecha:** 2026-10-15
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
-* **Versión:** 0.6.0
+* **Versión:** 0.6.1
 * **Gate:** 2
 * **Rama principal:** main
 * **Estrategia de branching:** GitFlow (main + develop + ramas feature)
@@ -465,6 +465,13 @@ gitGraph
     commit id: "05707d8"
     commit id: "4f23f80"
     commit id: "01b98ee" type: HIGHLIGHT
+    commit id: "67df883"
+    commit id: "9e7c1ff" type: HIGHLIGHT
+    commit id: "a0079c0"
+    commit id: "59f936e" type: HIGHLIGHT
+    commit id: "c1b7cf2"
+    commit id: "d36ca6d"
+    commit id: "64bb07b" type: HIGHLIGHT
 ```
 
 ### Estado actual de las ramas
@@ -472,7 +479,7 @@ gitGraph
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
 | `main` | `3dc972a` | 2026-10-14 | 16 |
-| `develop` | `01b98ee` | 2026-10-15 | 401 |
+| `develop` | `64bb07b` | 2026-10-15 | 408 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -491,11 +498,20 @@ gitGraph
 | v0.5.5 | `5195cd7` | 2026-10-13 | 0.5.5 | `deploy/midgard/vigia/` (vigía de operación: contenedores y sondas de trabajo); `estado.sh` vigila la verificación semanal y los agregados mensuales, con pruebas; trabajo `scripts de operación` en CI | Patch de operación (2026-10-13): un servicio caído o parado avisa por ntfy en vez de descubrirse mirando. Sin cambios de producto ni gate cerrado |
 | v0.5.6 | `3bdc738` | 2026-10-13 | 0.5.6 | `sondeo-externo.yml` (sondeo desde GitHub Actions del API y el panel públicos, por transiciones, con estado en la caché de Actions); `scripts/sondeo/` con 28 pruebas | Patch de operación (2026-10-13): un apagón de midgard se avisa desde fuera de la casa. El cron de GitHub resultó demasiado irregular y en 0.6.0 la alarma pasó al latido del vigía. Sin cambios de producto ni gate cerrado |
 | v0.6.0 | `3dc972a` | 2026-10-14 | 0.6.0 | ADR-0028 (`/portal/v1`: IP real, cuota por IP, caché single-flight, `portal-openapi.yaml`) y ADR-0031 (workspace de npm, `packages/criterio-ui`, `apps/portal`); latido del vigía a Healthchecks.io | Minor (2026-10-14): primera lectura pública sin token y la landing del portal con datos reales, aún sin desplegar (falta Workers y D12). Sin gate cerrado |
+| v0.6.1 | `38b9286` | 2026-10-15 | 0.6.1 | ADR-0035 (portal en Cloudflare Workers: assets sin script, `_headers` con CSP desde `VITE_PORTAL_API`, `deploy-portal.yml`, wrangler fijado en `deploy/portal`); `ALLOWED_ORIGINS` del gateway en el compose | Patch de despliegue (2026-10-15): el portal se publica en criterio.higerotech.com (D12) leyendo del gateway de midgard. Sin gate cerrado |
 
 ### Bitácora de cambios (fiel al repo)
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `64bb07b` | merge | — | Jeremi J. Alcalá M. | 2026-10-15 | Merge pull request #91 from jeremialcala/portal-dashboard |
+| `d36ca6d` | commit | — | Jeremi Alcala | 2026-10-15 | docs(plan): número del PR del Dashboard |
+| `c1b7cf2` | commit | — | Jeremi Alcala | 2026-10-15 | feat(portal): Dashboard público sobre el snapshot (RF-2, plan 3.2) |
+| `59f936e` | merge | — | Jeremi J. Alcalá M. | 2026-10-15 | Merge pull request #90 from jeremialcala/humo-portal |
+| `a0079c0` | commit | — | Jeremi Alcala | 2026-10-15 | fix(portal): la prueba de humo reintenta todas las comprobaciones |
+| `38b9286` | merge | v0.6.1 | Jeremi J. Alcalá M. | 2026-10-15 | Merge pull request #89 from jeremialcala/develop |
+| `9e7c1ff` | merge | — | Jeremi J. Alcalá M. | 2026-10-15 | Merge pull request #88 from jeremialcala/release-0.6.1 |
+| `67df883` | commit | — | Jeremi Alcala | 2026-10-15 | docs(changelog): cortar la versión 0.6.1 |
 | `01b98ee` | merge | — | Jeremi J. Alcalá M. | 2026-10-15 | Merge pull request #87 from jeremialcala/portal-workers |
 | `4f23f80` | commit | — | Jeremi Alcala | 2026-10-15 | docs(plan): número del PR del despliegue del portal |
 | `05707d8` | commit | — | Jeremi Alcala | 2026-10-15 | feat(portal): desplegar en Cloudflare Workers en criterio.higerotech.com |

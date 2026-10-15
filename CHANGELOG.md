@@ -17,6 +17,22 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-15
+
+**El Dashboard público** llega a `https://criterio.higerotech.com/dashboard`:
+la lectura de hoy, la brecha y la distancia al disparo, los seis medidores,
+la descomposición, el mapa de calor, la referencia P2P, la tasa oficial en
+cinco monedas, la cronología de señales y la profundidad, sin cuenta y en
+vivo. Es la segunda página del portal con datos, sobre el mismo snapshot que
+la landing.
+
+Minor por la convención de este archivo: funcionalidad nueva de producto. Sin
+gate cerrado.
+
+Al fusionar en `main` solo corre `deploy-portal.yml`, que publica el portal en
+Workers con la prueba de humo nueva, la que reintenta todas las
+comprobaciones. El gateway, el panel y los servicios de midgard no cambian.
+
 ### Added
 
 - **El Dashboard público del portal (`/dashboard`, RF-2; plan 3.2)**, sin
@@ -3696,7 +3712,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.6...v0.6.0
 [0.5.6]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.5...v0.5.6
