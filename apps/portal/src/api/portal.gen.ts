@@ -97,7 +97,10 @@ export interface components {
             stale: boolean;
         };
         ReferenciaP2P: {
+            /** @description Top of book literal, sin filtrar: el primer anuncio del lado aunque el filtro lo haya descartado como outlier. */
             best_price: components["schemas"]["Decimal"];
+            /** @description El mejor precio entre los anuncios que sobreviven al filtro de outliers. Si difiere de best_price, el primer anuncio es un outlier. */
+            best_price_filtered: components["schemas"]["DecimalONulo"];
             median: components["schemas"]["Decimal"];
             vwap: components["schemas"]["Decimal"];
             volume: components["schemas"]["Decimal"];

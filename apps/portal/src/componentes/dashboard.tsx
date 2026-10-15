@@ -21,6 +21,7 @@ import {
   gruposSenales,
   mapaCalor,
   medidoresDashboard,
+  mejorPrecioP2P,
   percentilBrecha,
   reglasCumplidas,
   tonoCalor,
@@ -398,18 +399,27 @@ export function MapaDeCalor() {
 function LadoP2P({ lado, s }: { lado: "buy" | "sell"; s: Snapshot | null }) {
   const { t, idioma } = useI18n();
   const ref = s?.p2p[lado] ?? null;
+  const precio = ref === null ? null : mejorPrecioP2P(ref);
   return (
     <div className="cifra-tarjeta">
       <div className="cifra-tarjeta-etiqueta-suave">{t(`p2p.${lado}`)}</div>
-      {ref === null ? (
+      {ref === null || precio === null ? (
         <div className="cifra-tarjeta-valor">—</div>
       ) : (
         <>
           <div className="cifra-tarjeta-valor">{dosDecimales(ref.median, idioma)}</div>
           <div className="cifra-tarjeta-detalle">
-            {t("p2p.detalle", { vwap: dosDecimales(ref.vwap, idioma), mejor: dosDecimales(ref.best_price, idioma) })}
+            {t("p2p.detalle", { vwap: dosDecimales(ref.vwap, idioma), mejor: dosDecimales(precio.mejor, idioma) })}
             <br />
             {t("p2p.liquidez", { v: formatDecimal(ref.volume, { maxDecimales: 0, idioma }) })}
+            {precio.escaparate !== null && (
+              <>
+                <br />
+                <span className="tono-coral">
+                  {t("p2p.escaparate", { precio: dosDecimales(precio.escaparate, idioma) })}
+                </span>
+              </>
+            )}
           </div>
         </>
       )}

@@ -173,9 +173,18 @@ components:
     ReferenciaP2P:
       type: object
       additionalProperties: false
-      required: [best_price, median, vwap, volume, as_of, confidence, outliers_pct, merchants_pct]
+      required: [best_price, best_price_filtered, median, vwap, volume, as_of, confidence, outliers_pct, merchants_pct]
       properties:
-        best_price: {$ref: "#/components/schemas/Decimal"}
+        best_price:
+          description: >-
+            Top of book literal, sin filtrar: el primer anuncio del lado aunque
+            el filtro lo haya descartado como outlier.
+          $ref: "#/components/schemas/Decimal"
+        best_price_filtered:
+          description: >-
+            El mejor precio entre los anuncios que sobreviven al filtro de
+            outliers. Si difiere de best_price, el primer anuncio es un outlier.
+          $ref: "#/components/schemas/DecimalONulo"
         median: {$ref: "#/components/schemas/Decimal"}
         vwap: {$ref: "#/components/schemas/Decimal"}
         volume: {$ref: "#/components/schemas/Decimal"}

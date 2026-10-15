@@ -33,6 +33,7 @@ def sembrar(repositorio) -> None:
             ("p2p_liquidez", "90000.00000000"),
             ("p2p_outliers_pct", "0.50000000"),
             ("p2p_merchants_pct", "72.36000000"),
+            ("p2p_mejor_precio_filtrado", "975.00000000"),
         ):
             repositorio.vigentes[(f"{nombre}_{lado}", "VES")] = fila_indicador(valor)
         repositorio.snapshots[lado.upper()] = {
@@ -92,6 +93,21 @@ def test_el_snapshot_trae_lo_que_pinta_la_landing(cliente, repositorio):
     assert s["calc_version"] == 1 and s["ruleset_version"] == 1
     assert s["depth"]["buy"]["levels"]
     assert len(s["signals"]["items"]) == 1
+
+
+def test_el_mejor_precio_va_con_el_filtrado_al_lado(cliente, repositorio):
+    """El top of book sin filtrar puede ser un outlier (SELL, 2026-10-15: un
+    anuncio a 1055 con el filtrado en 1012); el snapshot lleva los dos."""
+    sembrar(repositorio)
+    repositorio.vigentes[("p2p_mejor_precio_sell", "VES")] = fila_indicador("1055.00000000")
+    repositorio.vigentes[("p2p_mejor_precio_filtrado_sell", "VES")] = fila_indicador("1012.00000000")
+    del repositorio.vigentes[("p2p_mejor_precio_filtrado_buy", "VES")]
+    s = cliente.get("/portal/v1/snapshot").json()
+    assert s["p2p"]["sell"]["best_price"] == "1055.00000000"
+    assert s["p2p"]["sell"]["best_price_filtered"] == "1012.00000000"
+    # Snapshots anteriores al 2026-08-07 no tienen el filtrado: null, no error.
+    assert s["p2p"]["buy"]["best_price"] == "975.00000000"
+    assert s["p2p"]["buy"]["best_price_filtered"] is None
 
 
 def test_lista_blanca_nada_interno_sale(cliente, repositorio):

@@ -36,6 +36,7 @@ export function snapshot(): Snapshot {
     p2p: {
       buy: {
         best_price: "1010.00000000",
+        best_price_filtered: "1010.00000000",
         median: "1013.00000000",
         vwap: "1014.20480201",
         volume: "90000.00000000",
@@ -44,7 +45,18 @@ export function snapshot(): Snapshot {
         outliers_pct: "0.00000000",
         merchants_pct: "34.00000000",
       },
-      sell: null,
+      // El caso del 2026-10-15: un outlier a 1.055 encabeza SELL.
+      sell: {
+        best_price: "1055.00000000",
+        best_price_filtered: "1012.00000000",
+        median: "1004.26000000",
+        vwap: "1005.57000000",
+        volume: "2124644.00000000",
+        as_of: hace(20),
+        confidence: "normal",
+        outliers_pct: "0.50000000",
+        merchants_pct: "41.00000000",
+      },
     },
     analysis: {
       as_of: hace(80),

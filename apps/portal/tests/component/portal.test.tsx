@@ -54,7 +54,7 @@ describe("landing con datos", () => {
     const panel = within(screen.getByText("En vivo · calidad del dato").closest(".panel") as HTMLElement);
     expect(panel.getByText("hace 20 s")).toBeTruthy();
     expect(panel.getByText("hace 3 h · vigente")).toBeTruthy();
-    expect(panel.getByText("0 % · MAD/IQR")).toBeTruthy();
+    expect(panel.getByText("0 % buy · 0,50 % sell · MAD/IQR")).toBeTruthy();
     expect(panel.getByText("34 % del volumen")).toBeTruthy();
     expect(panel.getByText("calc v1 · ruleset v1")).toBeTruthy();
   });
