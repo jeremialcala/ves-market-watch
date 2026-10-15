@@ -47,7 +47,7 @@ Salió en el release 0.6.1. El 2026-10-15 llegó el Dashboard:
 
 | PR | Plan | Qué |
 |---|---|---|
-| (este) | 3.2 | El Dashboard público sobre el snapshot y las series (RF-2) |
+| #91 | 3.2 | El Dashboard público sobre el snapshot y las series (RF-2) |
 
 - **3.1 se pospone** (decisión de Jeremi, 2026-10-15). Los 18 componentes del
   `web-spa` leen `/api/v1` y el `marketStore`, no el snapshot público. El
