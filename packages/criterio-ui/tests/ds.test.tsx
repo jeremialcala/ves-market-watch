@@ -12,7 +12,7 @@ import {
   Pill,
   Stat,
   Tag,
-} from "../../src/ds/components";
+} from "../src/ds/components";
 
 afterEach(cleanup);
 

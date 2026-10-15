@@ -3,6 +3,7 @@
   "private": true,
   "description": "Monorepo de Criterio: workspace de npm de los front-ends (ADR-0031).",
   "workspaces": [
-    "apps/web-spa"
+    "apps/web-spa",
+    "packages/*"
   ]
 }

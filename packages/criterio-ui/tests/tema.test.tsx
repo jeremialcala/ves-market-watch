@@ -5,8 +5,8 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { useTema } from "../../src/theme/contexto";
-import { ThemeProvider } from "../../src/theme/ThemeProvider";
+import { useTema } from "../src/theme/contexto";
+import { ThemeProvider } from "../src/theme/ThemeProvider";
 
 function Sonda() {
   const { tema, alternar } = useTema();

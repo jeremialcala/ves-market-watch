@@ -1,0 +1,32 @@
+{
+  "name": "@criterio/ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Sistema de diseño, idioma y tema compartidos por el web-spa y el portal (ADR-0031).",
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles.css": "./src/ds/styles.css",
+    "./assets/*": "./src/ds/assets/*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "oxlint",
+    "test": "vitest run --coverage"
+  },
+  "peerDependencies": {
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitest/coverage-v8": "^4.1.10",
+    "jsdom": "^30.0.0",
+    "oxlint": "^1.71.0",
+    "typescript": "~5.9.0",
+    "vitest": "^4.1.10"
+  }
+}

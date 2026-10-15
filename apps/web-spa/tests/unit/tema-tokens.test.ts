@@ -39,11 +39,11 @@ describe("tokens de tema", () => {
      * nada y el canario de arriba pasaría igual mientras la vista se rompe.
      */
     const oscuro = readFileSync(
-      resolve(process.cwd(), "src/ds/tokens/colors.css"),
+      resolve(process.cwd(), "../../packages/criterio-ui/src/ds/tokens/colors.css"),
       "utf8",
     ).replaceAll("\r\n", "\n");
     const claro = readFileSync(
-      resolve(process.cwd(), "src/ds/tokens/theme-light.css"),
+      resolve(process.cwd(), "../../packages/criterio-ui/src/ds/tokens/theme-light.css"),
       "utf8",
     ).replaceAll("\r\n", "\n");
     const valor = (css: string) => /--white:\s*([^;]+);/.exec(css)?.[1].trim();

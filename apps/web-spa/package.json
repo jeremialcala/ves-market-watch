@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.22.0",
+    "@criterio/ui": "*",
     "openapi-fetch": "^0.17.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

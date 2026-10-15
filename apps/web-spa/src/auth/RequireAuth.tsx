@@ -10,7 +10,7 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { useEffect, useRef, type ReactNode } from "react";
 
-import { Button } from "../ds/components";
+import { Button } from "@criterio/ui";
 import { useI18n } from "../i18n/contexto";
 
 export function RequireAuth({ children }: { children: ReactNode }) {

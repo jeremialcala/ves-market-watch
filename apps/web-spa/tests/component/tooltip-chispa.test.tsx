@@ -187,11 +187,11 @@ describe("la superficie del tooltip", () => {
      * caja negra sobre papel. El token se voltea como ya hace `--nav-bg`.
      */
     const oscuro = readFileSync(
-      resolve(process.cwd(), "src/ds/tokens/effects.css"),
+      resolve(process.cwd(), "../../packages/criterio-ui/src/ds/tokens/effects.css"),
       "utf8",
     ).replaceAll("\r\n", "\n");
     const claro = readFileSync(
-      resolve(process.cwd(), "src/ds/tokens/theme-light.css"),
+      resolve(process.cwd(), "../../packages/criterio-ui/src/ds/tokens/theme-light.css"),
       "utf8",
     ).replaceAll("\r\n", "\n");
     expect(oscuro).toMatch(/--tooltip-bg:\s*rgb\(21 24 27 \/ 94%\)/);

@@ -1,32 +1,25 @@
 /**
- * Contexto y hooks del idioma. Viven aparte del proveedor para que el archivo
- * del componente exporte SOLO componentes (regla de Fast Refresh).
+ * Hooks del idioma, tipados con las claves del diccionario del `web-spa`.
+ *
+ * El mecanismo vive en `@criterio/ui` (ADR-0031) y es genérico; aquí se fija
+ * a `Clave` para que una clave mal escrita no compile.
  */
 
-import { createContext, useContext } from "react";
+import {
+  useI18n as useI18nUi,
+  type ContextoI18n as ContextoI18nUi,
+  type Traducir as TraducirUi,
+} from "@criterio/ui";
 
 import type { Clave } from "./dict";
-import type { Idioma } from "./idioma";
 
-export type Traducir = (
-  clave: Clave,
-  params?: Record<string, string | number>,
-) => string;
+export { I18nContext } from "@criterio/ui";
 
-export interface ContextoI18n {
-  idioma: Idioma;
-  setIdioma: (idioma: Idioma) => void;
-  t: Traducir;
-}
-
-export const I18nContext = createContext<ContextoI18n | null>(null);
+export type Traducir = TraducirUi<Clave>;
+export type ContextoI18n = ContextoI18nUi<Clave>;
 
 export function useI18n(): ContextoI18n {
-  const contexto = useContext(I18nContext);
-  if (contexto === null) {
-    throw new Error("useI18n fuera de <I18nProvider>");
-  }
-  return contexto;
+  return useI18nUi<Clave>();
 }
 
 /** Atajo para el caso común: solo la función de traducción. */

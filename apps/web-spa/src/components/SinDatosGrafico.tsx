@@ -10,7 +10,7 @@
  * algo que no existe.
  */
 
-import { Icon } from "../ds/components";
+import { Icon } from "@criterio/ui";
 import { useI18n } from "../i18n/contexto";
 import type { Idioma } from "../i18n/idioma";
 

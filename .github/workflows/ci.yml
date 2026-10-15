@@ -178,6 +178,37 @@ jobs:
           path: apps/web-spa/coverage/
           if-no-files-found: warn
 
+  # El paquete compartido del web-spa y el portal (ADR-0031). Sus tests van
+  # aparte de los de las apps; las apps prueban además que lo usan bien.
+  criterio-ui:
+    name: criterio-ui
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/criterio-ui
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+        working-directory: .
+
+      - name: Tipos
+        run: npm run typecheck
+
+      # Incluye la regla que impide al paquete importar de api/, state/, ws/
+      # o auth/ de ninguna app (ADR-0031 §Verificación).
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests y cobertura
+        run: npm test
+
   # Los scripts que corren en midgard no son de ningún servicio de arriba: ni
   # pytest ni vitest los ven. Aquí se comprueba que se dejan interpretar y,
   # del healthcheck del respaldo, que avisa de lo que tiene que avisar.

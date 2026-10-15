@@ -65,6 +65,15 @@ Convención de mantenimiento (inventario por ejecución):
   e2e en vivo, el Dockerfile del `web-spa` (instala con `-w`) y el disparo de
   su imagen, y `T8 · SCA (npm)` audita el lockfile de la raíz. Es el primer
   paso para el portal y el paquete `criterio-ui`.
+- **Paquete compartido `@criterio/ui`** (`packages/criterio-ui`, ADR-0031,
+  plan del portal 1.2). Se mueven del `web-spa` el sistema de diseño
+  Higerotech (tokens, fuentes y componentes), el mecanismo de idioma (ahora
+  genérico sobre el diccionario de cada app) y el tema. El `web-spa` los
+  importa del paquete y **no cambia de comportamiento**: su suite pasa entera.
+  Una regla de lint impide al paquete importar de `api/`, `state/`, `ws/` o
+  `auth/`, y tiene su propio job en el CI, con el umbral del 80 % de ramas.
+  Los 17 componentes de dominio sin dependencias se moverán cuando el portal
+  los adopte, no antes.
 
 ## [0.5.6] - 2026-10-13
 
