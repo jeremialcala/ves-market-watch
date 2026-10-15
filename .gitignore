@@ -29,3 +29,6 @@ coverage/
 informes-dast/
 
 informes/
+
+# Cloudflare Workers (apps/portal): estado local de wrangler dev
+.wrangler/

@@ -17,6 +17,63 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-10-15
+
+**El portal público se publica** en `https://criterio.higerotech.com`, servido
+como assets estáticos de Cloudflare Workers (ADR-0035): gratis, desde el borde
+y sin depender de midgard. Lee los datos del gateway de midgard
+(`criterio-api-dev`) mientras D15 siga abierta.
+
+Patch por la convención de este archivo: despliega lo que ya traía la 0.6.0,
+más la página 404 y las cabeceras de seguridad. Sin gate cerrado.
+
+Al fusionar en `main`, `deploy-portal.yml` construye el portal, lo despliega y
+hace la prueba de humo contra el dominio. La primera vez, Workers crea el
+registro DNS y el certificado. `build-api-gateway` también corre y el
+receptor reinicia el gateway con una imagen de código idéntico: lo disparan
+el cambio en `test_cors.py` y su propio workflow. Desde esta versión, los
+tests ya no lo disparan. El cambio de verdad del gateway, el compose con
+`ALLOWED_ORIGINS`, ya se aplicó a mano en midgard el 2026-10-15.
+
+### Added
+
+- **El portal se despliega en Cloudflare Workers, en
+  `criterio.higerotech.com`** (ADR-0035; plan del portal 0.1, 1.4 y 2.5; D12).
+  Se sirve como assets estáticos sin script, gratis y desde el borde, y no cae
+  con midgard.
+  - `apps/portal/wrangler.jsonc`: dominio propio, sin `workers.dev` ni
+    previews. `/precios/` redirige a `/precios`, y una ruta desconocida recibe
+    la nueva página 404 (`dist/404.html`, con `noindex`) con estado 404.
+  - `_headers`, generado por el prerender desde `src/cabeceras.ts` con el mismo
+    `VITE_PORTAL_API` que el bundle: CSP sin scripts ni hojas en línea,
+    `connect-src` con el gateway, `frame-ancestors 'none'`, HSTS, `nosniff`, y
+    `/assets` inmutable. Un origen mal escrito rompe el build.
+  - `.github/workflows/deploy-portal.yml`: en cada push a `main` que toque el
+    portal, construye, comprueba que el bundle y la CSP llevan el mismo
+    gateway, despliega con la etiqueta `sha-xxxxxxx` y hace una prueba de humo
+    contra el dominio. Necesita los secretos `CLOUDFLARE_API_TOKEN` y
+    `CLOUDFLARE_ACCOUNT_ID`.
+  - `deploy/portal/`: `wrangler` 4.149.0 exacto, con lockfile propio y fuera
+    del workspace, auditado por T8. La 4.144.0 la paró el auditor por `sharp`
+    < 0.35.5 (GHSA-wq5f-xc86-pv6w).
+  - El job `portal` del CI hace `wrangler deploy --dry-run` en cada PR.
+
+### Changed
+
+- **`ALLOWED_ORIGINS` del gateway de midgard pasa del `.env` al compose
+  versionado** (`deploy/midgard/api-gateway/docker-compose.yml`), con el
+  origen del portal. No es un secreto, y así cada cambio pasa por un PR. Ya
+  aplicado en midgard el 2026-10-15: compose copiado y gateway recreado con la
+  misma imagen. `test_cors.py` cubre el origen del portal, el `Retry-After` de
+  un 429 y que los orígenes parecidos no reciben
+  `Access-Control-Allow-Origin`.
+
+### Fixed
+
+- **`build-api-gateway` ya no reconstruye ni redespliega por un cambio en los
+  tests**, como el resto de `build-*`: el `.dockerignore` los deja fuera de la
+  imagen, así que reiniciar el gateway por ellos no cambiaba nada.
+
 ## [0.6.0] - 2026-10-14
 
 Primera versión del **portal público**. Trae tres cosas:
@@ -3593,7 +3650,9 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.6...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.6...v0.6.0
 [0.5.6]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.5...v0.5.6
 [0.5.5]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.3...v0.5.4

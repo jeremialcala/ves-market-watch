@@ -145,6 +145,12 @@ jobs:
           npm ci
           node scripts/auditar-npm.mjs . high
 
+      # El wrangler que despliega el portal (ADR-0035) va fuera del workspace,
+      # con lockfile propio: `npm audit` lee el lockfile, no hace falta instalar.
+      - name: Auditar el wrangler del portal
+        if: matrix.ecosistema == 'npm'
+        run: node scripts/auditar-npm.mjs deploy/portal high
+
   sast:
     name: T9 · SAST (${{ matrix.lenguaje }})
     runs-on: ubuntu-latest

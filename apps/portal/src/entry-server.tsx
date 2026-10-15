@@ -14,6 +14,13 @@ import { DICCIONARIOS } from "./i18n/dict";
 import { RUTAS } from "./rutas";
 
 export { RUTAS };
+export { cabeceras } from "./cabeceras";
+
+/**
+ * Una ruta que no existe: su HTML es la página 404 (`dist/404.html`), que
+ * Workers sirve con estado 404 a cualquier ruta desconocida (ADR-0035).
+ */
+export const RUTA_404 = "/404";
 
 export function pintar(ruta: string): string {
   return renderToString(
@@ -27,7 +34,10 @@ export function pintar(ruta: string): string {
 export function metadatos(ruta: string): { titulo: string; descripcion: string } {
   const es = DICCIONARIOS.es;
   const r = RUTAS.find((candidata) => candidata.ruta === ruta);
-  if (r === undefined || r.ruta === "/") {
+  if (r === undefined) {
+    return { titulo: `${es["noEncontrada.titulo"]} · Criterio`, descripcion: es["noEncontrada.desc"] };
+  }
+  if (r.ruta === "/") {
     return { titulo: "Criterio · datos del mercado VES", descripcion: es["hero.texto"] };
   }
   return { titulo: `${es[r.titulo]} · Criterio`, descripcion: es[r.descripcion] };

@@ -15,8 +15,10 @@ on:
     branches: [main]
     # El Dockerfile usa la raiz como contexto pero solo copia estas dos rutas,
     # asi que un cambio en otro servicio no necesita reconstruir ni redesplegar.
+    # Los tests tampoco: el .dockerignore los deja fuera de la imagen.
     paths:
       - "apps/api-gateway/**"
+      - "!apps/api-gateway/tests/**"
       - "schemas/**"
       - ".github/workflows/build-api-gateway.yml"
   workflow_dispatch:

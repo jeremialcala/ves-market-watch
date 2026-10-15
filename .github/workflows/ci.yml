@@ -213,6 +213,15 @@ jobs:
       - name: Build y prerender
         run: npm run build
 
+      # La configuración de Workers (wrangler.jsonc) y lo que subiría, sin
+      # credenciales: un error aquí se ve en el PR y no al desplegar desde main.
+      - name: Wrangler en seco
+        run: |
+          npm ci --ignore-scripts --prefix ../../deploy/portal
+          ../../deploy/portal/node_modules/.bin/wrangler deploy --dry-run
+        env:
+          WRANGLER_SEND_METRICS: "false"
+
       - name: El HTML prerenderizado tiene contenido
         run: |
           grep -q "servida por API" dist/index.html
