@@ -34,6 +34,12 @@ Convención de mantenimiento (inventario por ejecución):
   GitHub no es fiable en este repositorio: el primer día corrió una vez en
   siete horas y media. La alarma de un apagón es ahora el latido. Lo dicen el
   README de midgard, el workflow y el script.
+- **Workspace de npm en la raíz** (ADR-0031 §3, plan del portal 1.1), sin
+  mover código. Un solo `package-lock.json`, en la raíz, con las mismas
+  versiones exactas que el del `web-spa` que sustituye. Se ajustan el CI, el
+  e2e en vivo, el Dockerfile del `web-spa` (instala con `-w`) y el disparo de
+  su imagen, y `T8 · SCA (npm)` audita el lockfile de la raíz. Es el primer
+  paso para el portal y el paquete `criterio-ui`.
 
 ## [0.5.6] - 2026-10-13
 

@@ -41,7 +41,7 @@ Viste el **sistema de diseño Higerotech** con tema claro/oscuro e interfaz ES/E
 ## Ejecución
 
 ```bash
-npm install
+npm install                  # (raíz) workspace de npm, un solo lockfile (ADR-0031)
 npm run dev                  # http://localhost:5173 (HMR; gateway en :8800 vía CORS)
 npm test                     # check de tipos del contrato + suite con cobertura (≥80 % ramas)
 npm run build                # dist/ estático
