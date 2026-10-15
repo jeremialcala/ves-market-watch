@@ -86,21 +86,26 @@ jobs:
           WRANGLER_SEND_METRICS: "false"
         run: ../../deploy/portal/node_modules/.bin/wrangler deploy --tag "sha-${GITHUB_SHA::7}" --message "${GITHUB_SHA}"
 
-      # La primera vez, Workers crea el registro DNS y el certificado del
-      # dominio: puede tardar unos minutos. De ahí los reintentos (como mucho
-      # unos 5 min).
+      # Se reintenta la batería ENTERA, no solo hasta el primer 200: en el
+      # primer despliegue (2026-10-15), con el dominio recién creado, el borde
+      # dio un 200 y justo después un 500 durante unos segundos. Como mucho,
+      # unos 5 min; al final se repite sin silenciar para que el log diga qué
+      # comprobación falla.
       - name: Humo
         run: |
+          comprobar() {
+            curl -fsS "${PORTAL_URL}/" | grep -q "<main" &&
+            curl -fsS -D - -o /dev/null "${PORTAL_URL}/" \
+              | grep -i "^content-security-policy:" | grep -q "connect-src 'self' ${PORTAL_API};" &&
+            test "$(curl -s -o /dev/null -w "%{http_code}" "${PORTAL_URL}/precios")" = 200 &&
+            test "$(curl -s -o /dev/null -w "%{http_code}" "${PORTAL_URL}/no-existe")" = 404 &&
+            # El navegador del portal puede leer el snapshot: el gateway acepta el origen.
+            curl -fsS -D - -o /dev/null -H "Origin: ${PORTAL_URL}" "${PORTAL_API}/portal/v1/snapshot" \
+              | grep -qi "^access-control-allow-origin: ${PORTAL_URL}"
+          }
           for i in $(seq 1 20); do
-            r=$(curl -s -o /dev/null -w "%{http_code}" "${PORTAL_URL}/" || true)
-            [ "$r" = 200 ] && break
-            echo "aún no responde (${r}), reintento"; sleep 15
+            if comprobar 2>/dev/null; then echo "humo en verde (intento ${i})"; exit 0; fi
+            echo "aún no está todo bien (intento ${i}), reintento en 15 s"; sleep 15
           done
-          curl -fsS "${PORTAL_URL}/" | grep -q "<main"
-          curl -fsS -D - -o /dev/null "${PORTAL_URL}/" \
-            | grep -i "^content-security-policy:" | grep -q "connect-src 'self' ${PORTAL_API};"
-          test "$(curl -s -o /dev/null -w "%{http_code}" "${PORTAL_URL}/precios")" = 200
-          test "$(curl -s -o /dev/null -w "%{http_code}" "${PORTAL_URL}/no-existe")" = 404
-          # El navegador del portal puede leer el snapshot: el gateway acepta el origen.
-          curl -fsS -D - -o /dev/null -H "Origin: ${PORTAL_URL}" "${PORTAL_API}/portal/v1/snapshot" \
-            | grep -qi "^access-control-allow-origin: ${PORTAL_URL}"
+          set -x
+          comprobar

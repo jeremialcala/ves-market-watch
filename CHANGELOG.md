@@ -17,6 +17,15 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Fixed
+
+- **La prueba de humo de `deploy-portal.yml` reintenta la batería entera**, no
+  solo hasta el primer 200. En el primer despliegue (2026-10-15), con el
+  dominio recién creado, el borde dio un 200 y justo después un 500 durante
+  unos segundos, y el workflow quedó en rojo con el portal bien publicado.
+  Ahora repite todas las comprobaciones hasta unos 5 min y, si no pasan, las
+  vuelve a correr con traza para que el log diga cuál falla.
+
 ## [0.6.1] - 2026-10-15
 
 **El portal público se publica** en `https://criterio.higerotech.com`, servido
