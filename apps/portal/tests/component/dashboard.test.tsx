@@ -178,16 +178,29 @@ describe("mapa de calor", () => {
 
 describe("referencia P2P, procedencia y tasa oficial", () => {
   it("los dos lados del P2P; un lado sin dato lleva un guion", () => {
-    montar();
+    const s = snapshot();
+    s.p2p.sell = null;
+    montar({ snapshot: s });
     const panel = within(screen.getByText("Referencia P2P USDT/VES").closest(".panel") as HTMLElement);
     expect(panel.getByText("1.013,00")).toBeTruthy();
     expect(panel.getByText(/VWAP 1\.014,20 · mejor 1\.010,00/)).toBeTruthy();
     expect(panel.getByText(/liquidez 90\.000 USDT/)).toBeTruthy();
     expect(panel.getByText("—")).toBeTruthy();
+    expect(panel.queryByText(/outlier/)).toBeNull();
+  });
+
+  it("un outlier en cabeza no pasa por el mejor precio: va aparte y marcado", () => {
+    montar();
+    const panel = within(screen.getByText("Referencia P2P USDT/VES").closest(".panel") as HTMLElement);
+    expect(panel.getByText(/VWAP 1\.005,57 · mejor 1\.012,00/)).toBeTruthy();
+    const marca = panel.getByText("primer anuncio 1.055,00: outlier, fuera de la referencia");
+    expect(marca.className).toBe("tono-coral");
+    expect(panel.queryByText(/mejor 1\.055/)).toBeNull();
   });
 
   it("la procedencia sin fila de cuota, y la nota sobre official_stale", () => {
     const { container } = montar();
+    expect(screen.getByText("0 % buy · 0,50 % sell · MAD/IQR")).toBeTruthy();
     expect(screen.getByText("En vivo · calidad del dato")).toBeTruthy();
     expect(screen.getByText(/pasadas 6 h sin captura se sirve official_stale/)).toBeTruthy();
     expect(container.textContent).not.toMatch(/cuota|X-RateLimit/i);

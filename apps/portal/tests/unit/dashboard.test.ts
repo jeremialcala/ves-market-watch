@@ -10,6 +10,7 @@ import {
   gruposSenales,
   mapaCalor,
   medidoresDashboard,
+  mejorPrecioP2P,
   percentilBrecha,
   reglasCumplidas,
   tonoCalor,
@@ -186,6 +187,28 @@ describe("cronología de señales", () => {
     // Dentro del grupo, de la más reciente a la más antigua.
     expect(grupos[1].instancias.map((s) => s.outcome?.gap_delta_pp)).toEqual(["0.48000000", "-0.14541067"]);
     expect(gruposSenales([])).toEqual([]);
+  });
+});
+
+describe("mejor precio P2P", () => {
+  it("con el top of book limpio no hay escaparate que enseñar", () => {
+    expect(mejorPrecioP2P(snapshot().p2p.buy!)).toEqual({ mejor: "1010.00000000", escaparate: null });
+  });
+
+  it("si el primero es un outlier, se pinta el filtrado y el otro va aparte", () => {
+    expect(mejorPrecioP2P(snapshot().p2p.sell!)).toEqual({ mejor: "1012.00000000", escaparate: "1055.00000000" });
+  });
+
+  it("la igualdad es decimal, no de cadena", () => {
+    const ref = { ...snapshot().p2p.buy!, best_price: "1010.0", best_price_filtered: "1010.00000000" };
+    expect(mejorPrecioP2P(ref).escaparate).toBeNull();
+  });
+
+  it("sin filtrado (snapshot viejo o gateway anterior) queda el literal", () => {
+    const sell = snapshot().p2p.sell!;
+    expect(mejorPrecioP2P({ ...sell, best_price_filtered: null })).toEqual({ mejor: "1055.00000000", escaparate: null });
+    const { best_price_filtered: _, ...sinCampo } = sell;
+    expect(mejorPrecioP2P(sinCampo as typeof sell).mejor).toBe("1055.00000000");
   });
 });
 
