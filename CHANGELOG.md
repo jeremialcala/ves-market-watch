@@ -17,6 +17,24 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-10-15
+
+**El portal público se publica** en `https://criterio.higerotech.com`, servido
+como assets estáticos de Cloudflare Workers (ADR-0035): gratis, desde el borde
+y sin depender de midgard. Lee los datos del gateway de midgard
+(`criterio-api-dev`) mientras D15 siga abierta.
+
+Patch por la convención de este archivo: despliega lo que ya traía la 0.6.0,
+más la página 404 y las cabeceras de seguridad. Sin gate cerrado.
+
+Al fusionar en `main`, `deploy-portal.yml` construye el portal, lo despliega y
+hace la prueba de humo contra el dominio. La primera vez, Workers crea el
+registro DNS y el certificado. `build-api-gateway` también corre y el
+receptor reinicia el gateway con una imagen de código idéntico: lo disparan
+el cambio en `test_cors.py` y su propio workflow. Desde esta versión, los
+tests ya no lo disparan. El cambio de verdad del gateway, el compose con
+`ALLOWED_ORIGINS`, ya se aplicó a mano en midgard el 2026-10-15.
+
 ### Added
 
 - **El portal se despliega en Cloudflare Workers, en
@@ -49,6 +67,12 @@ Convención de mantenimiento (inventario por ejecución):
   misma imagen. `test_cors.py` cubre el origen del portal, el `Retry-After` de
   un 429 y que los orígenes parecidos no reciben
   `Access-Control-Allow-Origin`.
+
+### Fixed
+
+- **`build-api-gateway` ya no reconstruye ni redespliega por un cambio en los
+  tests**, como el resto de `build-*`: el `.dockerignore` los deja fuera de la
+  imagen, así que reiniciar el gateway por ellos no cambiaba nada.
 
 ## [0.6.0] - 2026-10-14
 
@@ -3626,7 +3650,9 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.6...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.6...v0.6.0
 [0.5.6]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.5...v0.5.6
 [0.5.5]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.3...v0.5.4

@@ -1,10 +1,10 @@
 # Historial de implementación — Criterio
 
 * **Estado:** review (documentación viva — regenerada por script, no editar a mano)
-* **Fecha:** 2026-10-14
+* **Fecha:** 2026-10-15
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
-* **Versión:** 0.5.6
+* **Versión:** 0.6.0
 * **Gate:** 2
 * **Rama principal:** main
 * **Estrategia de branching:** GitFlow (main + develop + ramas feature)
@@ -457,14 +457,22 @@ gitGraph
     commit id: "16e518f" type: HIGHLIGHT
     commit id: "da246b7" type: HIGHLIGHT
     commit id: "bb6dee3" type: HIGHLIGHT
+    commit id: "1a3e355"
+    commit id: "d41e571" type: HIGHLIGHT
+    checkout main
+    merge develop tag: "v0.6.0"
+    checkout develop
+    commit id: "05707d8"
+    commit id: "4f23f80"
+    commit id: "01b98ee" type: HIGHLIGHT
 ```
 
 ### Estado actual de las ramas
 
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
-| `main` | `3bdc738` | 2026-10-13 | 15 |
-| `develop` | `bb6dee3` | 2026-10-14 | 396 |
+| `main` | `3dc972a` | 2026-10-14 | 16 |
+| `develop` | `01b98ee` | 2026-10-15 | 401 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -482,11 +490,18 @@ gitGraph
 | v0.5.4 | `88d7f9b` | 2026-10-13 | 0.5.4 | `respaldar agregados` excluye el crudo chunk a chunk y lo comprueba en el índice del volcado; `deploy/midgard/respaldo-nas/` (segunda copia, al NAS); avisos por ntfy de despliegues fallidos | Patch de respaldos (2026-10-13): el volcado mensual llevaba dentro los snapshots crudos que debía excluir. Primer despliegue automático por servicio (`ves-respaldo`). Sin cambios de producto ni gate cerrado |
 | v0.5.5 | `5195cd7` | 2026-10-13 | 0.5.5 | `deploy/midgard/vigia/` (vigía de operación: contenedores y sondas de trabajo); `estado.sh` vigila la verificación semanal y los agregados mensuales, con pruebas; trabajo `scripts de operación` en CI | Patch de operación (2026-10-13): un servicio caído o parado avisa por ntfy en vez de descubrirse mirando. Sin cambios de producto ni gate cerrado |
 | v0.5.6 | `3bdc738` | 2026-10-13 | 0.5.6 | `sondeo-externo.yml` (sondeo desde GitHub Actions del API y el panel públicos, por transiciones, con estado en la caché de Actions); `scripts/sondeo/` con 28 pruebas | Patch de operación (2026-10-13): un apagón de midgard se avisa desde fuera de la casa. El cron de GitHub resultó demasiado irregular y en 0.6.0 la alarma pasó al latido del vigía. Sin cambios de producto ni gate cerrado |
+| v0.6.0 | `3dc972a` | 2026-10-14 | 0.6.0 | ADR-0028 (`/portal/v1`: IP real, cuota por IP, caché single-flight, `portal-openapi.yaml`) y ADR-0031 (workspace de npm, `packages/criterio-ui`, `apps/portal`); latido del vigía a Healthchecks.io | Minor (2026-10-14): primera lectura pública sin token y la landing del portal con datos reales, aún sin desplegar (falta Workers y D12). Sin gate cerrado |
 
 ### Bitácora de cambios (fiel al repo)
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `01b98ee` | merge | — | Jeremi J. Alcalá M. | 2026-10-15 | Merge pull request #87 from jeremialcala/portal-workers |
+| `4f23f80` | commit | — | Jeremi Alcala | 2026-10-15 | docs(plan): número del PR del despliegue del portal |
+| `05707d8` | commit | — | Jeremi Alcala | 2026-10-15 | feat(portal): desplegar en Cloudflare Workers en criterio.higerotech.com |
+| `3dc972a` | merge | v0.6.0 | Jeremi J. Alcalá M. | 2026-10-14 | Merge pull request #86 from jeremialcala/develop |
+| `d41e571` | merge | — | Jeremi J. Alcalá M. | 2026-10-14 | Merge pull request #85 from jeremialcala/release-0.6.0 |
+| `1a3e355` | commit | — | Jeremi Alcala | 2026-10-14 | docs(changelog): cortar la versión 0.6.0 |
 | `bb6dee3` | merge | — | Jeremi J. Alcalá M. | 2026-10-14 | Merge pull request #84 from jeremialcala/portal-landing |
 | `da246b7` | merge | — | Jeremi Alcala | 2026-10-14 | Merge remote-tracking branch 'origin/develop' into portal-landing |
 | `16e518f` | merge | — | Jeremi J. Alcalá M. | 2026-10-14 | Merge pull request #83 from jeremialcala/paquete-criterio-ui |
