@@ -25,6 +25,12 @@ services:
       # Es la subred que Docker le dio al crearla (`docker network inspect
       # ves-market`); si se recrea, comprobar que sigue siendo esta.
       TRUSTED_PROXIES: 172.22.0.0/16
+      # Orígenes de navegador que pueden leer la API (ADR-0017), aquí y no en
+      # el .env: no es un secreto, y así cada cambio pasa por un PR. El panel
+      # (`criterio-dev`), el portal en Workers (ADR-0035) y el panel en local
+      # contra este gateway (Vite en 5173, nginx en 8080; el portal se prueba
+      # ahí con `wrangler dev --port 8080`). Pisa al del .env si lo hubiera.
+      ALLOWED_ORIGINS: https://criterio-dev.higerotech.com,https://criterio.higerotech.com,http://localhost:5173,http://localhost:8080
     ports:
       # Solo loopback: quien lo publique hacia fuera sera un tunel, no este fichero.
       - "127.0.0.1:8800:8000"

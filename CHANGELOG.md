@@ -17,6 +17,39 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **El portal se despliega en Cloudflare Workers, en
+  `criterio.higerotech.com`** (ADR-0035; plan del portal 0.1, 1.4 y 2.5; D12).
+  Se sirve como assets estáticos sin script, gratis y desde el borde, y no cae
+  con midgard.
+  - `apps/portal/wrangler.jsonc`: dominio propio, sin `workers.dev` ni
+    previews. `/precios/` redirige a `/precios`, y una ruta desconocida recibe
+    la nueva página 404 (`dist/404.html`, con `noindex`) con estado 404.
+  - `_headers`, generado por el prerender desde `src/cabeceras.ts` con el mismo
+    `VITE_PORTAL_API` que el bundle: CSP sin scripts ni hojas en línea,
+    `connect-src` con el gateway, `frame-ancestors 'none'`, HSTS, `nosniff`, y
+    `/assets` inmutable. Un origen mal escrito rompe el build.
+  - `.github/workflows/deploy-portal.yml`: en cada push a `main` que toque el
+    portal, construye, comprueba que el bundle y la CSP llevan el mismo
+    gateway, despliega con la etiqueta `sha-xxxxxxx` y hace una prueba de humo
+    contra el dominio. Necesita los secretos `CLOUDFLARE_API_TOKEN` y
+    `CLOUDFLARE_ACCOUNT_ID`.
+  - `deploy/portal/`: `wrangler` 4.149.0 exacto, con lockfile propio y fuera
+    del workspace, auditado por T8. La 4.144.0 la paró el auditor por `sharp`
+    < 0.35.5 (GHSA-wq5f-xc86-pv6w).
+  - El job `portal` del CI hace `wrangler deploy --dry-run` en cada PR.
+
+### Changed
+
+- **`ALLOWED_ORIGINS` del gateway de midgard pasa del `.env` al compose
+  versionado** (`deploy/midgard/api-gateway/docker-compose.yml`), con el
+  origen del portal. No es un secreto, y así cada cambio pasa por un PR. Ya
+  aplicado en midgard el 2026-10-15: compose copiado y gateway recreado con la
+  misma imagen. `test_cors.py` cubre el origen del portal, el `Retry-After` de
+  un 429 y que los orígenes parecidos no reciben
+  `Access-Control-Allow-Origin`.
+
 ## [0.6.0] - 2026-10-14
 
 Primera versión del **portal público**. Trae tres cosas:
