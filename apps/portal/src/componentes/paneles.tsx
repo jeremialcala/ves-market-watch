@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 
 import type { Medidor, Snapshot } from "../api/cliente";
 import { useAhora, useDatos } from "../datos/contexto";
+import { useEdad } from "../datos/useEdad";
 import { useI18n } from "../i18n/contexto";
 import { REGIMENES } from "../i18n/dict";
 import {
@@ -15,8 +16,8 @@ import {
   cuotaOficial,
   deltaVsSieteDias,
   descomposicion,
-  edad,
   medidoresLanding,
+  menos,
   operador,
   puntosSparkline,
   reglaCercana,
@@ -40,23 +41,13 @@ function Pulso() {
   return <span className="pulso" aria-hidden="true" />;
 }
 
-function Cabecera({ children }: { children: ReactNode }) {
+export function Cabecera({ children }: { children: ReactNode }) {
   return (
     <div className="panel-cabecera">
       <Pulso />
       <span>{children}</span>
     </div>
   );
-}
-
-function useEdad(asOf: string | null | undefined): string | null {
-  const { t } = useI18n();
-  const ahora = useAhora();
-  if (!asOf || ahora === null) {
-    return null;
-  }
-  const { clave, n } = edad(asOf, ahora);
-  return t(clave, { n });
 }
 
 // -- hero ------------------------------------------------------------------------
@@ -117,7 +108,7 @@ export function TarjetaHero() {
   );
 }
 
-function Cifra({ etiqueta, valor }: { etiqueta: string; valor: string }) {
+export function Cifra({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   return (
     <span className="cifra">
       <span className="cifra-etiqueta">{etiqueta}</span>
@@ -275,14 +266,30 @@ export function Medidores() {
 
 /** Los cortes de la escala, sin unidad y con dos decimales: «0,00», no «0». */
 function corte(valor: string | null, idioma: Idioma): string {
-  return valor === null ? "—" : formatDecimal(valor, { maxDecimales: 2, minDecimales: 2, idioma });
+  return valor === null ? "—" : menos(formatDecimal(valor, { maxDecimales: 2, minDecimales: 2, idioma }));
 }
 
-function TarjetaMedidor({ m }: { m: Medidor }) {
+export function TarjetaMedidor({ m }: { m: Medidor }) {
   const { t, idioma } = useI18n();
   const vista = vistaMedidor(m);
   const cumple = vista.regla?.cumple === true;
   const etiqueta = t(`medidor.${m.indicator}` as Parameters<typeof t>[0]);
+  // Sin posición ni cortes (p. ej. los outliers, `unscaled`) no hay escala que
+  // dibujar: una barra vacía diría «0» donde no se sabe nada.
+  const sinEscala = m.position === null && m.scale.cuts.length === 0;
+  let nota: string;
+  if (vista.guarda !== null) {
+    nota = t("medidor.guarda", { v: valorIndicador(vista.guarda.valor, m.indicator, idioma) });
+  } else if (vista.regla === null) {
+    nota = sinEscala ? t("medidor.sinEscala") : t("contexto.sinRegla");
+  } else if (vista.regla.cumple) {
+    nota = t("contexto.cumple", { regla: vista.regla.nombre });
+  } else {
+    nota = t("contexto.distancia", {
+      d: valorIndicador(vista.regla.distancia, m.indicator, idioma),
+      regla: vista.regla.nombre,
+    });
+  }
   return (
     <div className={cumple ? "medidor medidor-alerta" : "medidor"}>
       <div className="medidor-cabecera">
@@ -295,30 +302,25 @@ function TarjetaMedidor({ m }: { m: Medidor }) {
           <span className="medidor-percentil">{t("contexto.percentil", { p: vista.percentil })}</span>
         )}
       </div>
-      <div className="escala" aria-hidden="true">
-        <div className="escala-pista">
-          {vista.zona !== null && (
-            <div className="escala-zona" style={{ left: `${vista.zona.izquierda}%`, width: `${vista.zona.ancho}%` }} />
-          )}
-        </div>
-        {vista.umbral !== null && <div className="escala-umbral" style={{ left: `${vista.umbral}%` }} />}
-        <div className="escala-marcador" style={{ left: `${vista.marcador}%` }} />
-      </div>
-      <div className="escala-cortes">
-        <span>{corte(vista.cortes.bajo, idioma)}</span>
-        <span>{corte(vista.cortes.medio, idioma)}</span>
-        <span>{corte(vista.cortes.alto, idioma)}</span>
-      </div>
-      <p className="medidor-nota">
-        {vista.regla === null
-          ? t("contexto.sinRegla")
-          : vista.regla.cumple
-            ? t("contexto.cumple", { regla: vista.regla.nombre })
-            : t("contexto.distancia", {
-                d: valorIndicador(vista.regla.distancia, m.indicator, idioma),
-                regla: vista.regla.nombre,
-              })}
-      </p>
+      {!sinEscala && (
+        <>
+          <div className="escala" aria-hidden="true">
+            <div className="escala-pista">
+              {vista.zona !== null && (
+                <div className="escala-zona" style={{ left: `${vista.zona.izquierda}%`, width: `${vista.zona.ancho}%` }} />
+              )}
+            </div>
+            {vista.umbral !== null && <div className="escala-umbral" style={{ left: `${vista.umbral}%` }} />}
+            <div className="escala-marcador" style={{ left: `${vista.marcador}%` }} />
+          </div>
+          <div className="escala-cortes">
+            <span>{corte(vista.cortes.bajo, idioma)}</span>
+            <span>{corte(vista.cortes.medio, idioma)}</span>
+            <span>{corte(vista.cortes.alto, idioma)}</span>
+          </div>
+        </>
+      )}
+      <p className="medidor-nota">{nota}</p>
     </div>
   );
 }

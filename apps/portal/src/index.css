@@ -1029,3 +1029,657 @@ code {
 .corazon {
   color: var(--coral);
 }
+
+/* -- dashboard (RF-2) ------------------------------------------------------------------------- */
+
+.solo-lectores {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.hueco {
+  flex: 1;
+}
+
+.tono-sage {
+  color: var(--sage);
+}
+
+.tono-teal {
+  color: var(--teal);
+}
+
+.tono-coral {
+  color: var(--coral);
+}
+
+.tono-dim {
+  color: var(--text-dim);
+}
+
+.punto-sage {
+  background: var(--sage);
+}
+
+.chip-cielo {
+  color: var(--text);
+  background: var(--pill-cielo-bg);
+  border: 1px solid var(--pill-cielo-line);
+}
+
+.dashboard {
+  padding: clamp(24px, 4vw, 44px) 0 96px;
+}
+
+.dashboard-aviso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-bottom: 18px;
+  padding: 12px 14px 12px 20px;
+  border-radius: 28px;
+  background: var(--dark-2);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* La lectura de hoy */
+
+.lectura-hoy {
+  display: grid;
+  gap: 16px;
+  padding: 24px 28px;
+  border-radius: 28px;
+  background: linear-gradient(160deg, var(--teal-tint-strong), var(--dark-2));
+  border: 1px solid var(--teal-line);
+}
+
+.lectura-cabecera,
+.fragmento-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.lectura-etiqueta {
+  font-size: 12.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--teal);
+}
+
+.lectura-sello {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.lectura-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.boton-fragmento {
+  min-height: 40px;
+  padding: 9px 18px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: var(--overlay-soft);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.boton-fragmento.activo {
+  border-color: var(--teal-line);
+  background: var(--teal-tint);
+  color: var(--teal);
+}
+
+.fragmento {
+  display: grid;
+  gap: 12px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  background: var(--ink);
+  border: 1px solid var(--border);
+}
+
+.fragmento-cabecera strong {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--white);
+}
+
+.fragmento-cabecera > span {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.fragmento pre {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--dark-2);
+  overflow-x: auto;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.lectura-titulo {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+/* En la línea del título aunque este se parta en dos (móvil). */
+.lectura-titulo .pulso {
+  width: 10px;
+  height: 10px;
+  background: var(--teal);
+  transform: translateY(-0.2em);
+}
+
+.lectura-titulo h2 {
+  font-size: clamp(24px, 3.4vw, 34px);
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--white);
+}
+
+.lectura-prosa {
+  max-width: 780px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text);
+  text-wrap: pretty;
+}
+
+.lectura-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lectura-chips .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  font-size: 13px;
+  white-space: normal;
+}
+
+.lectura-chips .punto {
+  width: 7px;
+  height: 7px;
+}
+
+/* La brecha y la distancia al disparo */
+
+.dash-principal {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+  gap: 28px;
+  align-items: stretch;
+}
+
+.tarjeta-brecha {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+  padding: 34px 34px 30px;
+  border-radius: 28px;
+  background: linear-gradient(160deg, var(--dark-3), var(--dark-2));
+  border: 1px solid var(--border);
+}
+
+.tarjeta-brecha-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.tarjeta-brecha-cabecera .chip {
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.brecha-cifra {
+  font-family: var(--font-display);
+  font-size: clamp(46px, 8.5vw, 78px);
+  line-height: 0.9;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: var(--white);
+  white-space: nowrap;
+}
+
+.tarjeta-brecha .chispa {
+  height: 110px;
+}
+
+.chispa-pie {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-top: -8px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.brecha-pie {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 26px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+
+.dash-lateral {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+
+.cifras-brecha,
+.lados-p2p,
+.tasas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: 18px;
+}
+
+.tasas {
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: 16px;
+}
+
+.lados-p2p {
+  margin-top: 18px;
+  gap: 16px;
+}
+
+.cifra-tarjeta {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 20px 22px;
+  border-radius: 22px;
+  background: var(--dark-2);
+  border: 1px solid var(--border);
+}
+
+.tasas .cifra-tarjeta {
+  background: var(--dark-3);
+}
+
+.cifra-tarjeta-etiqueta {
+  font-size: 12.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.cifra-tarjeta-etiqueta-suave {
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+
+.cifra-tarjeta-valor {
+  font-family: var(--font-display);
+  font-size: 28px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--white);
+}
+
+.cifra-tarjeta-valor.tono-sage {
+  color: var(--sage);
+}
+
+.cifra-tarjeta-valor.tono-teal {
+  color: var(--teal);
+}
+
+.cifra-tarjeta-detalle {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.cifra-tarjeta-detalle.tono-coral {
+  color: var(--coral);
+}
+
+/* Secciones */
+
+.dash-seccion {
+  margin-top: 46px;
+}
+
+.dash-seccion-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 14px;
+  margin-bottom: 18px;
+}
+
+.dash-seccion-cabecera h2 {
+  font-size: clamp(20px, 2.4vw, 24px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--white);
+}
+
+.dash-seccion-cabecera span {
+  font-size: 13.5px;
+  color: var(--text-dim);
+}
+
+.medidores-dashboard .medidor {
+  border-color: var(--border);
+}
+
+.medidores-dashboard .medidor-alerta {
+  border-color: var(--coral-line);
+}
+
+.dos-columnas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr));
+  gap: 20px;
+}
+
+.panel-titulo {
+  font-size: 12.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* Brecha hoy vs. historia */
+
+.comparativas {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.comparativa-fila {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.comparativa-fila span:last-child {
+  color: var(--text-muted);
+}
+
+.comparativa-pista {
+  margin-top: 7px;
+  height: 8px;
+  border-radius: 100px;
+  background: var(--overlay-soft);
+}
+
+.comparativa-barra {
+  height: 100%;
+  border-radius: 100px;
+  background: var(--text-dim);
+}
+
+.comparativa-hoy .comparativa-barra {
+  background: var(--teal);
+}
+
+.comparativa-media7 .comparativa-barra {
+  background: var(--teal-dim);
+}
+
+.comparativa-max90 .comparativa-barra {
+  background: var(--coral);
+}
+
+/* Mapa de calor: sage abajo, teal en medio, coral solo por encima del p90 */
+
+.calor {
+  display: grid;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.calor-horas,
+.calor-fila {
+  display: grid;
+  grid-template-columns: 44px repeat(24, minmax(18px, 1fr));
+  gap: 4px;
+  min-width: 600px;
+}
+
+.calor-horas {
+  font-size: 11px;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.calor-dia {
+  font-size: 12px;
+  line-height: 18px;
+  text-align: right;
+  padding-right: 4px;
+  color: var(--text-dim);
+}
+
+.calor-celda {
+  height: 18px;
+  border-radius: 4px;
+  background: var(--overlay-soft);
+}
+
+.calor-sage {
+  background: color-mix(in srgb, var(--sage) calc(var(--intensidad) * 100%), transparent);
+}
+
+.calor-teal {
+  background: color-mix(in srgb, var(--teal) calc(var(--intensidad) * 100%), transparent);
+}
+
+.calor-coral {
+  background: var(--coral);
+}
+
+.calor-leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-top: 20px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.calor-degradado {
+  width: 180px;
+  height: 8px;
+  border-radius: 100px;
+  background: linear-gradient(90deg, var(--sage-tint-strong), var(--teal) 70%, var(--coral));
+}
+
+.procedencia-dashboard .panel-nota {
+  padding: 0 28px;
+  border-top: none;
+}
+
+/* Cronología de señales */
+
+.cronologia {
+  padding-top: 8px;
+}
+
+.cronologia-grupos {
+  padding: 0;
+  list-style: none;
+}
+
+.cronologia-grupo {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.cronologia-boton {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 16px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cronologia-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.cronologia-titulo strong {
+  font-family: var(--font-display);
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  color: var(--white);
+}
+
+.cronologia-signo {
+  font-size: 15px;
+  color: var(--text-dim);
+}
+
+.cronologia-detalle {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.cronologia-efecto {
+  color: var(--text-muted);
+}
+
+.cronologia-instancias {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.cronologia-instancia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--dark-2);
+  border: 1px solid var(--border);
+  font-size: 13.5px;
+}
+
+.cronologia-fecha {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/* Profundidad P2P */
+
+.profundidad-cabecera {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13.5px;
+}
+
+.profundidad {
+  display: grid;
+  gap: 7px;
+  margin-top: 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.profundidad-fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profundidad-precio {
+  width: 64px;
+  font-size: 12.5px;
+  text-align: right;
+  color: var(--text-dim);
+}
+
+.profundidad-pista {
+  flex: 1;
+  height: 16px;
+  border-radius: 4px;
+  background: var(--overlay-soft);
+}
+
+.profundidad-barra {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  opacity: 0.85;
+}
+
+.profundidad-buy {
+  background: var(--teal);
+}
+
+.profundidad-sell {
+  background: var(--coral);
+}
+
+.profundidad-volumen {
+  width: 62px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}

@@ -55,8 +55,17 @@ export function snapshot(): Snapshot {
         axis_movement: "lateral",
         axis_gap: "estable",
         window_hours: 6,
-        gauges_near_threshold: 0,
-        claims: [],
+        gauges_near_threshold: 1,
+        claims: [
+          { code: "brecha", data: { direccion: "estable", delta_pp: "0.05687490", horas: "6" } },
+          { code: "atribucion", data: { responsable: "oficial", paralelo: "0.02", oficial: "1.22" } },
+          {
+            code: "brecha_vs_historia",
+            data: { lado: "buy", dias: "30", referencia: "media", posicion: "por_encima", delta_pp: "1.82238517" },
+          },
+          { code: "regla_cerca", data: { regla: "arranque_alcista@v1", cumplidas: "2", totales: "3" } },
+          { code: "codigo_del_futuro", data: {} },
+        ],
       },
       summary: {
         rules_total: 3,
@@ -156,6 +165,40 @@ export function snapshot(): Snapshot {
           scale: escala("12.25086495", "14.77707706", "18.86302657"),
           rules: [],
         },
+        {
+          indicator: "p2p_drenaje_oferta_6h_pct",
+          value: "-47.80790166",
+          as_of: hace(80),
+          band: "very_low",
+          position: "0.0612",
+          scale: escala("-68.90194594", "6.60789920", "201.10198704"),
+          rules: [
+            {
+              rule: "arranque_alcista@v1",
+              type: "arranque_alcista",
+              direction: "alcista",
+              op: "lt",
+              threshold: "-40",
+              met: true,
+              distance: "-7.80790166",
+              threshold_position: "0.2531",
+            },
+          ],
+        },
+        {
+          indicator: "p2p_outliers_pct_buy",
+          value: "0.00000000",
+          as_of: hace(80),
+          band: "unscaled",
+          position: "0.0000",
+          scale: {
+            source: "ruleset" as const,
+            window_days: 90,
+            domain: { min: "0", max: "100" },
+            cuts: [{ key: "confianza_baja", value: "30", position: "0.3000" }],
+          },
+          rules: [],
+        },
       ],
       rule_proximity: [
         {
@@ -202,6 +245,14 @@ export function snapshot(): Snapshot {
             references: [
               { days_configured: 7, days_covered: 7, mean: "15.87388454", max: "17.17873392", min: "14.31501495" },
               { days_configured: 30, days_covered: 30, mean: "13.51990217", max: "17.17873392", min: "11.01350949" },
+              { days_configured: 90, days_covered: 87, mean: "15.43992720", max: "22.63737979", min: "11.01350949" },
+            ],
+          },
+          {
+            side: "sell",
+            current: "14.10429150",
+            references: [
+              { days_configured: 7, days_covered: 7, mean: "14.94778211", max: "16.24707725", min: "13.71134945" },
             ],
           },
         ],
@@ -214,8 +265,48 @@ export function snapshot(): Snapshot {
         official_share: "0.9838735687792291565876471537",
       },
     },
-    depth: { buy: null, sell: null },
-    signals: { window_days: 30, items: [] },
+    depth: {
+      buy: {
+        as_of: hace(20),
+        levels: [
+          { price_band: "1014.0450", cum_volume: "383902.84" },
+          { price_band: "1019.0900", cum_volume: "626730.61" },
+        ],
+      },
+      sell: {
+        as_of: hace(20),
+        levels: [
+          { price_band: "1004.9500", cum_volume: "1203471.65" },
+          { price_band: "999.9000", cum_volume: "2499304.83" },
+        ],
+      },
+    },
+    signals: {
+      window_days: 30,
+      items: [
+        {
+          type: "arranque_alcista",
+          direction: "alcista",
+          as_of: hace(40 * 3600),
+          emitted_at: hace(40 * 3600),
+          outcome: { hours: 12, gap_delta_pp: "-0.14541067" },
+        },
+        {
+          type: "techo_inminente",
+          direction: "bajista",
+          as_of: hace(3 * 3600),
+          emitted_at: hace(3 * 3600),
+          outcome: null,
+        },
+        {
+          type: "arranque_alcista",
+          direction: "alcista",
+          as_of: hace(10 * 3600),
+          emitted_at: hace(10 * 3600),
+          outcome: { hours: 12, gap_delta_pp: "0.48000000" },
+        },
+      ],
+    },
   };
 }
 
@@ -231,7 +322,17 @@ export function series(): Series {
     generated_at: hace(1),
     series: {
       gap_buy_24h: serie([punto(3, "15.10"), punto(2, "15.60"), punto(1, "15.34")]),
-      gap_sell_14d: serie([]),
+      gap_sell_14d: {
+        indicator: "p2p_brecha_pct_sell",
+        interval: "1h" as const,
+        days: 14,
+        // Tres horas de dos días VET: 13-oct 22:00, 14-oct 19:00 y 20:00.
+        points: [
+          { t: "2026-10-14T02:00:00Z", value: "12.00" },
+          { t: "2026-10-14T23:00:00Z", value: "14.00" },
+          { t: "2026-10-15T00:00:00Z", value: "18.00" },
+        ],
+      },
       gap_buy_30d: serie([]),
     },
   };
