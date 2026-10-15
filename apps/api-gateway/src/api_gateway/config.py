@@ -44,6 +44,16 @@ class Settings:
     # Profundidad P2P: ancho de banda de precio (%) y niveles servidos.
     depth_band_pct: str
     depth_niveles: int
+    # Lectura pública `/portal/v1` (ADR-0028). La cuota es por IP de cliente,
+    # y la IP real solo se lee de `CF-Connecting-IP` cuando la petición llega
+    # desde uno de estos proxies (CIDR o IP, separados por coma). Vacío: se usa
+    # siempre la IP del socket y la cabecera se ignora.
+    trusted_proxies: tuple[str, ...]
+    # 600 y no 60: el CGNAT de las operadoras móviles pone a miles de
+    # visitantes tras unas pocas IPs (ADR-0028 §5).
+    portal_rate_limit_per_min: int
+    # Tope de IPs distintas en memoria dentro de una ventana (ADR-0028 §3).
+    portal_max_claves_ip: int
 
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> "Settings":
@@ -76,4 +86,11 @@ class Settings:
             wss_ping_segundos=int(env.get("WSS_PING_SEGUNDOS", "30")),
             depth_band_pct=env.get("DEPTH_BAND_PCT", "0.5"),
             depth_niveles=int(env.get("DEPTH_NIVELES", "10")),
+            trusted_proxies=tuple(
+                red.strip()
+                for red in env.get("TRUSTED_PROXIES", "").split(",")
+                if red.strip()
+            ),
+            portal_rate_limit_per_min=int(env.get("PORTAL_RATE_LIMIT_PER_MIN", "600")),
+            portal_max_claves_ip=int(env.get("PORTAL_MAX_CLAVES_IP", "50000")),
         )

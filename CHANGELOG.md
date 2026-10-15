@@ -19,6 +19,31 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **IP real y cuota por IP para la lectura pública `/portal/v1`** (plan del
+  portal 2.1, RF-13, ADR-0028 §3). El gateway lee la IP del visitante de
+  `CF-Connecting-IP` **solo** cuando la petición llega desde
+  `TRUSTED_PROXIES` (en midgard, la red `ves-market` del conector); fuera de
+  ahí cuenta la del socket y la cabecera se ignora, así que falsificarla no da
+  cuota nueva. Cuota de 600 por minuto e IP, con las cabeceras `X-RateLimit-*`
+  y el 429 de siempre. El limitador **poda** las claves de ventanas vencidas y
+  tiene un tope de 50 000 IPs por ventana: las que llegan con el tope lleno
+  pasan sin contar, y se cuentan como desbordes. Las IPs no salen de la
+  memoria del proceso.
+- **Snapshot público del portal: `GET /portal/v1/snapshot` y
+  `GET /portal/v1/dashboard/series`** (plan del portal 2.2–2.4, ADR-0028), con
+  su contrato `apps/api-gateway/docs/portal-openapi.yaml`. Una respuesta con
+  todo lo que pintan el Dashboard y la landing: la brecha, la tasa oficial en
+  las cinco monedas, las referencias P2P con su calidad (outliers y cobertura
+  de merchants), el análisis del motor (lectura, medidores con su escala de
+  90 días, distancia a cada regla, piernas e historia de la brecha), la
+  profundidad agregada y la cronología de señales de 30 días sin «N de M». Se
+  construye **campo a campo por lista blanca** y el contrato lleva
+  `additionalProperties: false` en todos los objetos. Sin token, sin
+  parámetros (cualquiera es 422) y con **caché con *single-flight***: el
+  snapshot se calcula como mucho cada 5 s y las series cada 60 s, haya los
+  visitantes que haya, con `Cache-Control` público para el borde. Validado
+  contra la base real de midgard: 0 errores de contrato.
+
 - **Latido del vigía a Healthchecks.io.** Al final de cada pasada, el vigía de
   midgard hace un ping a una comprobación de Healthchecks; si dejan de llegar,
   avisa Healthchecks desde fuera. Cubre midgard apagado, midgard sin internet
