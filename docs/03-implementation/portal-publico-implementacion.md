@@ -11,6 +11,27 @@ comprueba está en el PRD (`docs/01-requirements/portal-publico-prd.md`). **Por
 qué** está en las ADR-0028 a ADR-0033. Este plan no repite ninguno de los dos:
 los cita.
 
+## Avance (2026-10-14)
+
+Se adelantó la landing con datos reales. Está en cinco PR:
+
+| PR | Plan | Qué |
+|---|---|---|
+| #80 | 1.1 | Workspace de npm, sin mover nada |
+| #81 | 2.1 | IP real desde `TRUSTED_PROXIES` y cuota por IP con poda |
+| #82 | 2.2–2.4 | Caché con *single-flight*, `/portal/v1/snapshot` y `/dashboard/series`, con su contrato |
+| #83 | 1.2 | `@criterio/ui` con el sistema de diseño, el idioma y el tema |
+| #84 | 1.3, 3.3, 4.1 | `apps/portal`: router, prerender, la landing en vivo y el sondeo |
+
+Diferencias con lo planeado:
+
+- **1.2 no mueve los 17 componentes de dominio.** La landing no los usa, así
+  que irán con el Dashboard (3.1), cuando se adopten.
+- **3.3 no espera a 3.1.** Los paneles de la landing son propios del portal y
+  leen del snapshot, no los componentes del `web-spa`.
+- **Pendiente:** 2.5 (el origen del portal en `ALLOWED_ORIGINS`) y el
+  despliegue (0.1 y 1.4). Los dos dependen del dominio (D12).
+
 ## Punto de partida (2026-10-05)
 
 Lo que el plan da por cierto, verificado en el código y en la base:

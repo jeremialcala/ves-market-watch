@@ -60,3 +60,23 @@ describe("ThemeProvider", () => {
     expect(() => render(<Sonda />)).toThrow(/useTema fuera/);
   });
 });
+
+describe("ThemeProvider con hidratar", () => {
+  it("el primer render es oscuro, como el HTML del build, y después aplica lo guardado", async () => {
+    window.localStorage.setItem("vmw.tema", "light");
+    const vistos: string[] = [];
+    function Espia() {
+      const { tema } = useTema();
+      vistos.push(tema);
+      return <p>{tema}</p>;
+    }
+    render(
+      <ThemeProvider hidratar>
+        <Espia />
+      </ThemeProvider>,
+    );
+    expect(vistos[0]).toBe("dark");
+    expect(await screen.findByText("light")).toBeTruthy();
+    expect(document.documentElement.dataset.theme).toBe("light");
+  });
+});

@@ -19,6 +19,22 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **El portal público, con su landing en vivo** (`apps/portal`, plan del
+  portal 1.3, 3.3 y 4.1, RF-1 y RF-3). Una app nueva con React y Vite,
+  como el `web-spa`, sobre `@criterio/ui`. La landing de Producto sigue el
+  diseño `Criterio Público.dc.html`: hero con la brecha, su sparkline de 24 h
+  y la lectura de hoy, y las cuatro promesas con su panel en vivo
+  (procedencia del dato, distancia a la regla más cercana, tres medidores
+  sobre su escala de 90 días y qué pierna mueve la brecha), casos de uso y
+  CTA. **Los paneles leen datos reales** de `/portal/v1`, con un sondeo que
+  se para con la pestaña oculta, retrocede ante 429 o 5xx y respeta
+  `Retry-After`. Las siete rutas se **prerenderizan** a HTML con contenido, y
+  el build falla si alguna sale vacía. Las demás páginas dicen que están en
+  construcción, sin fingir datos. ES/EN, tema claro y oscuro, y móvil sin
+  desplazamiento horizontal. 55 pruebas, con 92 % de ramas, y su propio job
+  en el CI. Probado en el navegador contra la base real de midgard. **No se
+  despliega todavía**: falta Workers (plan 0.1 y 1.4) y el dominio (D12).
+
 - **IP real y cuota por IP para la lectura pública `/portal/v1`** (plan del
   portal 2.1, RF-13, ADR-0028 §3). El gateway lee la IP del visitante de
   `CF-Connecting-IP` **solo** cuando la petición llega desde
@@ -73,7 +89,9 @@ Convención de mantenimiento (inventario por ejecución):
   Una regla de lint impide al paquete importar de `api/`, `state/`, `ws/` o
   `auth/`, y tiene su propio job en el CI, con el umbral del 80 % de ramas.
   Los 17 componentes de dominio sin dependencias se moverán cuando el portal
-  los adopte, no antes.
+  los adopte, no antes. Con el portal se mueven también los decimales
+  exactos (`lib/decimal`), y el `Button` acepta `href` para los enlaces con
+  aspecto de botón.
 
 ## [0.5.6] - 2026-10-13
 

@@ -69,6 +69,23 @@ describe("Button", () => {
     );
     expect(container.querySelector("svg")).toBeTruthy();
   });
+
+  it("con href es un enlace con aspecto de botón, que responde al clic", async () => {
+    const alClic = vi.fn();
+    render(
+      <Button variant="primary" href="/dashboard" icon="arrowRight" onClick={alClic}>
+        Ver
+      </Button>,
+    );
+    const enlace = screen.getByRole("link", { name: "Ver" });
+    expect(enlace.getAttribute("href")).toBe("/dashboard");
+    expect(enlace.style.background).toBe("var(--teal)");
+    await userEvent.hover(enlace);
+    expect(enlace.style.background).toBe("var(--teal-hover)");
+    await userEvent.unhover(enlace);
+    await userEvent.click(enlace);
+    expect(alClic).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("Tag", () => {

@@ -31,14 +31,29 @@ export interface PropsI18nProvider<C extends string> {
   diccionarios: Record<Idioma, Record<C, string>>;
   /** Dónde se recuerda la elección. */
   claveStorage?: string;
+  /**
+   * Para páginas prerenderizadas que se hidratan: el primer render es en
+   * español, como el HTML del build, y el idioma guardado se aplica después de
+   * montar (ver `ThemeProvider`).
+   */
+  hidratar?: boolean;
 }
 
 export function I18nProvider<C extends string>({
   children,
   diccionarios,
   claveStorage = "vmw.idioma",
+  hidratar = false,
 }: PropsI18nProvider<C>) {
-  const [idioma, setIdiomaEstado] = useState<Idioma>(() => idiomaInicial(claveStorage));
+  const [idioma, setIdiomaEstado] = useState<Idioma>(() =>
+    hidratar ? "es" : idiomaInicial(claveStorage),
+  );
+
+  useEffect(() => {
+    if (hidratar) {
+      setIdiomaEstado(idiomaInicial(claveStorage));
+    }
+  }, [hidratar, claveStorage]);
 
   useEffect(() => {
     document.documentElement.lang = idioma;
