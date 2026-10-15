@@ -62,6 +62,10 @@ Salió en el release 0.6.1. El 2026-10-15 llegó el Dashboard, publicado con el 
   usa las piernas de 6 h del motor (`gap_legs`), no las de 30 días del diseño.
   La cronología dice cuántas veces disparó cada regla y qué hizo la brecha
   después, sin las entradas de cada disparo.
+- **El mejor precio P2P es el filtrado** (PR #94, release 0.7.1). En SELL un
+  outlier encabezaba el libro en el 15 % de los snapshots del 2026-10-15, y el
+  Dashboard lo pintaba como «mejor». El snapshot trae `best_price_filtered` y
+  el top of book outlier se enseña aparte, marcado.
 
 ## Punto de partida (2026-10-05)
 

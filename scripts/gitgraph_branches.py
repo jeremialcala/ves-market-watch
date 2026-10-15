@@ -105,6 +105,12 @@ TAG_NOTES = {
         "criterio.higerotech.com (D12) leyendo del gateway de midgard. Sin "
         "gate cerrado",
     ),
+    "v0.7.1": (
+        "Snapshot público con `best_price_filtered` por lado; el portal pinta "
+        "el mejor precio filtrado y marca aparte el top of book outlier",
+        "Patch (2026-10-15): corrección de producto; redespliega gateway y "
+        "portal. Sin gate cerrado",
+    ),
     "v0.7.0": (
         "Plan del portal 3.2: Dashboard público sobre el snapshot (RF-2), con "
         "paneles del portal (3.1 pospuesto); prueba de humo de "

@@ -17,6 +17,20 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-10-15
+
+**El mejor precio P2P del portal deja de enseñar outliers como precio
+operable.** El Dashboard pinta el mejor precio filtrado y, si el primer
+anuncio del libro es un outlier, lo enseña aparte y marcado.
+
+Patch por la convención de este archivo: corrección de producto. Sin gate
+cerrado.
+
+Al fusionar en `main` corren `build-api-gateway.yml`, que despliega el gateway
+en midgard con el campo nuevo del snapshot, y `deploy-portal.yml`, que publica
+el portal en Workers. El portal tolera un gateway sin el campo, así que el
+orden en que terminen los dos da igual.
+
 ### Fixed
 
 - **Portal: el mejor precio P2P ya no enseña un outlier como precio operable.**
@@ -3724,7 +3738,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.5.6...v0.6.0
