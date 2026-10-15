@@ -34,7 +34,7 @@ Salieron en el release 0.6.0. El 2026-10-15 se añadió el despliegue:
 
 | PR | Plan | Qué |
 |---|---|---|
-| (este) | 0.1, 1.4, 2.5 | ADR-0035, `wrangler.jsonc`, `_headers` desde `VITE_PORTAL_API`, la página 404, `deploy-portal.yml` y el origen del portal en `ALLOWED_ORIGINS` |
+| #87 | 0.1, 1.4, 2.5 | ADR-0035, `wrangler.jsonc`, `_headers` desde `VITE_PORTAL_API`, la página 404, `deploy-portal.yml` y el origen del portal en `ALLOWED_ORIGINS` |
 
 - **D12 decidida (2026-10-14):** `criterio.higerotech.com`. Hasta D15, el
   portal lee del gateway de midgard (`criterio-api-dev`).
