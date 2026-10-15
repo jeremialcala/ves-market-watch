@@ -152,8 +152,14 @@ export function PanelProcedencia() {
       tono: usd.stale ? "coral" : "sage",
     });
   }
+  // Los dos lados: el filtro corre en cada uno y en SELL descarta más (un
+  // outlier encabezaba ese lado cuando el de compra marcaba 0 %).
+  const venta = s.p2p.sell?.outliers_pct;
   if (p2p?.outliers_pct) {
-    filas.push({ etiqueta: t("procedencia.outliers"), valor: `${formatPct(p2p.outliers_pct, 2, idioma)} · MAD/IQR`, tono: "sage" });
+    const valor = venta
+      ? `${formatPct(p2p.outliers_pct, 2, idioma)} buy · ${formatPct(venta, 2, idioma)} sell · MAD/IQR`
+      : `${formatPct(p2p.outliers_pct, 2, idioma)} · MAD/IQR`;
+    filas.push({ etiqueta: t("procedencia.outliers"), valor, tono: "sage" });
   }
   if (p2p?.merchants_pct) {
     filas.push({

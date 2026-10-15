@@ -351,6 +351,35 @@ export function filasProfundidad(niveles: readonly NivelProfundidad[]): FilaProf
   }));
 }
 
+// -- referencia P2P ---------------------------------------------------------------------------
+
+type ReferenciaP2P = NonNullable<Snapshot["p2p"]["buy"]>;
+
+export interface MejorPrecio {
+  /** El que se pinta como «mejor»: el filtrado, si el gateway lo trae. */
+  mejor: string;
+  /** El top of book sin filtrar, solo cuando es un outlier (difiere del filtrado). */
+  escaparate: string | null;
+}
+
+/**
+ * El mejor precio de un lado sin mostrar como operable un anuncio descartado.
+ * `best_price` es el top of book literal; en SELL un outlier lo encabezó en el
+ * 15 % de los snapshots del 2026-10-15 (1.055 con el filtrado en 1.012). Se
+ * pinta el filtrado y el otro se enseña aparte, marcado. Sin filtrado (snapshot
+ * anterior al 2026-08-07 o gateway viejo) queda el literal.
+ */
+export function mejorPrecioP2P(ref: ReferenciaP2P): MejorPrecio {
+  const filtrado = ref.best_price_filtered;
+  if (filtrado === null || filtrado === undefined) {
+    return { mejor: ref.best_price, escaparate: null };
+  }
+  return {
+    mejor: filtrado,
+    escaparate: compararDecimales(ref.best_price, filtrado) === 0 ? null : ref.best_price,
+  };
+}
+
 /** «79 k», «2,24 M»: el volumen de una barra, para leerlo de un vistazo. */
 export function volumenCorto(valor: string, idioma: Idioma): string {
   const n = toChartNumber(valor);

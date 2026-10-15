@@ -257,6 +257,7 @@ export const ES = {
   "p2p.sell": "Venta (sell)",
   "p2p.detalle": "VWAP {vwap} · mejor {mejor}",
   "p2p.liquidez": "liquidez {v} USDT",
+  "p2p.escaparate": "primer anuncio {precio}: outlier, fuera de la referencia",
   "procedencia.nota":
     "La brecha se calcula contra la tasa del BCV: pasadas 6 h sin captura se sirve official_stale y las señales se suprimen.",
 
@@ -548,6 +549,7 @@ export const EN: Record<Clave, string> = {
   "p2p.sell": "Sell",
   "p2p.detalle": "VWAP {vwap} · best {mejor}",
   "p2p.liquidez": "liquidity {v} USDT",
+  "p2p.escaparate": "top ad {precio}: outlier, left out of the reference",
   "procedencia.nota":
     "The gap is computed against the BCV rate: beyond 6 h without capture it is served as official_stale and signals are suppressed.",
 

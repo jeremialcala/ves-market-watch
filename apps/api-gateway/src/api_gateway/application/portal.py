@@ -156,10 +156,16 @@ def _analisis(payload: Mapping[str, Any] | None) -> dict | None:
 
 
 def _referencia_p2p(ref: Mapping[str, Any] | None, calidad: Mapping[str, Any]) -> dict | None:
+    """`best_price` es el top of book literal, sin filtrar (calculos.py del
+    motor); `best_price_filtered`, el mejor que sobrevive al filtro de outliers.
+    El portal pinta el filtrado y enseña el otro solo cuando se separan: en
+    SELL un anuncio descartado encabezó el 15 % de los snapshots del
+    2026-10-15, hasta un 160 % por encima del VWAP."""
     if ref is None:
         return None
     return {
         **_solo(ref, ("best_price", "median", "vwap", "volume", "as_of", "confidence")),
+        "best_price_filtered": calidad.get("best_price_filtered"),
         "outliers_pct": calidad.get("outliers_pct"),
         "merchants_pct": calidad.get("merchants_pct"),
     }
@@ -262,9 +268,13 @@ class ConsultarSnapshotPortal:
         }
 
     async def _calidad_p2p(self) -> dict[str, dict]:
-        """Outliers y cobertura de merchants por lado: la «calidad y procedencia
-        del dato». Agregados del snapshot, no hay nada por anunciante."""
-        nombres = [f"p2p_{m}_pct_{lado}" for lado in LADOS for m in ("outliers", "merchants")]
+        """Outliers, cobertura de merchants y mejor precio filtrado por lado: la
+        «calidad y procedencia del dato», que `/api/v1` no sirve. Agregados del
+        snapshot, no hay nada por anunciante."""
+        nombres = [
+            *(f"p2p_{m}_pct_{lado}" for lado in LADOS for m in ("outliers", "merchants")),
+            *(f"p2p_mejor_precio_filtrado_{lado}" for lado in LADOS),
+        ]
         vigentes = await self._repo.indicadores_vigentes(nombres, FIAT_P2P)
 
         def valor(nombre: str) -> str | None:
@@ -275,6 +285,7 @@ class ConsultarSnapshotPortal:
             lado: {
                 "outliers_pct": valor(f"p2p_outliers_pct_{lado}"),
                 "merchants_pct": valor(f"p2p_merchants_pct_{lado}"),
+                "best_price_filtered": valor(f"p2p_mejor_precio_filtrado_{lado}"),
             }
             for lado in LADOS
         }

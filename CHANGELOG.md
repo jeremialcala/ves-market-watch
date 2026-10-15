@@ -17,6 +17,18 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Fixed
+
+- **Portal: el mejor precio P2P ya no enseña un outlier como precio operable.**
+  El Dashboard pintaba `best_price`, el top of book literal, junto al VWAP. En
+  SELL un anuncio descartado por el filtro encabezó el 15 % de los snapshots
+  del 2026-10-15 (1.055 con el filtrado en 1.012; uno llegó a 1.500, y en 24 h
+  el peor estuvo un 160 % sobre el VWAP). El snapshot público trae ahora
+  `best_price_filtered` por lado (`p2p_mejor_precio_filtrado`, que el motor
+  calcula desde agosto); el portal pinta el filtrado como «mejor» y, cuando el
+  primero es un outlier, lo enseña aparte y marcado. La procedencia da el % de
+  outliers de los dos lados, no solo de compra. `/api/v1` no cambia.
+
 ## [0.7.0] - 2026-10-15
 
 **El Dashboard público** llega a `https://criterio.higerotech.com/dashboard`:
