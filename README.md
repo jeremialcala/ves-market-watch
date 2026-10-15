@@ -35,7 +35,7 @@ ves-market-watch/            # el repositorio conserva el nombre viejo (ADR-0024
     ├── ingestor-historico/   # ✔ backfill batch de históricos de precio + varianza (sin bus)
     ├── api-gateway/          # ✔ REST /api/v1 + WSS /ws/v1 (Resource Server Auth0)
     ├── web-spa/              # ✔ consola interna React (Auth0 PKCE) — ADR-0017
-    └── portal/               # portal público en criterio.higerotech.com (Workers): landing en vivo sobre /portal/v1 — ADR-0031, ADR-0035
+    └── portal/               # portal público en criterio.higerotech.com (Workers): landing y Dashboard en vivo sobre /portal/v1 — ADR-0031, ADR-0035
 ```
 
 ## Stack decidido (ver ADRs en `docs/00-project/adr/`)
@@ -191,7 +191,9 @@ cada ruta y falla si alguna sale vacía.
   prerenderiza sus siete rutas. **Publicado desde la 0.6.1** (2026-10-15,
   ADR-0035) en `https://criterio.higerotech.com`, como assets estáticos de
   Cloudflare Workers con CSP generada desde el mismo origen del gateway que el
-  bundle; lo despliega `deploy-portal.yml` en cada push a `main`. Las demás
+  bundle; lo despliega `deploy-portal.yml` en cada push a `main`. **El
+  Dashboard público** (`/dashboard`, RF-2) llega con la 0.7.0
+  (2026-10-15), con paneles del portal sobre el mismo snapshot. Las demás
   páginas del portal llegan por fases
   (`docs/03-implementation/portal-publico-implementacion.md`).
 - **Gates 2 y 3 APROBADOS HITL el 2026-09-08.** Con ellos cierran las fases
