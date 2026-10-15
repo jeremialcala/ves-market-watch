@@ -1,4 +1,10 @@
-import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
+import type {
+  AnchorHTMLAttributes,
+  ButtonHTMLAttributes,
+  CSSProperties,
+  MouseEvent,
+  ReactNode,
+} from "react";
 import { useState } from "react";
 
 import { Icon, type NombreIcono } from "./Icon";
@@ -75,11 +81,18 @@ const VARIANTES: Record<
   },
 };
 
-interface Props extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "type"> {
+interface Props extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "type" | "onClick"> {
   variant?: VarianteBoton;
   icon?: NombreIcono;
   iconPosition?: "start" | "end";
   children?: ReactNode;
+  /**
+   * Con `href` es un ENLACE con aspecto de botón (`<a>`), como el `Button` del
+   * sistema original: navegar es un enlace, aunque se vea como botón. Un
+   * enlace no se deshabilita: `disabled` solo vale sin `href`.
+   */
+  href?: string;
+  onClick?: (evento: MouseEvent<HTMLElement>) => void;
 }
 
 /** Botón del sistema Higerotech (port de `components/core/Button.jsx`). */
@@ -90,6 +103,7 @@ export function Button({
   disabled,
   children,
   style,
+  href,
   ...resto
 }: Props) {
   const [hover, setHover] = useState(false);
@@ -110,6 +124,21 @@ export function Button({
   };
   const glifo =
     icon !== undefined ? <Icon name={icon} size={16} aria-hidden /> : null;
+  if (href !== undefined) {
+    return (
+      <a
+        href={href}
+        style={css}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        {...(resto as unknown as AnchorHTMLAttributes<HTMLAnchorElement>)}
+      >
+        {iconPosition === "start" ? glifo : null}
+        <span>{children}</span>
+        {iconPosition === "end" ? glifo : null}
+      </a>
+    );
+  }
   return (
     <button
       type="button"

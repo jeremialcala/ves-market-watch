@@ -25,8 +25,25 @@ function temaInicial(): Tema {
   return "dark";
 }
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [tema, setTema] = useState<Tema>(temaInicial);
+export interface PropsThemeProvider {
+  children: ReactNode;
+  /**
+   * Para páginas prerenderizadas que se hidratan: el primer render usa el tema
+   * de marca, igual que el HTML del build, y la preferencia guardada se aplica
+   * después de montar. Sin esto, el cliente pintaría otra cosa que el servidor
+   * y React descartaría el HTML.
+   */
+  hidratar?: boolean;
+}
+
+export function ThemeProvider({ children, hidratar = false }: PropsThemeProvider) {
+  const [tema, setTema] = useState<Tema>(() => (hidratar ? "dark" : temaInicial()));
+
+  useEffect(() => {
+    if (hidratar) {
+      setTema(temaInicial());
+    }
+  }, [hidratar]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = tema;

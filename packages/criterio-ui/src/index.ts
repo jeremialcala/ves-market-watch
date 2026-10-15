@@ -11,10 +11,23 @@
 
 export * from "./ds/components";
 
+export {
+  compararDecimales,
+  esDecimal,
+  formatDecimal,
+  formatPct,
+  porcentajeRelativo,
+  promediarDecimales,
+  restarDecimales,
+  signo,
+  toChartNumber,
+  type OpcionesFormato,
+} from "./lib/decimal";
+
 export { esIdioma, IDIOMAS, type Idioma } from "./i18n/idioma";
 export { interpolar } from "./i18n/interpolar";
 export { I18nContext, useI18n, type ContextoI18n, type Traducir } from "./i18n/contexto";
 export { I18nProvider, type PropsI18nProvider } from "./i18n/I18nProvider";
 
 export { ThemeContext, useTema, type ContextoTema, type Tema } from "./theme/contexto";
-export { ThemeProvider } from "./theme/ThemeProvider";
+export { ThemeProvider, type PropsThemeProvider } from "./theme/ThemeProvider";

@@ -112,3 +112,22 @@ describe("utilidades", () => {
     expect(esIdioma(null)).toBe(false);
   });
 });
+
+describe("hidratación", () => {
+  it("con `hidratar`, el primer render es en español y después aplica lo guardado", async () => {
+    window.localStorage.setItem("vmw.idioma", "en");
+    const vistos: string[] = [];
+    function Espia() {
+      const { idioma } = useI18n<Clave>();
+      vistos.push(idioma);
+      return <p>{idioma}</p>;
+    }
+    render(
+      <I18nProvider diccionarios={DICCIONARIOS} hidratar>
+        <Espia />
+      </I18nProvider>,
+    );
+    expect(vistos[0]).toBe("es");
+    expect(await screen.findByText("en")).toBeTruthy();
+  });
+});
