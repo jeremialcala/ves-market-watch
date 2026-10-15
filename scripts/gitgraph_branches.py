@@ -97,6 +97,14 @@ TAG_NOTES = {
         "portal con datos reales, aún sin desplegar (falta Workers y D12). Sin "
         "gate cerrado",
     ),
+    "v0.6.1": (
+        "ADR-0035 (portal en Cloudflare Workers: assets sin script, `_headers` "
+        "con CSP desde `VITE_PORTAL_API`, `deploy-portal.yml`, wrangler fijado "
+        "en `deploy/portal`); `ALLOWED_ORIGINS` del gateway en el compose",
+        "Patch de despliegue (2026-10-15): el portal se publica en "
+        "criterio.higerotech.com (D12) leyendo del gateway de midgard. Sin "
+        "gate cerrado",
+    ),
     "v0.5.1": (
         "Avisos por ntfy del cron de seguridad (`seguridad.yml`) y del respaldo "
         "(`aviso.sh` + healthcheck `estado`); js-yaml 4.3.2 (GHSA-2883-xcg3-v3hh); "

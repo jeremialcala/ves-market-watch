@@ -11,7 +11,8 @@ ves-market-watch/            # el repositorio conserva el nombre viejo (ADR-0024
 ├── .ai-dlc/                  # Metodología: gates y plantillas
 │   ├── gates/                # Checklists de gates (0 a 3 creados; siguientes al cerrar cada fase)
 │   └── templates/            # prd, adr, threat-model
-├── .github/workflows/        # CI: `ci.yml` (los 6 proyectos, el portal y el paquete), `seguridad.yml` y `e2e-vivo.yml`
+├── .github/workflows/        # CI: `ci.yml` (los 6 proyectos, el portal y el paquete), `seguridad.yml` y `e2e-vivo.yml`;
+│                             # CD: `build-<servicio>.yml` (midgard) y `deploy-portal.yml` (Workers)
 ├── .gitleaks.toml            # Excepciones del escaneo de secretos, una a una y con motivo
 ├── knowledge/                # Contexto del proyecto en Open Knowledge Format (ADR-0010)
 ├── schemas/                  # Contratos de eventos del bus (JSON Schema 2020-12)
@@ -34,7 +35,7 @@ ves-market-watch/            # el repositorio conserva el nombre viejo (ADR-0024
     ├── ingestor-historico/   # ✔ backfill batch de históricos de precio + varianza (sin bus)
     ├── api-gateway/          # ✔ REST /api/v1 + WSS /ws/v1 (Resource Server Auth0)
     ├── web-spa/              # ✔ consola interna React (Auth0 PKCE) — ADR-0017
-    └── portal/               # portal público: landing en vivo sobre /portal/v1, sin desplegar aún — ADR-0031
+    └── portal/               # portal público en criterio.higerotech.com (Workers): landing en vivo sobre /portal/v1 — ADR-0031, ADR-0035
 ```
 
 ## Stack decidido (ver ADRs en `docs/00-project/adr/`)
@@ -187,9 +188,12 @@ cada ruta y falla si alguna sale vacía.
   0.6.0). El gateway sirve `/portal/v1/snapshot` y `/dashboard/series`
   sin token, con cuota por IP real y caché con *single-flight*. `apps/portal`
   tiene la landing de Producto con sus paneles en vivo sobre esa lectura, y
-  prerenderiza sus siete rutas. **Aún no está publicado**: falta el despliegue
-  en Cloudflare Workers y el dominio (D12). Las demás páginas del portal llegan
-  por fases (`docs/03-implementation/portal-publico-implementacion.md`).
+  prerenderiza sus siete rutas. **Publicado desde la 0.6.1** (2026-10-15,
+  ADR-0035) en `https://criterio.higerotech.com`, como assets estáticos de
+  Cloudflare Workers con CSP generada desde el mismo origen del gateway que el
+  bundle; lo despliega `deploy-portal.yml` en cada push a `main`. Las demás
+  páginas del portal llegan por fases
+  (`docs/03-implementation/portal-publico-implementacion.md`).
 - **Gates 2 y 3 APROBADOS HITL el 2026-09-08.** Con ellos cierran las fases
   03-implementation y 04-testing.
   Cobertura **≥ 80 % en los seis** con las dos métricas —combinada y ramas solas—,
