@@ -12,7 +12,10 @@
  * parcheado, este script falla pidiendo que se borre la excepción, en vez de
  * dejarla ahí cubriendo silenciosamente lo que venga después con el mismo id.
  *
- * Uso: node scripts/auditar-npm.mjs <directorio> [nivel]
+ * Uso: node scripts/auditar-npm.mjs [directorio] [nivel]
+ *
+ * El directorio por defecto es la raíz: desde ADR-0031 hay un solo lockfile,
+ * el del workspace, y cubre el web-spa, el portal y los paquetes compartidos.
  */
 
 import { execFileSync } from "node:child_process";
@@ -21,7 +24,7 @@ import { resolve } from "node:path";
 
 const NIVELES = ["info", "low", "moderate", "high", "critical"];
 
-const [, , directorio = "apps/web-spa", nivel = "high"] = process.argv;
+const [, , directorio = ".", nivel = "high"] = process.argv;
 const minimo = NIVELES.indexOf(nivel);
 if (minimo === -1) {
   console.error(`Nivel desconocido: ${nivel}`);

@@ -146,9 +146,11 @@ jobs:
         with:
           node-version: "24"
           cache: npm
-          cache-dependency-path: apps/web-spa/package-lock.json
+          cache-dependency-path: package-lock.json
 
+      # Workspace de npm (ADR-0031): un solo lockfile, en la raíz.
       - run: npm ci
+        working-directory: .
 
       - name: Tipos
         run: npm run typecheck

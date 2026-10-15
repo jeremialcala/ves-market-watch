@@ -52,7 +52,8 @@ docker compose up -d --wait        # RabbitMQ (5672/15672) + TimescaleDB (5433)
 cd apps/<servicio> && pip install -e .[dev] && python -m pytest
 ```
 
-Front-end: `cd apps/web-spa && npm install && npm run dev` (http://localhost:5173;
+Front-end: `npm install` en la raíz (workspace de npm, ADR-0031) y después
+`cd apps/web-spa && npm run dev` (http://localhost:5173;
 el compose lo sirve compilado en http://localhost:8080; `npm test` corre su suite).
 
 ### El túnel de Cloudflare (ADR-0020)
