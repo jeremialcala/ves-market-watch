@@ -11,7 +11,7 @@ ves-market-watch/            # el repositorio conserva el nombre viejo (ADR-0024
 ├── .ai-dlc/                  # Metodología: gates y plantillas
 │   ├── gates/                # Checklists de gates (0 a 3 creados; siguientes al cerrar cada fase)
 │   └── templates/            # prd, adr, threat-model
-├── .github/workflows/        # CI: `ci.yml` (matriz de los 6 proyectos), `seguridad.yml` y `e2e-vivo.yml`
+├── .github/workflows/        # CI: `ci.yml` (los 6 proyectos, el portal y el paquete), `seguridad.yml` y `e2e-vivo.yml`
 ├── .gitleaks.toml            # Excepciones del escaneo de secretos, una a una y con motivo
 ├── knowledge/                # Contexto del proyecto en Open Knowledge Format (ADR-0010)
 ├── schemas/                  # Contratos de eventos del bus (JSON Schema 2020-12)
@@ -24,13 +24,17 @@ ves-market-watch/            # el repositorio conserva el nombre viejo (ADR-0024
 │   ├── 03-implementation/    # Historial del repo (generado por script, no editar a mano)
 │   ├── 04-testing/           # Plan de pruebas y criterios del Gate 3
 │   └── architecture/         # Diagramas C4 (Mermaid)
+├── package.json              # workspace de npm de los front-ends, un solo lockfile (ADR-0031)
+├── packages/
+│   └── criterio-ui/          # @criterio/ui: sistema de diseño, idioma, tema y decimales compartidos (ADR-0031)
 └── apps/
     ├── ingestor-binance/     # ✔ Ingesta P2P Binance (USDT/VES) → p2p.snapshot
     ├── ingestor-bcv/         # ✔ Ingesta tasas oficiales BCV (multi-moneda, HITL)
     ├── indicator-engine/     # ✔ fases 1+2, señales y análisis: consume official.rate.updated y p2p.snapshot → emite indicators.updated, signals.emitted y analysis.updated
     ├── ingestor-historico/   # ✔ backfill batch de históricos de precio + varianza (sin bus)
     ├── api-gateway/          # ✔ REST /api/v1 + WSS /ws/v1 (Resource Server Auth0)
-    └── web-spa/              # ✔ dashboard web React (Auth0 PKCE) — ADR-0017
+    ├── web-spa/              # ✔ consola interna React (Auth0 PKCE) — ADR-0017
+    └── portal/               # portal público: landing en vivo sobre /portal/v1, sin desplegar aún — ADR-0031
 ```
 
 ## Stack decidido (ver ADRs en `docs/00-project/adr/`)
@@ -42,8 +46,11 @@ ves-market-watch/            # el repositorio conserva el nombre viejo (ADR-0024
   Server y valida access tokens (ADR-0012, supersede ADR-0003).
 - Front-end: React + Vite + TypeScript con @auth0/auth0-react; tokens en memoria +
   refresh rotation, CORS por allowlist en el gateway (ADR-0017).
-- Sistema de diseño Higerotech en el `web-spa` (tokens y fuentes autoalojadas),
-  tema claro/oscuro e interfaz ES/EN (ADR-0018).
+- Sistema de diseño Higerotech (tokens y fuentes autoalojadas), tema claro/oscuro
+  e interfaz ES/EN (ADR-0018), compartidos por el `web-spa` y el portal desde el
+  paquete `@criterio/ui` (ADR-0031).
+- Lectura pública del portal por `/portal/v1`, sin token, con cuota por IP y
+  caché (ADR-0028).
 
 ## Desarrollo
 
@@ -52,8 +59,11 @@ docker compose up -d --wait        # RabbitMQ (5672/15672) + TimescaleDB (5433)
 cd apps/<servicio> && pip install -e .[dev] && python -m pytest
 ```
 
-Front-end: `cd apps/web-spa && npm install && npm run dev` (http://localhost:5173;
+Front-end: `npm install` en la raíz (workspace de npm, ADR-0031) y después
+`cd apps/web-spa && npm run dev` (http://localhost:5173;
 el compose lo sirve compilado en http://localhost:8080; `npm test` corre su suite).
+El portal: `cd apps/portal && npm run dev` (http://localhost:5174, con
+`/portal/v1` por el proxy de Vite al gateway de `criterio-dev`).
 
 ### El túnel de Cloudflare (ADR-0020)
 
@@ -129,8 +139,9 @@ Tres workflows en `.github/workflows/`:
 Los umbrales de cobertura de los **cinco servicios Python** son un **trinquete**
 en su valor actual, no el 80 % plano: el criterio de Gate 2 es el 80 %, pero lo
 que rompe el build es cualquier retroceso desde donde está hoy cada uno. El
-`web-spa` es la excepción y aplica el **80 % de ramas liso**, declarado en
-`vite.config.ts`.
+`web-spa`, el portal y `@criterio/ui` aplican el **80 % de ramas liso**,
+declarado en su configuración de vitest. El build del portal **prerenderiza**
+cada ruta y falla si alguna sale vacía.
 
 ## Estado
 
@@ -172,6 +183,13 @@ que rompe el build es cualquier retroceso desde donde está hoy cada uno. El
   explícitos para la ventana insuficiente y la serie vacía. Los dos gráficos son
   ya **un único componente** (`SerieTemporal`) con flags distintos, recorrible
   con teclado.
+- **Portal público en marcha** (2026-10-14, ADR-0028 y ADR-0031, versión
+  0.6.0). El gateway sirve `/portal/v1/snapshot` y `/dashboard/series`
+  sin token, con cuota por IP real y caché con *single-flight*. `apps/portal`
+  tiene la landing de Producto con sus paneles en vivo sobre esa lectura, y
+  prerenderiza sus siete rutas. **Aún no está publicado**: falta el despliegue
+  en Cloudflare Workers y el dominio (D12). Las demás páginas del portal llegan
+  por fases (`docs/03-implementation/portal-publico-implementacion.md`).
 - **Gates 2 y 3 APROBADOS HITL el 2026-09-08.** Con ellos cierran las fases
   03-implementation y 04-testing.
   Cobertura **≥ 80 % en los seis** con las dos métricas —combinada y ramas solas—,

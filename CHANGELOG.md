@@ -17,6 +17,108 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-14
+
+Primera versión del **portal público**. Trae tres cosas:
+
+- **Una lectura pública sin token**, `/portal/v1`, con lo que pinta el
+  Dashboard ahora mismo. Va campo a campo por lista blanca y tiene cuota por
+  IP real y caché: la carga de la base no crece con los visitantes.
+- **La landing del portal** (`apps/portal`), con sus paneles leyendo esos
+  datos en vivo, y el paquete `@criterio/ui` que comparte con el `web-spa`.
+- **El latido del vigía a Healthchecks.io**, que avisa desde fuera si midgard
+  se apaga, se queda sin internet o el vigía se rompe.
+
+Minor por la convención de este archivo: funcionalidad nueva de producto. Sin
+gate cerrado.
+
+**El portal no se publica con esta versión**: falta desplegarlo en Cloudflare
+Workers (plan 0.1 y 1.4) y decidir su dominio (D12). Lo que sí llega a
+midgard al fusionar en `main`:
+
+- `build-api-gateway` despliega el gateway con `/portal/v1`. **Antes**, el
+  compose de `deploy/midgard/api-gateway/` se copia a mano a
+  `/srv/apps/ves-api-gateway/`: gana `TRUSTED_PROXIES`, y el receptor solo
+  cambia la imagen.
+- `build-web-spa` reconstruye el `web-spa` sobre el workspace y el paquete
+  compartido, sin cambios de comportamiento.
+
+### Added
+
+- **El portal público, con su landing en vivo** (`apps/portal`, plan del
+  portal 1.3, 3.3 y 4.1, RF-1 y RF-3). Una app nueva con React y Vite,
+  como el `web-spa`, sobre `@criterio/ui`. La landing de Producto sigue el
+  diseño `Criterio Público.dc.html`: hero con la brecha, su sparkline de 24 h
+  y la lectura de hoy, y las cuatro promesas con su panel en vivo
+  (procedencia del dato, distancia a la regla más cercana, tres medidores
+  sobre su escala de 90 días y qué pierna mueve la brecha), casos de uso y
+  CTA. **Los paneles leen datos reales** de `/portal/v1`, con un sondeo que
+  se para con la pestaña oculta, retrocede ante 429 o 5xx y respeta
+  `Retry-After`. Las siete rutas se **prerenderizan** a HTML con contenido, y
+  el build falla si alguna sale vacía. Las demás páginas dicen que están en
+  construcción, sin fingir datos. ES/EN, tema claro y oscuro, y móvil sin
+  desplazamiento horizontal. 55 pruebas, con 92 % de ramas, y su propio job
+  en el CI. Probado en el navegador contra la base real de midgard. **No se
+  despliega todavía**: falta Workers (plan 0.1 y 1.4) y el dominio (D12).
+
+- **IP real y cuota por IP para la lectura pública `/portal/v1`** (plan del
+  portal 2.1, RF-13, ADR-0028 §3). El gateway lee la IP del visitante de
+  `CF-Connecting-IP` **solo** cuando la petición llega desde
+  `TRUSTED_PROXIES` (en midgard, la red `ves-market` del conector); fuera de
+  ahí cuenta la del socket y la cabecera se ignora, así que falsificarla no da
+  cuota nueva. Cuota de 600 por minuto e IP, con las cabeceras `X-RateLimit-*`
+  y el 429 de siempre. El limitador **poda** las claves de ventanas vencidas y
+  tiene un tope de 50 000 IPs por ventana: las que llegan con el tope lleno
+  pasan sin contar, y se cuentan como desbordes. Las IPs no salen de la
+  memoria del proceso.
+- **Snapshot público del portal: `GET /portal/v1/snapshot` y
+  `GET /portal/v1/dashboard/series`** (plan del portal 2.2–2.4, ADR-0028), con
+  su contrato `apps/api-gateway/docs/portal-openapi.yaml`. Una respuesta con
+  todo lo que pintan el Dashboard y la landing: la brecha, la tasa oficial en
+  las cinco monedas, las referencias P2P con su calidad (outliers y cobertura
+  de merchants), el análisis del motor (lectura, medidores con su escala de
+  90 días, distancia a cada regla, piernas e historia de la brecha), la
+  profundidad agregada y la cronología de señales de 30 días sin «N de M». Se
+  construye **campo a campo por lista blanca** y el contrato lleva
+  `additionalProperties: false` en todos los objetos. Sin token, sin
+  parámetros (cualquiera es 422) y con **caché con *single-flight***: el
+  snapshot se calcula como mucho cada 5 s y las series cada 60 s, haya los
+  visitantes que haya, con `Cache-Control` público para el borde. Validado
+  contra la base real de midgard: 0 errores de contrato.
+
+- **Latido del vigía a Healthchecks.io.** Al final de cada pasada, el vigía de
+  midgard hace un ping a una comprobación de Healthchecks; si dejan de llegar,
+  avisa Healthchecks desde fuera. Cubre midgard apagado, midgard sin internet
+  y un vigía roto, que nadie de dentro puede avisar. Si el vigía no pudo
+  entregar un aviso por ntfy, el ping es de fallo y lleva el texto que no
+  salió. `ves-market-vigia.sh prueba-latido` lo comprueba de punta a punta.
+  La URL de ping es una credencial y vive solo en `/etc/ves-market-latido.env`.
+  Con 21 pruebas en CI.
+
+### Changed
+
+- **El sondeo externo pasa a ser un segundo punto de vista.** El cron de
+  GitHub no es fiable en este repositorio: el primer día corrió una vez en
+  siete horas y media. La alarma de un apagón es ahora el latido. Lo dicen el
+  README de midgard, el workflow y el script.
+- **Workspace de npm en la raíz** (ADR-0031 §3, plan del portal 1.1), sin
+  mover código. Un solo `package-lock.json`, en la raíz, con las mismas
+  versiones exactas que el del `web-spa` que sustituye. Se ajustan el CI, el
+  e2e en vivo, el Dockerfile del `web-spa` (instala con `-w`) y el disparo de
+  su imagen, y `T8 · SCA (npm)` audita el lockfile de la raíz. Es el primer
+  paso para el portal y el paquete `criterio-ui`.
+- **Paquete compartido `@criterio/ui`** (`packages/criterio-ui`, ADR-0031,
+  plan del portal 1.2). Se mueven del `web-spa` el sistema de diseño
+  Higerotech (tokens, fuentes y componentes), el mecanismo de idioma (ahora
+  genérico sobre el diccionario de cada app) y el tema. El `web-spa` los
+  importa del paquete y **no cambia de comportamiento**: su suite pasa entera.
+  Una regla de lint impide al paquete importar de `api/`, `state/`, `ws/` o
+  `auth/`, y tiene su propio job en el CI, con el umbral del 80 % de ramas.
+  Los 17 componentes de dominio sin dependencias se moverán cuando el portal
+  los adopte, no antes. Con el portal se mueven también los decimales
+  exactos (`lib/decimal`), y el `Button` acepta `href` para los enlaces con
+  aspecto de botón.
+
 ## [0.5.6] - 2026-10-13
 
 Versión de operación: **ningún cambio en el producto**. Trae una cosa:

@@ -9,7 +9,7 @@ import {
   restarDecimales,
   signo,
   toChartNumber,
-} from "../../src/lib/decimal";
+} from "../src/lib/decimal";
 
 describe("esDecimal", () => {
   it("acepta el patrón del contrato", () => {

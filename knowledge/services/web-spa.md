@@ -223,7 +223,9 @@ del [api-gateway](api-gateway.md) (`openapi.yaml` REST / `asyncapi.yaml` WSS).
   frescura (`npm test`).
 
 ## Sistema de diseño (2026-07-31, ADR-0018)
-- Viste el **sistema Higerotech**: tokens copiados al repo (`src/ds/`), fuentes
+- Viste el **sistema Higerotech**: tokens copiados al repo (desde el
+  2026-10-14 en `packages/criterio-ui/src/ds/`, compartidos con el portal,
+  ADR-0031; antes en `src/ds/`), fuentes
   Inter + Space Grotesk **autoalojadas** (la CSP no se abre a ningún CDN) y los
   componentes del sistema portados a TSX. Tema claro/oscuro explícito
   (`data-theme` reasigna los MISMOS tokens) e interfaz **ES/EN** con diccionario

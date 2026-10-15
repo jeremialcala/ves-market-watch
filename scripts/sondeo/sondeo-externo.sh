@@ -3,9 +3,9 @@
 # ntfy cuando deja de hacerlo y cuando vuelve. Lo lanza el workflow
 # `sondeo-externo.yml` cada diez minutos, desde un runner de GitHub.
 #
-# Existe por lo único que el vigía de midgard no puede ver: que midgard esté
-# apagado o sin internet. Sin máquina no hay vigía, y con los cortes de luz de
-# la casa ese es el fallo más frecuente.
+# Es un segundo punto de vista: la alarma de midgard apagado o sin internet es
+# el latido del vigía a Healthchecks.io, porque el cron de GitHub corre cuando
+# puede (ver el workflow).
 #
 # Qué mira: lo mismo que vería un cliente. Que el API dé su JSON de salud con
 # todo en `ok`, y que el panel responda. Pasa por Cloudflare y por el túnel,

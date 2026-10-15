@@ -124,7 +124,7 @@ jobs:
         with:
           node-version: "24"
           cache: npm
-          cache-dependency-path: apps/web-spa/package-lock.json
+          cache-dependency-path: package-lock.json
 
       # Aquí SÍ hay lockfile, así que se audita exactamente lo que se instala.
       # Umbral en `high`: por debajo hay ruido de herramientas de desarrollo que
@@ -136,11 +136,14 @@ jobs:
       # esté aceptado POR ESCRITO en `scripts/npm-audit-excepciones.json`, y
       # **falla también cuando una excepción deja de aplicar**, para que se borre
       # el día que llegue el arreglo en vez de cubrir lo siguiente en silencio.
-      - name: Auditar el web-spa
+      #
+      # Se audita el lockfile de la raíz: desde ADR-0031 es el único, y cubre
+      # todo el workspace (web-spa, portal y paquetes compartidos).
+      - name: Auditar el workspace de npm
         if: matrix.ecosistema == 'npm'
         run: |
-          npm --prefix apps/web-spa ci
-          node scripts/auditar-npm.mjs apps/web-spa high
+          npm ci
+          node scripts/auditar-npm.mjs . high
 
   sast:
     name: T9 · SAST (${{ matrix.lenguaje }})

@@ -19,7 +19,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from api_gateway.adapters.alertas import LoggingAlertNotifier
 from api_gateway.adapters.amqp.consumer import ConsumidorPushWss
 from api_gateway.adapters.auth.jwks import ValidadorTokenAuth0
-from api_gateway.adapters.http import rest, ws
+from api_gateway.adapters.http import portal, rest, ws
+from api_gateway.adapters.http.ip_cliente import redes_de_confianza
 from api_gateway.adapters.http.problem import registrar_manejadores
 from api_gateway.adapters.timescale.repository import TimescaleLecturaRepository
 from api_gateway.application.consultas import (
@@ -32,6 +33,8 @@ from api_gateway.application.consultas import (
     ConsultarSenales,
     ConsultarTasaOficialVigente,
 )
+from api_gateway.application.cache import CacheSingleFlight
+from api_gateway.application.portal import ConsultarSeriesPortal, ConsultarSnapshotPortal
 from api_gateway.application.ports import (
     AlertNotifier,
     LecturaRepository,
@@ -67,6 +70,12 @@ def create_app(
             settings.database_url
         )
         app.state.limitador = LimitadorVentanaFija(settings.rate_limit_per_min)
+        # `/portal/v1`: por IP, con tope de claves, porque las IPs anónimas no
+        # están acotadas como los tokens (ADR-0028 §3).
+        app.state.limitador_portal = LimitadorVentanaFija(
+            settings.portal_rate_limit_per_min,
+            max_claves=settings.portal_max_claves_ip,
+        )
         app.state.gestor = GestorSuscripciones(
             max_conexiones=settings.wss_max_conexiones,
             max_suscripciones=settings.wss_max_suscripciones,
@@ -87,6 +96,12 @@ def create_app(
             senales=ConsultarSenales(repo),
             analisis=ConsultarAnalisisVigente(repo, frescura_p2p),
         )
+        # `/portal/v1` compone los casos de uso de arriba (ADR-0028).
+        app.state.consultas.snapshot_portal = ConsultarSnapshotPortal(
+            repo, app.state.consultas
+        )
+        app.state.consultas.series_portal = ConsultarSeriesPortal(repo)
+        app.state.cache_portal = CacheSingleFlight()
         app.state.consumidor = None
         if con_amqp:
             app.state.consumidor = ConsumidorPushWss(
@@ -106,6 +121,10 @@ def create_app(
                 await app.state.consumidor.close()
             if repo_propio:
                 await app.state.repositorio.close()
+
+    # Fuera del lifespan a propósito: un TRUSTED_PROXIES mal escrito tiene que
+    # impedir el arranque, no aparecer en la primera petición.
+    redes = redes_de_confianza(settings.trusted_proxies)
 
     app = FastAPI(
         title="Criterio API",
@@ -130,7 +149,9 @@ def create_app(
         ],
         max_age=600,
     )
+    app.state.redes_confianza = redes
     registrar_manejadores(app)
     app.include_router(rest.router)
+    app.include_router(portal.router)
     app.include_router(ws.router)
     return app

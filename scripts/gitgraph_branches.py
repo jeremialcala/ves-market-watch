@@ -79,6 +79,24 @@ TAG_NOTES = {
         "ntfy en vez de descubrirse mirando. Sin cambios de producto ni gate "
         "cerrado",
     ),
+    "v0.5.6": (
+        "`sondeo-externo.yml` (sondeo desde GitHub Actions del API y el panel "
+        "públicos, por transiciones, con estado en la caché de Actions); "
+        "`scripts/sondeo/` con 28 pruebas",
+        "Patch de operación (2026-10-13): un apagón de midgard se avisa desde "
+        "fuera de la casa. El cron de GitHub resultó demasiado irregular y en "
+        "0.6.0 la alarma pasó al latido del vigía. Sin cambios de producto ni "
+        "gate cerrado",
+    ),
+    "v0.6.0": (
+        "ADR-0028 (`/portal/v1`: IP real, cuota por IP, caché single-flight, "
+        "`portal-openapi.yaml`) y ADR-0031 (workspace de npm, "
+        "`packages/criterio-ui`, `apps/portal`); latido del vigía a "
+        "Healthchecks.io",
+        "Minor (2026-10-14): primera lectura pública sin token y la landing del "
+        "portal con datos reales, aún sin desplegar (falta Workers y D12). Sin "
+        "gate cerrado",
+    ),
     "v0.5.1": (
         "Avisos por ntfy del cron de seguridad (`seguridad.yml`) y del respaldo "
         "(`aviso.sh` + healthcheck `estado`); js-yaml 4.3.2 (GHSA-2883-xcg3-v3hh); "

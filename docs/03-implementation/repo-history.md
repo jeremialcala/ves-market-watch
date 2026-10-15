@@ -1,10 +1,10 @@
 # Historial de implementación — Criterio
 
 * **Estado:** review (documentación viva — regenerada por script, no editar a mano)
-* **Fecha:** 2026-10-13
+* **Fecha:** 2026-10-14
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
-* **Versión:** 0.5.5
+* **Versión:** 0.5.6
 * **Gate:** 2
 * **Rama principal:** main
 * **Estrategia de branching:** GitFlow (main + develop + ramas feature)
@@ -437,14 +437,34 @@ gitGraph
     checkout develop
     commit id: "f1c4c04"
     commit id: "4580818" type: HIGHLIGHT
+    commit id: "56789d7"
+    commit id: "3f9a172" type: HIGHLIGHT
+    checkout main
+    merge develop tag: "v0.5.6"
+    checkout develop
+    commit id: "d46d66a"
+    commit id: "1170959" type: HIGHLIGHT
+    commit id: "edc1b1c"
+    commit id: "ff28e29"
+    commit id: "fd2035c"
+    commit id: "57489bc"
+    commit id: "4bd7d5d" type: HIGHLIGHT
+    commit id: "275037d"
+    commit id: "b3c0c6c" type: HIGHLIGHT
+    commit id: "06141a5" type: HIGHLIGHT
+    commit id: "7fa7ac0"
+    commit id: "9619fa5" type: HIGHLIGHT
+    commit id: "16e518f" type: HIGHLIGHT
+    commit id: "da246b7" type: HIGHLIGHT
+    commit id: "bb6dee3" type: HIGHLIGHT
 ```
 
 ### Estado actual de las ramas
 
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
-| `main` | `5195cd7` | 2026-10-13 | 14 |
-| `develop` | `4580818` | 2026-10-13 | 379 |
+| `main` | `3bdc738` | 2026-10-13 | 15 |
+| `develop` | `bb6dee3` | 2026-10-14 | 396 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -461,11 +481,31 @@ gitGraph
 | v0.5.3 | `2934219` | 2026-10-13 | 0.5.3 | ADR-0034 (el entorno de captura pasa a midgard por réplica física); `deploy/midgard/` con un proyecto compose por servicio; cinco workflows `build-<servicio>` sobre `publicar-imagen.yml` | Patch de despliegue (2026-10-13): la captura sale de la máquina de desarrollo sin perder un ciclo y los seis servicios quedan con despliegue continuo. Sin cambios de producto ni gate cerrado; no decide D15 |
 | v0.5.4 | `88d7f9b` | 2026-10-13 | 0.5.4 | `respaldar agregados` excluye el crudo chunk a chunk y lo comprueba en el índice del volcado; `deploy/midgard/respaldo-nas/` (segunda copia, al NAS); avisos por ntfy de despliegues fallidos | Patch de respaldos (2026-10-13): el volcado mensual llevaba dentro los snapshots crudos que debía excluir. Primer despliegue automático por servicio (`ves-respaldo`). Sin cambios de producto ni gate cerrado |
 | v0.5.5 | `5195cd7` | 2026-10-13 | 0.5.5 | `deploy/midgard/vigia/` (vigía de operación: contenedores y sondas de trabajo); `estado.sh` vigila la verificación semanal y los agregados mensuales, con pruebas; trabajo `scripts de operación` en CI | Patch de operación (2026-10-13): un servicio caído o parado avisa por ntfy en vez de descubrirse mirando. Sin cambios de producto ni gate cerrado |
+| v0.5.6 | `3bdc738` | 2026-10-13 | 0.5.6 | `sondeo-externo.yml` (sondeo desde GitHub Actions del API y el panel públicos, por transiciones, con estado en la caché de Actions); `scripts/sondeo/` con 28 pruebas | Patch de operación (2026-10-13): un apagón de midgard se avisa desde fuera de la casa. El cron de GitHub resultó demasiado irregular y en 0.6.0 la alarma pasó al latido del vigía. Sin cambios de producto ni gate cerrado |
 
 ### Bitácora de cambios (fiel al repo)
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `bb6dee3` | merge | — | Jeremi J. Alcalá M. | 2026-10-14 | Merge pull request #84 from jeremialcala/portal-landing |
+| `da246b7` | merge | — | Jeremi Alcala | 2026-10-14 | Merge remote-tracking branch 'origin/develop' into portal-landing |
+| `16e518f` | merge | — | Jeremi J. Alcalá M. | 2026-10-14 | Merge pull request #83 from jeremialcala/paquete-criterio-ui |
+| `9619fa5` | merge | — | Jeremi J. Alcalá M. | 2026-10-14 | Merge pull request #82 from jeremialcala/portal-snapshot |
+| `7fa7ac0` | commit | — | Jeremi J. Alcalá M. | 2026-10-14 | Potential fix for pull request finding 'CodeQL / Statement has no effect' |
+| `06141a5` | merge | — | Jeremi J. Alcalá M. | 2026-10-14 | Merge pull request #81 from jeremialcala/ip-real-limitador |
+| `b3c0c6c` | merge | — | Jeremi J. Alcalá M. | 2026-10-14 | Merge pull request #80 from jeremialcala/workspace-npm |
+| `275037d` | commit | — | Jeremi Alcala | 2026-10-14 | feat(portal): app del portal público con la landing en vivo |
+| `4bd7d5d` | merge | — | Jeremi Alcala | 2026-10-14 | Merge portal-snapshot en portal-landing: el portal necesita el contrato /portal/v1 |
+| `ff28e29` | commit | — | Jeremi Alcala | 2026-10-14 | feat(ui): paquete compartido @criterio/ui con el sistema de diseño, idioma y tema |
+| `57489bc` | commit | — | Jeremi Alcala | 2026-10-14 | feat(gateway): snapshot y series públicos del portal en /portal/v1 |
+| `fd2035c` | commit | — | Jeremi Alcala | 2026-10-14 | feat(gateway): IP real desde proxies de confianza y cuota por IP con poda |
+| `edc1b1c` | commit | — | Jeremi Alcala | 2026-10-14 | build(npm): workspace de npm en la raíz, sin mover código |
+| `22f247a` | merge | — | Jeremi Alcala | 2026-10-14 | Merge develop en portal-publico: al día con 0.5.6 y el latido del vigía |
+| `1170959` | merge | — | Jeremi J. Alcalá M. | 2026-10-14 | Merge pull request #79 from jeremialcala/latido-vigia |
+| `d46d66a` | commit | — | Jeremi Alcala | 2026-10-14 | feat(operacion): latido del vigía a Healthchecks.io |
+| `3bdc738` | merge | v0.5.6 | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #78 from jeremialcala/develop |
+| `3f9a172` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #77 from jeremialcala/release-0.5.6 |
+| `56789d7` | commit | — | Jeremi Alcala | 2026-10-13 | docs(changelog): cortar la versión 0.5.6 |
 | `4580818` | merge | — | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #76 from jeremialcala/sondeo-externo |
 | `f1c4c04` | commit | — | Jeremi Alcala | 2026-10-13 | feat(operacion): sondeo externo desde GitHub Actions |
 | `5195cd7` | merge | v0.5.5 | Jeremi J. Alcalá M. | 2026-10-13 | Merge pull request #75 from jeremialcala/develop |
@@ -626,7 +666,6 @@ gitGraph
 | `91c5a2b` | commit | — | Jeremi Alcala | 2026-08-31 | chore(repo): sacar de la punta el volcado que viajaba de polizon |
 | `bccfe93` | commit | — | Jeremi Alcala | 2026-08-31 | chore(.gitignore): add *.dump to ignore list |
 | `5a7d915` | merge | — | Jeremi J. Alcalá M. | 2026-08-31 | Merge pull request #11 from jeremialcala/fix-ventana-incremental |
-| `cad4482` | commit | — | Jeremi Alcala | 2026-08-31 | chore(.gitignore): add *.dump to ignore list |
 | `d0f9a92` | commit | — | Jeremi Alcala | 2026-08-31 | chore(respaldo): levantarlo de verdad, y arreglar lo que la puesta en marcha daba por hecho |
 | `795709b` | commit | — | Jeremi Alcala | 2026-08-24 | docs(respaldo): cifras reales tras ejecutarlo, y la que estaba mal |
 | `2de91a4` | commit | — | Jeremi Alcala | 2026-08-24 | fix(respaldo): anclar la ventana del incremental al filo de la hora |

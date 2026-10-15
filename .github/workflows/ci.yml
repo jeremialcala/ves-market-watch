@@ -146,9 +146,11 @@ jobs:
         with:
           node-version: "24"
           cache: npm
-          cache-dependency-path: apps/web-spa/package-lock.json
+          cache-dependency-path: package-lock.json
 
+      # Workspace de npm (ADR-0031): un solo lockfile, en la raíz.
       - run: npm ci
+        working-directory: .
 
       - name: Tipos
         run: npm run typecheck
@@ -176,6 +178,78 @@ jobs:
           path: apps/web-spa/coverage/
           if-no-files-found: warn
 
+  # El portal público (ADR-0031). El build incluye el prerender, que FALLA si
+  # una ruta sale vacía: es la prueba de RNF-4 (HTML con contenido, no un
+  # `<div id="root">` vacío), en cada push.
+  portal:
+    name: portal
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/portal
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+        working-directory: .
+
+      - name: Tipos
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      # Encadena `check:api-types`: los tipos generados del contrato
+      # `portal-openapi.yaml` tienen que estar al día.
+      - name: Tests y cobertura
+        run: npm test
+
+      - name: Build y prerender
+        run: npm run build
+
+      - name: El HTML prerenderizado tiene contenido
+        run: |
+          grep -q "servida por API" dist/index.html
+          grep -q "<h1>Precios</h1>" dist/precios/index.html
+          grep -q "<h1>APIs</h1>" dist/apis/index.html
+
+  # El paquete compartido del web-spa y el portal (ADR-0031). Sus tests van
+  # aparte de los de las apps; las apps prueban además que lo usan bien.
+  criterio-ui:
+    name: criterio-ui
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/criterio-ui
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+        working-directory: .
+
+      - name: Tipos
+        run: npm run typecheck
+
+      # Incluye la regla que impide al paquete importar de api/, state/, ws/
+      # o auth/ de ninguna app (ADR-0031 §Verificación).
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests y cobertura
+        run: npm test
+
   # Los scripts que corren en midgard no son de ningún servicio de arriba: ni
   # pytest ni vitest los ven. Aquí se comprueba que se dejan interpretar y,
   # del healthcheck del respaldo, que avisa de lo que tiene que avisar.
@@ -188,7 +262,7 @@ jobs:
       - name: Sintaxis
         run: |
           for f in scripts/respaldo/*.sh scripts/respaldo/tests/*.sh; do sh -n "$f"; done
-          for f in deploy/midgard/*/*.sh scripts/sondeo/*.sh scripts/sondeo/tests/*.sh; do bash -n "$f"; done
+          for f in deploy/midgard/*/*.sh deploy/midgard/*/tests/*.sh scripts/sondeo/*.sh scripts/sondeo/tests/*.sh; do bash -n "$f"; done
 
       - name: Healthcheck del respaldo
         run: sh scripts/respaldo/tests/prueba-estado.sh
@@ -196,3 +270,8 @@ jobs:
       # Contra un servidor local que hace de Criterio y de ntfy: sin red.
       - name: Sondeo externo
         run: bash scripts/sondeo/tests/prueba-sondeo.sh
+
+      # Con un systemctl de mentira y un servidor local que hace de ntfy y de
+      # Healthchecks: sin red.
+      - name: Latido del vigía
+        run: bash deploy/midgard/vigia/tests/prueba-latido.sh

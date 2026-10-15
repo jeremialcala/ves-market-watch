@@ -1,0 +1,468 @@
+openapi: 3.1.0
+info:
+  title: Criterio — lectura pública del portal
+  version: 1.0.0
+  description: |
+    Backend del portal público (ADR-0028). **No es un producto**: no aparece en
+    el catálogo de APIs ni en Precios, y puede cambiar con el portal dentro de
+    `v1`. La API para sistemas es `/api/v1` (`openapi.yaml`).
+
+    - **Sin token.** Cuota por IP de cliente: 600 peticiones por minuto, con
+      `X-RateLimit-*` y 429 + `Retry-After` como `/api/v1`. La IP real sale de
+      `CF-Connecting-IP` solo cuando la petición llega desde un proxy de
+      confianza (RF-13).
+    - **Ventanas fijas, ningún parámetro.** Cualquier parámetro de consulta es
+      422.
+    - **Lista blanca.** Todos los objetos llevan `additionalProperties: false`:
+      un campo que no esté aquí no puede salir. Ningún dato por anunciante.
+    - **Decimales como cadena exacta**, errores RFC 7807, solo GET.
+    - **En caché.** El snapshot se recalcula como mucho cada 5 s y las series
+      cada 60 s, haya los visitantes que haya. `Cache-Control` público para
+      que el borde de Cloudflare pueda servirlo.
+servers:
+  - url: https://criterio-api-dev.higerotech.com
+    description: criterio-dev (midgard, por el túnel)
+paths:
+  /portal/v1/snapshot:
+    get:
+      summary: Todo lo que el Dashboard y la landing pintan ahora
+      operationId: portalSnapshot
+      responses:
+        "200":
+          description: Snapshot. Cada bloque es `null` si no hay datos para él.
+          headers:
+            Cache-Control:
+              schema: {type: string, const: "public, max-age=5, stale-while-revalidate=25"}
+            X-RateLimit-Limit: {$ref: "#/components/headers/X-RateLimit-Limit"}
+            X-RateLimit-Remaining: {$ref: "#/components/headers/X-RateLimit-Remaining"}
+            X-RateLimit-Reset: {$ref: "#/components/headers/X-RateLimit-Reset"}
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PortalSnapshot"}
+        "422": {$ref: "#/components/responses/ConParametros"}
+        "429": {$ref: "#/components/responses/Limite"}
+  /portal/v1/dashboard/series:
+    get:
+      summary: Series de la brecha en ventanas fijas
+      operationId: portalSeries
+      responses:
+        "200":
+          description: Las tres series, en orden cronológico.
+          headers:
+            Cache-Control:
+              schema: {type: string, const: "public, max-age=60, stale-while-revalidate=240"}
+            X-RateLimit-Limit: {$ref: "#/components/headers/X-RateLimit-Limit"}
+            X-RateLimit-Remaining: {$ref: "#/components/headers/X-RateLimit-Remaining"}
+            X-RateLimit-Reset: {$ref: "#/components/headers/X-RateLimit-Reset"}
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PortalSeries"}
+        "422": {$ref: "#/components/responses/ConParametros"}
+        "429": {$ref: "#/components/responses/Limite"}
+components:
+  headers:
+    X-RateLimit-Limit: {schema: {type: string}, description: Peticiones por minuto de esta IP.}
+    X-RateLimit-Remaining: {schema: {type: string}}
+    X-RateLimit-Reset: {schema: {type: string}, description: Epoch en segundos del fin de la ventana.}
+  responses:
+    ConParametros:
+      description: El recurso no admite parámetros.
+      content:
+        application/problem+json:
+          schema: {$ref: "#/components/schemas/Problem"}
+    Limite:
+      description: Cuota por IP agotada.
+      headers:
+        Retry-After: {schema: {type: string}}
+      content:
+        application/problem+json:
+          schema: {$ref: "#/components/schemas/Problem"}
+  schemas:
+    Decimal:
+      type: string
+      pattern: "^-?[0-9]+(\\.[0-9]+)?$"
+    DecimalONulo:
+      oneOf:
+        - {$ref: "#/components/schemas/Decimal"}
+        - {type: "null"}
+    Momento:
+      type: string
+      format: date-time
+    Lado:
+      type: string
+      enum: [buy, sell]
+    Problem:
+      type: object
+      required: [title, status]
+      properties:
+        type: {type: string}
+        title: {type: string}
+        status: {type: integer}
+        detail: {type: string}
+
+    PortalSnapshot:
+      type: object
+      additionalProperties: false
+      required:
+        [as_of, generated_at, calc_version, ruleset_version, official_stale, gap,
+         official_rates, p2p, analysis, depth, signals]
+      properties:
+        as_of:
+          description: >-
+            El dato más nuevo que trae (brecha, referencias P2P o análisis). Es
+            la edad que el portal pinta, no la de la petición.
+          oneOf: [{$ref: "#/components/schemas/Momento"}, {type: "null"}]
+        generated_at: {$ref: "#/components/schemas/Momento"}
+        calc_version: {type: [integer, "null"]}
+        ruleset_version: {type: [integer, "null"]}
+        official_stale: {type: [boolean, "null"]}
+        gap:
+          oneOf: [{$ref: "#/components/schemas/Brecha"}, {type: "null"}]
+        official_rates:
+          type: array
+          items: {$ref: "#/components/schemas/TasaOficial"}
+        p2p:
+          type: object
+          additionalProperties: false
+          required: [buy, sell]
+          properties:
+            buy: {oneOf: [{$ref: "#/components/schemas/ReferenciaP2P"}, {type: "null"}]}
+            sell: {oneOf: [{$ref: "#/components/schemas/ReferenciaP2P"}, {type: "null"}]}
+        analysis:
+          oneOf: [{$ref: "#/components/schemas/Analisis"}, {type: "null"}]
+        depth:
+          type: object
+          additionalProperties: false
+          required: [buy, sell]
+          properties:
+            buy: {oneOf: [{$ref: "#/components/schemas/Profundidad"}, {type: "null"}]}
+            sell: {oneOf: [{$ref: "#/components/schemas/Profundidad"}, {type: "null"}]}
+        signals:
+          type: object
+          additionalProperties: false
+          required: [window_days, items]
+          properties:
+            window_days: {type: integer, const: 30}
+            items:
+              type: array
+              items: {$ref: "#/components/schemas/Senal"}
+
+    Brecha:
+      description: Brecha del lado buy contra la tasa oficial USD (ADR-0014).
+      type: object
+      additionalProperties: false
+      required: [side, pct, abs, spread_pct, as_of]
+      properties:
+        side: {type: string, const: buy}
+        pct: {$ref: "#/components/schemas/Decimal"}
+        abs: {$ref: "#/components/schemas/DecimalONulo"}
+        spread_pct: {$ref: "#/components/schemas/DecimalONulo"}
+        as_of: {$ref: "#/components/schemas/Momento"}
+
+    TasaOficial:
+      type: object
+      additionalProperties: false
+      required: [currency, rate, value_date, captured_at, stale]
+      properties:
+        currency: {type: string, enum: [USD, EUR, CNY, TRY, RUB]}
+        rate: {$ref: "#/components/schemas/Decimal"}
+        value_date: {type: string, format: date}
+        captured_at: {$ref: "#/components/schemas/Momento"}
+        stale: {type: boolean}
+
+    ReferenciaP2P:
+      type: object
+      additionalProperties: false
+      required: [best_price, median, vwap, volume, as_of, confidence, outliers_pct, merchants_pct]
+      properties:
+        best_price: {$ref: "#/components/schemas/Decimal"}
+        median: {$ref: "#/components/schemas/Decimal"}
+        vwap: {$ref: "#/components/schemas/Decimal"}
+        volume: {$ref: "#/components/schemas/Decimal"}
+        as_of: {$ref: "#/components/schemas/Momento"}
+        confidence: {type: string, enum: [normal, low]}
+        outliers_pct:
+          description: Porcentaje del snapshot descartado como outlier.
+          $ref: "#/components/schemas/DecimalONulo"
+        merchants_pct:
+          description: Porcentaje del volumen que ofrecen merchants verificados.
+          $ref: "#/components/schemas/DecimalONulo"
+
+    Profundidad:
+      type: object
+      additionalProperties: false
+      required: [as_of, levels]
+      properties:
+        as_of: {$ref: "#/components/schemas/Momento"}
+        levels:
+          description: Volumen acumulado por banda de precio. Agregado, sin anunciantes.
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [price_band, cum_volume]
+            properties:
+              price_band: {$ref: "#/components/schemas/Decimal"}
+              cum_volume: {$ref: "#/components/schemas/Decimal"}
+
+    Senal:
+      description: >-
+        Una señal de la cronología, con lo que hizo la brecha después. Es
+        historia, no acierto: ningún contador de «N de M» (RF-2).
+      type: object
+      additionalProperties: false
+      required: [type, direction, as_of, emitted_at, outcome]
+      properties:
+        type: {type: string}
+        direction: {type: string, enum: [alcista, bajista, neutral]}
+        as_of: {$ref: "#/components/schemas/Momento"}
+        emitted_at: {$ref: "#/components/schemas/Momento"}
+        outcome:
+          oneOf:
+            - type: object
+              additionalProperties: false
+              required: [hours, gap_delta_pp]
+              properties:
+                hours: {type: integer}
+                gap_delta_pp: {$ref: "#/components/schemas/Decimal"}
+            - {type: "null"}
+
+    Analisis:
+      description: >-
+        La última lectura del motor (`/api/v1/analysis/current`), por lista
+        blanca: sin `triggered_by` ni los riesgos de calibración.
+      type: object
+      additionalProperties: false
+      required:
+        [as_of, confidence, official_stale, reading, summary, indicators,
+         rule_proximity, gap_history, gap_legs]
+      properties:
+        as_of: {$ref: "#/components/schemas/Momento"}
+        confidence: {type: string, enum: [normal, low]}
+        official_stale: {type: boolean}
+        reading:
+          oneOf:
+            - $ref: "#/components/schemas/Lectura"
+            - {type: "null"}
+        summary: {$ref: "#/components/schemas/Resumen"}
+        indicators:
+          type: array
+          items: {$ref: "#/components/schemas/Medidor"}
+        rule_proximity:
+          type: array
+          items: {$ref: "#/components/schemas/ProximidadRegla"}
+        gap_history:
+          oneOf:
+            - type: object
+              additionalProperties: false
+              required: [sides]
+              properties:
+                sides:
+                  type: array
+                  items: {$ref: "#/components/schemas/HistoriaBrecha"}
+            - {type: "null"}
+        gap_legs:
+          oneOf:
+            - $ref: "#/components/schemas/PiernasBrecha"
+            - {type: "null"}
+
+    Lectura:
+      type: object
+      additionalProperties: false
+      required: [regime, axis_movement, axis_gap, window_hours, gauges_near_threshold, claims]
+      properties:
+        regime: {type: [string, "null"]}
+        axis_movement: {enum: [subiendo, lateral, bajando, null]}
+        axis_gap: {enum: [ampliando, estable, comprimiendo, null]}
+        window_hours: {type: integer}
+        gauges_near_threshold: {type: integer}
+        claims:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [code, data]
+            properties:
+              code:
+                type: string
+                enum:
+                  [confianza_baja, oficial_rancia, brecha, atribucion, medidor_en_banda,
+                   regla_cerca, brecha_vs_historia, brecha_extremo, historia_parcial]
+              data:
+                type: object
+                additionalProperties: false
+                properties:
+                  lado: {type: string}
+                  ventana: {type: string}
+                  dias: {type: string}
+                  referencia: {type: string}
+                  posicion: {type: string}
+                  delta_pp: {type: string}
+                  tipo: {type: string}
+                  direccion: {type: string}
+                  horas: {type: string}
+                  responsable: {type: string}
+                  paralelo: {type: string}
+                  oficial: {type: string}
+                  indicador: {type: string}
+                  banda: {type: string}
+                  regla: {type: string}
+                  cumplidas: {type: string}
+                  totales: {type: string}
+
+    Resumen:
+      type: object
+      additionalProperties: false
+      required: [rules_total, rules_evaluable, closest_rule, conditions_met, conditions_total, blocked_by]
+      properties:
+        rules_total: {type: [integer, "null"]}
+        rules_evaluable: {type: [integer, "null"]}
+        closest_rule: {type: [string, "null"]}
+        conditions_met: {type: [integer, "null"]}
+        conditions_total: {type: [integer, "null"]}
+        blocked_by: {type: [string, "null"]}
+
+    Medidor:
+      description: Un indicador sobre su escala de 90 días, con las reglas que lo usan.
+      type: object
+      additionalProperties: false
+      required: [indicator, value, as_of, band, position, scale, rules]
+      properties:
+        indicator: {type: string}
+        value: {$ref: "#/components/schemas/Decimal"}
+        as_of: {$ref: "#/components/schemas/Momento"}
+        band: {type: string, enum: [very_low, low, high, very_high, unscaled]}
+        position: {$ref: "#/components/schemas/DecimalONulo"}
+        scale:
+          type: object
+          additionalProperties: false
+          required: [source, window_days, domain, cuts]
+          properties:
+            source: {type: string, enum: [percentiles, ruleset]}
+            window_days: {type: integer}
+            domain:
+              type: object
+              additionalProperties: false
+              required: [min, max]
+              properties:
+                min: {$ref: "#/components/schemas/DecimalONulo"}
+                max: {$ref: "#/components/schemas/DecimalONulo"}
+            cuts:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [key, value, position]
+                properties:
+                  key: {type: string}
+                  value: {$ref: "#/components/schemas/Decimal"}
+                  position: {$ref: "#/components/schemas/Decimal"}
+        rules:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [rule, type, direction, op, threshold, met, distance, threshold_position]
+            properties:
+              rule: {type: string}
+              type: {type: string}
+              direction: {type: string, enum: [alcista, bajista, neutral]}
+              op: {type: string, enum: [gt, gte, lt, lte]}
+              threshold: {$ref: "#/components/schemas/Decimal"}
+              met: {type: boolean}
+              distance: {$ref: "#/components/schemas/Decimal"}
+              threshold_position: {$ref: "#/components/schemas/Decimal"}
+
+    ProximidadRegla:
+      description: Qué le falta a cada regla para disparar, condición por condición.
+      type: object
+      additionalProperties: false
+      required: [rule, type, direction, conditions_total, conditions_met, evaluable, blocked_by, conditions]
+      properties:
+        rule: {type: string}
+        type: {type: string}
+        direction: {type: string, enum: [alcista, bajista, neutral]}
+        conditions_total: {type: integer}
+        conditions_met: {type: integer}
+        evaluable: {type: boolean}
+        blocked_by: {type: [string, "null"]}
+        conditions:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [indicator, op, threshold, value, met, distance]
+            properties:
+              indicator: {type: string}
+              op: {type: string, enum: [gt, gte, lt, lte]}
+              threshold: {$ref: "#/components/schemas/Decimal"}
+              value: {$ref: "#/components/schemas/DecimalONulo"}
+              met: {type: boolean}
+              distance: {$ref: "#/components/schemas/DecimalONulo"}
+
+    HistoriaBrecha:
+      description: La brecha de hoy contra sus ventanas de 7, 30 y 90 días.
+      type: object
+      additionalProperties: false
+      required: [side, current, references]
+      properties:
+        side: {$ref: "#/components/schemas/Lado"}
+        current: {$ref: "#/components/schemas/DecimalONulo"}
+        references:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [days_configured, days_covered, mean, max, min]
+            properties:
+              days_configured: {type: integer}
+              days_covered: {type: integer}
+              mean: {$ref: "#/components/schemas/DecimalONulo"}
+              max: {$ref: "#/components/schemas/DecimalONulo"}
+              min: {$ref: "#/components/schemas/DecimalONulo"}
+
+    PiernasBrecha:
+      description: Cuánto se movió cada pierna de la brecha en la ventana, en VES.
+      type: object
+      additionalProperties: false
+      required: [hours, official, parallel, responsible, official_share]
+      properties:
+        hours: {type: integer}
+        official: {$ref: "#/components/schemas/DecimalONulo"}
+        parallel: {$ref: "#/components/schemas/DecimalONulo"}
+        responsible: {enum: [paralelo, oficial, ambos, null]}
+        official_share: {$ref: "#/components/schemas/DecimalONulo"}
+
+    PortalSeries:
+      type: object
+      additionalProperties: false
+      required: [generated_at, series]
+      properties:
+        generated_at: {$ref: "#/components/schemas/Momento"}
+        series:
+          type: object
+          additionalProperties: false
+          required: [gap_buy_24h, gap_sell_14d, gap_buy_30d]
+          properties:
+            gap_buy_24h: {$ref: "#/components/schemas/Serie"}
+            gap_sell_14d: {$ref: "#/components/schemas/Serie"}
+            gap_buy_30d: {$ref: "#/components/schemas/Serie"}
+
+    Serie:
+      type: object
+      additionalProperties: false
+      required: [indicator, interval, days, points]
+      properties:
+        indicator: {type: string}
+        interval: {type: string, const: 1h}
+        days: {type: integer}
+        points:
+          description: Último valor de cada bucket, en orden cronológico.
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [t, value]
+            properties:
+              t: {$ref: "#/components/schemas/Momento"}
+              value: {$ref: "#/components/schemas/Decimal"}

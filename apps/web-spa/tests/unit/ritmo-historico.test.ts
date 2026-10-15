@@ -32,7 +32,7 @@ describe("ritmo de Histórico", () => {
     expect(c).toContain("padding: 0 var(--container-pad)");
     // Los dos tokens viven en la hoja de espaciado del sistema de diseno.
     const tokens = readFileSync(
-      resolve(process.cwd(), "src/ds/tokens/spacing.css"),
+      resolve(process.cwd(), "../../packages/criterio-ui/src/ds/tokens/spacing.css"),
       "utf8",
     );
     expect(tokens + CSS).toContain("--maxw: 1180px");

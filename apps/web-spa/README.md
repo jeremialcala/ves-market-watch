@@ -41,7 +41,7 @@ Viste el **sistema de diseño Higerotech** con tema claro/oscuro e interfaz ES/E
 ## Ejecución
 
 ```bash
-npm install
+npm install                  # (raíz) workspace de npm, un solo lockfile (ADR-0031)
 npm run dev                  # http://localhost:5173 (HMR; gateway en :8800 vía CORS)
 npm test                     # check de tipos del contrato + suite con cobertura (≥80 % ramas)
 npm run build                # dist/ estático
@@ -63,9 +63,9 @@ src/
                  # cliente openapi-fetch, endpoints tipados, RFC 7807
   ws/            # StreamClient singleton + políticas puras + useStream (guard HMR)
   state/         # marketStore (useSyncExternalStore) + reducers puros + resync
-  ds/            # sistema de diseño Higerotech: tokens, fuentes, componentes
-  i18n/          # diccionario ES/EN tipado + proveedor
-  theme/         # claro/oscuro por data-theme (ADR-0018)
+  i18n/          # diccionario ES/EN tipado; el mecanismo vive en @criterio/ui
+  theme/         # reexporta el tema de @criterio/ui
+                 # (el sistema de diseño está en packages/criterio-ui, ADR-0031)
   lib/           # decimal.ts (strings exactos + aritmética BigInt), freshness.ts,
                  # intradia.ts (día operativo VET), series.ts (sparkline y calor)
   components/    # paneles del dashboard y sello de bloque sin fuente

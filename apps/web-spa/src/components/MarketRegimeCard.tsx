@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 
 import type { Analisis } from "../api/endpoints";
-import { Stat } from "../ds/components";
+import { Stat } from "@criterio/ui";
 import type { Clave } from "../i18n/dict";
 import { useI18n } from "../i18n/contexto";
 import { formatDecimal, formatPct, restarDecimales } from "../lib/decimal";

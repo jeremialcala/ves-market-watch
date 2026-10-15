@@ -5,8 +5,8 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { useTema } from "../../src/theme/contexto";
-import { ThemeProvider } from "../../src/theme/ThemeProvider";
+import { useTema } from "../src/theme/contexto";
+import { ThemeProvider } from "../src/theme/ThemeProvider";
 
 function Sonda() {
   const { tema, alternar } = useTema();
@@ -58,5 +58,25 @@ describe("ThemeProvider", () => {
 
   it("fuera del proveedor falla con un mensaje claro", () => {
     expect(() => render(<Sonda />)).toThrow(/useTema fuera/);
+  });
+});
+
+describe("ThemeProvider con hidratar", () => {
+  it("el primer render es oscuro, como el HTML del build, y después aplica lo guardado", async () => {
+    window.localStorage.setItem("vmw.tema", "light");
+    const vistos: string[] = [];
+    function Espia() {
+      const { tema } = useTema();
+      vistos.push(tema);
+      return <p>{tema}</p>;
+    }
+    render(
+      <ThemeProvider hidratar>
+        <Espia />
+      </ThemeProvider>,
+    );
+    expect(vistos[0]).toBe("dark");
+    expect(await screen.findByText("light")).toBeTruthy();
+    expect(document.documentElement.dataset.theme).toBe("light");
   });
 });

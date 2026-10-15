@@ -1,4 +1,4 @@
-import { Tag } from "../ds/components";
+import { Tag } from "@criterio/ui";
 import { useT } from "../i18n/contexto";
 import { useMarket } from "../state/marketStore";
 

@@ -11,10 +11,16 @@ name: build-web-spa
 on:
   push:
     branches: [main]
-    # El Dockerfile solo copia `apps/web-spa/`. Los tests no entran en la imagen.
+    # El Dockerfile copia `apps/web-spa/`, el paquete compartido
+    # `packages/criterio-ui/` y los manifiestos del workspace de la raíz
+    # (ADR-0031): un cambio en cualquiera cambia la imagen. Los tests no entran.
     paths:
       - "apps/web-spa/**"
       - "!apps/web-spa/tests/**"
+      - "package.json"
+      - "package-lock.json"
+      - "packages/criterio-ui/**"
+      - "!packages/criterio-ui/tests/**"
       - ".github/workflows/build-web-spa.yml"
       - ".github/workflows/publicar-imagen.yml"
   workflow_dispatch:

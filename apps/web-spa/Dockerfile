@@ -26,11 +26,18 @@ ENV VITE_AUTH0_DOMAIN=$VITE_AUTH0_DOMAIN \
     VITE_AUTH0_CLIENT_ID=$VITE_AUTH0_CLIENT_ID \
     VITE_AUTH0_AUDIENCE=$VITE_AUTH0_AUDIENCE \
     VITE_API_BASE_URL=$VITE_API_BASE_URL
-WORKDIR /opt/ves/apps/web-spa
-COPY apps/web-spa/package.json apps/web-spa/package-lock.json ./
-RUN npm ci --no-fund --no-audit
-COPY apps/web-spa/ .
-RUN npm run build
+# Workspace de npm (ADR-0031): un solo lockfile en la raíz. Se copian los
+# manifiestos antes que el código para que la capa de `npm ci` se reutilice
+# mientras no cambien las dependencias, y `-w` instala solo lo de esta app.
+WORKDIR /opt/ves
+COPY package.json package-lock.json ./
+COPY packages/criterio-ui/package.json packages/criterio-ui/
+COPY apps/web-spa/package.json apps/web-spa/
+RUN npm ci -w apps/web-spa --no-fund --no-audit
+# El paquete compartido se consume como fuente (ADR-0031): entra en el build.
+COPY packages/criterio-ui/ packages/criterio-ui/
+COPY apps/web-spa/ apps/web-spa/
+RUN npm run build -w apps/web-spa
 
 FROM nginx:alpine@sha256:bd43d3d8fdbbe597c36fea489886796466a9ea5b662e8c50897d53e190c88a3d
 ARG VITE_AUTH0_DOMAIN
