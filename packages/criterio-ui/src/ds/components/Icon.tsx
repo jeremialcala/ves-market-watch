@@ -7,6 +7,10 @@ const GLIFOS = {
   close: { vb: "0 0 24 24", sw: 1.8, d: ["M6 6l12 12M18 6L6 18"] },
   /** Flecha de «seguir leyendo». Trazo, no relleno: hereda `currentColor`. */
   arrowRight: { vb: "0 0 24 24", sw: 1.8, d: ["M5 12h14M13 6l6 6-6 6"] },
+  /** Lo que un nivel incluye (Precios del portal). */
+  check: { vb: "0 0 24 24", sw: 2, d: ["M5 12.5l4.5 4.5L19 7"] },
+  /** El contacto por correo (Precios del portal). */
+  mail: { vb: "0 0 24 24", sw: 1.8, d: ["M4 6.5h16v11H4z", "M4.5 7l7.5 6 7.5-6"] },
   /** Tres nodos enlazados: el vacío de una serie que no llegó. Se porta ahora
    *  porque el estado «sin datos» del histórico lo necesita — el set solo trae
    *  los glifos que la UI usa. */

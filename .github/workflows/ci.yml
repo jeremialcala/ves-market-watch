@@ -225,7 +225,9 @@ jobs:
       - name: El HTML prerenderizado tiene contenido
         run: |
           grep -q "servida por API" dist/index.html
-          grep -q "<h1>Precios</h1>" dist/precios/index.html
+          grep -q "<title>Precios · Criterio</title>" dist/precios/index.html
+          grep -q "Habla con nosotros" dist/precios/index.html
+          grep -q "8 endpoints de datos" dist/precios/index.html
           grep -q "<h1>APIs</h1>" dist/apis/index.html
 
   # El paquete compartido del web-spa y el portal (ADR-0031). Sus tests van

@@ -161,7 +161,7 @@ describe("navegación, idioma y tema", () => {
     montar();
     const nav = screen.getByRole("navigation", { name: "Secciones" });
     await userEvent.click(within(nav).getByRole("link", { name: "Precios" }));
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Precios");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Gratis para leer, a medida para integrar");
     expect(window.location.pathname).toBe("/precios");
     expect(within(nav).getByRole("link", { name: "Precios" }).getAttribute("aria-current")).toBe("page");
   });

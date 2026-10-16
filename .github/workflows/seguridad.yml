@@ -57,7 +57,7 @@ jobs:
       - name: Escanear la historia completa
         # `--redact` para que un hallazgo no se convierta en una segunda fuga:
         # los logs de Actions son públicos en un repo público. Las excepciones
-        # —dos, ambas comprobadas como públicas— viven en `.gitleaks.toml` con su
+        # —tres, todas comprobadas como públicas— viven en `.gitleaks.toml` con su
         # motivo escrito, no como reglas apagadas.
         run: >-
           gitleaks detect --source .

@@ -67,6 +67,26 @@ Salió en el release 0.6.1. El 2026-10-15 llegó el Dashboard, publicado con el 
   Dashboard lo pintaba como «mejor». El snapshot trae `best_price_filtered` y
   el top of book outlier se enseña aparte, marcado.
 
+El 2026-10-15 llegó también Precios:
+
+| PR | Plan | Qué |
+|---|---|---|
+| (este) | 3.5 | Precios (RF-8): los dos niveles y la tabla comparativa, prerenderizada |
+
+- **«Crear acceso gratis» lleva a Intradía**, como en el diseño, aunque el
+  acceso Comunidad no exista todavía (decisión de Jeremi, 2026-10-15). Intradía
+  dice «pronto» hasta la fase 5.
+- **Sin precio publicado.** Empresa es «Habla con nosotros» (RF-8); los
+  50 USDT de ADR-0030 son de referencia interna.
+- **El contacto Empresa va en teal, no en coral** como en el diseño: en el
+  portal el coral marca alertas, y las llamadas a la acción de la landing ya
+  son teal.
+- **«Historia por API» se corrigió contra el contrato:** el diseño decía «90
+  días por consulta», pero `/indicators/history` se acota por 26.000 buckets.
+- **El aviso de privacidad no sale con esta página.** Es un borrador
+  (`docs/legal/aviso-de-privacidad-acceso-comunidad.md`) y solo aplica cuando
+  se recojan emails: va con el acceso Comunidad (fase 5). El pie ya existía.
+
 ## Punto de partida (2026-10-05)
 
 Lo que el plan da por cierto, verificado en el código y en la base:
