@@ -17,6 +17,42 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-15
+
+**La página de Precios** llega a `https://criterio.higerotech.com/precios`:
+los niveles Comunidad (gratis) y Empresa («Habla con nosotros») y la tabla
+comparativa, prerenderizada para indexarse. Es la tercera página del portal
+con contenido propio, tras la landing y el Dashboard.
+
+Minor por la convención de este archivo: funcionalidad nueva de producto. Sin
+gate cerrado.
+
+Al fusionar en `main` corren `deploy-portal.yml`, que publica el portal en
+Workers, y `build-web-spa.yml`, porque cambió `@criterio/ui`: el panel interno
+se reconstruye y se redespliega en midgard, con health y rollback, sin cambio
+de comportamiento (solo gana dos glifos y `target`/`rel` en `Button`). El
+gateway no cambia.
+
+### Changed
+
+- **Escaneo de secretos (T6): una excepción más en `.gitleaks.toml`**, exacta
+  y anclada, para la clave del diccionario `precios.comunidad.f3`, que
+  `generic-api-key` leía como API key porque el texto anterior acaba en
+  «access». Comprobada con gitleaks 8.28.0 sobre la historia completa. El CI
+  del portal comprueba ahora el contenido real de Precios en el prerender.
+
+### Added
+
+- **Precios del portal (`/precios`, RF-8; plan 3.5)**, prerenderizada para
+  indexarse. Dos niveles: Comunidad, gratis («Crear acceso gratis» lleva a
+  Intradía, que dice «pronto» hasta la fase 5), y Empresa, «Habla con
+  nosotros», con `mailto:` y WhatsApp, sin formulario ni precio publicado
+  (ADR-0030). Tabla comparativa con las cifras del contrato: 8 endpoints de
+  datos, 5 tópicos WSS y la historia paginada a 90 días o 26.000 buckets por
+  consulta (el diseño decía solo «90 días»). ES/EN, claro/oscuro y móvil. El
+  paquete `@criterio/ui` gana los glifos `check` y `mail`, y `Button` acepta
+  `target` y `rel` cuando es enlace.
+
 ## [0.7.1] - 2026-10-15
 
 **El mejor precio P2P del portal deja de enseñar outliers como precio
@@ -3738,7 +3774,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.6.0...v0.6.1

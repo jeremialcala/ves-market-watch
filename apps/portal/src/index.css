@@ -1683,3 +1683,165 @@ code {
   font-size: 12.5px;
   color: var(--text-muted);
 }
+
+/* -- precios (RF-8) --------------------------------------------------------------------------- */
+
+.precios {
+  padding: clamp(56px, 9vw, 100px) 0;
+}
+
+.precios .contenido {
+  max-width: 680px;
+}
+
+.precios .seccion-cabecera {
+  margin-bottom: 44px;
+}
+
+.precios h1 {
+  font-size: clamp(30px, 4.4vw, 44px);
+  line-height: 1.12;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--white);
+}
+
+.niveles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: 16px;
+}
+
+.nivel {
+  display: flex;
+  flex-direction: column;
+  padding: 26px 22px 22px;
+  border-radius: 24px;
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+}
+
+.nivel-empresa {
+  background: linear-gradient(160deg, var(--teal-tint), var(--dark-3) 55%);
+  border-color: var(--teal-line);
+}
+
+.nivel h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--white);
+}
+
+.nivel-precio {
+  margin-top: 6px;
+  font-size: 28px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--white);
+}
+
+.nivel-precio.resaltado {
+  color: var(--teal);
+}
+
+.nivel-para {
+  margin-top: 6px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.nivel-lista {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0 22px;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.nivel-lista li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.4;
+}
+
+.nivel-marca {
+  flex: none;
+  margin-top: 2px;
+  color: var(--teal);
+}
+
+.nivel-excluye {
+  color: var(--text-muted);
+}
+
+.nivel-excluye .nivel-marca {
+  color: var(--text-dim);
+}
+
+.nivel-acciones {
+  display: grid;
+  gap: 10px;
+}
+
+.nivel-acciones a {
+  width: 100%;
+  justify-content: center;
+  /* El Button del sistema fija `nowrap` en línea; en una tarjeta de 280 px
+     «Soporte corporativo por WhatsApp» tiene que poder partirse. */
+  white-space: normal !important;
+  text-align: center;
+}
+
+.comparativa {
+  margin-top: 20px;
+  padding: 10px 18px;
+  overflow-x: auto;
+}
+
+.comparativa table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.comparativa th,
+.comparativa td {
+  padding: 12px 8px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+
+.comparativa tbody tr:last-child th,
+.comparativa tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.comparativa thead th {
+  font-weight: 600;
+  color: var(--white);
+}
+
+.comparativa thead th {
+  width: 30%;
+}
+
+.comparativa tbody th {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.comparativa td {
+  color: var(--text);
+}
+
+.comparativa td span[aria-label] {
+  color: var(--text-dim);
+}

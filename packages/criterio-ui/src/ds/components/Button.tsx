@@ -92,6 +92,9 @@ interface Props extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "type" | "
    * enlace no se deshabilita: `disabled` solo vale sin `href`.
    */
   href?: string;
+  /** Solo con `href`: abrir fuera (WhatsApp) con `_blank` y `noopener noreferrer`. */
+  target?: AnchorHTMLAttributes<HTMLAnchorElement>["target"];
+  rel?: AnchorHTMLAttributes<HTMLAnchorElement>["rel"];
   onClick?: (evento: MouseEvent<HTMLElement>) => void;
 }
 
@@ -104,6 +107,8 @@ export function Button({
   children,
   style,
   href,
+  target,
+  rel,
   ...resto
 }: Props) {
   const [hover, setHover] = useState(false);
@@ -128,6 +133,8 @@ export function Button({
     return (
       <a
         href={href}
+        target={target}
+        rel={rel}
         style={css}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}

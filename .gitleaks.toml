@@ -27,3 +27,14 @@ entorno. Se lista el valor exacto en vez de la ruta: si mañana aparece un secre
 DE VERDAD en el Dockerfile, la regla lo tiene que ver.
 """
 regexes = ['''8CpfA64FlGTmuyF8w07rDFlrZHEeuRER''']
+
+[[allowlists]]
+description = """
+Una CLAVE del diccionario del portal, no un valor. En `apps/portal/src/i18n/dict.ts`
+el texto inglés anterior termina en «Community access» y `generic-api-key` lee
+«access» seguido de `"precios.comunidad.f3"` como una asignación. Es el nombre de
+una traducción, está en el código fuente público y no autoriza nada. Se lista la
+cadena exacta, anclada, y no la ruta: un secreto de verdad en el diccionario
+tiene que seguir rompiendo el build.
+"""
+regexes = ['''^precios\.comunidad\.f3$''']

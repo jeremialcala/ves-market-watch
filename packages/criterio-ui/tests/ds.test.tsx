@@ -127,12 +127,30 @@ describe("Stat", () => {
   });
 });
 
+describe("Button como enlace externo", () => {
+  it("lleva target y rel al <a>", () => {
+    render(
+      <Button href="https://wa.me/1" target="_blank" rel="noopener noreferrer">
+        WhatsApp
+      </Button>,
+    );
+    const enlace = screen.getByRole("link", { name: "WhatsApp" });
+    expect(enlace.getAttribute("target")).toBe("_blank");
+    expect(enlace.getAttribute("rel")).toBe("noopener noreferrer");
+  });
+});
+
 describe("Icon", () => {
   it("dibuja el glifo pedido en el tamaño pedido", () => {
     const { container } = render(<Icon name="menu" size={20} />);
     const svg = container.querySelector("svg");
     expect(svg?.getAttribute("width")).toBe("20");
     expect(container.querySelectorAll("path")).toHaveLength(1);
+  });
+
+  it("el sobre del correo lleva sus dos trazos", () => {
+    const { container } = render(<Icon name="mail" />);
+    expect(container.querySelectorAll("path")).toHaveLength(2);
   });
 });
 
