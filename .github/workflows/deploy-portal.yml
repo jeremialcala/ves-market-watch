@@ -69,7 +69,7 @@ jobs:
       - name: El bundle y la CSP apuntan al mismo gateway
         working-directory: apps/portal/dist
         run: |
-          grep -q "connect-src 'self' ${PORTAL_API};" _headers
+          grep -q "connect-src 'self' ${PORTAL_API} wss://${PORTAL_API#https://};" _headers
           grep -lq "${PORTAL_API}" assets/*.js
 
       # Su propio lockfile, auditado por T8 (seguridad.yml). Sin scripts de
@@ -96,11 +96,14 @@ jobs:
           comprobar() {
             curl -fsS "${PORTAL_URL}/" | grep -q "<main" &&
             curl -fsS -D - -o /dev/null "${PORTAL_URL}/" \
-              | grep -i "^content-security-policy:" | grep -q "connect-src 'self' ${PORTAL_API};" &&
+              | grep -i "^content-security-policy:" | grep -q "connect-src 'self' ${PORTAL_API} wss://${PORTAL_API#https://};" &&
             test "$(curl -s -o /dev/null -w "%{http_code}" "${PORTAL_URL}/precios")" = 200 &&
             test "$(curl -s -o /dev/null -w "%{http_code}" "${PORTAL_URL}/no-existe")" = 404 &&
             # El navegador del portal puede leer el snapshot: el gateway acepta el origen.
             curl -fsS -D - -o /dev/null -H "Origin: ${PORTAL_URL}" "${PORTAL_API}/portal/v1/snapshot" \
+              | grep -qi "^access-control-allow-origin: ${PORTAL_URL}" &&
+            # Y el playground de APIs puede llamar a /api/v1 (aquí, al /health público).
+            curl -fsS -D - -o /dev/null -H "Origin: ${PORTAL_URL}" "${PORTAL_API}/api/v1/health" \
               | grep -qi "^access-control-allow-origin: ${PORTAL_URL}"
           }
           for i in $(seq 1 20); do

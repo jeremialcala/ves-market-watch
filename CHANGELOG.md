@@ -17,6 +17,26 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **APIs del portal (`/apis`, RF-7; plan 3.4 y 2.5)**, prerenderizada. El
+  catálogo se **genera en cada build** desde `openapi.yaml` y `asyncapi.yaml`
+  con un plugin de Vite (`virtual:catalogo`): los 8 endpoints de datos,
+  `/health` y el WSS con sus 5 tópicos, agrupados, con sus parámetros reales.
+  El playground ejecuta de verdad contra el gateway y sin token: `/health` da
+  200, el resto el 401 real (con la forma de la respuesta 200 que fija el
+  contrato) y `/ws/v1` su cierre 4401. ES/EN, claro/oscuro y móvil.
+  Correcciones al diseño contra el contrato: el mensaje de suscripción usa
+  `topics`, no `channel`, y el rango máximo es «90 días o 26.000 buckets».
+
+### Changed
+
+- **CSP del portal:** `connect-src` lleva el origen del gateway también como
+  `wss://`, para el playground. `deploy-portal.yml` comprueba la CSP nueva y,
+  en el humo, que el gateway acepta el origen del portal en `/api/v1/health`.
+  El portal declara `js-yaml` (ya estaba en el lockfile, por openapi-typescript)
+  y `@types/js-yaml`.
+
 ## [0.8.0] - 2026-10-15
 
 **La página de Precios** llega a `https://criterio.higerotech.com/precios`:

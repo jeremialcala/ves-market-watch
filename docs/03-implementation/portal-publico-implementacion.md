@@ -87,6 +87,35 @@ El 2026-10-15 llegó también Precios, publicado con el release 0.8.0:
   (`docs/legal/aviso-de-privacidad-acceso-comunidad.md`) y solo aplica cuando
   se recojan emails: va con el acceso Comunidad (fase 5). El pie ya existía.
 
+El 2026-10-15 llegó APIs, que cierra también el 2.5 (CORS del playground):
+
+| PR | Plan | Qué |
+|---|---|---|
+| (este) | 3.4 + 2.5 | APIs (RF-7): catálogo generado de los contratos en el build y playground real |
+
+- **El catálogo no se escribe a mano.** Un plugin de Vite
+  (`apps/portal/plugins/catalogo.ts`) lee `openapi.yaml` y `asyncapi.yaml` en
+  cada build y la página importa `virtual:catalogo`. Un test cambia un
+  parámetro del YAML y comprueba que cambia el catálogo; un `$ref` roto o un
+  contrato sin `servers` rompe el build.
+- **CORS no necesitó backend:** el middleware del gateway es global y el origen
+  del portal ya estaba en `ALLOWED_ORIGINS` desde 0.6.1. Comprobado por el
+  túnel: `/health` 200 y los demás 401 con `access-control-allow-origin` del
+  portal. El humo de `deploy-portal.yml` lo vigila desde ahora.
+- **El playground no pide token.** Ejecuta sin credencial: `/health` da 200, el
+  resto su 401 real y `/ws/v1` su cierre 4401. Una credencial Empresa no se
+  pega en una web pública.
+- **Correcciones al diseño contra el contrato:** el mensaje de suscripción es
+  `{"action":"subscribe","topics":[…]}` (el diseño decía `channel`); el rango
+  máximo es «90 días o 26.000 buckets»; el contrato no trae ejemplos de
+  respuesta 200, así que la página enseña la **forma** del esquema con sus
+  `example`, rotulada así, en vez de un JSON inventado.
+- **Los textos de cada endpoint son los del contrato**, en español también con
+  la página en inglés; la página lo dice.
+- **La URL de producción** del `openapi.yaml` sigue siendo el placeholder
+  `api.vesmarketwatch` (fase 8); el playground usa `VITE_PORTAL_API`, el mismo
+  origen que el resto del portal.
+
 ## Punto de partida (2026-10-05)
 
 Lo que el plan da por cierto, verificado en el código y en la base:
