@@ -4,7 +4,7 @@
 * **Fecha:** 2026-10-15
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
-* **Versión:** 0.7.0
+* **Versión:** 0.7.1
 * **Gate:** 2
 * **Rama principal:** main
 * **Estrategia de branching:** GitFlow (main + develop + ramas feature)
@@ -482,14 +482,22 @@ gitGraph
     checkout develop
     commit id: "52d6059"
     commit id: "4069a26" type: HIGHLIGHT
+    commit id: "3eda9b4"
+    commit id: "fbfa95c" type: HIGHLIGHT
+    checkout main
+    merge develop tag: "v0.7.1"
+    checkout develop
+    commit id: "46a2321"
+    commit id: "5e19ed7"
+    commit id: "a9e8812" type: HIGHLIGHT
 ```
 
 ### Estado actual de las ramas
 
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
-| `main` | `f35e1f2` | 2026-10-15 | 18 |
-| `develop` | `4069a26` | 2026-10-15 | 412 |
+| `main` | `f986abd` | 2026-10-15 | 19 |
+| `develop` | `a9e8812` | 2026-10-15 | 417 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -510,11 +518,18 @@ gitGraph
 | v0.6.0 | `3dc972a` | 2026-10-14 | 0.6.0 | ADR-0028 (`/portal/v1`: IP real, cuota por IP, caché single-flight, `portal-openapi.yaml`) y ADR-0031 (workspace de npm, `packages/criterio-ui`, `apps/portal`); latido del vigía a Healthchecks.io | Minor (2026-10-14): primera lectura pública sin token y la landing del portal con datos reales, aún sin desplegar (falta Workers y D12). Sin gate cerrado |
 | v0.6.1 | `38b9286` | 2026-10-15 | 0.6.1 | ADR-0035 (portal en Cloudflare Workers: assets sin script, `_headers` con CSP desde `VITE_PORTAL_API`, `deploy-portal.yml`, wrangler fijado en `deploy/portal`); `ALLOWED_ORIGINS` del gateway en el compose | Patch de despliegue (2026-10-15): el portal se publica en criterio.higerotech.com (D12) leyendo del gateway de midgard. Sin gate cerrado |
 | v0.7.0 | `f35e1f2` | 2026-10-15 | 0.7.0 | Plan del portal 3.2: Dashboard público sobre el snapshot (RF-2), con paneles del portal (3.1 pospuesto); prueba de humo de `deploy-portal.yml` con reintento de toda la batería | Minor (2026-10-15): segunda página del portal con datos, publicada en Workers. Sin cambios en midgard ni gate cerrado |
+| v0.7.1 | `f986abd` | 2026-10-15 | 0.7.1 | Snapshot público con `best_price_filtered` por lado; el portal pinta el mejor precio filtrado y marca aparte el top of book outlier | Patch (2026-10-15): corrección de producto; redespliega gateway y portal. Sin gate cerrado |
 
 ### Bitácora de cambios (fiel al repo)
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `a9e8812` | merge | — | Jeremi J. Alcalá M. | 2026-10-15 | Merge pull request #97 from jeremialcala/portal-precios |
+| `5e19ed7` | commit | — | Jeremi Alcala | 2026-10-15 | ci: comprobar el contenido real de Precios y excepción de gitleaks |
+| `46a2321` | commit | — | Jeremi Alcala | 2026-10-15 | feat(portal): página de Precios (RF-8, plan 3.5) |
+| `f986abd` | merge | v0.7.1 | Jeremi J. Alcalá M. | 2026-10-15 | Merge pull request #96 from jeremialcala/develop |
+| `fbfa95c` | merge | — | Jeremi J. Alcalá M. | 2026-10-15 | Merge pull request #95 from jeremialcala/release-0.7.1 |
+| `3eda9b4` | commit | — | Jeremi Alcala | 2026-10-15 | docs(changelog): cortar la versión 0.7.1 |
 | `4069a26` | merge | — | Jeremi J. Alcalá M. | 2026-10-15 | Merge pull request #94 from jeremialcala/portal-mejor-filtrado |
 | `52d6059` | commit | — | Jeremi Alcala | 2026-10-15 | fix(portal): el mejor precio P2P sin outliers, con el top of book aparte |
 | `f35e1f2` | merge | v0.7.0 | Jeremi J. Alcalá M. | 2026-10-15 | Merge pull request #93 from jeremialcala/develop |

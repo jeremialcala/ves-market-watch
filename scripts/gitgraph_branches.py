@@ -105,6 +105,13 @@ TAG_NOTES = {
         "criterio.higerotech.com (D12) leyendo del gateway de midgard. Sin "
         "gate cerrado",
     ),
+    "v0.8.0": (
+        "Plan del portal 3.5: Precios (RF-8) con los niveles Comunidad y "
+        "Empresa y la tabla comparativa; `@criterio/ui` con glifos `check` y "
+        "`mail`; excepción exacta de gitleaks",
+        "Minor (2026-10-15): tercera página del portal con contenido propio. "
+        "Redespliega portal y panel interno. Sin gate cerrado",
+    ),
     "v0.7.1": (
         "Snapshot público con `best_price_filtered` por lado; el portal pinta "
         "el mejor precio filtrado y marca aparte el top of book outlier",

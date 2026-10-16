@@ -67,11 +67,11 @@ Salió en el release 0.6.1. El 2026-10-15 llegó el Dashboard, publicado con el 
   Dashboard lo pintaba como «mejor». El snapshot trae `best_price_filtered` y
   el top of book outlier se enseña aparte, marcado.
 
-El 2026-10-15 llegó también Precios:
+El 2026-10-15 llegó también Precios, publicado con el release 0.8.0:
 
 | PR | Plan | Qué |
 |---|---|---|
-| (este) | 3.5 | Precios (RF-8): los dos niveles y la tabla comparativa, prerenderizada |
+| #97 | 3.5 | Precios (RF-8): los dos niveles y la tabla comparativa, prerenderizada |
 
 - **«Crear acceso gratis» lleva a Intradía**, como en el diseño, aunque el
   acceso Comunidad no exista todavía (decisión de Jeremi, 2026-10-15). Intradía
