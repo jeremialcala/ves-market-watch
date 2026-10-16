@@ -31,6 +31,10 @@ export function origenApi(api: string | undefined): string | null {
  * `@criterio/ui` pintan con atributos `style` y el HTML prerenderizado los
  * lleva: sin eso, la primera pintura saldría sin estilo hasta hidratar. Un
  * atributo `style` no ejecuta código.
+ *
+ * `connect-src` lleva el origen de la API dos veces: `https://` para el
+ * sondeo y el playground, y `wss://` para que el playground pruebe `/ws/v1`
+ * (CSP no deriva un esquema del otro).
  */
 export function politica(api: string | null): string {
   return [
@@ -40,7 +44,7 @@ export function politica(api: string | null): string {
     "style-src-attr 'unsafe-inline'",
     "img-src 'self' data:",
     "font-src 'self'",
-    `connect-src 'self'${api === null ? "" : ` ${api}`}`,
+    `connect-src 'self'${api === null ? "" : ` ${api} ${api.replace(/^https:/, "wss:")}`}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

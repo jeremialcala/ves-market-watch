@@ -12,6 +12,7 @@ import { BarraSuperior } from "./componentes/BarraSuperior";
 import { Pie } from "./componentes/Pie";
 import { useT } from "./i18n/contexto";
 import { DICCIONARIOS } from "./i18n/dict";
+import { Apis } from "./paginas/Apis";
 import { Dashboard } from "./paginas/Dashboard";
 import { Precios } from "./paginas/Precios";
 import { NoEncontrada, Pronto } from "./paginas/Pronto";
@@ -45,6 +46,9 @@ function Pagina() {
   }
   if (actual.ruta === "/precios") {
     return <Precios />;
+  }
+  if (actual.ruta === "/apis") {
+    return <Apis />;
   }
   return <Pronto ruta={actual} />;
 }

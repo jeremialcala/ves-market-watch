@@ -106,7 +106,9 @@ sin ruta rompe el build.
   `style-src-attr 'unsafe-inline'` porque los componentes de `@criterio/ui`
   pintan con atributos `style` y el HTML prerenderizado los lleva. Además,
   `connect-src` con el gateway, `frame-ancestors 'none'`, `object-src 'none'` y
-  `base-uri`/`form-action 'self'`.
+  `base-uri`/`form-action 'self'`. Desde la página APIs (plan 3.4), el origen
+  del gateway va en `connect-src` también como `wss://`, para que el playground
+  pruebe `/ws/v1`; el humo de `deploy-portal.yml` comprueba los dos.
 - `nosniff`, `Referrer-Policy`, `Permissions-Policy` y HSTS en todo; `/assets/*`
   inmutable (Vite pone el hash en el nombre). El HTML conserva el
   `max-age=0, must-revalidate` de Workers.
