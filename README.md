@@ -193,7 +193,8 @@ cada ruta y falla si alguna sale vacía.
   Cloudflare Workers con CSP generada desde el mismo origen del gateway que el
   bundle; lo despliega `deploy-portal.yml` en cada push a `main`. **El
   Dashboard público** (`/dashboard`, RF-2) llega con la 0.7.0
-  (2026-10-15), con paneles del portal sobre el mismo snapshot. Las demás
+  (2026-10-15), con paneles del portal sobre el mismo snapshot, y Precios
+  (`/precios`, RF-8) con los niveles Comunidad y Empresa. Las demás
   páginas del portal llegan por fases
   (`docs/03-implementation/portal-publico-implementacion.md`).
 - **Gates 2 y 3 APROBADOS HITL el 2026-09-08.** Con ellos cierran las fases

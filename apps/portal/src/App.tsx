@@ -13,6 +13,7 @@ import { Pie } from "./componentes/Pie";
 import { useT } from "./i18n/contexto";
 import { DICCIONARIOS } from "./i18n/dict";
 import { Dashboard } from "./paginas/Dashboard";
+import { Precios } from "./paginas/Precios";
 import { NoEncontrada, Pronto } from "./paginas/Pronto";
 import { Producto } from "./paginas/Producto";
 import { RouterProvider } from "./router";
@@ -41,6 +42,9 @@ function Pagina() {
   }
   if (actual.ruta === "/dashboard") {
     return <Dashboard />;
+  }
+  if (actual.ruta === "/precios") {
+    return <Precios />;
   }
   return <Pronto ruta={actual} />;
 }

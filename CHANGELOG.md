@@ -17,6 +17,18 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+### Added
+
+- **Precios del portal (`/precios`, RF-8; plan 3.5)**, prerenderizada para
+  indexarse. Dos niveles: Comunidad, gratis («Crear acceso gratis» lleva a
+  Intradía, que dice «pronto» hasta la fase 5), y Empresa, «Habla con
+  nosotros», con `mailto:` y WhatsApp, sin formulario ni precio publicado
+  (ADR-0030). Tabla comparativa con las cifras del contrato: 8 endpoints de
+  datos, 5 tópicos WSS y la historia paginada a 90 días o 26.000 buckets por
+  consulta (el diseño decía solo «90 días»). ES/EN, claro/oscuro y móvil. El
+  paquete `@criterio/ui` gana los glifos `check` y `mail`, y `Button` acepta
+  `target` y `rel` cuando es enlace.
+
 ## [0.7.1] - 2026-10-15
 
 **El mejor precio P2P del portal deja de enseñar outliers como precio
