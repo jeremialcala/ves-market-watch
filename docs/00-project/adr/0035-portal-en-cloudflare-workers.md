@@ -143,6 +143,11 @@ la paró el auditor: arrastra `sharp` < 0.35.5 (GHSA-wq5f-xc86-pv6w, en
 `librsvg`). En vez de aceptar el riesgo por escrito, se fijó la primera versión
 con el arreglo.
 
+El 2026-10-28 pasó a la **4.153.0** por el mismo criterio. La 4.149.0 trae
+`undici` 7.29.1 fijado en exacto por `miniflare`, con cuatro advisories high
+(GHSA-2m5v-pch6-74hx y otros, arreglados en 7.30.1). La 4.153.0 es la primera
+versión que lo trae.
+
 ### 5. CORS del gateway
 
 El origen `https://criterio.higerotech.com` se añade a `ALLOWED_ORIGINS`

@@ -37,6 +37,38 @@ Convención de mantenimiento (inventario por ejecución):
   El portal declara `js-yaml` (ya estaba en el lockfile, por openapi-typescript)
   y `@types/js-yaml`.
 
+### Fixed
+
+- **Arranque tras un apagón** (2026-10-28, 7 h 47 min sin luz).
+  `ves-market-arranque` se rendía si `ves-timescaledb` aún repasaba su WAL al
+  hacer `up --wait`, y dejaba todo a medio levantar sin avisar. Ahora reintenta
+  cada minuto (`Restart=on-failure`, 5 veces en 20 min).
+- El respaldo al NAS espera hasta 15 min a que el montaje responda
+  (`RESPALDO_ESPERA_NAS_S`). Su temporizador, con `Persistent=true`, lo lanzó a
+  los 10 min del arranque, antes que el NAS, y murió con «No such device».
+- Lo que siga mal tras un arranque lo recoge Baldr, el protocolo post-apagón de
+  midgard (ADR-0011 de Yggdrasil). Baldr reintenta estas unidades y relanza el
+  respaldo si corrió antes de tiempo.
+
+### Security
+
+- **`T8 · SCA`: `certifi` 2026.10.23, `undici` 8.12.3 y 7.30.1, `vite`
+  8.3.5, `vitest` 4.1.12 y `wrangler` 4.153.0.** El PR #101 cayó por advisories publicados después de
+  0.8.0:
+  - `certifi`: PYSEC-2026-4320, en el gateway y los ingestores BCV y Binance.
+  - `undici`: ocho advisories, cuatro high, entre ellos GHSA-2m5v-pch6-74hx,
+    que se salta la validación TLS. En el workspace llega por `jsdom`, solo
+    para los tests. En `deploy/portal`, `miniflare` lo fija en 7.29.1, así que
+    `wrangler` pasa de 4.149.0 a **4.153.0**, la primera versión con
+    `undici` 7.30.1 (ADR-0035 §4).
+  - `vite`: GHSA-587h-7wmj-h5pm, en `launch-editor`, más GHSA-rq7h-c2jc-7f22,
+    los dos del servidor de desarrollo.
+  - `vitest`: GHSA-82fw-gwwq-j7x9 y GHSA-qxg6-89mg-rqv8, moderados. Se suben
+    también, para que `npm audit` quede en cero.
+
+  Ningún arreglo pasa por una excepción. Los locks de Python se regeneraron con
+  `--upgrade-package certifi` en la imagen fijada de `regenerar-locks.sh`.
+
 ## [0.8.0] - 2026-10-15
 
 **La página de Precios** llega a `https://criterio.higerotech.com/precios`:
