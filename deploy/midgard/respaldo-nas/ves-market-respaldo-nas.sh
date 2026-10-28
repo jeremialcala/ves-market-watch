@@ -60,7 +60,18 @@ for _ in $(seq 1 60); do
 done
 [ "$salud" = healthy ] || { echo "respaldo: la base no está sana ($salud)" >&2; exit 1; }
 
-# Dispara el automount: si el NAS no responde, falla aquí.
+# Tras un apagón el NAS arranca más despacio que midgard: el 2026-10-28 el
+# temporizador (Persistent=true) lanzó esto a los 10 min del arranque y el `ls`
+# murió con «No such device». Se espera al montaje igual que a la base. El `ls`
+# dispara el automount; findmnt confirma que hay algo montado que no es el autofs.
+montado() {
+    timeout 20 ls "$1" >/dev/null 2>&1 && findmnt -rn -o FSTYPE --target "$1" 2>/dev/null | grep -qvx autofs
+}
+for _ in $(seq 1 "$(( ${RESPALDO_ESPERA_NAS_S:-900} / 15 ))"); do
+    montado "$(dirname "$DESTINO")" && break
+    sleep 15
+done
+# Si el NAS no responde, falla aquí.
 ls "$(dirname "$DESTINO")" >/dev/null
 mkdir -p "$DESTINO"
 chmod 700 "$DESTINO"

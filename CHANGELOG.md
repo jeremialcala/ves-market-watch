@@ -37,6 +37,19 @@ Convención de mantenimiento (inventario por ejecución):
   El portal declara `js-yaml` (ya estaba en el lockfile, por openapi-typescript)
   y `@types/js-yaml`.
 
+### Fixed
+
+- **Arranque tras un apagón** (2026-10-28, 7 h 47 min sin luz).
+  `ves-market-arranque` se rendía si `ves-timescaledb` aún repasaba su WAL al
+  hacer `up --wait`, y dejaba todo a medio levantar sin avisar. Ahora reintenta
+  cada minuto (`Restart=on-failure`, 5 veces en 20 min).
+- El respaldo al NAS espera hasta 15 min a que el montaje responda
+  (`RESPALDO_ESPERA_NAS_S`). Su temporizador, con `Persistent=true`, lo lanzó a
+  los 10 min del arranque, antes que el NAS, y murió con «No such device».
+- Lo que siga mal tras un arranque lo recoge Baldr, el protocolo post-apagón de
+  midgard (ADR-0011 de Yggdrasil). Baldr reintenta estas unidades y relanza el
+  respaldo si corrió antes de tiempo.
+
 ## [0.8.0] - 2026-10-15
 
 **La página de Precios** llega a `https://criterio.higerotech.com/precios`:
