@@ -50,6 +50,22 @@ Convención de mantenimiento (inventario por ejecución):
   midgard (ADR-0011 de Yggdrasil). Baldr reintenta estas unidades y relanza el
   respaldo si corrió antes de tiempo.
 
+### Security
+
+- **`T8 · SCA`: `certifi` 2026.10.23, `undici` 8.12.3, `vite` 8.3.5 y
+  `vitest` 4.1.12.** El PR #101 cayó por advisories publicados después de
+  0.8.0:
+  - `certifi`: PYSEC-2026-4320, en el gateway y los ingestores BCV y Binance.
+  - `undici`: seis advisories, cuatro high, entre ellos GHSA-2m5v-pch6-74hx,
+    que se salta la validación TLS. Llega por `jsdom` y es solo de los tests.
+  - `vite`: GHSA-587h-7wmj-h5pm, en `launch-editor`, más GHSA-rq7h-c2jc-7f22,
+    los dos del servidor de desarrollo.
+  - `vitest`: GHSA-82fw-gwwq-j7x9 y GHSA-qxg6-89mg-rqv8, moderados. Se suben
+    también, para que `npm audit` quede en cero.
+
+  Ningún arreglo pasa por una excepción. Los locks de Python se regeneraron con
+  `--upgrade-package certifi` en la imagen fijada de `regenerar-locks.sh`.
+
 ## [0.8.0] - 2026-10-15
 
 **La página de Precios** llega a `https://criterio.higerotech.com/precios`:
