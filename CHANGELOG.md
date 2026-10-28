@@ -52,12 +52,15 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Security
 
-- **`T8 · SCA`: `certifi` 2026.10.23, `undici` 8.12.3, `vite` 8.3.5 y
-  `vitest` 4.1.12.** El PR #101 cayó por advisories publicados después de
+- **`T8 · SCA`: `certifi` 2026.10.23, `undici` 8.12.3 y 7.30.1, `vite`
+  8.3.5, `vitest` 4.1.12 y `wrangler` 4.153.0.** El PR #101 cayó por advisories publicados después de
   0.8.0:
   - `certifi`: PYSEC-2026-4320, en el gateway y los ingestores BCV y Binance.
-  - `undici`: seis advisories, cuatro high, entre ellos GHSA-2m5v-pch6-74hx,
-    que se salta la validación TLS. Llega por `jsdom` y es solo de los tests.
+  - `undici`: ocho advisories, cuatro high, entre ellos GHSA-2m5v-pch6-74hx,
+    que se salta la validación TLS. En el workspace llega por `jsdom`, solo
+    para los tests. En `deploy/portal`, `miniflare` lo fija en 7.29.1, así que
+    `wrangler` pasa de 4.149.0 a **4.153.0**, la primera versión con
+    `undici` 7.30.1 (ADR-0035 §4).
   - `vite`: GHSA-587h-7wmj-h5pm, en `launch-editor`, más GHSA-rq7h-c2jc-7f22,
     los dos del servidor de desarrollo.
   - `vitest`: GHSA-82fw-gwwq-j7x9 y GHSA-qxg6-89mg-rqv8, moderados. Se suben

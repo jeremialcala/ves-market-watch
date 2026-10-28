@@ -3,6 +3,6 @@
   "private": true,
   "description": "Wrangler para desplegar apps/portal en Cloudflare Workers (ADR-0035). Fuera del workspace a propósito: su árbol no entra en cada npm ci del CI, pero tiene lockfile propio y lo audita T8.",
   "devDependencies": {
-    "wrangler": "4.149.0"
+    "wrangler": "4.153.0"
   }
 }
