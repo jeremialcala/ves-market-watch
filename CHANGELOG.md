@@ -31,6 +31,16 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **Placement del despliegue revisado (D15, 2026-11-21)** en
+  `docs/02-design/placement-despliegue.md`, con precios oficiales de la Price
+  List API y la carga medida en `hgtech001`:
+  - **S2** (una EC2): $63,70 al mes, o $45,38 con ahorro a un año.
+  - **S5, núcleo en Lambda:** descartado. Ahorra como mucho $4 al mes y exige
+    reescribir el WSS, el bus y el CD.
+  - **S4b, `hgtech002`:** evaluado. Mejor máquina, pero 98,3 % de
+    disponibilidad medida y salida a internet a través de `hgtech001`.
+  - **La recomendación pasa a AWS desde el principio,** empezando en
+    `t3a.large`: las imágenes solo existen para amd64.
 - **CSP del portal:** `connect-src` lleva el origen del gateway también como
   `wss://`, para el playground. `deploy-portal.yml` comprueba la CSP nueva y,
   en el humo, que el gateway acepta el origen del portal en `/api/v1/health`.
