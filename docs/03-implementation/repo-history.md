@@ -1,10 +1,10 @@
 # Historial de implementación — Criterio
 
 * **Estado:** review (documentación viva — regenerada por script, no editar a mano)
-* **Fecha:** 2026-10-15
+* **Fecha:** 2026-11-21
 * **Decisores:** Jeremi Alcalá
 * **Fase AI-DLC:** 03-implementation
-* **Versión:** 0.7.1
+* **Versión:** 0.8.0
 * **Gate:** 2
 * **Rama principal:** main
 * **Estrategia de branching:** GitFlow (main + develop + ramas feature)
@@ -490,14 +490,32 @@ gitGraph
     commit id: "46a2321"
     commit id: "5e19ed7"
     commit id: "a9e8812" type: HIGHLIGHT
+    commit id: "1c56625"
+    commit id: "ac799d9" type: HIGHLIGHT
+    checkout main
+    merge develop tag: "v0.8.0"
+    checkout develop
+    commit id: "77acb15"
+    commit id: "e1f0f7e" type: HIGHLIGHT
+    commit id: "91c6a18"
+    commit id: "c5f4b2d"
+    commit id: "f6ca6c2"
+    commit id: "c1b5eae" type: HIGHLIGHT
+    commit id: "9386136"
+    commit id: "bc74912"
+    commit id: "bbb0826" type: HIGHLIGHT
+    commit id: "3a94abc"
+    commit id: "401e60d" type: HIGHLIGHT
+    commit id: "4c27cbb"
+    commit id: "633faed" type: HIGHLIGHT
 ```
 
 ### Estado actual de las ramas
 
 | Rama | Punta | Fecha | Commits en su lane |
 |---|---|---|---|
-| `main` | `f986abd` | 2026-10-15 | 19 |
-| `develop` | `a9e8812` | 2026-10-15 | 417 |
+| `main` | `628e905` | 2026-10-15 | 20 |
+| `develop` | `633faed` | 2026-11-21 | 432 |
 
 ### Trazabilidad tag ↔ versión ↔ decisión
 
@@ -519,11 +537,28 @@ gitGraph
 | v0.6.1 | `38b9286` | 2026-10-15 | 0.6.1 | ADR-0035 (portal en Cloudflare Workers: assets sin script, `_headers` con CSP desde `VITE_PORTAL_API`, `deploy-portal.yml`, wrangler fijado en `deploy/portal`); `ALLOWED_ORIGINS` del gateway en el compose | Patch de despliegue (2026-10-15): el portal se publica en criterio.higerotech.com (D12) leyendo del gateway de midgard. Sin gate cerrado |
 | v0.7.0 | `f35e1f2` | 2026-10-15 | 0.7.0 | Plan del portal 3.2: Dashboard público sobre el snapshot (RF-2), con paneles del portal (3.1 pospuesto); prueba de humo de `deploy-portal.yml` con reintento de toda la batería | Minor (2026-10-15): segunda página del portal con datos, publicada en Workers. Sin cambios en midgard ni gate cerrado |
 | v0.7.1 | `f986abd` | 2026-10-15 | 0.7.1 | Snapshot público con `best_price_filtered` por lado; el portal pinta el mejor precio filtrado y marca aparte el top of book outlier | Patch (2026-10-15): corrección de producto; redespliega gateway y portal. Sin gate cerrado |
+| v0.8.0 | `628e905` | 2026-10-15 | 0.8.0 | Plan del portal 3.5: Precios (RF-8) con los niveles Comunidad y Empresa y la tabla comparativa; `@criterio/ui` con glifos `check` y `mail`; excepción exacta de gitleaks | Minor (2026-10-15): tercera página del portal con contenido propio. Redespliega portal y panel interno. Sin gate cerrado |
 
 ### Bitácora de cambios (fiel al repo)
 
 | Commit | Tipo | Tags | Autor | Fecha | Mensaje |
 |---|---|---|---|---|---|
+| `633faed` | merge | — | Jeremi J. Alcalá M. | 2026-11-21 | Merge pull request #104 from jeremialcala/fix/bcv-intermedia-ov-r36 |
+| `4c27cbb` | commit | — | Jeremi Alcala | 2026-11-21 | fix(ingestor-bcv): anclar la intermedia Sectigo OV R36 del certificado nuevo del BCV |
+| `401e60d` | merge | — | Jeremi J. Alcalá M. | 2026-11-21 | Merge pull request #103 from jeremialcala/deploy/traslado-nidavellir |
+| `3a94abc` | commit | — | Jeremi Alcala | 2026-11-21 | feat(deploy): traslado preparado de midgard a nidavellir (ADR-0037) |
+| `bbb0826` | merge | — | Jeremi J. Alcalá M. | 2026-11-20 | Merge pull request #102 from jeremialcala/docs/d15-revision-costos |
+| `bc74912` | commit | — | Jeremi Alcala | 2026-11-20 | fix(seguridad): soupsieve 4.1.3 en ingestor-bcv |
+| `9386136` | commit | — | Jeremi Alcala | 2026-11-20 | docs(placement): revisión de costos de D15 con precios oficiales y carga medida |
+| `c1b5eae` | merge | — | Jeremi J. Alcalá M. | 2026-10-28 | Merge pull request #101 from jeremialcala/arranque-tras-apagon |
+| `f6ca6c2` | commit | — | Jeremi Alcala | 2026-10-28 | fix(seguridad): wrangler 4.153.0 por undici 7.30.1 en deploy/portal |
+| `c5f4b2d` | commit | — | Jeremi Alcala | 2026-10-28 | fix(seguridad): certifi 2026.10.23, undici 8.12.3, vite 8.3.5 y vitest 4.1.12 |
+| `91c6a18` | commit | — | Jeremi Alcala | 2026-10-28 | fix(midgard): el arranque reintenta y el respaldo al NAS espera al montaje |
+| `e1f0f7e` | merge | — | Jeremi J. Alcalá M. | 2026-10-16 | Merge pull request #100 from jeremialcala/portal-apis |
+| `77acb15` | commit | — | Jeremi Alcala | 2026-10-15 | feat(portal): página de APIs con catálogo generado y playground real (RF-7, plan 3.4) |
+| `628e905` | merge | v0.8.0 | Jeremi J. Alcalá M. | 2026-10-15 | Merge pull request #99 from jeremialcala/develop |
+| `ac799d9` | merge | — | Jeremi J. Alcalá M. | 2026-10-15 | Merge pull request #98 from jeremialcala/release-0.8.0 |
+| `1c56625` | commit | — | Jeremi Alcala | 2026-10-15 | docs(changelog): cortar la versión 0.8.0 |
 | `a9e8812` | merge | — | Jeremi J. Alcalá M. | 2026-10-15 | Merge pull request #97 from jeremialcala/portal-precios |
 | `5e19ed7` | commit | — | Jeremi Alcala | 2026-10-15 | ci: comprobar el contenido real de Precios y excepción de gitleaks |
 | `46a2321` | commit | — | Jeremi Alcala | 2026-10-15 | feat(portal): página de Precios (RF-8, plan 3.5) |
