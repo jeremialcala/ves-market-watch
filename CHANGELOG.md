@@ -31,6 +31,16 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Changed
 
+- **Placement del despliegue revisado (D15, 2026-11-21)** en
+  `docs/02-design/placement-despliegue.md`, con precios oficiales de la Price
+  List API y la carga medida en `hgtech001`:
+  - **S2** (una EC2): $63,70 al mes, o $45,38 con ahorro a un año.
+  - **S5, núcleo en Lambda:** descartado. Ahorra como mucho $4 al mes y exige
+    reescribir el WSS, el bus y el CD.
+  - **S4b, `hgtech002`:** evaluado. Mejor máquina, pero 98,3 % de
+    disponibilidad medida y salida a internet a través de `hgtech001`.
+  - **La recomendación pasa a AWS desde el principio,** empezando en
+    `t3a.large`: las imágenes solo existen para amd64.
 - **CSP del portal:** `connect-src` lleva el origen del gateway también como
   `wss://`, para el playground. `deploy-portal.yml` comprueba la CSP nueva y,
   en el humo, que el gateway acepta el origen del portal en `/api/v1/health`.
@@ -52,6 +62,16 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Security
 
+- **`T8 · SCA`: `soupsieve` 4.1.3 en `ingestor-bcv`.** El PR #102 cayó por
+  cuatro advisories publicados después del #101 contra `soupsieve` 2.9.2:
+  CVE-2026-126190, CVE-2026-126191, CVE-2026-126192 y CVE-2026-126193. Llega
+  como dependencia de `beautifulsoup4` y está en el camino crítico: el parser
+  del BCV usa `select` y `select_one`. Cada CVE se corrige en una versión
+  distinta, y el último lo hace en la 4.0.0, así que el salto es de versión
+  mayor. Para validarlo pasaron los 64 tests unitarios y de contrato, incluidos
+  los del parser sobre la página real del BCV y sobre HTML alterado. El lock se
+  regeneró solo para este paquete, con `--upgrade-package soupsieve`, en la
+  imagen fijada de `regenerar-locks.sh`. Sin excepciones.
 - **`T8 · SCA`: `certifi` 2026.10.23, `undici` 8.12.3 y 7.30.1, `vite`
   8.3.5, `vitest` 4.1.12 y `wrangler` 4.153.0.** El PR #101 cayó por advisories publicados después de
   0.8.0:
