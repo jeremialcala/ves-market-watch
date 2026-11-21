@@ -17,3 +17,7 @@ scripts/respaldo/crontab text eol=lf
 # `ves-market-arranque.sh\r`, y un `.env` de ejemplo con CR mete el CR en cada
 # valor que alguien rellene sobre él.
 deploy/midgard/** text eol=lf
+
+# Los scripts del traslado a nidavellir corren en Git Bash, en el PC: con CR,
+# bash falla en la primera línea con `$'\r': command not found`.
+deploy/traslado-nidavellir/** text eol=lf

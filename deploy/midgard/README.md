@@ -4,6 +4,11 @@ Cómo está desplegado el entorno de captura en `midgard` (`hgtech001`) desde el
 2026-10-13. El porqué y las medidas del traslado están en
 [ADR-0034](../../docs/00-project/adr/0034-captura-continua-en-midgard.md).
 
+**Traslado a nidavellir preparado, no ejecutado** (2026-11-21): ver
+[ADR-0037](../../docs/00-project/adr/0037-captura-en-nidavellir.md) y
+`deploy/traslado-nidavellir/`. Hasta el corte, todo lo de aquí sigue siendo
+cierto.
+
 **No es producción.** Es el entorno `criterio-dev`, con sus secretos y sus
 hostnames, corriendo en otra máquina. Dónde vive producción es D15 y sigue
 abierta.

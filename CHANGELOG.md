@@ -19,6 +19,21 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Added
 
+- **Traslado preparado de midgard a nidavellir (ADR-0037, `proposed`),** sin
+  ejecutar. `deploy/traslado-nidavellir/` tiene siete scripts que corren desde
+  el PC:
+  - comprobación previa, de solo lectura;
+  - preparación de nidavellir sin arrancar nada;
+  - presincronización en caliente;
+  - el corte, con un hueco previsto de ~5 min;
+  - monitoreo en Thor y Baldr;
+  - verificación;
+  - vuelta atrás, con o sin datos.
+
+  Mueve los datos, el receptor, los respaldos a B2 y al NAS, el vigía y la
+  vigilancia de Yggdrasil. No abre puertos nuevos en la LAN. Los secretos
+  viajan por tubería y se comparan por sha256. La comprobación previa sale sin
+  bloqueos el 2026-11-21.
 - **APIs del portal (`/apis`, RF-7; plan 3.4 y 2.5)**, prerenderizada. El
   catálogo se **genera en cada build** desde `openapi.yaml` y `asyncapi.yaml`
   con un plugin de Vite (`virtual:catalogo`): los 8 endpoints de datos,
