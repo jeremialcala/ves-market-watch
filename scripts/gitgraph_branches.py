@@ -105,6 +105,15 @@ TAG_NOTES = {
         "criterio.higerotech.com (D12) leyendo del gateway de midgard. Sin "
         "gate cerrado",
     ),
+    "v0.9.0": (
+        "Bundle del BCV con la intermedia Sectigo OV R36 (ADR-0006); plan del "
+        "portal 3.4 + 2.5: APIs (RF-7) con catálogo generado y playground "
+        "real; arranque tras apagón; D15 revisado; traslado a nidavellir "
+        "preparado (ADR-0037, `proposed`)",
+        "Minor (2026-11-21): vuelve la captura de tasas oficiales y cuarta "
+        "página del portal. Redespliega ingestor BCV, gateway, ingestor "
+        "Binance, panel interno y portal. Sin gate cerrado",
+    ),
     "v0.8.0": (
         "Plan del portal 3.5: Precios (RF-8) con los niveles Comunidad y "
         "Empresa y la tabla comparativa; `@criterio/ui` con glifos `check` y "

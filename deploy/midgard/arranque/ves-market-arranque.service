@@ -4,12 +4,21 @@ Description=Criterio: levanta base, bus y servicios tras el arranque del applian
 Requires=docker.service
 After=docker.service network-online.target
 Wants=network-online.target
+# Cinco intentos en 20 min como mucho; después, Baldr (ADR-0011 de Yggdrasil)
+# lo reintenta y avisa si no converge.
+StartLimitIntervalSec=1200
+StartLimitBurst=5
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/local/sbin/ves-market-arranque.sh
 TimeoutStartSec=600
+# Tras un apagado sucio la base repasa su WAL y su healthcheck falla un rato:
+# `up --wait` la da por enferma y el arranque se rinde con todo a medio levantar
+# (apagón del 2026-10-28). Un reintento al minuto basta.
+Restart=on-failure
+RestartSec=60
 
 [Install]
 WantedBy=multi-user.target

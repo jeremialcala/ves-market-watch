@@ -38,8 +38,8 @@ describe("origen de la API", () => {
 });
 
 describe("CSP", () => {
-  it("connect-src lleva exactamente el origen del bundle", () => {
-    expect(directivas(politica(API)).get("connect-src")).toBe(`'self' ${API}`);
+  it("connect-src lleva exactamente el origen del bundle, en https y en wss", () => {
+    expect(directivas(politica(API)).get("connect-src")).toBe(`'self' ${API} ${API.replace("https:", "wss:")}`);
     expect(directivas(politica(null)).get("connect-src")).toBe("'self'");
   });
 

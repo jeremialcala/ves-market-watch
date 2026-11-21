@@ -17,6 +17,133 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-21
+
+**El ingestor del BCV vuelve a capturar tasas oficiales**, que llevaban
+cortadas desde ~2026-11-19 por la rotación del certificado del BCV. Además,
+**la página de APIs** llega a `https://criterio.higerotech.com/apis`, con el
+catálogo generado de los contratos y un playground real.
+
+Minor por la convención de este archivo: funcionalidad nueva de producto
+(RF-7). Sin gate cerrado.
+
+Al fusionar en `main` corren cinco flujos:
+- **`build-ingestor-bcv.yml`:** el bundle con la intermedia OV R36. Es lo
+  urgente del release.
+- **`build-api-gateway.yml` y `build-ingestor-binance.yml`:** solo cambia
+  `certifi` en el lock. Sin cambio de comportamiento.
+- **`build-web-spa.yml`:** cambió `package-lock.json` (`vite`, `vitest`,
+  `undici`). El panel interno se reconstruye sin cambio de comportamiento.
+- **`deploy-portal.yml`:** publica `/apis` y la CSP con `wss://`.
+
+El receptor de CD de midgard despliega las imágenes con health y rollback.
+Las unidades del host (arranque y respaldo al NAS) no las despliega el CI:
+ya están instaladas en midgard (comprobado el 2026-11-21). El traslado a
+nidavellir (ADR-0037) sale **preparado, no ejecutado**.
+
+### Added
+
+- **Traslado preparado de midgard a nidavellir (ADR-0037, `proposed`),** sin
+  ejecutar. `deploy/traslado-nidavellir/` tiene siete scripts que corren desde
+  el PC:
+  - comprobación previa, de solo lectura;
+  - preparación de nidavellir sin arrancar nada;
+  - presincronización en caliente;
+  - el corte, con un hueco previsto de ~5 min;
+  - monitoreo en Thor y Baldr;
+  - verificación;
+  - vuelta atrás, con o sin datos.
+
+  Mueve los datos, el receptor, los respaldos a B2 y al NAS, el vigía y la
+  vigilancia de Yggdrasil. No abre puertos nuevos en la LAN. Los secretos
+  viajan por tubería y se comparan por sha256. La comprobación previa sale sin
+  bloqueos el 2026-11-21.
+- **APIs del portal (`/apis`, RF-7; plan 3.4 y 2.5)**, prerenderizada. El
+  catálogo se **genera en cada build** desde `openapi.yaml` y `asyncapi.yaml`
+  con un plugin de Vite (`virtual:catalogo`): los 8 endpoints de datos,
+  `/health` y el WSS con sus 5 tópicos, agrupados, con sus parámetros reales.
+  El playground ejecuta de verdad contra el gateway y sin token: `/health` da
+  200, el resto el 401 real (con la forma de la respuesta 200 que fija el
+  contrato) y `/ws/v1` su cierre 4401. ES/EN, claro/oscuro y móvil.
+  Correcciones al diseño contra el contrato: el mensaje de suscripción usa
+  `topics`, no `channel`, y el rango máximo es «90 días o 26.000 buckets».
+
+### Changed
+
+- **Placement del despliegue revisado (D15, 2026-11-21)** en
+  `docs/02-design/placement-despliegue.md`, con precios oficiales de la Price
+  List API y la carga medida en `hgtech001`:
+  - **S2** (una EC2): $63,70 al mes, o $45,38 con ahorro a un año.
+  - **S5, núcleo en Lambda:** descartado. Ahorra como mucho $4 al mes y exige
+    reescribir el WSS, el bus y el CD.
+  - **S4b, `hgtech002`:** evaluado. Mejor máquina, pero 98,3 % de
+    disponibilidad medida y salida a internet a través de `hgtech001`.
+  - **La recomendación pasa a AWS desde el principio,** empezando en
+    `t3a.large`: las imágenes solo existen para amd64.
+- **CSP del portal:** `connect-src` lleva el origen del gateway también como
+  `wss://`, para el playground. `deploy-portal.yml` comprueba la CSP nueva y,
+  en el humo, que el gateway acepta el origen del portal en `/api/v1/health`.
+  El portal declara `js-yaml` (ya estaba en el lockfile, por openapi-typescript)
+  y `@types/js-yaml`.
+
+### Fixed
+
+- **El ingestor del BCV vuelve a capturar tasas oficiales.**
+  - **Qué pasó:** el BCV renovó su certificado el 2026-11-13 y pasó a emitirlo
+    la intermedia Sectigo *Public Server Authentication CA OV R36*, que su
+    servidor no envía. El bundle anclado (ADR-0006) solo tenía la *DV R36*.
+    Desde ~2026-11-19, cada sincronización fallaba con
+    `CERTIFICATE_VERIFY_FAILED`: 0 tasas en 48 h, alerta `s-bcv` del vigía.
+  - **El arreglo:** la OV R36 se **añade al final** del bundle, y la DV R36 se
+    conserva.
+  - **Cómo se verificó la intermedia:**
+    - firmada por la raíz R46 ya anclada;
+    - el certificado real del BCV encadena con el bundle nuevo, con
+      `openssl verify` y con un handshake en la imagen fijada del ingestor;
+    - su huella coincide con la de crt.sh.
+  - **Test nuevo** (`test_bundle_cadena_real.py`): valida sin red el
+    certificado de esa fecha contra el bundle, y falla con el anterior.
+    `certs/README.md` documenta la rotación y dos trampas de `openssl verify`.
+- **Arranque tras un apagón** (2026-10-28, 7 h 47 min sin luz).
+  `ves-market-arranque` se rendía si `ves-timescaledb` aún repasaba su WAL al
+  hacer `up --wait`, y dejaba todo a medio levantar sin avisar. Ahora reintenta
+  cada minuto (`Restart=on-failure`, 5 veces en 20 min).
+- El respaldo al NAS espera hasta 15 min a que el montaje responda
+  (`RESPALDO_ESPERA_NAS_S`). Su temporizador, con `Persistent=true`, lo lanzó a
+  los 10 min del arranque, antes que el NAS, y murió con «No such device».
+- Lo que siga mal tras un arranque lo recoge Baldr, el protocolo post-apagón de
+  midgard (ADR-0011 de Yggdrasil). Baldr reintenta estas unidades y relanza el
+  respaldo si corrió antes de tiempo.
+
+### Security
+
+- **`T8 · SCA`: `soupsieve` 4.1.3 en `ingestor-bcv`.** El PR #102 cayó por
+  cuatro advisories publicados después del #101 contra `soupsieve` 2.9.2:
+  CVE-2026-126190, CVE-2026-126191, CVE-2026-126192 y CVE-2026-126193. Llega
+  como dependencia de `beautifulsoup4` y está en el camino crítico: el parser
+  del BCV usa `select` y `select_one`. Cada CVE se corrige en una versión
+  distinta, y el último lo hace en la 4.0.0, así que el salto es de versión
+  mayor. Para validarlo pasaron los 64 tests unitarios y de contrato, incluidos
+  los del parser sobre la página real del BCV y sobre HTML alterado. El lock se
+  regeneró solo para este paquete, con `--upgrade-package soupsieve`, en la
+  imagen fijada de `regenerar-locks.sh`. Sin excepciones.
+- **`T8 · SCA`: `certifi` 2026.10.23, `undici` 8.12.3 y 7.30.1, `vite`
+  8.3.5, `vitest` 4.1.12 y `wrangler` 4.153.0.** El PR #101 cayó por advisories publicados después de
+  0.8.0:
+  - `certifi`: PYSEC-2026-4320, en el gateway y los ingestores BCV y Binance.
+  - `undici`: ocho advisories, cuatro high, entre ellos GHSA-2m5v-pch6-74hx,
+    que se salta la validación TLS. En el workspace llega por `jsdom`, solo
+    para los tests. En `deploy/portal`, `miniflare` lo fija en 7.29.1, así que
+    `wrangler` pasa de 4.149.0 a **4.153.0**, la primera versión con
+    `undici` 7.30.1 (ADR-0035 §4).
+  - `vite`: GHSA-587h-7wmj-h5pm, en `launch-editor`, más GHSA-rq7h-c2jc-7f22,
+    los dos del servidor de desarrollo.
+  - `vitest`: GHSA-82fw-gwwq-j7x9 y GHSA-qxg6-89mg-rqv8, moderados. Se suben
+    también, para que `npm audit` quede en cero.
+
+  Ningún arreglo pasa por una excepción. Los locks de Python se regeneraron con
+  `--upgrade-package certifi` en la imagen fijada de `regenerar-locks.sh`.
+
 ## [0.8.0] - 2026-10-15
 
 **La página de Precios** llega a `https://criterio.higerotech.com/precios`:
@@ -3774,7 +3901,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.6.1...v0.7.0

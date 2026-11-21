@@ -228,7 +228,10 @@ jobs:
           grep -q "<title>Precios · Criterio</title>" dist/precios/index.html
           grep -q "Habla con nosotros" dist/precios/index.html
           grep -q "8 endpoints de datos" dist/precios/index.html
-          grep -q "<h1>APIs</h1>" dist/apis/index.html
+          grep -q "<title>APIs · Criterio</title>" dist/apis/index.html
+          # El catálogo sale de los contratos en el build (RF-7).
+          grep -q "/api/v1/indicators/history" dist/apis/index.html
+          grep -q "side=buy|sell" dist/apis/index.html
 
   # El paquete compartido del web-spa y el portal (ADR-0031). Sus tests van
   # aparte de los de las apps; las apps prueban además que lo usan bien.

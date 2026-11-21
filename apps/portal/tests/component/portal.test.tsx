@@ -169,13 +169,13 @@ describe("navegación, idioma y tema", () => {
   it("volver atrás con el navegador vuelve a la página anterior", async () => {
     vi.useRealTimers();
     montar("/apis");
-    await userEvent.click(within(screen.getByRole("navigation")).getByRole("link", { name: "Estado" }));
+    await userEvent.click(within(screen.getByRole("navigation", { name: "Secciones" })).getByRole("link", { name: "Estado" }));
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Estado");
     act(() => {
       window.history.replaceState(null, "", "/apis");
       window.dispatchEvent(new PopStateEvent("popstate"));
     });
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("APIs");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("La data del dashboard, en tu código");
   });
 
   it("Ctrl-clic no lo intercepta: el navegador abre otra pestaña", () => {
@@ -196,8 +196,8 @@ describe("navegación, idioma y tema", () => {
     vi.useRealTimers();
     montar();
     await userEvent.click(screen.getByRole("link", { name: "Explorar las APIs" }));
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("APIs");
-    await userEvent.click(screen.getByRole("link", { name: "Volver a la portada" }));
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("La data del dashboard, en tu código");
+    await userEvent.click(within(screen.getByRole("navigation", { name: "Secciones" })).getByRole("link", { name: "Producto" }));
     await userEvent.click(screen.getByRole("link", { name: /Ver el dashboard en vivo/ }));
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Dashboard público");
   });

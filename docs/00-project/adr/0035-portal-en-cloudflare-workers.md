@@ -106,7 +106,9 @@ sin ruta rompe el build.
   `style-src-attr 'unsafe-inline'` porque los componentes de `@criterio/ui`
   pintan con atributos `style` y el HTML prerenderizado los lleva. Además,
   `connect-src` con el gateway, `frame-ancestors 'none'`, `object-src 'none'` y
-  `base-uri`/`form-action 'self'`.
+  `base-uri`/`form-action 'self'`. Desde la página APIs (plan 3.4), el origen
+  del gateway va en `connect-src` también como `wss://`, para que el playground
+  pruebe `/ws/v1`; el humo de `deploy-portal.yml` comprueba los dos.
 - `nosniff`, `Referrer-Policy`, `Permissions-Policy` y HSTS en todo; `/assets/*`
   inmutable (Vite pone el hash en el nombre). El HTML conserva el
   `max-age=0, must-revalidate` de Workers.
@@ -140,6 +142,11 @@ La versión es la **4.149.0** (2026-10-08). La primera candidata, la 4.144.0,
 la paró el auditor: arrastra `sharp` < 0.35.5 (GHSA-wq5f-xc86-pv6w, en
 `librsvg`). En vez de aceptar el riesgo por escrito, se fijó la primera versión
 con el arreglo.
+
+El 2026-10-28 pasó a la **4.153.0** por el mismo criterio. La 4.149.0 trae
+`undici` 7.29.1 fijado en exacto por `miniflare`, con cuatro advisories high
+(GHSA-2m5v-pch6-74hx y otros, arreglados en 7.30.1). La 4.153.0 es la primera
+versión que lo trae.
 
 ### 5. CORS del gateway
 
