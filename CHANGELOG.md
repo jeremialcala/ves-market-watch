@@ -17,6 +17,30 @@ Convención de mantenimiento (inventario por ejecución):
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-21
+
+**El ingestor del BCV vuelve a capturar tasas oficiales**, que llevaban
+cortadas desde ~2026-11-19 por la rotación del certificado del BCV. Además,
+**la página de APIs** llega a `https://criterio.higerotech.com/apis`, con el
+catálogo generado de los contratos y un playground real.
+
+Minor por la convención de este archivo: funcionalidad nueva de producto
+(RF-7). Sin gate cerrado.
+
+Al fusionar en `main` corren cinco flujos:
+- **`build-ingestor-bcv.yml`:** el bundle con la intermedia OV R36. Es lo
+  urgente del release.
+- **`build-api-gateway.yml` y `build-ingestor-binance.yml`:** solo cambia
+  `certifi` en el lock. Sin cambio de comportamiento.
+- **`build-web-spa.yml`:** cambió `package-lock.json` (`vite`, `vitest`,
+  `undici`). El panel interno se reconstruye sin cambio de comportamiento.
+- **`deploy-portal.yml`:** publica `/apis` y la CSP con `wss://`.
+
+El receptor de CD de midgard despliega las imágenes con health y rollback.
+Las unidades del host (arranque y respaldo al NAS) no las despliega el CI:
+ya están instaladas en midgard (comprobado el 2026-11-21). El traslado a
+nidavellir (ADR-0037) sale **preparado, no ejecutado**.
+
 ### Added
 
 - **Traslado preparado de midgard a nidavellir (ADR-0037, `proposed`),** sin
@@ -3877,7 +3901,8 @@ Línea base del proyecto (commit inicial `b34c3af`). Fase documental: Gate 0
   diseño y carpeta de tests: `ingestor-binance`, `ingestor-bcv`, `indicator-engine`
   y `api-gateway`.
 
-[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/jeremialcala/ves-market-watch/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/jeremialcala/ves-market-watch/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/jeremialcala/ves-market-watch/compare/v0.6.1...v0.7.0

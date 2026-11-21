@@ -195,7 +195,7 @@ cada ruta y falla si alguna sale vacía.
   Dashboard público** (`/dashboard`, RF-2) llega con la 0.7.0
   (2026-10-15), con paneles del portal sobre el mismo snapshot, y Precios
   (`/precios`, RF-8) con la 0.8.0, con los niveles Comunidad y Empresa, y
-  APIs (`/apis`, RF-7), con el catálogo generado de los contratos y un
+  APIs (`/apis`, RF-7) con la 0.9.0, con el catálogo generado de los contratos y un
   playground que llama al gateway de verdad. Las demás
   páginas del portal llegan por fases
   (`docs/03-implementation/portal-publico-implementacion.md`).

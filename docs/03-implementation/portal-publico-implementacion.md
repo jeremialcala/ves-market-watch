@@ -87,11 +87,12 @@ El 2026-10-15 llegó también Precios, publicado con el release 0.8.0:
   (`docs/legal/aviso-de-privacidad-acceso-comunidad.md`) y solo aplica cuando
   se recojan emails: va con el acceso Comunidad (fase 5). El pie ya existía.
 
-El 2026-10-15 llegó APIs, que cierra también el 2.5 (CORS del playground):
+El 2026-10-15 llegó APIs, publicado con el release 0.9.0. Cierra también el
+2.5 (CORS del playground):
 
 | PR | Plan | Qué |
 |---|---|---|
-| (este) | 3.4 + 2.5 | APIs (RF-7): catálogo generado de los contratos en el build y playground real |
+| #100 | 3.4 + 2.5 | APIs (RF-7): catálogo generado de los contratos en el build y playground real |
 
 - **El catálogo no se escribe a mano.** Un plugin de Vite
   (`apps/portal/plugins/catalogo.ts`) lee `openapi.yaml` y `asyncapi.yaml` en
