@@ -11,7 +11,7 @@ BUNDLE = Path(__file__).parents[2] / "certs" / "bcv-ca-bundle.pem"
 
 def test_bundle_versionado_carga_y_ancla_cas():
     contexto = _crear_contexto_ssl(str(BUNDLE))
-    # Intermedia Sectigo DV R36 + raíz R46 (y variantes cross-firmadas).
+    # Intermedias Sectigo DV R36 y OV R36 + raíz R46 (y variantes cross-firmadas).
     assert contexto.cert_store_stats()["x509_ca"] >= 2
 
 

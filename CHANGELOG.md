@@ -64,6 +64,22 @@ Convención de mantenimiento (inventario por ejecución):
 
 ### Fixed
 
+- **El ingestor del BCV vuelve a capturar tasas oficiales.**
+  - **Qué pasó:** el BCV renovó su certificado el 2026-11-13 y pasó a emitirlo
+    la intermedia Sectigo *Public Server Authentication CA OV R36*, que su
+    servidor no envía. El bundle anclado (ADR-0006) solo tenía la *DV R36*.
+    Desde ~2026-11-19, cada sincronización fallaba con
+    `CERTIFICATE_VERIFY_FAILED`: 0 tasas en 48 h, alerta `s-bcv` del vigía.
+  - **El arreglo:** la OV R36 se **añade al final** del bundle, y la DV R36 se
+    conserva.
+  - **Cómo se verificó la intermedia:**
+    - firmada por la raíz R46 ya anclada;
+    - el certificado real del BCV encadena con el bundle nuevo, con
+      `openssl verify` y con un handshake en la imagen fijada del ingestor;
+    - su huella coincide con la de crt.sh.
+  - **Test nuevo** (`test_bundle_cadena_real.py`): valida sin red el
+    certificado de esa fecha contra el bundle, y falla con el anterior.
+    `certs/README.md` documenta la rotación y dos trampas de `openssl verify`.
 - **Arranque tras un apagón** (2026-10-28, 7 h 47 min sin luz).
   `ves-market-arranque` se rendía si `ves-timescaledb` aún repasaba su WAL al
   hacer `up --wait`, y dejaba todo a medio levantar sin avisar. Ahora reintenta
